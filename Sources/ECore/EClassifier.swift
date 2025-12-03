@@ -96,26 +96,59 @@ public struct EDataType: EClassifier, ENamedElement {
         self.storage = EObjectStorage()
     }
 
+    // MARK: - EObject Protocol Implementation
+
+    /// Reflectively retrieves the value of a feature.
+    ///
+    /// - Parameter feature: The structural feature whose value to retrieve.
+    /// - Returns: The feature's current value, or `nil` if not set.
     public func eGet(_ feature: some EStructuralFeature) -> (any EcoreValue)? {
         return storage.get(feature: feature.id)
     }
 
+    /// Reflectively sets the value of a feature.
+    ///
+    /// - Parameters:
+    ///   - feature: The structural feature to modify.
+    ///   - value: The new value, or `nil` to unset.
     public mutating func eSet(_ feature: some EStructuralFeature, _ value: (any EcoreValue)?) {
         storage.set(feature: feature.id, value: value)
     }
 
+    /// Checks whether a feature has been explicitly set.
+    ///
+    /// - Parameter feature: The structural feature to check.
+    /// - Returns: `true` if the feature has been set, `false` otherwise.
     public func eIsSet(_ feature: some EStructuralFeature) -> Bool {
         return storage.isSet(feature: feature.id)
     }
 
+    /// Unsets a feature, returning it to its default value.
+    ///
+    /// - Parameter feature: The structural feature to unset.
     public mutating func eUnset(_ feature: some EStructuralFeature) {
         storage.unset(feature: feature.id)
     }
 
+    // MARK: - Equatable & Hashable
+
+    /// Compares two data types for equality.
+    ///
+    /// Data types are equal if they have the same identifier.
+    ///
+    /// - Parameters:
+    ///   - lhs: The first data type to compare.
+    ///   - rhs: The second data type to compare.
+    /// - Returns: `true` if the data types are equal, `false` otherwise.
     public static func == (lhs: EDataType, rhs: EDataType) -> Bool {
         return lhs.id == rhs.id
     }
 
+    /// Hashes the essential components of this data type.
+    ///
+    /// Only the identifier is used for hashing to maintain consistency with equality.
+    ///
+    /// - Parameter hasher: The hasher to use for combining components.
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
@@ -192,26 +225,59 @@ public struct EEnumLiteral: ENamedElement {
         self.storage = EObjectStorage()
     }
 
+    // MARK: - EObject Protocol Implementation
+
+    /// Reflectively retrieves the value of a feature.
+    ///
+    /// - Parameter feature: The structural feature whose value to retrieve.
+    /// - Returns: The feature's current value, or `nil` if not set.
     public func eGet(_ feature: some EStructuralFeature) -> (any EcoreValue)? {
         return storage.get(feature: feature.id)
     }
 
+    /// Reflectively sets the value of a feature.
+    ///
+    /// - Parameters:
+    ///   - feature: The structural feature to modify.
+    ///   - value: The new value, or `nil` to unset.
     public mutating func eSet(_ feature: some EStructuralFeature, _ value: (any EcoreValue)?) {
         storage.set(feature: feature.id, value: value)
     }
 
+    /// Checks whether a feature has been explicitly set.
+    ///
+    /// - Parameter feature: The structural feature to check.
+    /// - Returns: `true` if the feature has been set, `false` otherwise.
     public func eIsSet(_ feature: some EStructuralFeature) -> Bool {
         return storage.isSet(feature: feature.id)
     }
 
+    /// Unsets a feature, returning it to its default value.
+    ///
+    /// - Parameter feature: The structural feature to unset.
     public mutating func eUnset(_ feature: some EStructuralFeature) {
         storage.unset(feature: feature.id)
     }
 
+    // MARK: - Equatable & Hashable
+
+    /// Compares two enum literals for equality.
+    ///
+    /// Literals are equal if they have the same identifier.
+    ///
+    /// - Parameters:
+    ///   - lhs: The first literal to compare.
+    ///   - rhs: The second literal to compare.
+    /// - Returns: `true` if the literals are equal, `false` otherwise.
     public static func == (lhs: EEnumLiteral, rhs: EEnumLiteral) -> Bool {
         return lhs.id == rhs.id
     }
 
+    /// Hashes the essential components of this literal.
+    ///
+    /// Only the identifier is used for hashing to maintain consistency with equality.
+    ///
+    /// - Parameter hasher: The hasher to use for combining components.
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
@@ -306,26 +372,59 @@ public struct EEnum: EClassifier, ENamedElement {
         return literals.first { $0.value == value }
     }
 
+    // MARK: - EObject Protocol Implementation
+
+    /// Reflectively retrieves the value of a feature.
+    ///
+    /// - Parameter feature: The structural feature whose value to retrieve.
+    /// - Returns: The feature's current value, or `nil` if not set.
     public func eGet(_ feature: some EStructuralFeature) -> (any EcoreValue)? {
         return storage.get(feature: feature.id)
     }
 
+    /// Reflectively sets the value of a feature.
+    ///
+    /// - Parameters:
+    ///   - feature: The structural feature to modify.
+    ///   - value: The new value, or `nil` to unset.
     public mutating func eSet(_ feature: some EStructuralFeature, _ value: (any EcoreValue)?) {
         storage.set(feature: feature.id, value: value)
     }
 
+    /// Checks whether a feature has been explicitly set.
+    ///
+    /// - Parameter feature: The structural feature to check.
+    /// - Returns: `true` if the feature has been set, `false` otherwise.
     public func eIsSet(_ feature: some EStructuralFeature) -> Bool {
         return storage.isSet(feature: feature.id)
     }
 
+    /// Unsets a feature, returning it to its default value.
+    ///
+    /// - Parameter feature: The structural feature to unset.
     public mutating func eUnset(_ feature: some EStructuralFeature) {
         storage.unset(feature: feature.id)
     }
 
+    // MARK: - Equatable & Hashable
+
+    /// Compares two enumerations for equality.
+    ///
+    /// Enumerations are equal if they have the same identifier.
+    ///
+    /// - Parameters:
+    ///   - lhs: The first enumeration to compare.
+    ///   - rhs: The second enumeration to compare.
+    /// - Returns: `true` if the enumerations are equal, `false` otherwise.
     public static func == (lhs: EEnum, rhs: EEnum) -> Bool {
         return lhs.id == rhs.id
     }
 
+    /// Hashes the essential components of this enumeration.
+    ///
+    /// Only the identifier is used for hashing to maintain consistency with equality.
+    ///
+    /// - Parameter hasher: The hasher to use for combining components.
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }

@@ -207,6 +207,15 @@ public struct EObjectStorage: Sendable {
 }
 
 extension EObjectStorage: Equatable {
+    /// Compares two storage instances for equality.
+    ///
+    /// Storages are equal if they have the same set features and matching values
+    /// for those features. Value comparison uses string representation.
+    ///
+    /// - Parameters:
+    ///   - lhs: The first storage to compare.
+    ///   - rhs: The second storage to compare.
+    /// - Returns: `true` if the storages are equal, `false` otherwise.
     public static func == (lhs: EObjectStorage, rhs: EObjectStorage) -> Bool {
         // Compare isset first for efficiency
         guard lhs.isset == rhs.isset else { return false }
@@ -229,6 +238,11 @@ extension EObjectStorage: Equatable {
 }
 
 extension EObjectStorage: Hashable {
+    /// Hashes the essential components of this storage.
+    ///
+    /// Combines the set of set features and their values in deterministic order.
+    ///
+    /// - Parameter hasher: The hasher to use for combining components.
     public func hash(into hasher: inout Hasher) {
         hasher.combine(isset)
         // Hash the values in a deterministic order
