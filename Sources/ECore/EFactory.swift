@@ -161,31 +161,31 @@ public struct EFactory: ENamedElement {
         // Handle standard Ecore primitive types
         switch eDataType.name {
         case "EString":
-            return literal as EString
+            return literal
         case "EInt", "EIntegerObject":
-            return Int(literal) as EInt?
+            return EInt(literal)
         case "EBoolean", "EBooleanObject":
-            return Bool(literal) as EBoolean?
+            return EBoolean(literal)
         case "EFloat", "EFloatObject":
-            return Float(literal) as EFloat?
+            return EFloat(literal)
         case "EDouble", "EDoubleObject":
-            return Double(literal) as EDouble?
+            return EDouble(literal)
         case "EByte":
-            return Int8(literal) as EByte?
+            return EByte(literal)
         case "EShort":
-            return Int16(literal) as EShort?
+            return EShort(literal)
         case "ELong":
-            return Int64(literal) as ELong?
+            return ELong(literal)
         case "EBigInteger":
-            return BigInt(literal) as EBigInteger?
+            return EBigInteger(literal)
         case "EDate":
             // ISO 8601 date parsing
             let formatter = ISO8601DateFormatter()
-            return formatter.date(from: literal) as EDate?
+            return formatter.date(from: literal)
         default:
             // For custom data types, return the literal as-is
             // In a complete implementation, would use instanceClassName for conversion
-            return literal as EString
+            return literal
         }
     }
 

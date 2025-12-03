@@ -26,7 +26,7 @@ import Foundation
 /// let nameAttr = EAttribute(name: "name", eType: stringType)
 ///
 /// var employee = DynamicEObject(eClass: employeeClass)
-/// employee.eSet(nameAttr, "Alice" as EString)
+/// employee.eSet(nameAttr, "Alice")
 ///
 /// if let name = employee.eGet(nameAttr) as? EString {
 ///     print("Employee name: \(name)")
@@ -243,18 +243,18 @@ extension DynamicEObject: Codable {
 
         switch typeName {
         case "EString":
-            return try container.decode(String.self, forKey: key) as EString
+            return try container.decode(EString.self, forKey: key)
         case "EInt", "EIntegerObject":
-            return try container.decode(Int.self, forKey: key) as EInt
+            return try container.decode(EInt.self, forKey: key)
         case "EBoolean", "EBooleanObject":
-            return try container.decode(Bool.self, forKey: key) as EBoolean
+            return try container.decode(EBoolean.self, forKey: key)
         case "EDouble", "EDoubleObject":
-            return try container.decode(Double.self, forKey: key) as EDouble
+            return try container.decode(EDouble.self, forKey: key)
         case "EFloat", "EFloatObject":
-            return try container.decode(Float.self, forKey: key) as EFloat
+            return try container.decode(EFloat.self, forKey: key)
         default:
             // For custom types, try string
-            return try container.decode(String.self, forKey: key) as EString
+            return try container.decode(EString.self, forKey: key)
         }
     }
 

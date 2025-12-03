@@ -421,7 +421,7 @@ private let financeSubpackageName = "finance"
     let factory = EFactory(ePackage: package)
 
     let intType = EDataType(name: "EInt")
-    let literal = factory.convertToString(intType, 42 as EInt)
+    let literal = factory.convertToString(intType, 42)
 
     #expect(literal == "42")
 }
@@ -433,19 +433,19 @@ private let financeSubpackageName = "finance"
     // Test various type conversions
     let stringLiteral = factory.convertToString(
         EDataType(name: "EString"),
-        "hello" as EString
+        "hello"
     )
     #expect(stringLiteral == "hello")
 
     let boolLiteral = factory.convertToString(
         EDataType(name: "EBoolean"),
-        true as EBoolean
+        true
     )
     #expect(boolLiteral == "true")
 
     let intLiteral = factory.convertToString(
         EDataType(name: "EInt"),
-        42 as EInt
+        42
     )
     #expect(intLiteral == "42")
 }
@@ -455,7 +455,7 @@ private let financeSubpackageName = "finance"
     let factory = EFactory(ePackage: package)
 
     let intType = EDataType(name: "EInt")
-    let originalValue = 42 as EInt
+    let originalValue = 42
 
     // Convert to string and back
     let literal = factory.convertToString(intType, originalValue)
@@ -528,7 +528,7 @@ private let financeSubpackageName = "finance"
     )
 
     var obj = DynamicEObject(eClass: employeeClass)
-    obj.eSet(nameAttr, "Alice" as EString)
+    obj.eSet(nameAttr, "Alice")
 
     let value = obj.eGet(nameAttr)
     #expect(value as? String == "Alice")
@@ -543,7 +543,7 @@ private let financeSubpackageName = "finance"
 
     #expect(obj.eIsSet(nameAttr) == false)
 
-    obj.eSet(nameAttr, "Alice" as EString)
+    obj.eSet(nameAttr, "Alice")
     #expect(obj.eIsSet(nameAttr) == true)
 }
 
@@ -553,7 +553,7 @@ private let financeSubpackageName = "finance"
     let employeeClass = EClass(name: employeeClassName)
 
     var obj = DynamicEObject(eClass: employeeClass)
-    obj.eSet(nameAttr, "Alice" as EString)
+    obj.eSet(nameAttr, "Alice")
 
     obj.eUnset(nameAttr)
     #expect(obj.eIsSet(nameAttr) == false)

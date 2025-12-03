@@ -34,8 +34,8 @@ private let boolTypeName = "EBoolean"
 
     // Create an instance
     var person = DynamicEObject(eClass: personClass)
-    person.eSet(nameAttr, "Alice" as EString)
-    person.eSet(ageAttr, 30 as EInt)
+    person.eSet(nameAttr, "Alice")
+    person.eSet(ageAttr, 30)
 
     // Encode to JSON
     let encoder = JSONEncoder()
@@ -60,7 +60,7 @@ private let boolTypeName = "EBoolean"
     )
 
     var person = DynamicEObject(eClass: personClass)
-    person.eSet(nameAttr, "Bob" as EString)
+    person.eSet(nameAttr, "Bob")
 
     let encoder = JSONEncoder()
     let jsonData = try encoder.encode(person)
@@ -81,7 +81,7 @@ private let boolTypeName = "EBoolean"
     )
 
     var person = DynamicEObject(eClass: personClass)
-    person.eSet(activeAttr, true as EBoolean)
+    person.eSet(activeAttr, true)
 
     let encoder = JSONEncoder()
     let jsonData = try encoder.encode(person)
@@ -106,7 +106,7 @@ private let boolTypeName = "EBoolean"
 
     // Only set name, leave age unset
     var person = DynamicEObject(eClass: personClass)
-    person.eSet(nameAttr, "Charlie" as EString)
+    person.eSet(nameAttr, "Charlie")
 
     let encoder = JSONEncoder()
     let jsonData = try encoder.encode(person)
@@ -203,8 +203,8 @@ private let boolTypeName = "EBoolean"
 
     // Create original object
     var original = DynamicEObject(eClass: personClass)
-    original.eSet(nameAttr, "Frank" as EString)
-    original.eSet(ageAttr, 35 as EInt)
+    original.eSet(nameAttr, "Frank")
+    original.eSet(ageAttr, 35)
 
     // Encode
     let encoder = JSONEncoder()
@@ -236,8 +236,8 @@ private let boolTypeName = "EBoolean"
 
     // Create object
     var original = DynamicEObject(eClass: recordClass)
-    original.eSet(activeAttr, true as EBoolean)
-    original.eSet(scoreAttr, 98.5 as EDouble)
+    original.eSet(activeAttr, true)
+    original.eSet(scoreAttr, 98.5)
 
     // Round-trip
     let encoder = JSONEncoder()
