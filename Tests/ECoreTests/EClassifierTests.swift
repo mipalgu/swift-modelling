@@ -266,8 +266,8 @@ struct EClassifierTests {
 
     // MARK: - Integration Test
 
-    @Test func testBirdEnumerationFromEmf4cpp() {
-        // Based on: /Users/rh/Library/CloudStorage/Dropbox/Developer/src/other/MetaModels/emf4cpp/emf4cpp.tests/enumeration/enumeration.ecore
+    @Test func testBirdEnumeration() {
+        // Based on: emf4cpp/emf4cpp.tests/enumeration/enumeration.ecore
         let birdType = EEnum(
             name: birdTypeName,
             literals: [

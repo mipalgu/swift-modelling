@@ -503,6 +503,23 @@ public actor Resource {
             objects[objectId] = object
         }
 
+        // Handle containment: if this is a containment reference, remove targets from root objects
+        if let reference = feature as? EReference, reference.containment {
+            if reference.isMany {
+                // Multi-valued containment - remove all targets from roots
+                if let targetIds = value as? [EUUID] {
+                    for targetId in targetIds {
+                        rootObjects.removeAll { $0 == targetId }
+                    }
+                }
+            } else {
+                // Single-valued containment - remove target from roots
+                if let targetId = value as? EUUID {
+                    rootObjects.removeAll { $0 == targetId }
+                }
+            }
+        }
+
         return true
     }
 
