@@ -7,7 +7,17 @@
 //
 import Foundation
 
-// EMF Primitive Type Mappings
+// MARK: - Marker Protocol
+
+/// Marker protocol for types that can be stored as Ecore values
+///
+/// All Ecore primitive types and model elements conform to this protocol,
+/// providing type-safe storage and retrieval.
+public protocol EcoreValue: Sendable, Equatable, Hashable {}
+
+// MARK: - EMF Primitive Type Mappings
+
+public typealias EUUID = UUID
 public typealias EString = String
 public typealias EInt = Int
 public typealias EBoolean = Bool
@@ -20,6 +30,21 @@ public typealias EShort = Int16
 public typealias ELong = Int64
 public typealias EBigDecimal = Decimal
 public typealias EBigInteger = Int  // Note: Swift doesn't have BigInteger built-in
+
+// MARK: - EcoreValue Conformances
+
+extension EString: EcoreValue {}
+extension EInt: EcoreValue {}
+extension EBoolean: EcoreValue {}
+extension EFloat: EcoreValue {}
+extension EDouble: EcoreValue {}
+extension EDate: EcoreValue {}
+extension EChar: EcoreValue {}
+extension EByte: EcoreValue {}
+extension EShort: EcoreValue {}
+extension ELong: EcoreValue {}
+extension EBigDecimal: EcoreValue {}
+extension EUUID: EcoreValue {}
 
 /// Type conversion utilities for Ecore primitive types
 public enum EcoreTypeConverter: Sendable {
