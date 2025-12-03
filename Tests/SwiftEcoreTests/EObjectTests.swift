@@ -9,6 +9,25 @@ import Testing
 @testable import SwiftEcore
 import Foundation
 
+// MARK: - Test Constants
+
+// Class names
+private let testClassName = "TestClass"
+
+// Feature names
+private let nameFeatureName = "name"
+private let ageFeatureName = "age"
+
+// Test values
+private let testValue = "test value"
+private let testString = "test"
+private let johnName = "John"
+private let ageValue = 42
+private let differentValue = "different"
+
+// UUID constants
+private let nullUUID = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
+
 // MARK: - Mock Types for Testing
 
 struct MockClassifier: EClassifier {
@@ -64,57 +83,57 @@ struct MockEObject: EObject {
 // MARK: - Tests
 
 @Test func testEObjectHasID() {
-    let classifier = MockClassifier(name: "TestClass")
+    let classifier = MockClassifier(name: testClassName)
     let obj = MockEObject(classifier: classifier)
 
-    #expect(obj.id != UUID(uuidString: "00000000-0000-0000-0000-000000000000")!)
+    #expect(obj.id != nullUUID)
 }
 
 @Test func testEObjectHasEClass() {
-    let classifier = MockClassifier(name: "TestClass")
+    let classifier = MockClassifier(name: testClassName)
     let obj = MockEObject(classifier: classifier)
 
-    #expect(obj.eClass.name == "TestClass")
+    #expect(obj.eClass.name == testClassName)
 }
 
 @Test func testEObjectSetAndGetFeature() {
-    let classifier = MockClassifier(name: "TestClass")
+    let classifier = MockClassifier(name: testClassName)
     var obj = MockEObject(classifier: classifier)
-    let feature = MockFeature(name: "name")
+    let feature = MockFeature(name: nameFeatureName)
 
     // Initially not set
     #expect(obj.eGet(feature) == nil)
 
     // Set a value
-    obj.eSet(feature, "test value")
+    obj.eSet(feature, testValue)
 
     // Get the value
     let value = obj.eGet(feature) as? String
-    #expect(value == "test value")
+    #expect(value == testValue)
 }
 
 @Test func testEObjectIsSet() {
-    let classifier = MockClassifier(name: "TestClass")
+    let classifier = MockClassifier(name: testClassName)
     var obj = MockEObject(classifier: classifier)
-    let feature = MockFeature(name: "name")
+    let feature = MockFeature(name: nameFeatureName)
 
     // Initially not set
     #expect(obj.eIsSet(feature) == false)
 
     // Set a value
-    obj.eSet(feature, "test")
+    obj.eSet(feature, testString)
 
     // Now it's set
     #expect(obj.eIsSet(feature) == true)
 }
 
 @Test func testEObjectUnset() {
-    let classifier = MockClassifier(name: "TestClass")
+    let classifier = MockClassifier(name: testClassName)
     var obj = MockEObject(classifier: classifier)
-    let feature = MockFeature(name: "name")
+    let feature = MockFeature(name: nameFeatureName)
 
     // Set a value
-    obj.eSet(feature, "test")
+    obj.eSet(feature, testString)
     #expect(obj.eIsSet(feature) == true)
 
     // Unset the value
@@ -126,18 +145,18 @@ struct MockEObject: EObject {
 }
 
 @Test func testEObjectMultipleFeatures() {
-    let classifier = MockClassifier(name: "TestClass")
+    let classifier = MockClassifier(name: testClassName)
     var obj = MockEObject(classifier: classifier)
-    let nameFeature = MockFeature(name: "name")
-    let ageFeature = MockFeature(name: "age")
+    let nameFeature = MockFeature(name: nameFeatureName)
+    let ageFeature = MockFeature(name: ageFeatureName)
 
     // Set multiple features
-    obj.eSet(nameFeature, "John")
-    obj.eSet(ageFeature, 42)
+    obj.eSet(nameFeature, johnName)
+    obj.eSet(ageFeature, ageValue)
 
     // Get multiple features
-    #expect(obj.eGet(nameFeature) as? String == "John")
-    #expect(obj.eGet(ageFeature) as? Int == 42)
+    #expect(obj.eGet(nameFeature) as? String == johnName)
+    #expect(obj.eGet(ageFeature) as? Int == ageValue)
 
     // Both are set
     #expect(obj.eIsSet(nameFeature) == true)
@@ -145,12 +164,12 @@ struct MockEObject: EObject {
 }
 
 @Test func testEObjectSetNilUnsetsFeature() {
-    let classifier = MockClassifier(name: "TestClass")
+    let classifier = MockClassifier(name: testClassName)
     var obj = MockEObject(classifier: classifier)
-    let feature = MockFeature(name: "name")
+    let feature = MockFeature(name: nameFeatureName)
 
     // Set a value
-    obj.eSet(feature, "test")
+    obj.eSet(feature, testString)
     #expect(obj.eIsSet(feature) == true)
 
     // Set to nil
@@ -162,7 +181,7 @@ struct MockEObject: EObject {
 }
 
 @Test func testEObjectEquality() {
-    let classifier = MockClassifier(name: "TestClass")
+    let classifier = MockClassifier(name: testClassName)
     let id = UUID()
 
     let obj1 = MockEObject(id: id, classifier: classifier)
@@ -174,7 +193,7 @@ struct MockEObject: EObject {
 }
 
 @Test func testEObjectInequality() {
-    let classifier = MockClassifier(name: "TestClass")
+    let classifier = MockClassifier(name: testClassName)
 
     let obj1 = MockEObject(classifier: classifier)
     let obj2 = MockEObject(classifier: classifier)
@@ -195,9 +214,9 @@ struct MockEObject: EObject {
     var storage = EObjectStorage()
     let featureID = UUID()
 
-    storage.set(feature: featureID, value: "test")
+    storage.set(feature: featureID, value: testString)
 
-    #expect(storage.get(feature: featureID) as? String == "test")
+    #expect(storage.get(feature: featureID) as? String == testString)
     #expect(storage.isSet(feature: featureID) == true)
 }
 
@@ -205,7 +224,7 @@ struct MockEObject: EObject {
     var storage = EObjectStorage()
     let featureID = UUID()
 
-    storage.set(feature: featureID, value: "test")
+    storage.set(feature: featureID, value: testString)
     storage.unset(feature: featureID)
 
     #expect(storage.get(feature: featureID) == nil)
@@ -217,8 +236,8 @@ struct MockEObject: EObject {
     var storage2 = EObjectStorage()
     let featureID = UUID()
 
-    storage1.set(feature: featureID, value: "test")
-    storage2.set(feature: featureID, value: "test")
+    storage1.set(feature: featureID, value: testString)
+    storage2.set(feature: featureID, value: testString)
 
     #expect(storage1 == storage2)
 }
@@ -228,8 +247,8 @@ struct MockEObject: EObject {
     var storage2 = EObjectStorage()
     let featureID = UUID()
 
-    storage1.set(feature: featureID, value: "test")
-    storage2.set(feature: featureID, value: "different")
+    storage1.set(feature: featureID, value: testString)
+    storage2.set(feature: featureID, value: differentValue)
 
     #expect(storage1 != storage2)
 }
@@ -239,15 +258,15 @@ struct MockEObject: EObject {
     var storage2 = EObjectStorage()
     let featureID = UUID()
 
-    storage1.set(feature: featureID, value: "test")
-    storage2.set(feature: featureID, value: "test")
+    storage1.set(feature: featureID, value: testString)
+    storage2.set(feature: featureID, value: testString)
 
     #expect(storage1.hashValue == storage2.hashValue)
 }
 
 @Test func testEObjectIsEcoreValue() {
     // EObject types are automatically EcoreValues, allowing them to be stored
-    let classifier = MockClassifier(name: "TestClass")
+    let classifier = MockClassifier(name: testClassName)
     let obj = MockEObject(classifier: classifier)
 
     // Can be stored as an EcoreValue
