@@ -51,6 +51,7 @@ public actor XMIParser {
     /// Maps of parsed objects for reference resolution
     private var xmiIdMap: [String: EUUID] = [:]
     private var fragmentMap: [String: EUUID] = [:]
+    private var referenceMap: [EUUID: [String: String]] = [:]  // object ID → (feature name → href)
 
     /// Initialises a new XMI parser
     ///
@@ -98,6 +99,7 @@ public actor XMIParser {
         // Clear maps for this parse session
         xmiIdMap.removeAll()
         fragmentMap.removeAll()
+        referenceMap.removeAll()
 
         // Get the root element (e.g., <ecore:EPackage>)
         guard let rootElement = document.children.first else {
@@ -149,9 +151,146 @@ public actor XMIParser {
             return try await parseEReference(element, in: resource)
         }
 
-        // For now, return nil for unknown elements
-        // This will be expanded in Step 4.3 for model instances
-        return nil
+        // Handle model instance elements (non-Ecore elements)
+        return try await parseInstanceElement(element, in: resource)
+    }
+
+    // MARK: - Type Inference
+
+    /// Infer the ECore type from a string value
+    ///
+    /// This method attempts to parse the string as various primitive types in order:
+    /// 1. Integer (`Int`)
+    /// 2. Floating point (`Double`)
+    /// 3. Boolean (`Bool`)
+    /// 4. String (fallback)
+    ///
+    /// ## Type Inference Order
+    ///
+    /// The order is important to avoid false positives:
+    /// - "42" → `Int` (not `Double`)
+    /// - "3.14" → `Double`
+    /// - "true"/"false" → `Bool` (case-insensitive)
+    /// - "hello" → `String`
+    ///
+    /// ## Limitations
+    ///
+    /// - Enum literals are stored as strings until metamodel-guided conversion is available
+    /// - Large integers beyond `Int.max` will be stored as strings
+    /// - Date/time strings are stored as strings (no format detection yet)
+    ///
+    /// - Parameter string: The string value to convert
+    /// - Returns: The inferred value as an `EcoreValue`
+    private func inferType(from string: String) -> any EcoreValue {
+        // Try Int first (before Double to avoid false positives)
+        if let intValue = Int(string) {
+            return intValue
+        }
+
+        // Try Double
+        if let doubleValue = Double(string) {
+            return doubleValue
+        }
+
+        // Try Bool (case-insensitive)
+        let lowercased = string.lowercased()
+        if lowercased == "true" {
+            return true
+        }
+        if lowercased == "false" {
+            return false
+        }
+
+        // Default to String
+        return string
+    }
+
+    // MARK: - Model Instance Parsing
+
+    /// Parse a model instance element
+    ///
+    /// This method handles elements that are instances of user-defined metamodels,
+    /// as opposed to Ecore metamodel elements. It extracts the element type from
+    /// the namespace prefix and local name, creates a DynamicEObject, and parses
+    /// attributes and nested elements.
+    ///
+    /// - Parameters:
+    ///   - element: The XML element representing the instance
+    ///   - resource: The Resource for context and object storage
+    /// - Returns: The parsed instance as a DynamicEObject
+    /// - Throws: `XMIError` if parsing fails
+    private func parseInstanceElement(_ element: XElement, in resource: Resource) async throws -> DynamicEObject {
+        // Extract class name from element name (e.g., "animals:Animal" → "Animal")
+        let className: String
+        if element.name.contains(":") {
+            let parts = element.name.split(separator: ":")
+            className = String(parts.last ?? "")
+        } else {
+            className = element.name
+        }
+
+        // Get or create EClass for this instance type
+        let eClass = getOrCreateEClass(className, in: resource)
+        var instance = DynamicEObject(eClass: eClass)
+
+        // Register with xmi:id if present
+        if let xmiId = element["xmi:id"] {
+            xmiIdMap[xmiId] = instance.id
+        }
+
+        // Parse all attributes dynamically
+        // SwiftXML provides element.attributeNames for iteration
+        for attributeName in element.attributeNames {
+            // Skip XML namespace and XMI control attributes
+            if attributeName.hasPrefix("xmlns:") ||
+               attributeName.hasPrefix("xmi:") ||
+               attributeName.hasPrefix("xsi:") {
+                continue
+            }
+
+            guard let attributeValue = element[attributeName] else { continue }
+
+            // Use type inference to convert string to appropriate type
+            let value = inferType(from: attributeValue)
+            instance.eSet(attributeName, value: value)
+        }
+
+        // Parse child elements (may be attributes or references)
+        var childReferences: [String: [EUUID]] = [:]
+
+        for child in element.children {
+            let childName = child.name
+
+            // Check if it's a reference or a contained object
+            if let href = child["href"] {
+                // It's a reference - store for second pass resolution
+                referenceMap[instance.id, default: [:]][childName] = href
+            } else {
+                // It's a contained child object
+                let childObject = try await parseInstanceElement(child, in: resource)
+                await resource.register(childObject)
+
+                // Add to containment reference array
+                if childReferences[childName] == nil {
+                    childReferences[childName] = []
+                }
+                childReferences[childName]?.append(childObject.id)
+            }
+        }
+
+        // Set containment references
+        for (refName, ids) in childReferences {
+            if ids.count == 1 {
+                instance.eSet(refName, value: ids[0])
+            } else {
+                instance.eSet(refName, value: ids)
+            }
+        }
+
+        // Register the instance
+        await resource.register(instance)
+
+        return instance
     }
 
     // MARK: - Ecore Metamodel Parsing

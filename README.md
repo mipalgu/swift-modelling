@@ -12,7 +12,8 @@ A pure Swift implementation of the Eclipse Modeling Framework (EMF) Ecore metamo
 - ✅ **Resource Infrastructure**: EMF-compliant object management and ID-based reference resolution
 - ✅ **JSON Serialization**: Load and save JSON models with full round-trip support
 - ✅ **Bidirectional References**: Automatic opposite reference management across resources
-- 🚧 **XMI Serialization**: Load .ecore and .xmi files (parser implemented, serializer in progress)
+- ✅ **XMI Parsing**: Load .ecore metamodels and .xmi instance files
+- 🚧 **XMI Serialization**: Write models to XMI format (in progress)
 - 🚧 **ATL Transformations**: Model-to-model transformations (coming soon)
 - 🚧 **Code Generation**: Generate Swift, C++, C, LLVM IR via ATL (coming soon)
 
@@ -80,9 +81,9 @@ ssh plucky.local "cd src/swift/rh/Metamodels/swift-modelling && git pull && swif
 
 - [x] SwiftXML dependency added
 - [x] XMI parser foundation (Step 4.1)
-- [ ] XMI metamodel deserialization (Step 4.2)
-- [ ] XMI instance deserialization (Step 4.3)
-- [ ] XPath reference resolution (Step 4.4)
+- [x] XMI metamodel deserialization (Step 4.2) - EPackage, EClass, EEnum, EAttribute, EReference
+- [x] XMI instance deserialization (Step 4.3) - Dynamic object creation from instance files
+- [ ] XPath reference resolution (Step 4.4) - In progress
 - [ ] XMI serializer (Step 4.5)
 - [ ] Cross-resource references (Step 4.6)
 - [ ] Round-trip tests (Step 4.7)
