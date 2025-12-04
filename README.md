@@ -15,7 +15,7 @@ A pure Swift implementation of the Eclipse Modeling Framework (EMF) Ecore metamo
 - ✅ **XMI Parsing**: Load .ecore metamodels and .xmi instance files
 - ✅ **Dynamic Attribute Parsing**: Arbitrary XML attributes with automatic type inference (Int, Double, Bool, String)
 - ✅ **XPath Reference Resolution**: Same-resource references with XPath-style navigation (//@feature.index)
-- 🚧 **XMI Serialization**: Write models to XMI format (in progress)
+- ✅ **XMI Serialization**: Write models to XMI format with full round-trip support
 - 🚧 **ATL Transformations**: Model-to-model transformations (coming soon)
 - 🚧 **Code Generation**: Generate Swift, C++, C, LLVM IR via ATL (coming soon)
 
@@ -79,7 +79,7 @@ ssh plucky.local "cd src/swift/rh/Metamodels/swift-modelling && git pull && swif
 - [x] Round-trip tests for all data types
 - [x] Comprehensive error handling
 
-### Phase 4: XMI Serialization 🚧
+### Phase 4: XMI Serialization ✅
 
 - [x] SwiftXML dependency added
 - [x] XMI parser foundation (Step 4.1)
@@ -87,9 +87,9 @@ ssh plucky.local "cd src/swift/rh/Metamodels/swift-modelling && git pull && swif
 - [x] XMI instance deserialization (Step 4.3) - Dynamic object creation from instance files
 - [x] Dynamic attribute parsing with type inference - Arbitrary XML attributes parsed without hardcoding
 - [x] XPath reference resolution (Step 4.4) - Same-resource references with XPath-style navigation
-- [ ] XMI serializer (Step 4.5) - Next up
-- [ ] Cross-resource references (Step 4.6)
-- [ ] Round-trip tests (Step 4.7)
+- [x] XMI serializer (Step 4.5) - Full serialization with attributes, containment, and cross-references
+- [x] Round-trip tests - XMI → memory → XMI with in-memory verification at each step
+- [ ] Cross-resource references (Step 4.6) - Will be implemented in Phase 5
 
 ### Phase 5: CLI Tool 🚧
 

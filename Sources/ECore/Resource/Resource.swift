@@ -556,6 +556,18 @@ public actor Resource {
         return object.eGet(featureName)
     }
 
+    /// Get all feature names for an object
+    ///
+    /// Returns the names of all features (attributes and references) that have
+    /// been set on the specified object.
+    ///
+    /// - Parameter objectId: The ID of the object to query
+    /// - Returns: Array of feature names
+    public func getFeatureNames(objectId: EUUID) -> [String] {
+        guard let object = objects[objectId] as? DynamicEObject else { return [] }
+        return object.getFeatureNames()
+    }
+
     // MARK: - Private Helpers
     
     /// Checks if a container object contains a target object through a specific reference.

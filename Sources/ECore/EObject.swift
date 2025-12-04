@@ -252,6 +252,13 @@ public struct EObjectStorage: Sendable {
         nameValues.removeValue(forKey: name)
         nameIsset.remove(name)
     }
+
+    /// Get all feature names that have been set.
+    ///
+    /// - Returns: Array of feature names
+    public func getFeatureNames() -> [String] {
+        return Array(nameIsset)
+    }
 }
 
 extension EObjectStorage: Equatable {

@@ -206,6 +206,13 @@ public struct DynamicEObject: EObject {
         eUnset(feature)
     }
 
+    /// Get all feature names that have been set on this object.
+    ///
+    /// - Returns: Array of feature names
+    public func getFeatureNames() -> [String] {
+        return storage.getFeatureNames()
+    }
+
     // MARK: - Equatable & Hashable
 
     /// Compares two dynamic objects for equality.
