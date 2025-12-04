@@ -15,8 +15,17 @@ import SwiftXML
 /// - Metamodel (.ecore) files with full Ecore support
 /// - Model instance (.xmi) files with arbitrary attributes
 /// - Containment references (nested elements)
-/// - Cross-references (href attributes with XPath)
+/// - Same-resource references (href attributes with XPath, e.g., `href="#//@employees.0"`)
+/// - Cross-resource references (href attributes with URI and fragment, e.g., `href="department-b.xmi#/"`)
 /// - Proper XML namespace declarations
+///
+/// ## Cross-Resource References
+///
+/// When a reference points to an object in another resource (represented as a `ResourceProxy`),
+/// the serializer generates an href with the target resource's URI and fragment:
+/// ```xml
+/// <mainDepartment href="department-b.xmi#/"/>
+/// ```
 ///
 /// ## Usage Example
 ///
@@ -115,8 +124,8 @@ public struct XMISerializer: Sendable {
             }
 
             // Serialise cross-references
-            for (featureName, targetId) in references {
-                xml += try await serializeCrossReference(featureName: featureName, targetId: targetId, in: resource, indentLevel: indentLevel + 1)
+            for (featureName, target) in references {
+                xml += try await serializeCrossReference(featureName: featureName, target: target, in: resource, indentLevel: indentLevel + 1)
             }
 
             // Close element
@@ -167,8 +176,8 @@ public struct XMISerializer: Sendable {
             }
 
             // Serialise cross-references
-            for (refFeatureName, targetId) in references {
-                xml += try await serializeCrossReference(featureName: refFeatureName, targetId: targetId, in: resource, indentLevel: indentLevel + 1)
+            for (refFeatureName, target) in references {
+                xml += try await serializeCrossReference(featureName: refFeatureName, target: target, in: resource, indentLevel: indentLevel + 1)
             }
 
             xml += "\(indent)</\(featureName)>\n"
@@ -181,18 +190,28 @@ public struct XMISerializer: Sendable {
     ///
     /// - Parameters:
     ///   - featureName: The feature name
-    ///   - targetId: The target object ID
+    ///   - target: Target of the reference (EUUID for same-resource, ResourceProxy for cross-resource)
     ///   - resource: The Resource for context
     ///   - indentLevel: Current indentation level
     /// - Returns: XML string
     /// - Throws: `XMIError` if serialisation fails
-    private func serializeCrossReference(featureName: String, targetId: EUUID, in resource: Resource, indentLevel: Int) async throws -> String {
+    private func serializeCrossReference(featureName: String, target: any EcoreValue, in resource: Resource, indentLevel: Int) async throws -> String {
         let indent = String(repeating: "    ", count: indentLevel)
 
-        // Generate XPath for target
-        let xpath = try await generateXPath(for: targetId, in: resource)
+        let href: String
 
-        return "\(indent)<\(featureName) href=\"\(xpath)\"/>\n"
+        if let targetId = target as? EUUID {
+            // Same-resource reference: Generate XPath
+            href = try await generateXPath(for: targetId, in: resource)
+        } else if let proxy = target as? ResourceProxy {
+            // Cross-resource reference: Use proxy's URI and fragment
+            let fragment = proxy.fragment.hasPrefix("#") ? proxy.fragment : "#\(proxy.fragment)"
+            href = "\(proxy.uri)\(fragment)"
+        } else {
+            throw XMIError.invalidReference("Unsupported reference type: \(type(of: target))")
+        }
+
+        return "\(indent)<\(featureName) href=\"\(href)\"/>\n"
     }
 
     /// Generate XPath reference for an object
@@ -436,14 +455,14 @@ public struct XMISerializer: Sendable {
 
     /// Get cross-references (non-containment references)
     ///
-    /// For now, we treat references that start with specific feature names as cross-references
+    /// Returns both same-resource references (EUUID) and cross-resource references (ResourceProxy).
     ///
     /// - Parameters:
     ///   - object: The object
     ///   - resource: The Resource
-    /// - Returns: Dictionary of feature name to target object ID
-    private func getCrossReferences(_ object: any EObject, in resource: Resource) async throws -> [String: EUUID] {
-        var references: [String: EUUID] = [:]
+    /// - Returns: Dictionary of feature name to target (EUUID or ResourceProxy)
+    private func getCrossReferences(_ object: any EObject, in resource: Resource) async throws -> [String: any EcoreValue] {
+        var references: [String: any EcoreValue] = [:]
 
         guard let dynamicObject = object as? DynamicEObject else {
             return references
@@ -452,11 +471,17 @@ public struct XMISerializer: Sendable {
         let featureNames = await resource.getFeatureNames(objectId: dynamicObject.id)
 
         for featureName in featureNames {
-            // Heuristic: features named "leader", "manager", "ref", etc. are cross-references
+            // Heuristic: features named "leader", "manager", "mainDepartment", or ending in "Ref" are cross-references
             // This is a simplification - full EMF would check EReference.containment flag
-            if featureName == "leader" || featureName == "manager" || featureName.hasSuffix("Ref") {
-                if let targetId = await resource.eGet(objectId: dynamicObject.id, feature: featureName) as? EUUID {
-                    references[featureName] = targetId
+            if featureName == "leader" ||
+               featureName == "manager" ||
+               featureName == "mainDepartment" ||
+               featureName.hasSuffix("Ref") {
+                if let value = await resource.eGet(objectId: dynamicObject.id, feature: featureName) {
+                    // Can be EUUID (same-resource) or ResourceProxy (cross-resource)
+                    if value is EUUID || value is ResourceProxy {
+                        references[featureName] = value
+                    }
                 }
             }
         }

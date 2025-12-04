@@ -104,9 +104,43 @@ public actor ResourceSet {
         if let existing = resources[uri] {
             return existing
         }
-        
+
         // Attempt to load the resource using factories
         return loadResource(uri: uri)
+    }
+
+    /// Load an XMI resource from a file URL
+    ///
+    /// This method is a convenience for loading XMI files without requiring
+    /// resource factories to be set up. It creates an XMIParser and loads
+    /// the resource directly.
+    ///
+    /// This method is automatically called when resolving `ResourceProxy` objects that
+    /// reference external resources. For example, when a reference like
+    /// `href="department-b.xmi#/"` is resolved, this method loads the target resource.
+    ///
+    /// - Parameter uri: The URI of the XMI file to load
+    /// - Returns: The loaded Resource, either newly loaded or cached from previous load
+    /// - Throws: XMIError if parsing fails
+    public func loadXMIResource(uri: String) async throws -> Resource {
+        // Check if already loaded
+        if let existing = resources[uri] {
+            return existing
+        }
+
+        // Create URL from URI
+        guard let url = URL(string: uri) else {
+            throw XMIError.invalidXML("Invalid URI: \(uri)")
+        }
+
+        // Parse with XMIParser
+        let parser = XMIParser(resourceSet: self)
+        let resource = try await parser.parse(url)
+
+        // Register in the resource set
+        resources[uri] = resource
+
+        return resource
     }
     
     /// Removes a resource from this resource set.

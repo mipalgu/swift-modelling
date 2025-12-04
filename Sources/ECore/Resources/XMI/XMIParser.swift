@@ -27,9 +27,19 @@ public enum XMIError: Error, Sendable {
 /// - Model instance (.xmi) files with arbitrary user-defined attributes
 /// - Dynamic attribute parsing without hardcoded attribute names
 /// - Automatic type inference for Int, Double, Bool, and String values
-/// - Cross-resource references via href attributes
+/// - Cross-resource references via href attributes (creates `ResourceProxy` for external refs)
 /// - XPath-style fragment identifiers
 /// - Bidirectional reference resolution
+///
+/// ## Cross-Resource References
+///
+/// When parsing an href attribute with an external URI (e.g., `href="department-b.xmi#/"`),
+/// the parser creates a `ResourceProxy` instead of resolving immediately. The proxy can be
+/// resolved later using `ResourceProxy.resolve(in:)`, which will automatically load the
+/// target resource if needed.
+///
+/// Same-resource references (e.g., `href="#//@employees.0"`) are resolved to `EUUID` values
+/// during the two-pass parsing process.
 ///
 /// ## Supported XMI Features
 ///
@@ -634,8 +644,8 @@ public actor XMIParser {
         for object in allObjects {
             // Resolve eType references (metamodel)
             if let eTypeRef = await resource.eGet(objectId: object.id, feature: "_eType_ref") as? String {
-                if let resolvedId = await resolveReference(eTypeRef) {
-                    await resource.eSet(objectId: object.id, feature: "eType", value: resolvedId)
+                if let resolved = await resolveReference(eTypeRef, using: xpathResolver, in: resource) {
+                    await resource.eSet(objectId: object.id, feature: "eType", value: resolved)
                 }
                 // Clear temporary reference
                 await resource.eSet(objectId: object.id, feature: "_eType_ref", value: nil)
@@ -645,27 +655,29 @@ public actor XMIParser {
             if let references = referenceMap[object.id] {
                 for (featureName, href) in references {
                     // Resolve the href using XPath or fragment lookup
-                    if let resolvedId = await resolveReference(href, using: xpathResolver) {
-                        await resource.eSet(objectId: object.id, feature: featureName, value: resolvedId)
+                    // This may return EUUID (same-resource) or ResourceProxy (cross-resource)
+                    if let resolved = await resolveReference(href, using: xpathResolver, in: resource) {
+                        await resource.eSet(objectId: object.id, feature: featureName, value: resolved)
                     }
                 }
             }
         }
     }
 
-    /// Resolve a reference string to an object ID
+    /// Resolve a reference string to an object ID or ResourceProxy
     ///
     /// Handles:
     /// - XPath references: `#//@members.0` (using XPathResolver)
     /// - Fragment references: `#//ClassName`
     /// - XMI ID references: `#xmi-id`
-    /// - External references: `ecore:EDataType http://...#//EString`
+    /// - External references: `department-b.xmi#/` (creates ResourceProxy)
     ///
     /// - Parameters:
     ///   - reference: The reference string
     ///   - xpathResolver: Optional XPathResolver for XPath-style references
-    /// - Returns: The resolved object ID, or `nil` if not found
-    private func resolveReference(_ reference: String, using xpathResolver: XPathResolver? = nil) async -> EUUID? {
+    ///   - resource: The current Resource for resolving relative URIs
+    /// - Returns: The resolved object ID, or ResourceProxy for external references
+    private func resolveReference(_ reference: String, using xpathResolver: XPathResolver? = nil, in resource: Resource) async -> (any EcoreValue)? {
         if reference.hasPrefix("#") {
             let fragment = String(reference.dropFirst())
 
@@ -680,9 +692,49 @@ public actor XMIParser {
             return fragmentMap[fragment] ?? xmiIdMap[fragment]
         }
 
-        // External reference - for now, return nil
-        // This will be handled in Step 4.6 (Cross-Resource References)
-        return nil
+        // External reference - create ResourceProxy
+        // Parse reference format: "uri#fragment" or just "uri"
+        if let hashIndex = reference.firstIndex(of: "#") {
+            let uri = String(reference[..<hashIndex])
+            let fragment = String(reference[reference.index(after: hashIndex)...])
+
+            // Resolve relative URI
+            let resolvedURI = resolveRelativeURI(uri, relativeTo: resource.uri)
+
+            return ResourceProxy(uri: resolvedURI, fragment: fragment)
+        } else {
+            // No fragment - reference to entire resource
+            let resolvedURI = resolveRelativeURI(reference, relativeTo: resource.uri)
+            return ResourceProxy(uri: resolvedURI, fragment: "/")
+        }
+    }
+
+    /// Resolve a relative URI against a base URI
+    ///
+    /// - Parameters:
+    ///   - uri: The potentially relative URI
+    ///   - baseURI: The base URI to resolve against
+    /// - Returns: The resolved absolute or normalized URI
+    private func resolveRelativeURI(_ uri: String, relativeTo baseURI: String) -> String {
+        // If URI has a scheme (protocol), it's absolute
+        if uri.contains("://") {
+            return uri
+        }
+
+        // Get the base directory from baseURI
+        if let baseURL = URL(string: baseURI) {
+            let baseDir = baseURL.deletingLastPathComponent()
+            let resolvedURL = baseDir.appendingPathComponent(uri)
+            return resolvedURL.absoluteString
+        }
+
+        // Fallback: simple concatenation
+        if let lastSlash = baseURI.lastIndex(of: "/") {
+            let baseDir = String(baseURI[...lastSlash])
+            return baseDir + uri
+        }
+
+        return uri
     }
 
     // MARK: - Helper Methods
