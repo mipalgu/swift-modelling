@@ -294,6 +294,77 @@ struct OrderPreservationTests {
         #expect(await deserializedResource.eGet(objectId: deserializedPerson!.id, feature: "age") as? Int == 35)
     }
 
+    @Test("Multiple elements with same name should preserve individual attribute orders")
+    func testMultipleElementsWithSameNameAttributeOrder() async throws {
+        // Create person class
+        var personClass = EClass(name: "Person")
+        let nameAttr = EAttribute(name: "name", eType: EDataType(name: "EString", instanceClassName: "String"))
+        let locationAttr = EAttribute(name: "location", eType: EDataType(name: "EString", instanceClassName: "String"))
+        let ageAttr = EAttribute(name: "age", eType: EDataType(name: "EInt", instanceClassName: "Int"))
+
+        personClass.eStructuralFeatures = [nameAttr, locationAttr, ageAttr]
+
+        // Create first person with order: age, name, location
+        var person1 = DynamicEObject(eClass: personClass)
+        person1.eSet("age", value: 25)
+        person1.eSet("name", value: "Alice")
+        person1.eSet("location", value: "Sydney")
+
+        // Create second person with different order: location, age, name
+        var person2 = DynamicEObject(eClass: personClass)
+        person2.eSet("location", value: "Melbourne")
+        person2.eSet("age", value: 30)
+        person2.eSet("name", value: "Bob")
+
+        // Verify initial orders are different
+        let person1InitialOrder = person1.getFeatureNames()
+        let person2InitialOrder = person2.getFeatureNames()
+        #expect(person1InitialOrder == ["age", "name", "location"])
+        #expect(person2InitialOrder == ["location", "age", "name"])
+
+        // Add to resource and serialize
+        let resource = Resource(uri: "test://multiple-persons")
+        _ = await resource.add(person1)
+        _ = await resource.add(person2)
+
+        let serializer = XMISerializer()
+        let xmiString = try await serializer.serialize(resource)
+        
+        // Write to temporary file
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString + ".xmi")
+        try xmiString.write(to: tempURL, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: tempURL) }
+
+        // Parse back from XMI
+        let parser = XMIParser()
+        let deserializedResource = try await parser.parse(tempURL)
+        let deserializedRoots = await deserializedResource.getRootObjects()
+
+        #expect(deserializedRoots.count == 2)
+        
+        let deserializedPerson1 = deserializedRoots[0] as? DynamicEObject
+        let deserializedPerson2 = deserializedRoots[1] as? DynamicEObject
+        #expect(deserializedPerson1 != nil)
+        #expect(deserializedPerson2 != nil)
+
+        // Verify each person maintains their individual attribute order
+        let person1DeserializedOrder = deserializedPerson1!.getFeatureNames()
+        let person2DeserializedOrder = deserializedPerson2!.getFeatureNames()
+        
+        #expect(person1DeserializedOrder == person1InitialOrder, "First person should maintain order: \(person1InitialOrder), got: \(person1DeserializedOrder)")
+        #expect(person2DeserializedOrder == person2InitialOrder, "Second person should maintain order: \(person2InitialOrder), got: \(person2DeserializedOrder)")
+
+        // Verify values are correct for both persons
+        #expect(await deserializedResource.eGet(objectId: deserializedPerson1!.id, feature: "name") as? String == "Alice")
+        #expect(await deserializedResource.eGet(objectId: deserializedPerson1!.id, feature: "age") as? Int == 25)
+        #expect(await deserializedResource.eGet(objectId: deserializedPerson1!.id, feature: "location") as? String == "Sydney")
+        
+        #expect(await deserializedResource.eGet(objectId: deserializedPerson2!.id, feature: "name") as? String == "Bob")
+        #expect(await deserializedResource.eGet(objectId: deserializedPerson2!.id, feature: "age") as? Int == 30)
+        #expect(await deserializedResource.eGet(objectId: deserializedPerson2!.id, feature: "location") as? String == "Melbourne")
+    }
+
     @Test("Metamodel-based containment detection: XMI serialiser should use EReference.containment, not hardcoded names")
     func testMetamodelBasedContainmentDetection() async throws {
         // Create a metamodel with various reference types

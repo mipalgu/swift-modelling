@@ -66,6 +66,9 @@ public actor XMIParser {
     private var xmiIdMap: [String: EUUID] = [:]
     private var fragmentMap: [String: EUUID] = [:]
     private var referenceMap: [EUUID: [String: String]] = [:]  // object ID → (feature name → href)
+    
+    /// Raw XML content for attribute order extraction
+    private var rawXMLContent: String = ""
 
     /// Initialises a new XMI parser
     ///
@@ -84,6 +87,9 @@ public actor XMIParser {
             throw XMIError.invalidEncoding
         }
 
+        // Store raw XML content for attribute order extraction
+        self.rawXMLContent = xmlString
+        
         let document = try parseXML(fromText: xmlString)
 
         // Create resource via ResourceSet if available, otherwise create directly
@@ -761,45 +767,80 @@ public actor XMIParser {
     /// - Parameter element: The XElement to extract attribute names from
     /// - Returns: Array of attribute names in document order
     private func getAttributeNamesInDocumentOrder(for element: XElement) -> [String] {
-        // Try to extract from element's description/serialization
-        let elementDescription = String(describing: element)
-
-        // Debug output
-        print("=== PARSER DEBUG ===")
-        print("Element description: \(elementDescription)")
-        print("SwiftXML attributeNames: \(element.attributeNames)")
-
-        // Regex pattern to match attribute="value" or attribute='value'
-        let pattern = #"(\w+)=(?:"[^"]*"|'[^']*')"#
-
-        do {
-            let regex = try NSRegularExpression(pattern: pattern, options: [])
-            let range = NSRange(elementDescription.startIndex..<elementDescription.endIndex, in: elementDescription)
-            let matches = regex.matches(in: elementDescription, options: [], range: range)
-
-            var orderedNames: [String] = []
-            for match in matches {
-                if let nameRange = Range(match.range(at: 1), in: elementDescription) {
-                    let attributeName = String(elementDescription[nameRange])
-                    orderedNames.append(attributeName)
+        // Get the element name (strip namespace prefix for matching)
+        // elementName not needed for current matching approach
+        
+        // Create unique signature for this element by using its attribute values
+        // This helps us identify which specific element instance we're parsing
+        var uniqueAttributes: [String: String] = [:]
+        for attrName in element.attributeNames {
+            if let value = element[attrName] {
+                uniqueAttributes[attrName] = value
+            }
+        }
+        
+        // Create regex to match all elements with this tag name
+        let elementRegex = /<\s*\w*:?\w+(?:\s+([^>]*?))?\s*\/?>/
+        
+        // Find all matches and identify the specific one by attribute values
+        let matches = rawXMLContent.matches(of: elementRegex)
+        
+        for match in matches {
+            guard let attributesCapture = match.1,
+                  !String(attributesCapture).isEmpty else { continue }
+            
+            let attributesString = String(attributesCapture)
+            
+            // Skip empty attribute strings
+            if attributesString.trimmingCharacters(in: .whitespaces).isEmpty {
+                continue
+            }
+            
+            // Extract all attributes from this element
+            let attrRegex = /(\w+(?::\w+)?)\s*=\s*"([^"]*)"|(\w+(?::\w+)?)\s*=\s*'([^']*)'/
+            var foundAttributes: [String: String] = [:]
+            
+            for attrMatch in attributesString.matches(of: attrRegex) {
+                if let name = attrMatch.1, let value = attrMatch.2 {
+                    foundAttributes[String(name)] = String(value)
+                } else if let name = attrMatch.3, let value = attrMatch.4 {
+                    foundAttributes[String(name)] = String(value)
                 }
             }
-
-            print("Regex extracted order: \(orderedNames)")
-
-            // Fallback: if regex didn't work, use SwiftXML's method (alphabetical order)
-            if orderedNames.isEmpty {
-                print("Using SwiftXML fallback order")
-                return element.attributeNames
+            
+            // Check if this matches our target element by comparing attribute values
+            var isMatch = true
+            for (attrName, expectedValue) in uniqueAttributes {
+                // Skip namespace attributes for matching as they might differ in representation
+                if attrName.hasPrefix("xmlns") || attrName.hasPrefix("xmi:") { continue }
+                
+                if foundAttributes[attrName] != expectedValue {
+                    isMatch = false
+                    break
+                }
             }
-
-            print("Using regex extracted order")
-            return orderedNames
-        } catch {
-            // If regex fails, fall back to SwiftXML's alphabetical order
-            print("Regex failed, using SwiftXML fallback: \(error)")
-            return element.attributeNames
+            
+            if isMatch {
+                // Extract attribute names in document order for this specific element
+                var orderedNames: [String] = []
+                let nameOnlyRegex = /(\w+(?::\w+)?)\s*=\s*(?:"[^"]*"|'[^']*')/
+                
+                for nameMatch in attributesString.matches(of: nameOnlyRegex) {
+                    let attributeName = String(nameMatch.1)
+                    // Only include attributes that exist in SwiftXML's list
+                    if element.attributeNames.contains(attributeName) {
+                        orderedNames.append(attributeName)
+                    }
+                }
+                
+                if !orderedNames.isEmpty {
+                    return orderedNames
+                }
+            }
         }
+        
+        // Fallback to SwiftXML's alphabetical order
+        return element.attributeNames
     }
 
     /// Get or create an EClass for a metamodel type
