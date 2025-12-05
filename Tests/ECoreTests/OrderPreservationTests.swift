@@ -1,3 +1,4 @@
+import Foundation
 //
 // OrderPreservationTests.swift
 // ECoreTests
@@ -6,7 +7,7 @@
 //  Copyright © 2025 Rene Hexel. All rights reserved.
 //
 import Testing
-import Foundation
+
 @testable import ECore
 
 /// Tests for EMF-compliant order preservation in features, objects, and serialisation.
@@ -33,15 +34,21 @@ struct OrderPreservationTests {
     /// - Returns: URL pointing to the test resources directory.
     /// - Throws: `TestError.resourcesNotFound` if the directory cannot be located.
     func getResourcesURL() throws -> URL {
-        guard let resourcesURL = Bundle.module.resourceURL?.appendingPathComponent("Resources") else {
-            throw TestError.resourcesNotFound("Test resources directory not found")
+        guard let bundleResourcesURL = Bundle.module.resourceURL else {
+            throw TestError.resourcesNotFound("Bundle resource URL not found")
         }
 
-        guard FileManager.default.fileExists(atPath: resourcesURL.path) else {
-            throw TestError.resourcesNotFound("Test resources directory does not exist at: \(resourcesURL.path)")
-        }
+        let fm = FileManager.default
+        let testResourcesURL = bundleResourcesURL.appendingPathComponent("Resources")
+        var isDirectory = ObjCBool(false)
 
-        return resourcesURL
+        if fm.fileExists(atPath: testResourcesURL.path, isDirectory: &isDirectory),
+            isDirectory.boolValue
+        {
+            return testResourcesURL
+        } else {
+            return bundleResourcesURL
+        }
     }
 
     /// Test-specific errors.
@@ -53,13 +60,18 @@ struct OrderPreservationTests {
 
     // MARK: - Feature Order Preservation Tests
 
-    @Test("Feature order preservation: features set in different orders should maintain insertion order")
+    @Test(
+        "Feature order preservation: features set in different orders should maintain insertion order"
+    )
     func testFeatureOrderPreservation() async throws {
         // Create a simple metamodel
         var personClass = EClass(name: "Person")
-        let nameAttr = EAttribute(name: "name", eType: EDataType(name: "EString", instanceClassName: "String"))
-        let locationAttr = EAttribute(name: "location", eType: EDataType(name: "EString", instanceClassName: "String"))
-        let ageAttr = EAttribute(name: "age", eType: EDataType(name: "EInt", instanceClassName: "Int"))
+        let nameAttr = EAttribute(
+            name: "name", eType: EDataType(name: "EString", instanceClassName: "String"))
+        let locationAttr = EAttribute(
+            name: "location", eType: EDataType(name: "EString", instanceClassName: "String"))
+        let ageAttr = EAttribute(
+            name: "age", eType: EDataType(name: "EInt", instanceClassName: "Int"))
 
         personClass.eStructuralFeatures = [nameAttr, locationAttr, ageAttr]
 
@@ -99,13 +111,16 @@ struct OrderPreservationTests {
         #expect(person3.eGet("age") == nil)
     }
 
-    @Test("Resource object order preservation: objects should maintain insertion order, not UUID order")
+    @Test(
+        "Resource object order preservation: objects should maintain insertion order, not UUID order"
+    )
     func testResourceObjectOrderPreservation() async throws {
         let resource = Resource(uri: "test://object-order")
 
         // Create simple objects
         var objectClass = EClass(name: "TestObject")
-        let nameAttr = EAttribute(name: "name", eType: EDataType(name: "EString", instanceClassName: "String"))
+        let nameAttr = EAttribute(
+            name: "name", eType: EDataType(name: "EString", instanceClassName: "String"))
         objectClass.eStructuralFeatures = [nameAttr]
 
         var obj1 = DynamicEObject(eClass: objectClass)
@@ -139,18 +154,22 @@ struct OrderPreservationTests {
 
     // MARK: - Containment Path Priority Tests
 
-    @Test("Containment path priority: cross-references should use containment paths, not recursive references")
+    @Test(
+        "Containment path priority: cross-references should use containment paths, not recursive references"
+    )
     func testContainmentPathPriority() async throws {
         // Create team metamodel
         var teamClass = EClass(name: "Team")
         var personClass = EClass(name: "Person")
 
-        let nameAttr = EAttribute(name: "name", eType: EDataType(name: "EString", instanceClassName: "String"))
+        let nameAttr = EAttribute(
+            name: "name", eType: EDataType(name: "EString", instanceClassName: "String"))
         teamClass.eStructuralFeatures = [nameAttr]
         personClass.eStructuralFeatures = [nameAttr]
 
         // Create containment reference: team contains members
-        let membersRef = EReference(name: "members", eType: personClass, upperBound: -1, containment: true)
+        let membersRef = EReference(
+            name: "members", eType: personClass, upperBound: -1, containment: true)
         // Create cross-reference: team references leader (who is also in members)
         let leaderRef = EReference(name: "leader", eType: personClass, containment: false)
 
@@ -183,12 +202,17 @@ struct OrderPreservationTests {
         let xmiString = try await serializer.serialize(resource)
 
         // Verify leader reference uses containment path, not recursive reference
-        #expect(xmiString.contains("leader href=\"#//@members.0\""), "Leader should reference first member via containment path")
-        #expect(!xmiString.contains("leader href=\"#//@leader\""), "Leader should not reference itself recursively")
+        #expect(
+            xmiString.contains("leader href=\"#//@members.0\""),
+            "Leader should reference first member via containment path")
+        #expect(
+            !xmiString.contains("leader href=\"#//@leader\""),
+            "Leader should not reference itself recursively")
 
         // Verify Alice appears as contained element, not duplicated
         let aliceOccurrences = xmiString.components(separatedBy: "Alice").count - 1
-        #expect(aliceOccurrences == 1, "Alice should appear exactly once in XMI (as contained member)")
+        #expect(
+            aliceOccurrences == 1, "Alice should appear exactly once in XMI (as contained member)")
     }
 
     @Test("XMI round-trip determinism: multiple runs should produce identical results")
@@ -233,17 +257,23 @@ struct OrderPreservationTests {
         // Verify all outputs are identical (deterministic)
         let firstOutput = outputs[0]
         for (index, output) in outputs.enumerated() {
-            #expect(output == firstOutput, "Run \(index + 1): Output should be identical to first run")
+            #expect(
+                output == firstOutput, "Run \(index + 1): Output should be identical to first run")
         }
     }
 
-    @Test("Feature order preservation after round-trip: serialisation and deserialisation should preserve feature order")
+    @Test(
+        "Feature order preservation after round-trip: serialisation and deserialisation should preserve feature order"
+    )
     func testFeatureOrderRoundTrip() async throws {
         // Create objects with features set in specific orders
         var personClass = EClass(name: "Person")
-        let nameAttr = EAttribute(name: "name", eType: EDataType(name: "EString", instanceClassName: "String"))
-        let locationAttr = EAttribute(name: "location", eType: EDataType(name: "EString", instanceClassName: "String"))
-        let ageAttr = EAttribute(name: "age", eType: EDataType(name: "EInt", instanceClassName: "Int"))
+        let nameAttr = EAttribute(
+            name: "name", eType: EDataType(name: "EString", instanceClassName: "String"))
+        let locationAttr = EAttribute(
+            name: "location", eType: EDataType(name: "EString", instanceClassName: "String"))
+        let ageAttr = EAttribute(
+            name: "age", eType: EDataType(name: "EInt", instanceClassName: "Int"))
 
         personClass.eStructuralFeatures = [nameAttr, locationAttr, ageAttr]
 
@@ -263,7 +293,7 @@ struct OrderPreservationTests {
 
         let serializer = XMISerializer()
         let xmiString = try await serializer.serialize(resource)
-        
+
         // Debug: Print the serialized XMI
         print("=== SERIALIZED XMI ===")
         print(xmiString)
@@ -286,21 +316,31 @@ struct OrderPreservationTests {
 
         // Verify feature order is preserved after round-trip
         let deserializedOrder = deserializedPerson!.getFeatureNames()
-        #expect(deserializedOrder == initialOrder, "Feature order should be preserved after round-trip")
+        #expect(
+            deserializedOrder == initialOrder, "Feature order should be preserved after round-trip")
 
         // Verify values are correct
-        #expect(await deserializedResource.eGet(objectId: deserializedPerson!.id, feature: "name") as? String == "Diana")
-        #expect(await deserializedResource.eGet(objectId: deserializedPerson!.id, feature: "location") as? String == "Perth")
-        #expect(await deserializedResource.eGet(objectId: deserializedPerson!.id, feature: "age") as? Int == 35)
+        #expect(
+            await deserializedResource.eGet(objectId: deserializedPerson!.id, feature: "name")
+                as? String == "Diana")
+        #expect(
+            await deserializedResource.eGet(objectId: deserializedPerson!.id, feature: "location")
+                as? String == "Perth")
+        #expect(
+            await deserializedResource.eGet(objectId: deserializedPerson!.id, feature: "age")
+                as? Int == 35)
     }
 
     @Test("Multiple elements with same name should preserve individual attribute orders")
     func testMultipleElementsWithSameNameAttributeOrder() async throws {
         // Create person class
         var personClass = EClass(name: "Person")
-        let nameAttr = EAttribute(name: "name", eType: EDataType(name: "EString", instanceClassName: "String"))
-        let locationAttr = EAttribute(name: "location", eType: EDataType(name: "EString", instanceClassName: "String"))
-        let ageAttr = EAttribute(name: "age", eType: EDataType(name: "EInt", instanceClassName: "Int"))
+        let nameAttr = EAttribute(
+            name: "name", eType: EDataType(name: "EString", instanceClassName: "String"))
+        let locationAttr = EAttribute(
+            name: "location", eType: EDataType(name: "EString", instanceClassName: "String"))
+        let ageAttr = EAttribute(
+            name: "age", eType: EDataType(name: "EInt", instanceClassName: "Int"))
 
         personClass.eStructuralFeatures = [nameAttr, locationAttr, ageAttr]
 
@@ -329,7 +369,7 @@ struct OrderPreservationTests {
 
         let serializer = XMISerializer()
         let xmiString = try await serializer.serialize(resource)
-        
+
         // Write to temporary file
         let tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString + ".xmi")
@@ -342,7 +382,7 @@ struct OrderPreservationTests {
         let deserializedRoots = await deserializedResource.getRootObjects()
 
         #expect(deserializedRoots.count == 2)
-        
+
         let deserializedPerson1 = deserializedRoots[0] as? DynamicEObject
         let deserializedPerson2 = deserializedRoots[1] as? DynamicEObject
         #expect(deserializedPerson1 != nil)
@@ -351,32 +391,54 @@ struct OrderPreservationTests {
         // Verify each person maintains their individual attribute order
         let person1DeserializedOrder = deserializedPerson1!.getFeatureNames()
         let person2DeserializedOrder = deserializedPerson2!.getFeatureNames()
-        
-        #expect(person1DeserializedOrder == person1InitialOrder, "First person should maintain order: \(person1InitialOrder), got: \(person1DeserializedOrder)")
-        #expect(person2DeserializedOrder == person2InitialOrder, "Second person should maintain order: \(person2InitialOrder), got: \(person2DeserializedOrder)")
+
+        #expect(
+            person1DeserializedOrder == person1InitialOrder,
+            "First person should maintain order: \(person1InitialOrder), got: \(person1DeserializedOrder)"
+        )
+        #expect(
+            person2DeserializedOrder == person2InitialOrder,
+            "Second person should maintain order: \(person2InitialOrder), got: \(person2DeserializedOrder)"
+        )
 
         // Verify values are correct for both persons
-        #expect(await deserializedResource.eGet(objectId: deserializedPerson1!.id, feature: "name") as? String == "Alice")
-        #expect(await deserializedResource.eGet(objectId: deserializedPerson1!.id, feature: "age") as? Int == 25)
-        #expect(await deserializedResource.eGet(objectId: deserializedPerson1!.id, feature: "location") as? String == "Sydney")
-        
-        #expect(await deserializedResource.eGet(objectId: deserializedPerson2!.id, feature: "name") as? String == "Bob")
-        #expect(await deserializedResource.eGet(objectId: deserializedPerson2!.id, feature: "age") as? Int == 30)
-        #expect(await deserializedResource.eGet(objectId: deserializedPerson2!.id, feature: "location") as? String == "Melbourne")
+        #expect(
+            await deserializedResource.eGet(objectId: deserializedPerson1!.id, feature: "name")
+                as? String == "Alice")
+        #expect(
+            await deserializedResource.eGet(objectId: deserializedPerson1!.id, feature: "age")
+                as? Int == 25)
+        #expect(
+            await deserializedResource.eGet(objectId: deserializedPerson1!.id, feature: "location")
+                as? String == "Sydney")
+
+        #expect(
+            await deserializedResource.eGet(objectId: deserializedPerson2!.id, feature: "name")
+                as? String == "Bob")
+        #expect(
+            await deserializedResource.eGet(objectId: deserializedPerson2!.id, feature: "age")
+                as? Int == 30)
+        #expect(
+            await deserializedResource.eGet(objectId: deserializedPerson2!.id, feature: "location")
+                as? String == "Melbourne")
     }
 
-    @Test("Metamodel-based containment detection: XMI serialiser should use EReference.containment, not hardcoded names")
+    @Test(
+        "Metamodel-based containment detection: XMI serialiser should use EReference.containment, not hardcoded names"
+    )
     func testMetamodelBasedContainmentDetection() async throws {
         // Create a metamodel with various reference types
         var departmentClass = EClass(name: "Department")
         var employeeClass = EClass(name: "Employee")
 
-        let nameAttr = EAttribute(name: "name", eType: EDataType(name: "EString", instanceClassName: "String"))
+        let nameAttr = EAttribute(
+            name: "name", eType: EDataType(name: "EString", instanceClassName: "String"))
         departmentClass.eStructuralFeatures = [nameAttr]
         employeeClass.eStructuralFeatures = [nameAttr]
 
         // Create containment reference (employees are contained)
-        let employeesRef = EReference(name: "employees", eType: employeeClass, upperBound: -1, containment: true)
+        let employeesRef = EReference(
+            name: "employees", eType: employeeClass, upperBound: -1, containment: true)
         // Create non-containment reference (manager is a reference, not contained)
         let managerRef = EReference(name: "manager", eType: employeeClass, containment: false)
         // Create another non-containment reference with a name that might be mistaken for containment
@@ -412,19 +474,33 @@ struct OrderPreservationTests {
         let xmiString = try await serializer.serialize(resource)
 
         // Verify containment is handled correctly (nested elements)
-        #expect(xmiString.contains("<employees name=\"Alice\"/>"), "Alice should be serialised as nested element in employees")
-        #expect(xmiString.contains("<employees name=\"Bob\"/>"), "Bob should be serialised as nested element in employees")
+        #expect(
+            xmiString.contains("<employees name=\"Alice\"/>"),
+            "Alice should be serialised as nested element in employees")
+        #expect(
+            xmiString.contains("<employees name=\"Bob\"/>"),
+            "Bob should be serialised as nested element in employees")
 
         // Verify cross-references use href attributes pointing to containment paths
-        #expect(xmiString.contains("manager href=\"#//@employees.0\""), "Manager should reference Alice via containment path")
-        #expect(xmiString.contains("supervisor href=\"#//@employees.1\""), "Supervisor should reference Bob via containment path")
+        #expect(
+            xmiString.contains("manager href=\"#//@employees.0\""),
+            "Manager should reference Alice via containment path")
+        #expect(
+            xmiString.contains("supervisor href=\"#//@employees.1\""),
+            "Supervisor should reference Bob via containment path")
 
         // Verify no hardcoded feature name logic - these should work regardless of names
-        #expect(!xmiString.contains("<manager name=\"Alice\"/>"), "Manager should not be serialised as nested element")
-        #expect(!xmiString.contains("<supervisor name=\"Bob\"/>"), "Supervisor should not be serialised as nested element")
+        #expect(
+            !xmiString.contains("<manager name=\"Alice\"/>"),
+            "Manager should not be serialised as nested element")
+        #expect(
+            !xmiString.contains("<supervisor name=\"Bob\"/>"),
+            "Supervisor should not be serialised as nested element")
     }
 
-    @Test("Dynamic features order preservation: features without metamodel should maintain insertion order")
+    @Test(
+        "Dynamic features order preservation: features without metamodel should maintain insertion order"
+    )
     func testDynamicFeaturesOrderPreservation() async throws {
         // Create object with minimal metamodel
         let simpleClass = EClass(name: "SimpleObject")
@@ -447,6 +523,9 @@ struct OrderPreservationTests {
         // Add more features and verify order is maintained
         obj.eSet("dynamicProperty4", value: "fourth")
         let updatedFeatureNames = obj.getFeatureNames()
-        #expect(updatedFeatureNames == ["dynamicProperty1", "dynamicProperty2", "dynamicProperty3", "dynamicProperty4"])
+        #expect(
+            updatedFeatureNames == [
+                "dynamicProperty1", "dynamicProperty2", "dynamicProperty3", "dynamicProperty4",
+            ])
     }
 }
