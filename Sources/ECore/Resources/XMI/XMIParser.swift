@@ -66,7 +66,8 @@ public actor XMIParser {
     private var xmiIdMap: [String: EUUID] = [:]
     private var fragmentMap: [String: EUUID] = [:]
     private var referenceMap: [EUUID: [String: String]] = [:]  // object ID → (feature name → href)
-    
+    private var eClassCache: [String: EClass] = [:]  // className → EClass for caching dynamically created classes
+
     /// Raw XML content for attribute order extraction
     private var rawXMLContent: String = ""
 
@@ -89,7 +90,7 @@ public actor XMIParser {
 
         // Store raw XML content for attribute order extraction
         self.rawXMLContent = xmlString
-        
+
         let document = try parseXML(fromText: xmlString)
 
         // Create resource via ResourceSet if available, otherwise create directly
@@ -163,7 +164,9 @@ public actor XMIParser {
     ///   - resource: The Resource for context and object storage
     /// - Returns: The parsed EObject, or `nil` if the element should be skipped
     /// - Throws: `XMIError` if parsing fails or required attributes are missing
-    private func parseElement(_ element: XElement, in resource: Resource) async throws -> (any EObject)? {
+    private func parseElement(_ element: XElement, in resource: Resource) async throws -> (
+        any EObject
+    )? {
         let elementName = element.name
 
         // Handle Ecore metamodel elements
@@ -270,19 +273,22 @@ public actor XMIParser {
     ///   - resource: The Resource for context and object storage
     /// - Returns: The parsed instance as a DynamicEObject
     /// - Throws: `XMIError` if parsing fails
-    private func parseInstanceElement(_ element: XElement, in resource: Resource) async throws -> DynamicEObject {
-        // Extract class name from element name (e.g., "animals:Animal" → "Animal")
-        let className: String
-        if element.name.contains(":") {
-            let parts = element.name.split(separator: ":")
-            className = String(parts.last ?? "")
-        } else {
-            className = element.name
-        }
+    private func parseInstanceElement(_ element: XElement, in resource: Resource) async throws
+        -> DynamicEObject
+    {
+        // First pass: collect all structural information for this class
+        let structureInfo = collectStructuralInfo(from: element)
+        let className = structureInfo.className
 
-        // Get or create EClass for this instance type
-        let eClass = getOrCreateEClass(className, in: resource)
-        var instance = DynamicEObject(eClass: eClass)
+        // Get or create the EClass first
+        let _ = getOrCreateEClass(className, in: resource)
+
+        // Then enhance it with discovered features
+        enhanceEClass(className: className, with: structureInfo)
+
+        // Get the enhanced EClass from cache
+        let enhancedEClass = eClassCache[className]!
+        var instance = DynamicEObject(eClass: enhancedEClass)
 
         // Register with xmi:id if present
         if let xmiId = element["xmi:id"] {
@@ -290,14 +296,13 @@ public actor XMIParser {
         }
 
         // Parse all attributes dynamically in document order
-        // Use document order to preserve EMF compliance (insertion order)
         let attributeNames = getAttributeNamesInDocumentOrder(for: element)
 
         for attributeName in attributeNames {
             // Skip XML namespace and XMI control attributes
-            if attributeName.hasPrefix("xmlns:") ||
-               attributeName.hasPrefix("xmi:") ||
-               attributeName.hasPrefix("xsi:") {
+            if attributeName.hasPrefix("xmlns:") || attributeName.hasPrefix("xmi:")
+                || attributeName.hasPrefix("xsi:")
+            {
                 continue
             }
 
@@ -357,7 +362,9 @@ public actor XMIParser {
     ///   - resource: The Resource for object storage
     /// - Returns: A DynamicEObject representing the EPackage
     /// - Throws: `XMIError.missingRequiredAttribute` if name, nsURI, or nsPrefix is missing
-    private func parseEPackage(_ element: XElement, in resource: Resource) async throws -> DynamicEObject {
+    private func parseEPackage(_ element: XElement, in resource: Resource) async throws
+        -> DynamicEObject
+    {
         guard let name = element["name"] else {
             throw XMIError.missingRequiredAttribute("name")
         }
@@ -389,7 +396,9 @@ public actor XMIParser {
                 // Note: Child parser already registered this object
                 classifierIds.append(classifier.id)
                 // Register fragment for cross-reference resolution
-                if let classifierName = await resource.eGet(objectId: classifier.id, feature: "name") as? String {
+                if let classifierName = await resource.eGet(
+                    objectId: classifier.id, feature: "name") as? String
+                {
                     fragmentMap["//\(classifierName)"] = classifier.id
                 }
             }
@@ -414,7 +423,9 @@ public actor XMIParser {
     ///   - resource: The Resource for object storage
     /// - Returns: A DynamicEObject representing the EClass
     /// - Throws: `XMIError.missingRequiredAttribute` if name is missing
-    private func parseEClass(_ element: XElement, in resource: Resource) async throws -> DynamicEObject {
+    private func parseEClass(_ element: XElement, in resource: Resource) async throws
+        -> DynamicEObject
+    {
         guard let name = element["name"] else {
             throw XMIError.missingRequiredAttribute("name")
         }
@@ -457,7 +468,9 @@ public actor XMIParser {
     ///   - resource: The Resource for object storage
     /// - Returns: A DynamicEObject representing the EEnum
     /// - Throws: `XMIError.missingRequiredAttribute` if name is missing
-    private func parseEEnum(_ element: XElement, in resource: Resource) async throws -> DynamicEObject {
+    private func parseEEnum(_ element: XElement, in resource: Resource) async throws
+        -> DynamicEObject
+    {
         guard let name = element["name"] else {
             throw XMIError.missingRequiredAttribute("name")
         }
@@ -499,7 +512,9 @@ public actor XMIParser {
     ///   - resource: The Resource for object storage
     /// - Returns: A DynamicEObject representing the EEnumLiteral
     /// - Throws: `XMIError.missingRequiredAttribute` if name is missing
-    private func parseEEnumLiteral(_ element: XElement, in resource: Resource) async throws -> DynamicEObject {
+    private func parseEEnumLiteral(_ element: XElement, in resource: Resource) async throws
+        -> DynamicEObject
+    {
         guard let name = element["name"] else {
             throw XMIError.missingRequiredAttribute("name")
         }
@@ -534,7 +549,9 @@ public actor XMIParser {
     ///   - resource: The Resource for object storage
     /// - Returns: A DynamicEObject representing the EDataType
     /// - Throws: `XMIError.missingRequiredAttribute` if name is missing
-    private func parseEDataType(_ element: XElement, in resource: Resource) async throws -> DynamicEObject {
+    private func parseEDataType(_ element: XElement, in resource: Resource) async throws
+        -> DynamicEObject
+    {
         guard let name = element["name"] else {
             throw XMIError.missingRequiredAttribute("name")
         }
@@ -564,7 +581,9 @@ public actor XMIParser {
     ///   - resource: The Resource for object storage
     /// - Returns: A DynamicEObject representing the EAttribute
     /// - Throws: `XMIError.missingRequiredAttribute` if name or eType is missing
-    private func parseEAttribute(_ element: XElement, in resource: Resource) async throws -> DynamicEObject {
+    private func parseEAttribute(_ element: XElement, in resource: Resource) async throws
+        -> DynamicEObject
+    {
         guard let name = element["name"] else {
             throw XMIError.missingRequiredAttribute("name")
         }
@@ -610,7 +629,9 @@ public actor XMIParser {
     ///   - resource: The Resource for object storage
     /// - Returns: A DynamicEObject representing the EReference
     /// - Throws: `XMIError.missingRequiredAttribute` if name or eType is missing
-    private func parseEReference(_ element: XElement, in resource: Resource) async throws -> DynamicEObject {
+    private func parseEReference(_ element: XElement, in resource: Resource) async throws
+        -> DynamicEObject
+    {
         guard let name = element["name"] else {
             throw XMIError.missingRequiredAttribute("name")
         }
@@ -661,8 +682,12 @@ public actor XMIParser {
 
         for object in allObjects {
             // Resolve eType references (metamodel)
-            if let eTypeRef = await resource.eGet(objectId: object.id, feature: "_eType_ref") as? String {
-                if let resolved = await resolveReference(eTypeRef, using: xpathResolver, in: resource) {
+            if let eTypeRef = await resource.eGet(objectId: object.id, feature: "_eType_ref")
+                as? String
+            {
+                if let resolved = await resolveReference(
+                    eTypeRef, using: xpathResolver, in: resource)
+                {
                     await resource.eSet(objectId: object.id, feature: "eType", value: resolved)
                 }
                 // Clear temporary reference
@@ -674,8 +699,11 @@ public actor XMIParser {
                 for (featureName, href) in references {
                     // Resolve the href using XPath or fragment lookup
                     // This may return EUUID (same-resource) or ResourceProxy (cross-resource)
-                    if let resolved = await resolveReference(href, using: xpathResolver, in: resource) {
-                        await resource.eSet(objectId: object.id, feature: featureName, value: resolved)
+                    if let resolved = await resolveReference(
+                        href, using: xpathResolver, in: resource)
+                    {
+                        await resource.eSet(
+                            objectId: object.id, feature: featureName, value: resolved)
                     }
                 }
             }
@@ -695,7 +723,9 @@ public actor XMIParser {
     ///   - xpathResolver: Optional XPathResolver for XPath-style references
     ///   - resource: The current Resource for resolving relative URIs
     /// - Returns: The resolved object ID, or ResourceProxy for external references
-    private func resolveReference(_ reference: String, using xpathResolver: XPathResolver? = nil, in resource: Resource) async -> (any EcoreValue)? {
+    private func resolveReference(
+        _ reference: String, using xpathResolver: XPathResolver? = nil, in resource: Resource
+    ) async -> (any EcoreValue)? {
         if reference.hasPrefix("#") {
             let fragment = String(reference.dropFirst())
 
@@ -769,7 +799,7 @@ public actor XMIParser {
     private func getAttributeNamesInDocumentOrder(for element: XElement) -> [String] {
         // Get the element name (strip namespace prefix for matching)
         // elementName not needed for current matching approach
-        
+
         // Create unique signature for this element by using its attribute values
         // This helps us identify which specific element instance we're parsing
         var uniqueAttributes: [String: String] = [:]
@@ -778,28 +808,29 @@ public actor XMIParser {
                 uniqueAttributes[attrName] = value
             }
         }
-        
+
         // Create regex to match all elements with this tag name
         let elementRegex = /<\s*\w*:?\w+(?:\s+([^>]*?))?\s*\/?>/
-        
+
         // Find all matches and identify the specific one by attribute values
         let matches = rawXMLContent.matches(of: elementRegex)
-        
+
         for match in matches {
             guard let attributesCapture = match.1,
-                  !String(attributesCapture).isEmpty else { continue }
-            
+                !String(attributesCapture).isEmpty
+            else { continue }
+
             let attributesString = String(attributesCapture)
-            
+
             // Skip empty attribute strings
             if attributesString.trimmingCharacters(in: .whitespaces).isEmpty {
                 continue
             }
-            
+
             // Extract all attributes from this element
             let attrRegex = /(\w+(?::\w+)?)\s*=\s*"([^"]*)"|(\w+(?::\w+)?)\s*=\s*'([^']*)'/
             var foundAttributes: [String: String] = [:]
-            
+
             for attrMatch in attributesString.matches(of: attrRegex) {
                 if let name = attrMatch.1, let value = attrMatch.2 {
                     foundAttributes[String(name)] = String(value)
@@ -807,24 +838,24 @@ public actor XMIParser {
                     foundAttributes[String(name)] = String(value)
                 }
             }
-            
+
             // Check if this matches our target element by comparing attribute values
             var isMatch = true
             for (attrName, expectedValue) in uniqueAttributes {
                 // Skip namespace attributes for matching as they might differ in representation
                 if attrName.hasPrefix("xmlns") || attrName.hasPrefix("xmi:") { continue }
-                
+
                 if foundAttributes[attrName] != expectedValue {
                     isMatch = false
                     break
                 }
             }
-            
+
             if isMatch {
                 // Extract attribute names in document order for this specific element
                 var orderedNames: [String] = []
                 let nameOnlyRegex = /(\w+(?::\w+)?)\s*=\s*(?:"[^"]*"|'[^']*')/
-                
+
                 for nameMatch in attributesString.matches(of: nameOnlyRegex) {
                     let attributeName = String(nameMatch.1)
                     // Only include attributes that exist in SwiftXML's list
@@ -832,13 +863,13 @@ public actor XMIParser {
                         orderedNames.append(attributeName)
                     }
                 }
-                
+
                 if !orderedNames.isEmpty {
                     return orderedNames
                 }
             }
         }
-        
+
         // Fallback to SwiftXML's alphabetical order
         return element.attributeNames
     }
@@ -852,8 +883,137 @@ public actor XMIParser {
     ///   - resource: The Resource for context
     /// - Returns: An EClass instance
     private func getOrCreateEClass(_ className: String, in resource: Resource) -> EClass {
-        // For now, create a simple EClass
-        // This will be enhanced to use the actual Ecore metamodel
-        return EClass(name: className)
+        // Check if we already have this EClass in our cache
+        if let existingClass = eClassCache[className] {
+            return existingClass
+        }
+
+        // Create a new EClass and cache it
+        let eClass = EClass(name: className)
+        eClassCache[className] = eClass
+        return eClass
+    }
+
+    /// Structure information collected during element analysis
+    private struct ElementStructureInfo {
+        let className: String
+        let attributes: [String: String]  // name -> value
+        let containmentRefs: [String: Bool]  // name -> isMultiValued
+        let crossRefs: [String]  // feature names
+    }
+
+    /// Collect structural information from an XML element before creating objects
+    private func collectStructuralInfo(from element: XElement) -> ElementStructureInfo {
+        // Extract class name
+        let className: String
+        if element.name.contains(":") {
+            let parts = element.name.split(separator: ":")
+            className = String(parts.last ?? "")
+        } else {
+            className = element.name
+        }
+
+        var attributes: [String: String] = [:]
+        var containmentRefs: [String: Bool] = [:]
+        var crossRefs: [String] = []
+
+        // Collect attributes
+        for attributeName in element.attributeNames {
+            if attributeName.hasPrefix("xmlns:") || attributeName.hasPrefix("xmi:")
+                || attributeName.hasPrefix("xsi:")
+            {
+                continue
+            }
+
+            if let value = element[attributeName] {
+                attributes[attributeName] = value
+            }
+        }
+
+        // Collect child elements
+        var childCounts: [String: Int] = [:]
+        for child in element.children {
+            let childName = child.name
+            childCounts[childName, default: 0] += 1
+
+            if child["href"] != nil {
+                // Cross-reference
+                if !crossRefs.contains(childName) {
+                    crossRefs.append(childName)
+                }
+            } else {
+                // Containment reference - we'll determine multiplicity after counting
+            }
+        }
+
+        // Set multiplicity for containment references
+        for (childName, count) in childCounts {
+            if !crossRefs.contains(childName) {
+                containmentRefs[childName] = count > 1
+            }
+        }
+
+        return ElementStructureInfo(
+            className: className,
+            attributes: attributes,
+            containmentRefs: containmentRefs,
+            crossRefs: crossRefs
+        )
+    }
+
+    /// Enhance an EClass with features discovered during parsing
+    private func enhanceEClass(className: String, with info: ElementStructureInfo) {
+        guard var eClass = eClassCache[className] else {
+            return  // Class not found in cache
+        }
+
+        // Add attributes
+        for (attrName, attrValue) in info.attributes {
+            if eClass.getStructuralFeature(name: attrName) == nil {
+                let value = inferType(from: attrValue)
+                let dataType: EDataType
+                switch value {
+                case is String:
+                    dataType = EDataType(name: "EString")
+                case is Int:
+                    dataType = EDataType(name: "EInt")
+                case is Bool:
+                    dataType = EDataType(name: "EBoolean")
+                case is Double:
+                    dataType = EDataType(name: "EDouble")
+                case is Float:
+                    dataType = EDataType(name: "EFloat")
+                default:
+                    dataType = EDataType(name: "EString")
+                }
+
+                let attribute = EAttribute(name: attrName, eType: dataType)
+                eClass.eStructuralFeatures.append(attribute)
+            }
+        }
+
+        // Add containment references
+        for (refName, isMultiValued) in info.containmentRefs {
+            if eClass.getStructuralFeature(name: refName) == nil {
+                let targetType = EClass(name: "EObject")
+                var reference = EReference(name: refName, eType: targetType)
+                reference.containment = true
+                reference.upperBound = isMultiValued ? -1 : 1
+                eClass.eStructuralFeatures.append(reference)
+            }
+        }
+
+        // Add cross-references
+        for refName in info.crossRefs {
+            if eClass.getStructuralFeature(name: refName) == nil {
+                let targetType = EClass(name: "EObject")
+                let reference = EReference(name: refName, eType: targetType)
+                // Cross-references are not containment by default
+                eClass.eStructuralFeatures.append(reference)
+            }
+        }
+
+        // Update the cached EClass
+        eClassCache[className] = eClass
     }
 }
