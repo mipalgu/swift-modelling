@@ -1,6 +1,6 @@
 # Swift Modelling
 
-Command-line tools for the Swift Modelling Framework, providing comprehensive support for Eclipse Modeling Framework (EMF) and Atlas Transformation Language (ATL).
+Command-line tools for the Swift Modelling Framework, providing comprehensive support for Eclipse Modelling Framework (EMF) and Atlas Transformation Language (ATL).
 
 ## Features
 
@@ -46,7 +46,7 @@ swift run swift-atl --help
 
 ## Usage
 
-The `swift-ecore` command-line tool provides comprehensive Eclipse Modeling Framework functionality for Swift. All commands support the `--verbose` flag for detailed output and `--help` for usage information.
+The `swift-ecore` command-line tool provides comprehensive Eclipse Modelling Framework functionality for Swift. All commands support the `--verbose` flag for detailed output and `--help` for usage information.
 
 ### Basic Information
 
