@@ -1,38 +1,47 @@
 # Swift Modelling
 
-Command-Line interface for the Swift Modeling Framework.
+Command-line tools for the Swift Modelling Framework, providing comprehensive support for Eclipse Modeling Framework (EMF) and Atlas Transformation Language (ATL).
 
 ## Features
 
-- **Pure Swift**: No Java/EMF dependencies, Swift 6.2+ with strict concurrency
+### ECore Support
+- **Pure Swift**: No Java/EMF dependencies, Swift 6.0+ with strict concurrency
 - **Cross-Platform**: Full support for macOS and Linux
 - **Value Types**: Sendable structs and enums for thread safety
 - **BigInt Support**: Full arbitrary-precision integer support via swift-numerics
 - **Complete Metamodel**: EClass, EAttribute, EReference, EPackage, EEnum, EDataType
 - **Resource Infrastructure**: EMF-compliant object management and ID-based reference resolution
-- **JSON Serialization**: Load and save JSON models with full round-trip support
+- **JSON Serialisation**: Load and save JSON models with full round-trip support
 - **Bidirectional References**: Automatic opposite reference management across resources
 - **XMI Parsing**: Load .ecore metamodels and .xmi instance files
 - **Dynamic Attribute Parsing**: Arbitrary XML attributes with automatic type inference (Int, Double, Bool, String)
 - **XPath Reference Resolution**: Same-resource references with XPath-style navigation (//@feature.index)
-- **XMI Serialization**: Write models to XMI format with full round-trip support
+- **XMI Serialisation**: Write models to XMI format with full round-trip support
+
+### ATL Support
+- **Eclipse ATL Compatibility**: Full syntax compatibility with Eclipse ATL transformations
+- **Complete Parser**: Full ATL/OCL syntax support (96/96 tests passing)
+- **XMI Serialisation**: Eclipse ATL XMI format support (134/134 round-trip tests passing)
+- **Execution Engine**: Complete ATL virtual machine with expression evaluation
+- **Advanced OCL**: Let expressions, tuple expressions, iterate operations, lambda expressions
+- **Helper Functions**: Context and standalone helper functions
 
 ## Requirements
 
 - Swift 6.0 or later
-- macOS 15.0+ or Linux (macOS 15.0+ required for SwiftXML dependency)
+- macOS 15.0+ or Linux
 
 ## Building
 
 ```bash
-# Build the CLI tool
-swift build --scratch-path /tmp/build-swift-ecore
+# Build both CLI tools
+swift build
 
-# Run tests
-swift test --scratch-path /tmp/build-swift-ecore
+# Run the ECore CLI
+swift run swift-ecore --help
 
-# Run the CLI
-swift run --scratch-path /tmp/build-swift-ecore swift-ecore --help
+# Run the ATL CLI
+swift run swift-atl --help
 ```
 
 ## Usage
@@ -117,7 +126,7 @@ swift run swift-ecore generate Tests/ECoreTests/Resources/xmi/organisation.ecore
   --output generated/ --language swift --verbose
 ```
 
-**Supported languages:**
+**Supported languages (planned):**
 - 🚧 `swift` - Swift structs with properties and types
 - 🚧 `cpp` - C++ classes with getters/setters and headers
 - 🚧 `c` - C structs and function declarations
