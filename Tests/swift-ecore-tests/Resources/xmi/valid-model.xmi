@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model:Root xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:model="http://example.com/model">
+  <elements name="Element1" value="42"/>
+  <elements name="Element2" value="100"/>
+</model:Root>

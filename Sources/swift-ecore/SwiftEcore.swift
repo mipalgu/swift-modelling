@@ -220,6 +220,14 @@ struct ConvertCommand: AsyncParsableCommand {
     @Argument(help: "Output file path")
     var outputPath: String
 
+    /// Input format override.
+    @Option(name: .long, help: "Input format (xmi, json) - auto-detect from extension if not specified")
+    var inputFormat: String?
+
+    /// Output format override.
+    @Option(name: .long, help: "Output format (xmi, json) - infer from extension if not specified")
+    var outputFormat: String?
+
     /// Enable verbose output.
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose: Bool = false
@@ -249,13 +257,38 @@ struct ConvertCommand: AsyncParsableCommand {
             throw ConversionError.outputExists(outputPath)
         }
 
-        let inputExtension = inputURL.pathExtension.lowercased()
-        let outputExtension = outputURL.pathExtension.lowercased()
+        // Determine input format (explicit flag or infer from extension)
+        let inputFormatToUse: String
+        if let explicitFormat = inputFormat {
+            inputFormatToUse = explicitFormat.lowercased()
+            if verbose {
+                print("Using explicit input format: \(inputFormatToUse)")
+            }
+        } else {
+            inputFormatToUse = inputURL.pathExtension.lowercased()
+            if verbose {
+                print("Inferring input format from extension: \(inputFormatToUse)")
+            }
+        }
+
+        // Determine output format (explicit flag or infer from extension)
+        let outputFormatToUse: String
+        if let explicitFormat = outputFormat {
+            outputFormatToUse = explicitFormat.lowercased()
+            if verbose {
+                print("Using explicit output format: \(outputFormatToUse)")
+            }
+        } else {
+            outputFormatToUse = outputURL.pathExtension.lowercased()
+            if verbose {
+                print("Inferring output format from extension: \(outputFormatToUse)")
+            }
+        }
 
         // Load input
         let resource: Resource
 
-        switch inputExtension {
+        switch inputFormatToUse {
         case "xmi":
             if verbose { print("Reading XMI...") }
             let parser = XMIParser()
@@ -265,11 +298,11 @@ struct ConvertCommand: AsyncParsableCommand {
             let parser = JSONParser()
             resource = try await parser.parse(inputURL)
         default:
-            throw ConversionError.unsupportedInputFormat(inputExtension)
+            throw ConversionError.unsupportedInputFormat(inputFormatToUse)
         }
 
         // Save output
-        switch outputExtension {
+        switch outputFormatToUse {
         case "xmi":
             if verbose { print("Writing XMI...") }
             let serializer = XMISerializer()
@@ -281,7 +314,7 @@ struct ConvertCommand: AsyncParsableCommand {
             let content = try await serializer.serialize(resource)
             try content.write(to: outputURL, atomically: true, encoding: .utf8)
         default:
-            throw ConversionError.unsupportedOutputFormat(outputExtension)
+            throw ConversionError.unsupportedOutputFormat(outputFormatToUse)
         }
 
         if verbose {

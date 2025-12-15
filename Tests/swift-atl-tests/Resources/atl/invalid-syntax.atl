@@ -1,0 +1,3 @@
+module Invalid
+-- Missing semicolon and incomplete syntax
+rule Broken {

@@ -1,0 +1,9 @@
+module Simple;
+create OUT: Target from IN: Source;
+
+rule Main {
+    from s: Source!Element
+    to t: Target!Element (
+        name <- s.name
+    )
+}

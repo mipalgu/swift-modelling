@@ -1,0 +1,10 @@
+{
+  "eClass": "http://example.com/model#//Root",
+  "elements": [
+    {
+      "eClass": "http://example.com/model#//Element",
+      "name": "Element1",
+      "value": 42
+    }
+  ]
+}
