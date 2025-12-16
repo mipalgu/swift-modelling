@@ -12,14 +12,28 @@ import OrderedCollections
 
 // MARK: - Model Format Detection
 
-/// Detects the model format based on file extension.
+/// Detects the model format based on file extension or explicit override.
 ///
 /// Examines the file extension of the provided path and returns the corresponding
-/// model format. Supports XMI, Ecore, and JSON file extensions.
+/// model format. Supports XMI, Ecore, and JSON file extensions. If an explicit
+/// format is provided, it takes precedence over the file extension.
 ///
-/// - Parameter path: The file path to analyse
-/// - Returns: The detected model format, defaulting to XMI if unrecognised
-func detectFormat(from path: String) -> ModelFormat {
+/// - Parameters:
+///   - path: The file path to analyse.
+///   - explicitFormat: Optional explicit format override (e.g., "xmi", "json").
+/// - Returns: The detected or specified model format.
+func detectFormat(from path: String, explicitFormat: String? = nil) -> ModelFormat {
+    if let explicit = explicitFormat?.lowercased() {
+        switch explicit {
+        case "xmi", "ecore":
+            return .xmi
+        case "json":
+            return .json
+        default:
+            return .xmi  // Default to XMI for unknown formats
+        }
+    }
+
     let pathExtension = URL(fileURLWithPath: path).pathExtension.lowercased()
     switch pathExtension {
     case "xmi", "ecore":
@@ -36,29 +50,42 @@ func detectFormat(from path: String) -> ModelFormat {
 /// Loads a model from a file using the appropriate parser.
 ///
 /// This function automatically detects the model format based on the file
-/// extension and uses the corresponding parser to load the resource. It
-/// provides verbose output when requested, displaying the number of objects
+/// extension and uses the corresponding parser to load the resource. An
+/// explicit format can be provided to override the automatic detection.
+/// Provides verbose output when requested, displaying the number of objects
 /// loaded.
 ///
 /// - Parameters:
 ///   - path: The file path to load from.
-///   - format: The model format to use for parsing.
+///   - format: The model format to use for parsing (can be overridden by explicitFormat).
+///   - explicitFormat: Optional explicit format string override (e.g., "xmi", "json").
 ///   - verbose: Whether to print verbose output.
 /// - Returns: The loaded resource containing the model.
 /// - Throws: `TransformationError.modelFileNotFound` if the file doesn't exist.
-func loadModel(from path: String, format: ModelFormat, verbose: Bool) async throws -> Resource {
+func loadModel(
+    from path: String,
+    format: ModelFormat,
+    explicitFormat: String? = nil,
+    verbose: Bool
+) async throws -> Resource {
     let url = URL(fileURLWithPath: path)
 
     guard FileManager.default.fileExists(atPath: path) else {
         throw TransformationError.modelFileNotFound(path)
     }
 
+    let actualFormat = explicitFormat != nil ? detectFormat(from: path, explicitFormat: explicitFormat) : format
+
     if verbose {
-        print("  Loading \(format.description) model from: \(path)")
+        if let explicit = explicitFormat {
+            print("  Loading \(actualFormat.description) model (format override: \(explicit)) from: \(path)")
+        } else {
+            print("  Loading \(actualFormat.description) model from: \(path)")
+        }
     }
 
     let resource: Resource
-    switch format {
+    switch actualFormat {
     case .xmi:
         let parser = XMIParser()
         resource = try await parser.parse(url)
@@ -76,43 +103,39 @@ func loadModel(from path: String, format: ModelFormat, verbose: Bool) async thro
     return resource
 }
 
-// MARK: - Model Argument Parsing
+// MARK: - Model Loading from Mapping
 
-/// Parses model arguments in ALIAS=path format.
+/// Loads models from mapped file paths.
 ///
-/// Processes an array of model argument strings in the format "ALIAS=path",
-/// loading each model using the appropriate parser based on file extension.
-/// The function maintains the order of models using an ordered dictionary.
+/// Takes a mapping of aliases to file paths and loads each model using
+/// the appropriate parser based on file extension or explicit format override.
 ///
 /// - Parameters:
-///   - arguments: Array of model argument strings in ALIAS=path format.
-///   - verbose: Whether to print verbose output during loading.
-/// - Returns: Ordered dictionary mapping model aliases to loaded resources.
-/// - Throws: `TransformationError.invalidModelArgument` if argument format is invalid.
-func parseModelArguments(_ arguments: [String], verbose: Bool) async throws
-    -> OrderedDictionary<String, Resource>
-{
+///   - mapping: Ordered dictionary mapping aliases to file paths
+///   - explicitFormat: Optional explicit format override for all models
+///   - verbose: Whether to print verbose output during loading
+/// - Returns: Ordered dictionary mapping aliases to loaded resources
+/// - Throws: `TransformationError` if loading fails
+func loadModelsFromMapping(
+    _ mapping: OrderedDictionary<String, String>,
+    explicitFormat: String? = nil,
+    verbose: Bool
+) async throws -> OrderedDictionary<String, Resource> {
+
     var models: OrderedDictionary<String, Resource> = [:]
 
-    for argument in arguments {
-        // Parse "ALIAS=path" format
-        let components = argument.split(separator: "=", maxSplits: 1)
-        guard components.count == 2 else {
-            throw TransformationError.invalidModelArgument(
-                "Expected format: ALIAS=path, got: \(argument)"
-            )
-        }
-
-        let alias = String(components[0])
-        let path = String(components[1])
-
+    for (alias, path) in mapping {
         if verbose {
             print("Loading model '\(alias)' from: \(path)")
         }
 
-        // Detect format and load
-        let format = detectFormat(from: path)
-        let resource = try await loadModel(from: path, format: format, verbose: verbose)
+        let format = detectFormat(from: path, explicitFormat: explicitFormat)
+        let resource = try await loadModel(
+            from: path,
+            format: format,
+            explicitFormat: explicitFormat,
+            verbose: verbose
+        )
 
         models[alias] = resource
     }
@@ -120,32 +143,127 @@ func parseModelArguments(_ arguments: [String], verbose: Bool) async throws
     return models
 }
 
+// MARK: - File Path to Alias Mapping
+
+/// Maps file paths to metamodel aliases using positional or explicit mapping.
+///
+/// This function supports two formats:
+/// 1. Positional: Files are matched to aliases by order (e.g., first file → first alias)
+/// 2. Explicit: Files specify their alias using ALIAS=path format
+///
+/// - Parameters:
+///   - filePaths: Array of file paths (positional) or ALIAS=path strings (explicit)
+///   - aliases: Ordered list of metamodel aliases from the ATL module
+///   - modelType: Description of model type for error messages ("source" or "target")
+///   - verbose: Whether to print verbose mapping information
+/// - Returns: Ordered dictionary mapping aliases to file paths
+/// - Throws: `TransformationError.invalidModelArgument` if mapping fails
+func mapFilesToAliases(
+    filePaths: [String],
+    aliases: [String],
+    modelType: String,
+    verbose: Bool
+) throws -> OrderedDictionary<String, String> {
+
+    var mapping: OrderedDictionary<String, String> = [:]
+
+    // Check if any paths use explicit ALIAS=path format
+    let hasExplicitAliases = filePaths.contains { $0.contains("=") }
+
+    if hasExplicitAliases {
+        // Explicit mapping: Parse ALIAS=path format
+        for filePath in filePaths {
+            let components = filePath.split(separator: "=", maxSplits: 1)
+            guard components.count == 2 else {
+                throw TransformationError.invalidModelArgument(
+                    "Expected format: ALIAS=path or simple path, got: \(filePath)"
+                )
+            }
+
+            let alias = String(components[0])
+            let path = String(components[1])
+
+            // Validate alias is declared in ATL module
+            guard aliases.contains(alias) else {
+                throw TransformationError.invalidModelArgument(
+                    "\(modelType.capitalized) alias '\(alias)' not declared in ATL module. Available aliases: \(aliases.joined(separator: ", "))"
+                )
+            }
+
+            mapping[alias] = path
+
+            if verbose {
+                print("  Explicit mapping: \(alias) -> \(path)")
+            }
+        }
+
+        // Validate all required aliases are provided
+        for alias in aliases {
+            guard mapping[alias] != nil else {
+                throw TransformationError.invalidModelArgument(
+                    "Missing \(modelType) model for alias '\(alias)'. Required aliases: \(aliases.joined(separator: ", "))"
+                )
+            }
+        }
+
+    } else {
+        // Positional mapping: Match files to aliases by order
+        guard filePaths.count == aliases.count else {
+            throw TransformationError.invalidModelArgument(
+                "Mismatch: provided \(filePaths.count) \(modelType) file(s) but ATL module declares \(aliases.count) \(modelType) metamodel(s). Expected aliases: \(aliases.joined(separator: ", "))"
+            )
+        }
+
+        for (index, alias) in aliases.enumerated() {
+            mapping[alias] = filePaths[index]
+
+            if verbose {
+                print("  Positional mapping: \(alias) -> \(filePaths[index])")
+            }
+        }
+    }
+
+    return mapping
+}
+
 // MARK: - Model Saving
 
 /// Saves a resource to a file using the appropriate serialiser.
 ///
 /// Serialises the provided resource to the specified file path using either
-/// XMI or JSON format based on the format parameter. Provides verbose output
-/// when requested, including object counts and file paths.
+/// XMI or JSON format based on the format parameter. An explicit format can
+/// be provided to override the format determined from the file extension.
+/// Provides verbose output when requested.
 ///
 /// - Parameters:
-///   - resource: The resource containing model data to save
-///   - path: The destination file path where the model will be written
-///   - format: The model format to use for serialisation (XMI or JSON)
-///   - verbose: Whether to print verbose output during saving
-/// - Throws: Serialisation errors if saving fails, or file system errors
-func saveModel(_ resource: Resource, to path: String, format: ModelFormat, verbose: Bool)
-    async throws
-{
+///   - resource: The resource to save.
+///   - path: The destination file path.
+///   - format: The model format to use for serialisation (can be overridden by explicitFormat).
+///   - explicitFormat: Optional explicit format string override (e.g., "xmi", "json").
+///   - verbose: Whether to print verbose output during saving.
+/// - Throws: Serialisation errors if saving fails.
+func saveModel(
+    _ resource: Resource,
+    to path: String,
+    format: ModelFormat,
+    explicitFormat: String? = nil,
+    verbose: Bool
+) async throws {
     let url = URL(fileURLWithPath: path)
+
+    let actualFormat = explicitFormat != nil ? detectFormat(from: path, explicitFormat: explicitFormat) : format
 
     if verbose {
         let count = await resource.count()
-        print("  Saving \(count) objects to \(format.description) file: \(path)")
+        if let explicit = explicitFormat {
+            print("  Saving \(count) objects to \(actualFormat.description) file (format override: \(explicit)): \(path)")
+        } else {
+            print("  Saving \(count) objects to \(actualFormat.description) file: \(path)")
+        }
     }
 
     let content: String
-    switch format {
+    switch actualFormat {
     case .xmi:
         let serializer = XMISerializer()
         content = try await serializer.serialize(resource)
@@ -163,35 +281,27 @@ func saveModel(_ resource: Resource, to path: String, format: ModelFormat, verbo
 
 /// Saves multiple target models to their specified file paths.
 ///
-/// Processes an array of target model specifications in ALIAS=path format,
-/// saving each corresponding resource from the targets dictionary to its
-/// specified file path. Skips models that were not created during transformation.
+/// Processes a mapping of target model aliases to file paths, saving each
+/// corresponding resource from the targets dictionary to its specified file path.
+/// An explicit format can be provided to override automatic format detection.
 ///
 /// - Parameters:
-///   - targets: Ordered dictionary of target resources to save.
-///   - paths: Array of ALIAS=path specifications for output files.
-///   - verbose: Whether to print verbose output during saving.
-/// - Throws: `TransformationError.invalidModelArgument` if path format is invalid.
-func saveTargetModels(
+///   - targets: Ordered dictionary of target resources to save
+///   - mapping: Ordered dictionary mapping aliases to output file paths
+///   - explicitFormat: Optional explicit format override for all models
+///   - verbose: Whether to print verbose output during saving
+/// - Throws: Serialisation errors if saving fails
+func saveTargetModelsFromMapping(
     _ targets: OrderedDictionary<String, Resource>,
-    paths: [String],
+    mapping: OrderedDictionary<String, String>,
+    explicitFormat: String? = nil,
     verbose: Bool
 ) async throws {
-    if verbose && !paths.isEmpty {
+    if verbose && !mapping.isEmpty {
         print("Saving target models...")
     }
 
-    for pathSpec in paths {
-        let components = pathSpec.split(separator: "=", maxSplits: 1)
-        guard components.count == 2 else {
-            throw TransformationError.invalidModelArgument(
-                "Expected format: ALIAS=path, got: \(pathSpec)"
-            )
-        }
-
-        let alias = String(components[0])
-        let path = String(components[1])
-
+    for (alias, path) in mapping {
         guard let resource = targets[alias] else {
             if verbose {
                 print("Warning: Target model '\(alias)' not found (may not have been created)")
@@ -199,7 +309,13 @@ func saveTargetModels(
             continue
         }
 
-        let format = detectFormat(from: path)
-        try await saveModel(resource, to: path, format: format, verbose: verbose)
+        let format = detectFormat(from: path, explicitFormat: explicitFormat)
+        try await saveModel(
+            resource,
+            to: path,
+            format: format,
+            explicitFormat: explicitFormat,
+            verbose: verbose
+        )
     }
 }
