@@ -34,6 +34,8 @@ actor CodeGenerator {
         for obj in objects {
             if let pkg = await resolvePackage(obj, in: resource) {
                 content += await generateSwiftPackage(from: pkg, in: resource, referenceMap: referenceMap)
+                content += generateSwiftFactory(from: pkg)
+                content += generateSwiftPackageDescriptor(from: pkg)
             } else if let cls = await resolveClass(obj, in: resource) {
                 content += await generateSwiftClass(from: cls, in: resource, referenceMap: referenceMap)
             }
@@ -124,7 +126,8 @@ actor CodeGenerator {
             if !cls.eSuperTypes.contains(where: { !$0.isAbstract && !$0.isInterface }) { res += "\n    let id: UUID = UUID()\n    let eClass: EClass" }
             var inherited = Set<String>()
             for s in cls.eSuperTypes { for f in s.eStructuralFeatures { inherited.insert(f.name) } }
-            for f in cls.eStructuralFeatures.filter({ !inherited.contains($0.name) }) {
+            let locals = cls.eStructuralFeatures.filter({ !inherited.contains($0.name) })
+            for f in locals {
                 if let a = f as? EAttribute { res += "\n    \(generateSwiftProperty(for: a))" }
                 else if let r = f as? EReference { res += "\n    \(generateSwiftProperty(for: r, referenceMap: referenceMap))" }
             }
@@ -132,8 +135,62 @@ actor CodeGenerator {
             if cls.eSuperTypes.contains(where: { !$0.isAbstract && !$0.isInterface }) { res += "\n        super.init(eClass: eClass)" }
             else { res += "\n        self.eClass = eClass" }
             res += "\n    }\n"
+
+            // Reflective API
+            res += "\n    func eGet(_ feature: some EStructuralFeature) -> (any EcoreValue)? {"
+            res += "\n        switch feature.name {"
+            for f in cls.allStructuralFeatures { res += "\n        case \"\(f.name)\": return \(f.name)" }
+            res += "\n        default: return nil"
+            res += "\n        }\n    }"
+
+            res += "\n\n    func eSet(_ feature: some EStructuralFeature, value: (any EcoreValue)?) {"
+            res += "\n        switch feature.name {"
+            for f in cls.allStructuralFeatures {
+                if let a = f as? EAttribute {
+                    let isMulti = a.upperBound == -1 || a.upperBound > 1
+                    res += "\n        case \"\(a.name)\": if let v = value as? \(isMulti ? "[String]" : "String") { \(a.name) = v }"
+                } else if let r = f as? EReference {
+                    let isMulti = r.upperBound == -1 || r.upperBound > 1
+                    res += "\n        case \"\(r.name)\": if let v = value as? \(isMulti ? "[\(r.eType.name)]" : r.eType.name) { \(r.name) = v }"
+                }
+            }
+            res += "\n        default: break"
+            res += "\n        }\n    }"
         }
         res += "\n}\n"
+        return res
+    }
+
+    private func generateSwiftFactory(from pkg: EPackage) -> String {
+        let name = "\(pkg.name.capitalized)Factory"
+        var res = "\n\nstruct \(name) {"
+        let concretes = pkg.eClassifiers.compactMap { $0 as? EClass }.filter { !$0.isAbstract && !$0.isInterface }
+        for c in concretes {
+            res += "\n    func create\(c.name)() -> \(c.name) { return \(c.name)(eClass: \(pkg.name.capitalized)Package.shared.e\(c.name)) }"
+        }
+        res += "\n\n    func create(_ eClass: EClass) -> any EObject {"
+        res += "\n        switch eClass.id {"
+        for c in concretes { res += "\n        case \(pkg.name.capitalized)Package.shared.e\(c.name).id: return create\(c.name)()" }
+        res += "\n        default: fatalError(\"Unknown EClass: \\(\\eClass.name)\")"
+        res += "\n        }\n    }\n}"
+        return res
+    }
+
+    private func generateSwiftPackageDescriptor(from pkg: EPackage) -> String {
+        let name = "\(pkg.name.capitalized)Package"
+        var res = "\n\nstruct \(name) {"
+        res += "\n    static let shared = \(name)()"
+        res += "\n    let ePackage: EPackage"
+        res += "\n    let factory = \(pkg.name.capitalized)Factory()"
+        let classes = pkg.eClassifiers.compactMap { $0 as? EClass }
+        for c in classes { res += "\n    let e\(c.name): EClass" }
+        res += "\n\n    private init() {"
+        res += "\n        ePackage = EPackage(name: \"\(pkg.name)\")"
+        for c in classes {
+            res += "\n        e\(c.name) = EClass(name: \"\(c.name)\", isAbstract: \(c.isAbstract), isInterface: \(c.isInterface))"
+            res += "\n        var p = ePackage; p.eClassifiers.append(e\(c.name))"
+        }
+        res += "\n    }\n}\n"
         return res
     }
 
@@ -155,10 +212,10 @@ actor CodeGenerator {
                 let oppName = opp.name, oppIsMulti = opp.upperBound == -1 || opp.upperBound > 1
                 res += "\(strength)var \(name): \(type)? {\n        didSet {\n"
                 if oppIsMulti {
-                    res += "            if let old = oldValue, let index = old.\(oppName).firstIndex(where: { $0 === self }) { old.\(oppName).remove(at: index) }\n"
+                    res += "            if let old = oldValue, let index = old.\(oppName).firstIndex(where: { $0 === self }) { old.\(oppName).remove(at: index)\n"
                     res += "            if let new = \(name), !new.\(oppName).contains(where: { $0 === self }) { new.\(oppName).append(self) }\n"
                 } else {
-                    res += "            if let old = oldValue, old.\(oppName) === self { old.\(oppName) = nil }\n"
+                    res += "            if let old = oldValue, old.\(oppName) === self { old.\(oppName) = nil\n"
                     res += "            if let new = \(name), new.\(oppName) !== self { new.\(oppName) = self }\n"
                 }
                 res += "        }\n    }"
