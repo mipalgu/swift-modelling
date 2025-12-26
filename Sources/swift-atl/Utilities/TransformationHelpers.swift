@@ -132,7 +132,7 @@ func loadModelsFromMapping(
     if let metamodels = metamodels {
         resourceSet = ResourceSet()
         // Register metamodel packages with the resource set
-        for (alias, package) in metamodels {
+        for (_, package) in metamodels {
             await resourceSet?.registerMetamodel(package, uri: package.nsURI)
         }
     }
