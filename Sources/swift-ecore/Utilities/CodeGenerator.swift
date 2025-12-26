@@ -535,14 +535,38 @@ actor CodeGenerator {
     private func generateSwiftProperty(for reference: EReference) -> String {
         let typeName = reference.eType.name
         let isMultiValued = reference.upperBound == -1 || reference.upperBound > 1
+        let isContainment = reference.containment
+        let hasOpposite = reference.opposite != nil
+
+        // Add comment for bidirectional references
+        var result = ""
+        if hasOpposite {
+            result += " // Bidirectional reference (has opposite)"
+        }
 
         if isMultiValued {
             // Multi-valued reference → array
-            return "var \(reference.name): [\(typeName)] = []"
+            if hasOpposite {
+                result += "\n    // TODO: Implement bidirectional update logic for array modifications"
+            }
+            result += "\n    var \(reference.name): [\(typeName)] = []"
         } else {
-            // Single-valued reference → optional (references are typically optional)
-            return "var \(reference.name): \(typeName)?"
+            // Single-valued reference
+            if hasOpposite {
+                result += "\n    // TODO: Implement didSet to update opposite reference"
+            }
+            // Containment references are strong, non-containment are weak
+            if isContainment {
+                // Containment: strong reference (parent owns child)
+                result += "\n    var \(reference.name): \(typeName)?"
+            } else {
+                // Non-containment: weak reference (avoid retain cycles)
+                // Note: weak references must be optional in Swift
+                result += "\n    weak var \(reference.name): \(typeName)?"
+            }
         }
+
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// Formats a default value literal for Swift code.

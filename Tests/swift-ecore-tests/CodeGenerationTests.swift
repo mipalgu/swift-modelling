@@ -325,4 +325,65 @@ struct CodeGenerationTests {
         #expect(!productClassBody.contains("var name"))
         #expect(!productClassBody.contains("var identifier"))
     }
+
+    @Test("should distinguish containment vs non-containment references")
+    @MainActor
+    func testContainmentReferences() async throws {
+        // Given: Classes with containment and non-containment references
+        let stringType = EDataType(name: "EString", instanceClassName: "String")
+
+        let departmentClass = EClass(
+            name: "Department",
+            isAbstract: false,
+            isInterface: false
+        )
+
+        let employeeClass = EClass(
+            name: "Employee",
+            isAbstract: false,
+            isInterface: false,
+            eStructuralFeatures: [
+                EAttribute(name: "name", eType: stringType, lowerBound: 0)
+            ]
+        )
+
+        // Company has containment reference to Department (owns departments)
+        // and non-containment reference to Employee (CEO - doesn't own, just references)
+        let companyClass = EClass(
+            name: "Company",
+            isAbstract: false,
+            isInterface: false,
+            eStructuralFeatures: [
+                EAttribute(name: "name", eType: stringType, lowerBound: 0),
+                EReference(name: "departments", eType: departmentClass, lowerBound: 0, upperBound: -1, containment: true),  // Containment
+                EReference(name: "ceo", eType: employeeClass, lowerBound: 0, upperBound: 1, containment: false)  // Non-containment
+            ]
+        )
+
+        let testPackage = EPackage(
+            name: "test",
+            nsURI: "http://test/1.0",
+            nsPrefix: "test",
+            eClassifiers: [companyClass, departmentClass, employeeClass, stringType]
+        )
+
+        let resource = Resource(uri: "file://test.ecore")
+        _ = await resource.add(testPackage)
+
+        // When: Generating Swift code
+        let tempDir = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(tempDir) }
+
+        let generator = try CodeGenerator(language: "swift", outputDirectory: tempDir)
+        try await generator.generate(from: resource, verbose: false)
+
+        let outputFile = tempDir.appendingPathComponent("Generated.swift")
+        let generatedCode = try String(contentsOf: outputFile, encoding: String.Encoding.utf8)
+
+        // Then: Containment reference should be strong (no weak keyword)
+        #expect(generatedCode.contains("var departments: [Department] = []"))
+
+        // Non-containment reference should be weak
+        #expect(generatedCode.contains("weak var ceo: Employee?"))
+    }
 }
