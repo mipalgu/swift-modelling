@@ -262,15 +262,19 @@ Run the transformation on your sample data using the ATL source file directly:
 ```bash
 swift-atl transform Families2Persons.atl \
     --source sample-Families.xmi \
-    --target output-Persons.xmi
+    --target output-Persons.xmi \
+    --metamodel-path Tests/swift-atl-tests/Resources
 ```
+
+**Important**: The `--metamodel-path` parameter specifies where to search for metamodel files. The ATL file contains path directives like `-- @path Families=/Families2Persons/Families.ecore`, so the metamodel path should be set to the parent directory that contains the `/Families2Persons/` folder structure. In this example, since the metamodels are located at `Tests/swift-atl-tests/Resources/Families2Persons/`, we pass `Tests/swift-atl-tests/Resources` as the search path.
 
 The transformation automatically maps the files to the metamodel aliases declared in the ATL file (IN and OUT). You can also be explicit about the mapping if needed:
 
 ```bash
 swift-atl transform Families2Persons.atl \
     --source IN=sample-Families.xmi \
-    --target OUT=output-Persons.xmi
+    --target OUT=output-Persons.xmi \
+    --metamodel-path Tests/swift-atl-tests/Resources
 ```
 
 ## Analysing the Results

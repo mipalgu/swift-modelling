@@ -60,13 +60,16 @@ func detectFormat(from path: String, explicitFormat: String? = nil) -> ModelForm
 ///   - format: The model format to use for parsing (can be overridden by explicitFormat).
 ///   - explicitFormat: Optional explicit format string override (e.g., "xmi", "json").
 ///   - verbose: Whether to print verbose output.
+///   - debug: Whether to enable debug mode for parsers.
 /// - Returns: The loaded resource containing the model.
 /// - Throws: `TransformationError.modelFileNotFound` if the file doesn't exist.
 func loadModel(
     from path: String,
     format: ModelFormat,
+    resourceSet: ResourceSet? = nil,
     explicitFormat: String? = nil,
-    verbose: Bool
+    verbose: Bool,
+    debug: Bool = false
 ) async throws -> Resource {
     let url = URL(fileURLWithPath: path)
 
@@ -87,10 +90,10 @@ func loadModel(
     let resource: Resource
     switch actualFormat {
     case .xmi:
-        let parser = XMIParser()
+        let parser = XMIParser(resourceSet: resourceSet, enableDebugging: debug)
         resource = try await parser.parse(url)
     case .json:
-        let parser = JSONParser()
+        let parser = JSONParser(resourceSet: resourceSet)
         resource = try await parser.parse(url)
     }
 
@@ -118,9 +121,38 @@ func loadModel(
 /// - Throws: `TransformationError` if loading fails
 func loadModelsFromMapping(
     _ mapping: OrderedDictionary<String, String>,
+    metamodels: OrderedDictionary<String, EPackage>? = nil,
     explicitFormat: String? = nil,
-    verbose: Bool
+    verbose: Bool,
+    debug: Bool = false
 ) async throws -> OrderedDictionary<String, Resource> {
+
+    // Create a ResourceSet if we have metamodels to register
+    var resourceSet: ResourceSet? = nil
+    if let metamodels = metamodels {
+        resourceSet = ResourceSet()
+        if debug || verbose {
+            print("[DEBUG] Registering \(metamodels.count) metamodels with ResourceSet:")
+        }
+        // Register metamodel packages with the resource set
+        for (alias, package) in metamodels {
+            if debug || verbose {
+                print("[DEBUG]   - \(alias): \(package.name) (nsURI: '\(package.nsURI)', nsPrefix: '\(package.nsPrefix)')")
+                print("[DEBUG]     Package has \(package.eClassifiers.count) classifiers:")
+                for classifier in package.eClassifiers.prefix(3) {
+                    print("[DEBUG]       - \(classifier.name)")
+                }
+                if package.eClassifiers.count > 3 {
+                    print("[DEBUG]       ... and \(package.eClassifiers.count - 3) more")
+                }
+            }
+            await resourceSet?.registerMetamodel(package, uri: package.nsURI)
+        }
+        if debug || verbose {
+            let registeredURIs = await resourceSet?.getMetamodelURIs() ?? []
+            print("[DEBUG] ResourceSet now has \(registeredURIs.count) registered metamodels: \(registeredURIs)")
+        }
+    }
 
     var models: OrderedDictionary<String, Resource> = [:]
 
@@ -133,8 +165,10 @@ func loadModelsFromMapping(
         let resource = try await loadModel(
             from: path,
             format: format,
+            resourceSet: resourceSet,
             explicitFormat: explicitFormat,
-            verbose: verbose
+            verbose: verbose,
+            debug: debug
         )
 
         models[alias] = resource

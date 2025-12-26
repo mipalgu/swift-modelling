@@ -25,12 +25,12 @@ final class Families2PersonsTests: XCTestCase {
 
     /// Path to the Families metamodel.
     var familiesMetamodelPath: String {
-        "\(resourcesPath)/metamodels/Families.ecore"
+        "\(resourcesPath)/Families2Persons/Families.ecore"
     }
 
     /// Path to the Persons metamodel.
     var personsMetamodelPath: String {
-        "\(resourcesPath)/metamodels/Persons.ecore"
+        "\(resourcesPath)/Families2Persons/Persons.ecore"
     }
 
     /// Path to the sample Families model.

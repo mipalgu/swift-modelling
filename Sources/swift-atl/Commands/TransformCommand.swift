@@ -112,8 +112,32 @@ struct TransformCommand: AsyncParsableCommand {
     @Option(name: .long, help: .hidden)
     var targets: [String] = []
 
+    /// Metamodel search paths for resolving @path directives in ATL files.
+    ///
+    /// Specifies directories to search when loading metamodels referenced by @path
+    /// directives in the transformation. Can be specified multiple times to provide
+    /// multiple search paths. Paths are searched in order.
+    ///
+    /// The final search path order is:
+    ///   1. Paths from --metamodel-path options (in order specified)
+    ///   2. Paths from ECOREPATH environment variable (colon-separated)
+    ///   3. Directory containing the ATL file
+    ///   4. Current working directory
+    ///
+    /// Examples:
+    ///   `--metamodel-path /path/to/metamodels`
+    ///   `--metamodel-path ~/project/models --metamodel-path /usr/share/ecore`
+    @Option(name: .long, help: "Metamodel search path (can be specified multiple times)")
+    var metamodelPath: [String] = []
+
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose: Bool = false
+
+    @Flag(name: .shortAndLong, help: "Enable debug output with detailed execution tracing")
+    var debug: Bool = false
+
+    @Flag(name: .long, help: "Continue after metamodel loading errors (useful for testing)")
+    var continueAfterErrors: Bool = false
 
     func run() async throws {
         if verbose {
@@ -129,15 +153,72 @@ struct TransformCommand: AsyncParsableCommand {
         }
 
         do {
-            // Step 1: Parse the transformation file
+            // Step 1: Build metamodel search paths
+            var searchPaths: [String] = []
+            var hasUserSpecifiedPaths = false
+
+            // Priority 1: CLI arguments
+            if !metamodelPath.isEmpty {
+                searchPaths.append(contentsOf: metamodelPath)
+                hasUserSpecifiedPaths = true
+            }
+
+            // Priority 2: ECOREPATH environment variable
+            if let ecorepath = ProcessInfo.processInfo.environment["ECOREPATH"], !ecorepath.isEmpty {
+                let paths = ecorepath.split(separator: ":").map(String.init)
+                searchPaths.append(contentsOf: paths)
+                hasUserSpecifiedPaths = true
+            }
+
+            // Only add default search paths if user hasn't specified any
+            if !hasUserSpecifiedPaths {
+                let atlURL = URL(fileURLWithPath: transformation)
+                let atlDirectory = atlURL.deletingLastPathComponent().path
+
+                // Default priority 1: ATL file's directory
+                searchPaths.append(atlDirectory)
+
+                // Default priority 2: Common metamodel directories relative to ATL file
+                let atlParentDir = URL(fileURLWithPath: atlDirectory).deletingLastPathComponent().path
+                let commonPaths = [
+                    "\(atlParentDir)", // Parent of ATL directory
+                    "\(atlParentDir)/Resources", // Common Resources directory
+                    "\(atlDirectory)/../Resources", // Resources at same level
+                    "\(atlDirectory)/../../Resources" // Resources two levels up (for test structures)
+                ]
+                for path in commonPaths {
+                    let normalized = URL(fileURLWithPath: path).standardizedFileURL.path
+                    if !searchPaths.contains(normalized) {
+                        searchPaths.append(normalized)
+                    }
+                }
+
+                // Default priority 3: Current working directory
+                let currentDirectory = FileManager.default.currentDirectoryPath
+                if currentDirectory != atlDirectory {
+                    searchPaths.append(currentDirectory)
+                }
+            }
+
+            if verbose && !searchPaths.isEmpty {
+                print("Metamodel search paths:")
+                for (index, path) in searchPaths.enumerated() {
+                    print("  \(index + 1). \(path)")
+                }
+            }
+
+            // Step 2: Parse the transformation file
             if verbose {
                 print("\n=== Loading Transformation Module ===")
             }
 
             let atlSource = try String(contentsOfFile: transformation, encoding: .utf8)
-            let parser = ATLParser()
+            let parser = ATLParser(enableDebugging: debug)
             let module = try await parser.parseContent(
-                atlSource, filename: URL(fileURLWithPath: transformation).lastPathComponent)
+                atlSource,
+                filename: URL(fileURLWithPath: transformation).lastPathComponent,
+                searchPaths: searchPaths,
+                continueAfterErrors: continueAfterErrors)
 
             if verbose {
                 print("Transformation module loaded: \(module.name)")
@@ -176,8 +257,10 @@ struct TransformCommand: AsyncParsableCommand {
 
             let sourceModels = try await loadModelsFromMapping(
                 sourceMapping,
+                metamodels: module.sourceMetamodels,
                 explicitFormat: inputFormat,
-                verbose: verbose
+                verbose: verbose,
+                debug: debug
             )
 
             if verbose {
@@ -213,6 +296,12 @@ struct TransformCommand: AsyncParsableCommand {
             }
 
             let virtualMachine = await MainActor.run { ATLVirtualMachine(module: module) }
+
+            // Enable debug mode if requested
+            if debug {
+                await virtualMachine.enableDebugging(true)
+                print("Debug mode enabled")
+            }
 
             try await virtualMachine.execute(
                 sources: sourceModels,

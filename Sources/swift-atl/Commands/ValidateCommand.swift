@@ -44,12 +44,20 @@ struct ValidateCommand: AsyncParsableCommand {
     @Option(name: .shortAndLong, help: "Output file for validation results")
     var output: String?
 
+    /// Metamodel search paths for resolving @path directives in ATL files.
+    @Option(name: .long, help: "Metamodel search path (can be specified multiple times)")
+    var metamodelPath: [String] = []
+
     /// Enable verbose output mode.
     ///
     /// Shows detailed validation progress and additional diagnostic information
     /// during the validation process.
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose: Bool = false
+
+    /// Stop after metamodel loading errors (inverted to achieve true default for continue).
+    @Flag(name: .long, inversion: .prefixedEnableDisable, help: "Stop after metamodel loading errors")
+    var stopAfterErrors: Bool = false
 
     /// Enable strict validation mode.
     ///
@@ -173,9 +181,59 @@ struct ValidateCommand: AsyncParsableCommand {
 
         do {
             let atlSource = try String(contentsOfFile: filePath, encoding: .utf8)
+
+            // Build search paths similar to other commands
+            var searchPaths: [String] = []
+            var hasUserSpecifiedPaths = false
+
+            // Priority 1: CLI arguments
+            if !metamodelPath.isEmpty {
+                searchPaths.append(contentsOf: metamodelPath)
+                hasUserSpecifiedPaths = true
+            }
+
+            // Priority 2: ECOREPATH environment variable
+            if let ecorepath = ProcessInfo.processInfo.environment["ECOREPATH"], !ecorepath.isEmpty {
+                let paths = ecorepath.split(separator: ":").map(String.init)
+                searchPaths.append(contentsOf: paths)
+                hasUserSpecifiedPaths = true
+            }
+
+            // Only add default search paths if user hasn't specified any
+            if !hasUserSpecifiedPaths {
+                let atlDirectory = URL(fileURLWithPath: filePath).deletingLastPathComponent().path
+
+                // Default priority 1: ATL file's directory
+                searchPaths.append(atlDirectory)
+
+                // Default priority 2: Common metamodel directories relative to ATL file
+                let atlParentDir = URL(fileURLWithPath: atlDirectory).deletingLastPathComponent().path
+                let commonPaths = [
+                    "\(atlParentDir)", // Parent of ATL directory
+                    "\(atlParentDir)/Resources", // Common Resources directory
+                    "\(atlDirectory)/../Resources", // Resources at same level
+                    "\(atlDirectory)/../../Resources" // Resources two levels up (for test structures)
+                ]
+                for path in commonPaths {
+                    let normalized = URL(fileURLWithPath: path).standardizedFileURL.path
+                    if !searchPaths.contains(normalized) {
+                        searchPaths.append(normalized)
+                    }
+                }
+
+                // Default priority 3: Current working directory
+                let currentDirectory = FileManager.default.currentDirectoryPath
+                if currentDirectory != atlDirectory {
+                    searchPaths.append(currentDirectory)
+                }
+            }
+
             let parser = ATLParser()
             let module = try await parser.parseContent(
-                atlSource, filename: URL(fileURLWithPath: filePath).lastPathComponent)
+                atlSource,
+                filename: URL(fileURLWithPath: filePath).lastPathComponent,
+                searchPaths: searchPaths,
+                continueAfterErrors: !stopAfterErrors)
 
             // Perform semantic validation
             try validateModuleSemantics(module: module, errors: &errors, warnings: &warnings)
