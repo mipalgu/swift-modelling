@@ -63,23 +63,10 @@ struct SubprocessResult: Sendable {
 /// - Throws: `TestError.executableNotFound` if the executable doesn't exist.
 func swiftEcoreExecutablePath() throws -> String {
     let scratchPath = "/tmp/build-swift-modelling"
-
-    #if os(macOS)
-    #if arch(arm64)
-    let platform = "arm64-apple-macosx"
-    #else
-    let platform = "x86_64-apple-macosx"
-    #endif
-    #elseif os(Linux)
-    let platform = "x86_64-unknown-linux-gnu"
-    #else
-    #error("Unsupported platform")
-    #endif
-
     let configuration = "debug"
     let executableName = "swift-ecore"
 
-    let path = "\(scratchPath)/\(platform)/\(configuration)/\(executableName)"
+    let path = "\(scratchPath)/\(configuration)/\(executableName)"
 
     guard FileManager.default.fileExists(atPath: path) else {
         throw TestError.executableNotFound(path)
