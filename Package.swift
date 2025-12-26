@@ -48,6 +48,8 @@ let package = Package(
             name: "swift-ecore-tests",
             dependencies: [
                 .product(name: "Subprocess", package: "swift-subprocess"),
+                .product(name: "ECore", package: "swift-ecore"),
+                "swift-ecore",
             ],
             resources: [
                 .copy("Resources")

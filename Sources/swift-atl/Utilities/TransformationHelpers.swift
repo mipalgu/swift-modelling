@@ -131,26 +131,9 @@ func loadModelsFromMapping(
     var resourceSet: ResourceSet? = nil
     if let metamodels = metamodels {
         resourceSet = ResourceSet()
-        if debug || verbose {
-            print("[DEBUG] Registering \(metamodels.count) metamodels with ResourceSet:")
-        }
         // Register metamodel packages with the resource set
         for (alias, package) in metamodels {
-            if debug || verbose {
-                print("[DEBUG]   - \(alias): \(package.name) (nsURI: '\(package.nsURI)', nsPrefix: '\(package.nsPrefix)')")
-                print("[DEBUG]     Package has \(package.eClassifiers.count) classifiers:")
-                for classifier in package.eClassifiers.prefix(3) {
-                    print("[DEBUG]       - \(classifier.name)")
-                }
-                if package.eClassifiers.count > 3 {
-                    print("[DEBUG]       ... and \(package.eClassifiers.count - 3) more")
-                }
-            }
             await resourceSet?.registerMetamodel(package, uri: package.nsURI)
-        }
-        if debug || verbose {
-            let registeredURIs = await resourceSet?.getMetamodelURIs() ?? []
-            print("[DEBUG] ResourceSet now has \(registeredURIs.count) registered metamodels: \(registeredURIs)")
         }
     }
 

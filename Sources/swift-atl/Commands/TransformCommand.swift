@@ -300,7 +300,6 @@ struct TransformCommand: AsyncParsableCommand {
             // Enable debug mode if requested
             if debug {
                 await virtualMachine.enableDebugging(true)
-                print("Debug mode enabled")
             }
 
             try await virtualMachine.execute(
