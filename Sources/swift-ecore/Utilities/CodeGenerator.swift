@@ -231,6 +231,128 @@ actor CodeGenerator {
         return "struct"
     }
 
+    /// Gets the concrete (non-abstract) supertypes of an EClass.
+    ///
+    /// - Parameter eClass: The EClass to analyze.
+    /// - Returns: Array of concrete supertypes.
+    private func getConcreteSuperTypes(for eClass: EClass) -> [EClass] {
+        return eClass.eSuperTypes.filter { !$0.isAbstract && !$0.isInterface }
+    }
+
+    /// Gets the abstract/interface supertypes of an EClass.
+    ///
+    /// - Parameter eClass: The EClass to analyze.
+    /// - Returns: Array of abstract supertypes.
+    private func getAbstractSuperTypes(for eClass: EClass) -> [EClass] {
+        return eClass.eSuperTypes.filter { $0.isAbstract || $0.isInterface }
+    }
+
+    /// Builds the inheritance/conformance list for a Swift type declaration.
+    ///
+    /// - Parameter eClass: The EClass to analyze.
+    /// - Returns: String with superclass and protocol conformances, or "EObject" if none.
+    private func buildInheritanceList(for eClass: EClass) -> String {
+        var inheritanceList: [String] = []
+
+        let concreteSuperTypes = getConcreteSuperTypes(for: eClass)
+        let abstractSuperTypes = getAbstractSuperTypes(for: eClass)
+
+        // Single concrete supertype → extend from it
+        if let concreteSuperType = concreteSuperTypes.first {
+            inheritanceList.append(concreteSuperType.name)
+        } else {
+            // No concrete supertype → conform to EObject
+            inheritanceList.append("EObject")
+        }
+
+        // Add abstract supertypes as protocol conformances
+        for abstractSuperType in abstractSuperTypes {
+            inheritanceList.append(abstractSuperType.name)
+        }
+
+        return inheritanceList.joined(separator: ", ")
+    }
+
+    /// Gets locally-defined features (not inherited from supertypes).
+    ///
+    /// - Parameter eClass: The EClass to analyze.
+    /// - Returns: Array of locally-defined structural features.
+    private func getLocalFeatures(for eClass: EClass) -> [any EStructuralFeature] {
+        // If no supertypes, all features are local
+        if eClass.eSuperTypes.isEmpty {
+            return eClass.eStructuralFeatures
+        }
+
+        // Collect all inherited feature names
+        var inheritedFeatureNames = Set<String>()
+        for superType in eClass.eSuperTypes {
+            for feature in superType.eStructuralFeatures {
+                inheritedFeatureNames.insert(feature.name)
+            }
+        }
+
+        // Return only features not in supertypes
+        return eClass.eStructuralFeatures.filter { !inheritedFeatureNames.contains($0.name) }
+    }
+
+    /// Generates documentation comments from EClass annotations.
+    ///
+    /// Extracts documentation from eAnnotations and formats it as Swift doc comments.
+    ///
+    /// - Parameter eClass: The EClass to extract documentation from.
+    /// - Returns: Formatted Swift documentation comment string, or empty string if no documentation found.
+    private func generateDocumentation(for eClass: EClass) -> String {
+        return extractDocumentationFromAnnotations(eClass.eAnnotations)
+    }
+
+    /// Generates documentation comments from EStructuralFeature annotations.
+    ///
+    /// Extracts documentation from eAnnotations and formats it as Swift doc comments.
+    ///
+    /// - Parameter feature: The EStructuralFeature to extract documentation from.
+    /// - Returns: Formatted Swift documentation comment string, or empty string if no documentation found.
+    private func generateDocumentation(for feature: any EStructuralFeature) -> String {
+        // Try to access annotations if available (cast to concrete types)
+        if let attribute = feature as? EAttribute {
+            return extractDocumentationFromAnnotations(attribute.eAnnotations)
+        } else if let reference = feature as? EReference {
+            return extractDocumentationFromAnnotations(reference.eAnnotations)
+        }
+        return ""
+    }
+
+    /// Helper to extract documentation from annotations.
+    ///
+    /// - Parameter annotations: The annotations to search.
+    /// - Returns: Formatted Swift documentation comment string, or empty string if no documentation found.
+    private func extractDocumentationFromAnnotations(_ annotations: [EAnnotation]) -> String {
+        // Look for documentation in eAnnotations
+        for annotation in annotations {
+            // Common annotation sources for documentation
+            if annotation.source == "http://www.eclipse.org/emf/2002/GenModel" ||
+               annotation.source == "documentation" {
+                // Try to get documentation from details
+                for (key, value) in annotation.details {
+                    if key == "documentation" || key == "body" {
+                        // Format as Swift doc comment
+                        let lines = value.split(separator: "\n")
+                        if lines.count == 1 {
+                            return "\n\n/// \(value)"
+                        } else {
+                            var result = "\n\n/**"
+                            for line in lines {
+                                result += "\n * \(line)"
+                            }
+                            result += "\n */"
+                            return result
+                        }
+                    }
+                }
+            }
+        }
+        return ""
+    }
+
     /// Generates a Swift type (class/struct/protocol) from an EClass.
     ///
     /// - Parameter eClass: The EClass to generate from.
@@ -239,13 +361,25 @@ actor CodeGenerator {
         let typeKeyword = swiftTypeKeyword(for: eClass)
         var result = ""
 
+        // Generate documentation comment if available
+        let documentation = generateDocumentation(for: eClass)
+        if !documentation.isEmpty {
+            result += documentation
+        }
+
         // Generate type declaration
         if typeKeyword == "protocol" {
-            // Protocol declaration
-            result += "\n\nprotocol \(eClass.name)Protocol: EObject {"
+            // Protocol declaration for abstract/interface EClasses
+            result += "\n\nprotocol \(eClass.name): EObject {"
 
             // Generate property requirements
             for feature in eClass.eStructuralFeatures {
+                // Add documentation for the property if available
+                let featureDoc = generateDocumentation(for: feature)
+                if !featureDoc.isEmpty {
+                    result += featureDoc
+                }
+
                 if let attribute = feature as? EAttribute {
                     let property = generateSwiftProperty(for: attribute)
                     result += "\n    \(property) { get set }"
@@ -255,13 +389,26 @@ actor CodeGenerator {
                 }
             }
         } else if typeKeyword == "class" {
-            // Class declaration with EObject conformance
-            result += "\n\nclass \(eClass.name): EObject {"
-            result += "\n    let id: EUUID = EUUID()"
-            result += "\n    let eClass: EClass"
+            // Class declaration with inheritance/protocol conformance
+            let inheritanceList = buildInheritanceList(for: eClass)
+            result += "\n\nclass \(eClass.name): \(inheritanceList) {"
 
-            // Generate properties
-            for feature in eClass.eStructuralFeatures {
+            // Only include id and eClass if not inherited from a concrete supertype
+            let concreteSuperTypes = getConcreteSuperTypes(for: eClass)
+            if concreteSuperTypes.isEmpty {
+                result += "\n    let id: EUUID = EUUID()"
+                result += "\n    let eClass: EClass"
+            }
+
+            // Generate only locally-defined properties (not inherited)
+            let localFeatures = getLocalFeatures(for: eClass)
+            for feature in localFeatures {
+                // Add documentation for the property if available
+                let featureDoc = generateDocumentation(for: feature)
+                if !featureDoc.isEmpty {
+                    result += featureDoc
+                }
+
                 if let attribute = feature as? EAttribute {
                     result += "\n    \(generateSwiftProperty(for: attribute))"
                 } else if let reference = feature as? EReference {
@@ -275,8 +422,14 @@ actor CodeGenerator {
             // Struct declaration
             result += "\n\nstruct \(eClass.name) {"
 
-            // Generate properties
+            // Generate properties with documentation
             for feature in eClass.eStructuralFeatures {
+                // Add documentation for the property if available
+                let featureDoc = generateDocumentation(for: feature)
+                if !featureDoc.isEmpty {
+                    result += featureDoc
+                }
+
                 if let attribute = feature as? EAttribute {
                     result += "\n    \(generateSwiftProperty(for: attribute))"
                 } else if let reference = feature as? EReference {
@@ -420,10 +573,17 @@ actor CodeGenerator {
     private func generateSwiftInitializers(for eClass: EClass) -> String {
         var result = ""
 
-        // Collect required attributes (those without defaults and with lowerBound >= 1)
+        // Check if this class has a concrete supertype
+        let concreteSuperTypes = getConcreteSuperTypes(for: eClass)
+        let hasConcreteSuperType = !concreteSuperTypes.isEmpty
+
+        // Get locally-defined features only
+        let localFeatures = getLocalFeatures(for: eClass)
+
+        // Collect required attributes from local features
         var requiredParams: [(name: String, type: String)] = []
 
-        for feature in eClass.eStructuralFeatures {
+        for feature in localFeatures {
             if let attribute = feature as? EAttribute {
                 let isRequired = attribute.lowerBound >= 1
                 let hasDefault = attribute.defaultValueLiteral != nil
@@ -438,7 +598,13 @@ actor CodeGenerator {
 
         // Designated initializer: init(eClass:)
         result += "\n\n    init(eClass: EClass) {"
-        result += "\n        self.eClass = eClass"
+        if hasConcreteSuperType {
+            // Call superclass initializer
+            result += "\n        super.init(eClass: eClass)"
+        } else {
+            // Initialize eClass property
+            result += "\n        self.eClass = eClass"
+        }
         // Note: Required properties without defaults will need to be set manually or have fatalError
         for param in requiredParams {
             result += "\n        // TODO: Initialize required property '\(param.name)'"
@@ -446,7 +612,8 @@ actor CodeGenerator {
         result += "\n    }"
 
         // Convenience initializer with all properties (if there are any settable properties)
-        let settableFeatures = eClass.eStructuralFeatures.filter { feature in
+        // Use only local features (not inherited)
+        let settableFeatures = localFeatures.filter { feature in
             if let attribute = feature as? EAttribute {
                 let isMultiValued = attribute.upperBound == -1 || attribute.upperBound > 1
                 return !isMultiValued
