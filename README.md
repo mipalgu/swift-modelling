@@ -1,6 +1,9 @@
 # Swift Modelling
 
-Command-line tools for the Swift Modelling Framework, providing comprehensive support for Eclipse Modelling Framework (EMF) and Atlas Transformation Language (ATL).
+Command-line tools for the Swift Modelling Framework.
+
+
+These tools provide comprehensive support for Eclipse Modelling Framework (EMF), Atlas Transformation Language (ATL), and the Model-to-Text Language (MTL).
 
 ## Features
 
@@ -26,6 +29,14 @@ Command-line tools for the Swift Modelling Framework, providing comprehensive su
 - **Advanced OCL**: Let expressions, tuple expressions, iterate operations, lambda expressions
 - **Helper Functions**: Context and standalone helper functions
 
+### MTL Support
+- **MTL Parser**: Parse MTL templates from text files
+- **MTL Runtime**: Execute templates with high performance using Swift's concurrent execution model
+- **Model Loading**: Load models from XMI and JSON formats for transformation
+- **Expression Language**: Full AQL (Acceleo Query Language) integration for expressions
+- **Advanced Features**: File blocks, protected areas, queries, macros, control flow
+- **CLI Tool**: Generate, parse, and validate MTL templates from the command line
+
 ## Requirements
 
 - Swift 6.0 or later
@@ -34,7 +45,7 @@ Command-line tools for the Swift Modelling Framework, providing comprehensive su
 ## Building
 
 ```bash
-# Build both CLI tools
+# Build all CLI tools
 swift build
 
 # Run the ECore CLI
@@ -42,6 +53,9 @@ swift run swift-ecore --help
 
 # Run the ATL CLI
 swift run swift-atl --help
+
+# Run the MTL CLI
+swift run swift-mtl --help
 ```
 
 ## Usage
@@ -165,6 +179,120 @@ swift run swift-ecore query team.xmi --query "find Team" --verbose
 - `find <ClassName>` - Objects matching class name with detailed properties
 - `tree` - Hierarchical view of model structure
 
+### MTL (Model-to-Text) Commands
+
+Generate text from models using MTL (Model-to-Text Language) templates.
+
+#### Generate Command
+
+```bash
+# Basic generation from template
+swift run swift-mtl generate template.mtl --output generated/
+
+# Generate with input models
+swift run swift-mtl generate template.mtl \
+  --model input.xmi \
+  --output generated/
+
+# Generate with multiple models
+swift run swift-mtl generate template.mtl \
+  --model families.xmi \
+  --model departments.xmi \
+  --output generated/
+
+# Specify main template explicitly
+swift run swift-mtl generate template.mtl \
+  --model input.xmi \
+  --template generateAll \
+  --output generated/
+
+# Verbose generation with statistics
+swift run swift-mtl generate template.mtl \
+  --model input.xmi \
+  --output generated/ \
+  --verbose
+```
+
+**Input formats:** MTL templates (`.mtl`), XMI models (`.xmi`), JSON models (`.json`)
+
+#### Parse Command
+
+Display MTL template structure for inspection and debugging.
+
+```bash
+# Parse and show template structure
+swift run swift-mtl parse template.mtl
+
+# Parse multiple templates
+swift run swift-mtl parse template1.mtl template2.mtl
+
+# Detailed template information
+swift run swift-mtl parse template.mtl --detailed
+
+# JSON output for programmatic use
+swift run swift-mtl parse template.mtl --json
+```
+
+#### Validate Command
+
+Validate MTL template syntax and structure.
+
+```bash
+# Validate single template
+swift run swift-mtl validate template.mtl
+
+# Validate multiple templates
+swift run swift-mtl validate *.mtl
+
+# Verbose validation with module details
+swift run swift-mtl validate template.mtl --verbose
+```
+
+#### MTL Template Example
+
+Create a file `hello.mtl`:
+
+```mtl
+[module HelloWorld('http://example.com')]
+
+[template main()]
+Hello, World!
+This is a simple MTL template.
+[/template]
+```
+
+Then generate:
+
+```bash
+swift run swift-mtl generate hello.mtl --output /tmp/output/
+cat /tmp/output/stdout
+```
+
+#### Code Generation Example
+
+```mtl
+[module ClassGenerator('http://www.eclipse.org/emf/2002/Ecore')]
+
+[template generateClass(c : EClass)]
+[file (c.name + '.swift', 'overwrite', 'UTF-8')]
+// Generated from [c.name/]
+class [c.name/] {
+[for (attr in c.eAttributes) separator('\n')]
+    var [attr.name/]: [attr.eType.name/]
+[/for]
+}
+[/file]
+[/template]
+```
+
+Generate Swift code from an Ecore model:
+
+```bash
+swift run swift-mtl generate ClassGenerator.mtl \
+  --model mymodel.ecore \
+  --output generated-swift/
+```
+
 ### Real-World Examples
 
 **Complete workflow example:**
@@ -215,7 +343,7 @@ done
 
 ## Project Status
 
-### CLI Tool 🚧
+### CLI Tools 🚧
 
 - [x] Validate command - Validate models and metamodels for correctness
 - [x] Convert command - Convert between XMI and JSON formats  
@@ -226,7 +354,11 @@ done
 
 **Swift Modelling** consists of:
 - **ECore module**: Core library implementing the Ecore metamodel
+- **ATL module**: Complete ATL parser and execution engine
+- **MTL module**: MTL parser, runtime, and generation engine
 - **swift-ecore executable**: Command-line tool for validation, conversion, and code generation
+- **swift-atl executable**: Command-line tool for ATL transformation
+- **swift-mtl executable**: Command-line tool for MTL text generation
 
 All types are value types (structs) for thread safety, with ID-based reference resolution for bidirectional relationships.
 Resources provide EMF-compliant object ownership and cross-reference resolution using actor-based concurrency.

@@ -15,12 +15,17 @@ let package = Package(
             name: "swift-atl",
             targets: ["swift-atl"]
         ),
+        .executable(
+            name: "swift-mtl",
+            targets: ["swift-mtl"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.6.2"),
-        .package(url: "https://github.com/mipalgu/swift-ecore.git", branch: "main"),
-        .package(url: "https://github.com/mipalgu/swift-atl.git", branch: "main"),
         .package(url: "https://github.com/swiftlang/swift-subprocess", from: "0.1.0"),
+        .package(url: "https://github.com/mipalgu/swift-ecore", branch: "main"),
+        .package(url: "https://github.com/mipalgu/swift-atl", branch: "main"),
+        .package(url: "https://github.com/mipalgu/swift-mtl", branch: "main"),
     ],
     targets: [
         .executableTarget(
@@ -37,6 +42,17 @@ let package = Package(
             name: "swift-atl",
             dependencies: [
                 .product(name: "ATL", package: "swift-atl"),
+                .product(name: "ECore", package: "swift-ecore"),
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency")
+            ]
+        ),
+        .executableTarget(
+            name: "swift-mtl",
+            dependencies: [
+                .product(name: "MTL", package: "swift-mtl"),
                 .product(name: "ECore", package: "swift-ecore"),
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
@@ -62,6 +78,19 @@ let package = Package(
             name: "swift-atl-tests",
             dependencies: [
                 .product(name: "Subprocess", package: "swift-subprocess"),
+            ],
+            resources: [
+                .copy("Resources")
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency")
+            ]
+        ),
+        .testTarget(
+            name: "swift-mtl-tests",
+            dependencies: [
+                .product(name: "Subprocess", package: "swift-subprocess"),
+                .product(name: "MTL", package: "swift-mtl"),
             ],
             resources: [
                 .copy("Resources")
