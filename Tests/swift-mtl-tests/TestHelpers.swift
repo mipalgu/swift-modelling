@@ -18,7 +18,7 @@ enum TestError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .executableNotFound(let path):
-            let scratch = ProcessInfo.processInfo.environment["SWIFT_MTL_SCRATCH_PATH"] ?? "/tmp/build-swift-mtl"
+            let scratch = ProcessInfo.processInfo.environment["SWIFT_MTL_SCRATCH_PATH"] ?? ".build"
             return "Executable not found at: \(path). Run 'swift build --scratch-path \(scratch)' first."
         case .resourceNotFound(let name):
             return "Test resource not found: \(name)"
@@ -72,23 +72,58 @@ func scratchPath() -> String {
 /// Resolves the path to the swift-mtl executable built in the scratch directory.
 ///
 /// The executable is expected at `<scratch-path>/debug/swift-mtl`.
-/// The scratch path defaults to `/tmp/build-swift-mtl` but can be overridden
-/// with the `SWIFT_MTL_SCRATCH_PATH` environment variable.
+/// The function first checks the `SWIFT_MTL_SCRATCH_PATH` environment variable,
+/// then falls back to detecting the build directory from the test bundle location
+/// (checking both SPM and Xcode bundle structures),
+/// and finally defaults to `/tmp/build-swift-mtl` if neither is available.
 ///
 /// - Returns: The absolute path to the swift-mtl executable.
 /// - Throws: `TestError.executableNotFound` if the executable doesn't exist.
 func swiftMTLExecutablePath() throws -> String {
-    let scratch = scratchPath()
     let configuration = "debug"
     let executableName = "swift-mtl"
 
-    let path = "\(scratch)/\(configuration)/\(executableName)"
-
-    guard FileManager.default.fileExists(atPath: path) else {
-        throw TestError.executableNotFound(path)
+    // Strategy 1: Check environment variable
+    if let envPath = ProcessInfo.processInfo.environment["SWIFT_MTL_SCRATCH_PATH"] {
+        let path = "\(envPath)/\(configuration)/\(executableName)"
+        if FileManager.default.fileExists(atPath: path) {
+            return path
+        }
     }
 
-    return path
+    // Strategy 2: Detect from test bundle location
+    var bundleURL = Bundle.module.bundleURL
+
+    // In Xcode, Bundle.module.bundleURL may point to Contents/Resources inside the .xctest bundle
+    // We need to navigate up to the Products/Debug directory
+    if bundleURL.pathComponents.contains("Contents") && bundleURL.pathComponents.contains("Resources") {
+        // Navigate up from .xctest/Contents/Resources to the directory containing .xctest
+        while !bundleURL.pathExtension.isEmpty || bundleURL.lastPathComponent == "Contents" || bundleURL.lastPathComponent == "Resources" {
+            bundleURL = bundleURL.deletingLastPathComponent()
+            if bundleURL.pathExtension == "xctest" {
+                bundleURL = bundleURL.deletingLastPathComponent()
+                break
+            }
+        }
+    } else {
+        // For SPM and standard Xcode builds, executable is sibling of test bundle
+        // SPM: /tmp/build/debug/swift-mtl-testsPackageTests.xctest -> /tmp/build/debug
+        // Xcode: /DerivedData/.../Build/Products/Debug/swift-mtl-testsPackageTests.xctest -> .../Debug
+        bundleURL = bundleURL.deletingLastPathComponent()
+    }
+
+    let bundleSiblingPath = bundleURL.appendingPathComponent(executableName).path
+    if FileManager.default.fileExists(atPath: bundleSiblingPath) {
+        return bundleSiblingPath
+    }
+
+    // Strategy 3: Fall back to default path
+    let defaultPath = "/tmp/build-swift-mtl/\(configuration)/\(executableName)"
+    guard FileManager.default.fileExists(atPath: defaultPath) else {
+        throw TestError.executableNotFound(bundleSiblingPath)
+    }
+
+    return defaultPath
 }
 
 // MARK: - Resource Loading
