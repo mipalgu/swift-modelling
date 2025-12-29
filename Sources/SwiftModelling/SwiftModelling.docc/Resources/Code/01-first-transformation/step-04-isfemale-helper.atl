@@ -1,0 +1,13 @@
+module Families2Persons;
+create OUT: Persons from IN: Families;
+
+helper context Families!Member def: isFemale(): Boolean =
+    if not self.familyMother.oclIsUndefined() then
+        true
+    else
+        if not self.familyDaughter.oclIsUndefined() then
+            true
+        else
+            false
+        endif
+    endif;

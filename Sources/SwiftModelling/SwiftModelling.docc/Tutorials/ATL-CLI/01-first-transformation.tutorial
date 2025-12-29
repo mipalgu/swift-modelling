@@ -1,0 +1,223 @@
+@Tutorial(time: 30) {
+    @Intro(title: "Creating Your First ATL Transformation") {
+        Learn how to transform models with the Atlas Transformation Language (ATL) using the Families to Persons example.
+
+        In this tutorial, you'll write a transformation that converts a hierarchical family structure into a flat list of persons with full names and gender classification.
+
+        You'll learn how to:
+        - Understand source and target metamodels
+        - Write ATL helpers for reusable logic
+        - Define transformation rules with pattern matching
+        - Execute transformations using the swift-atl CLI
+    }
+
+    @Section(title: "Understand the Metamodels") {
+        @ContentAndMedia {
+            Before writing the transformation, you need to understand the source and target metamodels.
+
+            The **Families** metamodel organizes people into family units with members having specific roles (father, mother, son, daughter).
+
+            The **Persons** metamodel represents individuals as independent entities with full names and gender (Male or Female).
+        }
+
+        @Steps {
+            @Step {
+                Examine the Families metamodel structure.
+
+                @Code(name: "Families.ecore", file: step-01-families-metamodel.ecore)
+
+                The metamodel defines two classes: Family (with lastName) and Member (with firstName). Families contain references to father, mother, sons, and daughters.
+            }
+
+            @Step {
+                Examine the Persons metamodel structure.
+
+                @Code(name: "Persons.ecore", file: step-02-persons-metamodel.ecore)
+
+                The metamodel defines an abstract Person class with a fullName attribute, and two concrete subclasses: Male and Female.
+            }
+        }
+    }
+
+    @Section(title: "Write Helper Functions") {
+        @ContentAndMedia {
+            ATL helpers are reusable functions that encapsulate logic. You'll create two helpers: one to determine if a member is female, and another to get the family surname.
+        }
+
+        @Steps {
+            @Step {
+                Create a new ATL file with the module declaration.
+
+                @Code(name: "Families2Persons.atl", file: step-03-module-declaration.atl)
+
+                The module specifies the transformation name and declares the source (IN: Families) and target (OUT: Persons) models.
+            }
+
+            @Step {
+                Add the isFemale() helper to determine gender.
+
+                @Code(name: "Families2Persons.atl", file: step-04-isfemale-helper.atl)
+
+                This context helper checks if a member is a mother or daughter by testing the corresponding family reference.
+            }
+
+            @Step {
+                Add the familyName helper to get the surname.
+
+                @Code(name: "Families2Persons.atl", file: step-05-familyname-helper.atl)
+
+                This helper navigates from a member back to their family to retrieve the surname.
+            }
+        }
+    }
+
+    @Section(title: "Define Transformation Rules") {
+        @ContentAndMedia {
+            Transformation rules define how source model elements are transformed into target model elements. Rules use pattern matching to select source elements and create corresponding target elements.
+        }
+
+        @Steps {
+            @Step {
+                Add the Member2Male rule for transforming male members.
+
+                @Code(name: "Families2Persons.atl", file: step-06-member2male-rule.atl)
+
+                This rule matches male members (where isFemale() returns false) and creates Male persons.
+            }
+
+            @Step {
+                Add the Member2Female rule for transforming female members.
+
+                @Code(name: "Families2Persons.atl", file: step-07-member2female-rule.atl)
+
+                This rule matches female members and creates Female persons.
+            }
+
+            @Step {
+                Review the complete transformation.
+
+                @Code(name: "Families2Persons.atl", file: step-08-complete-transformation.atl)
+
+                The complete transformation includes the module declaration, two helpers, and two transformation rules.
+            }
+        }
+    }
+
+    @Section(title: "Run the Transformation") {
+        @ContentAndMedia {
+            Execute the transformation to convert the sample Families model into a Persons model.
+        }
+
+        @Steps {
+            @Step {
+                Create a sample Families model.
+
+                @Code(name: "sample-Families.xmi", file: step-09-sample-families.xmi)
+
+                This sample model contains three families with different members in various roles.
+            }
+
+            @Step {
+                Run the transformation with swift-atl.
+
+                @Code(name: "Terminal", file: step-10-run-command.sh)
+
+                Execute the transformation, specifying the source and target files.
+            }
+
+            @Step {
+                Examine the output Persons model.
+
+                @Code(name: "output-Persons.xmi", file: step-11-output-persons.xmi)
+
+                Notice how each family member became an individual person with combined first and last names, correctly classified by gender.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What is the purpose of the isFemale() helper?
+
+            @Choice(isCorrect: false) {
+                To transform family members into persons
+
+                @Justification(reaction: "Not quite!") {
+                    Helpers don't perform transformations - that's the job of rules. Helpers provide reusable logic.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                To determine if a family member should become a Female person
+
+                @Justification(reaction: "Correct!") {
+                    The helper returns true for mothers and daughters, helping the transformation rules determine which type of Person to create.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                To get the full name of a person
+
+                @Justification(reaction: "Try again!") {
+                    The familyName helper gets the surname, but isFemale() determines gender based on family role.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            How do transformation rules select which elements to transform?
+
+            @Choice(isCorrect: false) {
+                By iterating through all model elements
+
+                @Justification(reaction: "Not exactly!") {
+                    While ATL does iterate internally, rules use declarative pattern matching, not imperative iteration.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                By using type patterns and guard conditions
+
+                @Justification(reaction: "That's right!") {
+                    Rules specify the source element type (e.g., Families!Member) and optional guard conditions (e.g., not s.isFemale()) to select elements.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                By manually calling create() functions
+
+                @Justification(reaction: "Incorrect!") {
+                    ATL rules are declarative - you specify patterns, and ATL automatically creates target elements for matching source elements.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What happens to the hierarchical family structure during transformation?
+
+            @Choice(isCorrect: true) {
+                It becomes a flat list of independent persons
+
+                @Justification(reaction: "Exactly!") {
+                    The transformation flattens the hierarchy - family containment relationships are lost, and each member becomes an independent Person with a combined full name.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                It maintains the parent-child relationships
+
+                @Justification(reaction: "Not in this case!") {
+                    The Persons metamodel doesn't have family relationship references - it only has fullName and gender.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Only the family names are preserved
+
+                @Justification(reaction: "There's more!") {
+                    Both first names and family names are preserved and combined into fullName. Gender is also determined from family roles.
+                }
+            }
+        }
+    }
+}

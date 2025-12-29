@@ -1,0 +1,8 @@
+rule Member2Female {
+    from
+        s: Families!Member (s.isFemale())
+    to
+        t: Persons!Female (
+            fullName <- s.firstName + ' ' + s.familyName
+        )
+}

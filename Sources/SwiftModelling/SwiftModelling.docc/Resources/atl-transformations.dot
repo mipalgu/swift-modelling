@@ -1,0 +1,39 @@
+digraph ATLTransformation {
+    rankdir=LR;
+    node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11];
+    edge [fontname="Helvetica", fontsize=10];
+    
+    // Metamodel layer
+    subgraph cluster_metamodels {
+        label="Metamodels";
+        style=dashed;
+        color=gray60;
+        
+        FamiliesMM [label="Families\nMetamodel", fillcolor="#E8F4F8"];
+        PersonsMM [label="Persons\nMetamodel", fillcolor="#F8E8E8"];
+    }
+    
+    // Model layer  
+    subgraph cluster_models {
+        label="Models";
+        style=dashed;
+        color=gray60;
+        
+        FamiliesModel [label="Families\nModel", fillcolor="#B8D4E8"];
+        PersonsModel [label="Persons\nModel", fillcolor="#E8C8C8"];
+    }
+    
+    // ATL transformation
+    ATL [label="ATL\nTransformation", shape=ellipse, fillcolor="#FFE8B8"];
+    
+    // Relationships
+    FamiliesModel -> ATL [label="input", color="#4A90E2"];
+    ATL -> PersonsModel [label="output", color="#E24A4A"];
+    
+    FamiliesModel -> FamiliesMM [label="conformsTo", style=dashed, color=gray40, constraint=false];
+    PersonsModel -> PersonsMM [label="conformsTo", style=dashed, color=gray40, constraint=false];
+    
+    // Layout hints
+    {rank=same; FamiliesMM; PersonsMM}
+    {rank=same; FamiliesModel; ATL; PersonsModel}
+}

@@ -1,0 +1,14 @@
+helper context Families!Member def: familyName: String =
+    if not self.familyFather.oclIsUndefined() then
+        self.familyFather.lastName
+    else
+        if not self.familyMother.oclIsUndefined() then
+            self.familyMother.lastName
+        else
+            if not self.familySon.oclIsUndefined() then
+                self.familySon.lastName
+            else
+                self.familyDaughter.lastName
+            endif
+        endif
+    endif;
