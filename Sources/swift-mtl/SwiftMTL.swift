@@ -39,12 +39,12 @@ struct SwiftMTLCommand: AsyncParsableCommand {
         abstract: "Model-to-Text Language command-line tool",
         discussion: """
             Swift MTL provides comprehensive support for model-to-text transformation using the
-            Model-to-Text Language (MTL). It enables parsing, validation, and execution of MTL
-            templates to generate code, documentation, and other textual artifacts from models.
+            OMG MOFM2T (MOF Model-to-Text Transformation) standard. It enables parsing, validation,
+            and execution of MTL templates to generate code, documentation, and other textual artifacts from models.
 
-            The tool supports standard MTL/Acceleo syntax for compatibility with existing templates
-            while providing enhanced performance through Swift's concurrent execution model and
-            type safety.
+            The tool implements the OMG MOFM2T v1.0 specification with compatibility for Acceleo-specific
+            extensions where applicable, while providing enhanced performance through Swift's concurrent
+            execution model and type safety.
             """,
         version: "1.0.0",
         subcommands: [

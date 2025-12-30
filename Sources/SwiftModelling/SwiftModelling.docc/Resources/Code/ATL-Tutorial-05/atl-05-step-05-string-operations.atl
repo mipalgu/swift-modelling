@@ -1,0 +1,13 @@
+-- @path Organisation=/Organisation/Organisation.ecore
+-- @path Report=/Report/Report.ecore
+
+module OrganisationTransform;
+create OUT: Report from IN: Organisation;
+
+-- Helper with string operations
+helper context Organisation!Employee def: formattedName(): String =
+    'Employee: ' + self.name.toUpper();
+
+-- Helper checking string content
+helper context Organisation!Developer def: isPythonDeveloper(): Boolean =
+    self.programmingLanguage = 'Python';

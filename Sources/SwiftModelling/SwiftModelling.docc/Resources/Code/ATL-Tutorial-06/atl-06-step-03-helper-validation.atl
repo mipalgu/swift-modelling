@@ -1,0 +1,13 @@
+-- @path Source=/Source/Source.ecore
+-- @path Target=/Target/Target.ecore
+
+module DebugExample;
+create OUT: Target from IN: Source;
+
+-- Validate helper returns expected type
+helper context Source!Element def: getCount(): Integer =
+    if not self.items.oclIsUndefined() then
+        self.items->size()
+    else
+        0  -- Safe default
+    endif;

@@ -1,0 +1,15 @@
+-- @path Source=/Source/Source.ecore
+-- @path Target=/Target/Target.ecore
+
+module OptimisationExample;
+create OUT: Target from IN: Source;
+
+-- Use guards to filter early, avoiding unnecessary processing
+rule HighPriorityOnly {
+    from
+        s: Source!Element (s.priority > 5 and s.active)
+    to
+        t: Target!Item (
+            name <- s.name
+        )
+}

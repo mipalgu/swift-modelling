@@ -1,0 +1,43 @@
+-- @path Project=/Project/Project.ecore
+-- @path Report=/Report/Report.ecore
+
+module ProjectTransform;
+create OUT: Report from IN: Project;
+
+-- Lazy rule: creates task summaries
+lazy rule TaskSummary {
+    from
+        s: Project!Task
+    to
+        t: Report!Summary (
+            title <- s.name,
+            status <- if s.completed then 'Done' else 'Pending' endif
+        )
+}
+
+-- Called rule: creates detailed reports
+rule CreateDetailedReport(proj : Project!Project) {
+    to
+        report: Report!DetailedDocument (
+            projectName <- proj.name,
+            taskCount <- proj.tasks->size()
+        )
+    do {
+        report;
+    }
+}
+
+-- Matched rule combining lazy and called rules
+rule MainProjectReport {
+    from
+        s: Project!Project
+    to
+        t: Report!Document (
+            name <- s.name,
+            summaries <- s.tasks->collect(task | thisModule.TaskSummary(task))
+        )
+    do {
+        -- Call the called rule to create additional report
+        thisModule.CreateDetailedReport(s);
+    }
+}

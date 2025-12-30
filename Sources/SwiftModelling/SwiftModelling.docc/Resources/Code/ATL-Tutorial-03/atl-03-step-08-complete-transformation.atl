@@ -1,0 +1,45 @@
+-- @path University=/University/University.ecore
+-- @path Catalog=/Catalog/Catalog.ecore
+
+module UniversityTransform;
+create OUT: Catalog from IN: University;
+
+-- Helper: get titles of advanced courses
+helper context University!Department def: advancedCourseTitles: Sequence(String) =
+    self.courses
+        ->select(c | c.level >= 300)
+        ->collect(c | c.title);
+
+-- Helper: check if department offers graduate program
+helper context University!Department def: hasGraduateProgram(): Boolean =
+    self.courses->exists(c | c.level >= 500);
+
+-- Helper: calculate total credits in department
+helper context University!Department def: totalCredits: Integer =
+    self.courses
+        ->collect(c | c.credits)
+        ->sum();
+
+-- Rule: Transform departments with graduate programs
+rule GraduateDepartment {
+    from
+        s: University!Department (s.hasGraduateProgram())
+    to
+        t: Catalog!Program (
+            name <- s.name,
+            type <- 'Graduate',
+            totalCredits <- s.totalCredits
+        )
+}
+
+-- Rule: Transform undergraduate-only departments
+rule UndergraduateDepartment {
+    from
+        s: University!Department (not s.hasGraduateProgram())
+    to
+        t: Catalog!Program (
+            name <- s.name,
+            type <- 'Undergraduate',
+            totalCredits <- s.totalCredits
+        )
+}

@@ -1,0 +1,181 @@
+@Tutorial(time: 25) {
+    @Intro(title: "ATL Helpers and Guards") {
+        Master helper functions and guard conditions to write more sophisticated ATL transformations.
+
+        In this tutorial, you'll learn how to create attribute helpers, query helpers, and use guard conditions to selectively apply transformation rules.
+
+        You'll discover how helpers encapsulate complex logic, making transformations more readable and maintainable.
+
+        @Image(source: "atl-transformations.svg", alt: "ATL Transformations")
+    }
+
+    @Section(title: "Understanding Helpers") {
+        @ContentAndMedia {
+            Helpers are reusable functions that encapsulate logic. There are two types: attribute helpers (defined with `def:`) and query helpers (standalone functions).
+
+            Attribute helpers extend model elements with computed properties, whilst query helpers provide utility functions.
+        }
+
+        @Steps {
+            @Step {
+                Create a metamodel with a simple class structure.
+
+                @Code(name: "Library.ecore", file: atl-02-step-01-library-metamodel.ecore)
+
+                This metamodel defines Book and Author classes with basic attributes.
+            }
+
+            @Step {
+                Define an attribute helper to compute derived information.
+
+                @Code(name: "LibraryTransform.atl", file: atl-02-step-02-attribute-helper.atl)
+
+                The `isClassic` attribute helper determines if a book was published before 1950.
+            }
+
+            @Step {
+                Add a query helper for formatting.
+
+                @Code(name: "LibraryTransform.atl", file: atl-02-step-03-query-helper.atl)
+
+                Query helpers are standalone functions that can be called with any argument.
+            }
+
+            @Step {
+                Combine multiple helpers in one transformation.
+
+                @Code(name: "LibraryTransform.atl", file: atl-02-step-04-combined-helpers.atl)
+
+                Use both attribute and query helpers to build complex transformations.
+            }
+        }
+    }
+
+    @Section(title: "Using Guard Conditions") {
+        @ContentAndMedia {
+            Guard conditions filter which source elements a rule applies to. They enable selective transformation based on element properties.
+
+            Guards use OCL boolean expressions in parentheses after the source element declaration.
+        }
+
+        @Steps {
+            @Step {
+                Add a simple guard condition.
+
+                @Code(name: "LibraryTransform.atl", file: atl-02-step-05-simple-guard.atl)
+
+                This rule only transforms books published after 1950.
+            }
+
+            @Step {
+                Use helpers in guard conditions.
+
+                @Code(name: "LibraryTransform.atl", file: atl-02-step-06-helper-guard.atl)
+
+                Guard conditions can call attribute helpers, combining reusable logic with selective application.
+            }
+
+            @Step {
+                Create multiple rules with different guards.
+
+                @Code(name: "LibraryTransform.atl", file: atl-02-step-07-multiple-guards.atl)
+
+                Different rules handle different subsets of source elements based on their guards.
+            }
+
+            @Step {
+                Build a complete transformation with helpers and guards.
+
+                @Code(name: "LibraryTransform.atl", file: atl-02-step-08-complete-transformation.atl)
+
+                The complete transformation demonstrates how helpers and guards work together to create sophisticated model transformations.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What is the difference between attribute helpers and query helpers?
+
+            @Choice(isCorrect: true) {
+                Attribute helpers are defined on specific types; query helpers are standalone functions
+
+                @Justification(reaction: "Correct!") {
+                    Attribute helpers extend specific metamodel types with computed properties, whilst query helpers are independent functions that can be called with any argument.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Attribute helpers are faster than query helpers
+
+                @Justification(reaction: "Not quite!") {
+                    Performance isn't the distinguishing factor. The difference is in how they're defined and invoked.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Query helpers can modify models; attribute helpers cannot
+
+                @Justification(reaction: "Incorrect!") {
+                    Neither type of helper modifies models. Helpers compute values based on existing model elements.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            When are guard conditions evaluated?
+
+            @Choice(isCorrect: false) {
+                Before the transformation starts
+
+                @Justification(reaction: "Try again!") {
+                    Guards are evaluated during transformation execution, not before it starts.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                For each potential source element during rule matching
+
+                @Justification(reaction: "That's right!") {
+                    ATL evaluates guard conditions for each source element to determine if the rule should be applied to that element.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                After target elements are created
+
+                @Justification(reaction: "Not correct!") {
+                    Guards determine whether target elements should be created, so they're evaluated before creation.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Can a helper call another helper?
+
+            @Choice(isCorrect: true) {
+                Yes, helpers can call other helpers
+
+                @Justification(reaction: "Exactly!") {
+                    Helpers can call both attribute helpers and query helpers, allowing you to build complex logic from simple building blocks.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                No, helpers must be self-contained
+
+                @Justification(reaction: "Incorrect!") {
+                    Helpers can definitely call other helpers, which promotes code reuse and maintainability.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Only query helpers can call other helpers
+
+                @Justification(reaction: "Not quite!") {
+                    Both attribute helpers and query helpers can call other helpers of either type.
+                }
+            }
+        }
+    }
+}

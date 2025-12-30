@@ -1,0 +1,49 @@
+-- @path Library=/Library/Library.ecore
+-- @path Catalog=/Catalog/Catalog.ecore
+
+module LibraryTransform;
+create OUT: Catalog from IN: Library;
+
+-- Attribute helper: determines if a book is a classic
+helper context Library!Book def: isClassic(): Boolean =
+    self.yearPublished < 1950;
+
+-- Attribute helper: gets formatted publication information
+helper context Library!Book def: publicationInfo(): String =
+    thisModule.formatYear(self.yearPublished) + ' by ' + self.author.name;
+
+-- Query helper: formats a year with century suffix
+helper def: formatYear(year : Integer) : String =
+    if year < 1900 then
+        year.toString() + ' (19th century)'
+    else
+        if year < 2000 then
+            year.toString() + ' (20th century)'
+        else
+            year.toString() + ' (21st century)'
+        endif
+    endif;
+
+-- Rule 1: Classic books with detailed information
+rule ClassicBook {
+    from
+        s: Library!Book (s.isClassic())
+    to
+        t: Catalog!Item (
+            title <- s.title,
+            category <- 'Classic',
+            description <- 'Published ' + s.publicationInfo()
+        )
+}
+
+-- Rule 2: Modern books with standard information
+rule ModernBook {
+    from
+        s: Library!Book (not s.isClassic())
+    to
+        t: Catalog!Item (
+            title <- s.title,
+            category <- 'Modern',
+            description <- 'Published ' + s.publicationInfo()
+        )
+}

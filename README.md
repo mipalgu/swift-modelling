@@ -3,7 +3,7 @@
 Command-line tools for the Swift Modelling Framework.
 
 
-These tools provide comprehensive support for Eclipse Modelling Framework (EMF), Atlas Transformation Language (ATL), and the Model-to-Text Language (MTL).
+These tools provide comprehensive support for Eclipse Modelling Framework (EMF), Atlas Transformation Language (ATL), and the OMG MOFM2T (MOF Model-to-Text Transformation) standard.
 
 ## Features
 
@@ -29,13 +29,14 @@ These tools provide comprehensive support for Eclipse Modelling Framework (EMF),
 - **Advanced OCL**: Let expressions, tuple expressions, iterate operations, lambda expressions
 - **Helper Functions**: Context and standalone helper functions
 
-### MTL Support
-- **MTL Parser**: Parse MTL templates from text files
+### MOFM2T Support
+- **MTL Parser**: Parse MTL templates from text files following the OMG MOFM2T v1.0 specification
 - **MTL Runtime**: Execute templates with high performance using Swift's concurrent execution model
 - **Model Loading**: Load models from XMI and JSON formats for transformation
 - **Expression Language**: Full AQL (Acceleo Query Language) integration for expressions
 - **Advanced Features**: File blocks, protected areas, queries, macros, control flow
 - **CLI Tool**: Generate, parse, and validate MTL templates from the command line
+- **Standard Compliance**: Implements OMG MOFM2T v1.0 with compatibility for Acceleo-specific extensions
 
 ## Requirements
 
@@ -181,7 +182,7 @@ swift run swift-ecore query team.xmi --query "find Team" --verbose
 
 ### MTL (Model-to-Text) Commands
 
-Generate text from models using MTL (Model-to-Text Language) templates.
+Generate text from models using MTL templates following the OMG MOFM2T (MOF Model-to-Text Transformation) standard.
 
 #### Generate Command
 

@@ -1,0 +1,18 @@
+-- @path Organisation=/Organisation/Organisation.ecore
+-- @path Report=/Report/Report.ecore
+
+module OrganisationTransform;
+create OUT: Report from IN: Organisation;
+
+-- Helper with complex collection operations
+helper context Organisation!Department def: managerNames: Sequence(String) =
+    self.employees
+        ->select(e | e.oclIsTypeOf(Organisation!Manager))
+        ->collect(e | e.name)
+        ->sortedBy(name | name);
+
+-- Helper checking collection properties
+helper context Organisation!Department def: hasSwiftDevelopers(): Boolean =
+    self.employees
+        ->select(e | e.oclIsTypeOf(Organisation!Developer))
+        ->exists(e | e.oclAsType(Organisation!Developer).programmingLanguage = 'Swift');

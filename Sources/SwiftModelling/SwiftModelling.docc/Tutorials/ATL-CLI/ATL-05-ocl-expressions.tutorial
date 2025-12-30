@@ -1,0 +1,181 @@
+@Tutorial(time: 45) {
+    @Intro(title: "OCL Expressions Deep Dive") {
+        Master the Object Constraint Language (OCL) for expressing complex queries and constraints in ATL transformations.
+
+        In this tutorial, you'll explore advanced OCL expressions including navigation, type operations, and sophisticated collection queries.
+
+        You'll learn how to write precise, expressive transformations using OCL's powerful expression language.
+
+        @Image(source: "atl-transformations.svg", alt: "ATL Transformations")
+    }
+
+    @Section(title: "Navigation and Type Operations") {
+        @ContentAndMedia {
+            OCL provides operators for navigating model relationships and working with types. Navigation uses `.` for attributes and `->` for collections.
+
+            Type operations like `oclIsTypeOf`, `oclIsKindOf`, and `oclAsType` enable runtime type checking and casting.
+        }
+
+        @Steps {
+            @Step {
+                Create a metamodel with inheritance.
+
+                @Code(name: "Organisation.ecore", file: atl-05-step-01-organisation-metamodel.ecore)
+
+                This metamodel demonstrates inheritance with Employee subtypes and department relationships.
+            }
+
+            @Step {
+                Use navigation expressions.
+
+                @Code(name: "OrganisationTransform.atl", file: atl-05-step-02-navigation.atl)
+
+                Navigate through relationships using `.` for single-valued references and `->` for collections.
+            }
+
+            @Step {
+                Apply type checking operations.
+
+                @Code(name: "OrganisationTransform.atl", file: atl-05-step-03-type-checking.atl)
+
+                Use `oclIsTypeOf` for exact type matches and `oclIsKindOf` for subtype matches.
+            }
+
+            @Step {
+                Perform type casting with `oclAsType`.
+
+                @Code(name: "OrganisationTransform.atl", file: atl-05-step-04-type-casting.atl)
+
+                Cast elements to specific types to access subtype-specific features.
+            }
+        }
+    }
+
+    @Section(title: "Advanced OCL Operations") {
+        @ContentAndMedia {
+            OCL provides sophisticated operations for strings, numbers, and complex collection queries. Understanding these operations enables precise transformation logic.
+
+            Operations include string manipulation, numeric calculations, collection aggregation, and logical operations.
+        }
+
+        @Steps {
+            @Step {
+                Use string operations.
+
+                @Code(name: "OrganisationTransform.atl", file: atl-05-step-05-string-operations.atl)
+
+                OCL string operations include `concat`, `substring`, `toUpper`, `toLower`, and `size`.
+            }
+
+            @Step {
+                Apply numeric operations and comparisons.
+
+                @Code(name: "OrganisationTransform.atl", file: atl-05-step-06-numeric-operations.atl)
+
+                Numeric operations include arithmetic, comparison, and aggregate functions like `sum`, `min`, and `max`.
+            }
+
+            @Step {
+                Combine complex collection operations.
+
+                @Code(name: "OrganisationTransform.atl", file: atl-05-step-07-complex-collections.atl)
+
+                Chain collection operations and use advanced queries like `flatten`, `union`, and `intersection`.
+            }
+
+            @Step {
+                Build a complete transformation with advanced OCL.
+
+                @Code(name: "OrganisationTransform.atl", file: atl-05-step-08-complete-transformation.atl)
+
+                The complete transformation demonstrates sophisticated OCL expressions in a practical context.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What is the difference between `.` and `->` in OCL navigation?
+
+            @Choice(isCorrect: true) {
+                `.` is for single values; `->` is for collections
+
+                @Justification(reaction: "Correct!") {
+                    Use `.` to navigate single-valued attributes and references (e.g., `employee.department`). Use `->` to navigate and operate on collections (e.g., `department->collect(e | e.name)`).
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `.` is faster than `->`
+
+                @Justification(reaction: "Not quite!") {
+                    Performance isn't the distinguishing factor. They serve different purposes based on cardinality.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `->` can only be used with helpers
+
+                @Justification(reaction: "Incorrect!") {
+                    `->` is used for collection operations anywhere in OCL expressions, not just with helpers.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            When should you use `oclIsKindOf` instead of `oclIsTypeOf`?
+
+            @Choice(isCorrect: false) {
+                When checking primitive types
+
+                @Justification(reaction: "Try again!") {
+                    Both operations work with class types. The difference is in how they handle inheritance.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                When you want to match subtypes as well as exact types
+
+                @Justification(reaction: "That's right!") {
+                    `oclIsKindOf` returns true for the exact type and all its subtypes, whilst `oclIsTypeOf` only matches the exact type.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                When you need better performance
+
+                @Justification(reaction: "Not correct!") {
+                    The choice between these operations is about semantics (subtypes vs exact types), not performance.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Can you use `oclAsType` without checking the type first?
+
+            @Choice(isCorrect: false) {
+                No, you must always use `oclIsTypeOf` first
+
+                @Justification(reaction: "Not quite!") {
+                    Whilst checking is recommended, `oclAsType` can be used directly if you're confident about the type.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Yes, it automatically checks and returns null if wrong type
+
+                @Justification(reaction: "Incorrect!") {
+                    `oclAsType` doesn't provide automatic null handling. Invalid casts cause runtime errors.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                Yes, but you risk runtime errors if the type is incorrect
+
+                @Justification(reaction: "Exactly!") {
+                    You can use `oclAsType` directly, but it's safer to verify the type first using `oclIsTypeOf` or `oclIsKindOf` to avoid runtime errors.
+                }
+            }
+        }
+    }
+}

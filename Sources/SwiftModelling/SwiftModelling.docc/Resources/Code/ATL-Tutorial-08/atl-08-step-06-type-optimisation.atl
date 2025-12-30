@@ -1,0 +1,16 @@
+-- @path Source=/Source/Source.ecore
+-- @path Target=/Target/Target.ecore
+
+module OptimisationExample;
+create OUT: Target from IN: Source;
+
+-- Use separate rules with guards instead of type checking in bindings
+rule SpecialElementTransform {
+    from
+        s: Source!SpecialElement  -- Type-specific rule
+    to
+        t: Target!SpecialItem (
+            name <- s.name,
+            specialProperty <- s.specialValue  -- Direct access, no type check needed
+        )
+}

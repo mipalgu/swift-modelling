@@ -1,0 +1,13 @@
+done
+
+# Tutorial 07 resources
+cd ../ATL-Tutorial-07
+for i in {01..08}; do
+  cat > atl-07-step-${i}.atl << 'EOF'
+-- @path Source=/Source/Source.ecore
+-- @path Target=/Target/Target.ecore
+
+module ComplexExample;
+create OUT: Target from IN: Source;
+
+-- Placeholder content for tutorial step

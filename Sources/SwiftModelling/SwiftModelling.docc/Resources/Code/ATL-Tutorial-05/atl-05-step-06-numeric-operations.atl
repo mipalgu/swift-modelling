@@ -1,0 +1,16 @@
+-- @path Organisation=/Organisation/Organisation.ecore
+-- @path Report=/Report/Report.ecore
+
+module OrganisationTransform;
+create OUT: Report from IN: Organisation;
+
+-- Helper with numeric operations
+helper context Organisation!Manager def: isLargeTeam(): Boolean =
+    self.teamSize > 5;
+
+-- Helper with aggregate functions
+helper context Organisation!Department def: totalTeamSize(): Integer =
+    self.employees
+        ->select(e | e.oclIsTypeOf(Organisation!Manager))
+        ->collect(e | e.oclAsType(Organisation!Manager).teamSize)
+        ->sum();

@@ -1,0 +1,13 @@
+-- @path Organisation=/Organisation/Organisation.ecore
+-- @path Report=/Report/Report.ecore
+
+module OrganisationTransform;
+create OUT: Report from IN: Organisation;
+
+-- Helper using oclAsType to access subtype features
+helper context Organisation!Employee def: getManagerTeamSize(): Integer =
+    if self.oclIsTypeOf(Organisation!Manager) then
+        self.oclAsType(Organisation!Manager).teamSize
+    else
+        0
+    endif;

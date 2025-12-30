@@ -1,0 +1,13 @@
+-- @path Source=/Source/Source.ecore
+-- @path Target=/Target/Target.ecore
+
+module DebugExample;
+create OUT: Target from IN: Source;
+
+-- Fixed: check before accessing
+helper context Source!Element def: safeName(): String =
+    if not self.parent.oclIsUndefined() then
+        self.parent.name
+    else
+        'No parent'
+    endif;

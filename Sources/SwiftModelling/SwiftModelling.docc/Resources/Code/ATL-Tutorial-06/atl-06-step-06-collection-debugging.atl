@@ -1,0 +1,11 @@
+-- @path Source=/Source/Source.ecore
+-- @path Target=/Target/Target.ecore
+
+module DebugExample;
+create OUT: Target from IN: Source;
+
+-- Verify collection operations
+helper context Source!Container def: verifiedChildren: Sequence(Source!Element) =
+    let filtered : Sequence(Source!Element) = 
+        self.children->select(c | not c.name.oclIsUndefined()) in
+    filtered;  -- Can add debug output here

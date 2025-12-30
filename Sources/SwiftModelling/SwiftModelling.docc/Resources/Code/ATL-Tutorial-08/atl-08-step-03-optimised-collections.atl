@@ -1,0 +1,12 @@
+-- @path Source=/Source/Source.ecore
+-- @path Target=/Target/Target.ecore
+
+module OptimisationExample;
+create OUT: Target from IN: Source;
+
+-- OPTIMISED: Chain operations instead of intermediate variables
+helper context Source!Container def: activeHighPriorityNames: Sequence(String) =
+    self.elements
+        ->select(e | e.active)
+        ->select(e | e.priority > 5)
+        ->collect(e | e.name);

@@ -5,8 +5,8 @@
 ///
 /// - **Ecore/EMF**: Metamodeling and model management
 /// - **ATL**: Atlas Transformation Language for model-to-model transformations
-/// - **MTL**: Model-to-Text Language for code generation
-/// - **AQL**: Acceleo Query Language for model navigation and querying
+/// - **MTL**: OMG MOFM2T (MOF Model-to-Text Transformation) standard for code generation
+/// - **AQL**: Acceleo Query Language (AQL) for model navigation and querying
 ///
 /// ## Topics
 ///

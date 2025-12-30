@@ -1,0 +1,9 @@
+-- @path Source=/Source/Source.ecore  
+-- @path Target=/Target/Target.ecore
+
+module DebugExample;
+create OUT: Target from IN: Source;
+
+-- Common error: accessing property of undefined reference
+helper context Source!Element def: errorProne(): String =
+    self.parent.name;  -- Fails if parent is undefined!

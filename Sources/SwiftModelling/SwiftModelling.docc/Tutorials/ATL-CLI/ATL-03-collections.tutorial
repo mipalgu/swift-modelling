@@ -1,0 +1,181 @@
+@Tutorial(time: 30) {
+    @Intro(title: "Working with Collections") {
+        Learn how to manipulate collections in ATL transformations using OCL collection operations.
+
+        In this tutorial, you'll discover how to iterate, filter, and transform collections of model elements.
+
+        You'll master essential collection operations like `collect`, `select`, `reject`, `exists`, and `forAll`.
+
+        @Image(source: "atl-transformations.svg", alt: "ATL Transformations")
+    }
+
+    @Section(title: "Collection Basics") {
+        @ContentAndMedia {
+            Collections in ATL are manipulated using OCL (Object Constraint Language) operations. These operations provide functional-style collection processing.
+
+            Common operations include `collect` (map), `select` (filter), and `reject` (inverse filter).
+        }
+
+        @Steps {
+            @Step {
+                Create a metamodel with collection relationships.
+
+                @Code(name: "University.ecore", file: atl-03-step-01-university-metamodel.ecore)
+
+                This metamodel defines Department and Course classes with one-to-many relationships.
+            }
+
+            @Step {
+                Use `collect` to extract values from collections.
+
+                @Code(name: "UniversityTransform.atl", file: atl-03-step-02-collect-operation.atl)
+
+                The `collect` operation maps each element to a new value, creating a new collection.
+            }
+
+            @Step {
+                Use `select` to filter collections.
+
+                @Code(name: "UniversityTransform.atl", file: atl-03-step-03-select-operation.atl)
+
+                The `select` operation creates a new collection containing only elements that satisfy a condition.
+            }
+
+            @Step {
+                Use `reject` for inverse filtering.
+
+                @Code(name: "UniversityTransform.atl", file: atl-03-step-04-reject-operation.atl)
+
+                The `reject` operation is the opposite of `select`, excluding elements that match the condition.
+            }
+        }
+    }
+
+    @Section(title: "Advanced Collection Operations") {
+        @ContentAndMedia {
+            Beyond basic filtering and mapping, OCL provides operations for testing collection properties, computing aggregates, and creating nested collections.
+
+            Operations like `exists`, `forAll`, `size`, and `isEmpty` enable sophisticated collection queries.
+        }
+
+        @Steps {
+            @Step {
+                Use `exists` to test if any element matches.
+
+                @Code(name: "UniversityTransform.atl", file: atl-03-step-05-exists-operation.atl)
+
+                The `exists` operation returns true if at least one element satisfies the condition.
+            }
+
+            @Step {
+                Use `forAll` to test if all elements match.
+
+                @Code(name: "UniversityTransform.atl", file: atl-03-step-06-forall-operation.atl)
+
+                The `forAll` operation returns true only if every element satisfies the condition.
+            }
+
+            @Step {
+                Combine collection operations.
+
+                @Code(name: "UniversityTransform.atl", file: atl-03-step-07-combined-operations.atl)
+
+                Chain multiple operations together for complex collection processing.
+            }
+
+            @Step {
+                Build a complete transformation with collection operations.
+
+                @Code(name: "UniversityTransform.atl", file: atl-03-step-08-complete-transformation.atl)
+
+                The complete transformation demonstrates practical collection manipulation in model transformations.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What is the difference between `select` and `reject`?
+
+            @Choice(isCorrect: true) {
+                `select` keeps matching elements; `reject` excludes them
+
+                @Justification(reaction: "Correct!") {
+                    `select` returns elements that satisfy the condition, whilst `reject` returns elements that don't satisfy it. They're logical opposites.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `select` modifies elements; `reject` removes them
+
+                @Justification(reaction: "Not quite!") {
+                    Both operations create new collections without modifying the original. Neither removes elements from the source.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `select` is faster than `reject`
+
+                @Justification(reaction: "Incorrect!") {
+                    Performance isn't the distinguishing factor. They perform the same amount of work, just with inverted logic.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What does `collect` do to a collection?
+
+            @Choice(isCorrect: false) {
+                It combines all elements into one
+
+                @Justification(reaction: "Try again!") {
+                    That's what operations like `sum` or string concatenation do. `collect` transforms each element.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                It maps each element to a new value
+
+                @Justification(reaction: "That's right!") {
+                    `collect` applies a transformation to each element, creating a new collection with the results. It's equivalent to `map` in other languages.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                It filters elements based on a condition
+
+                @Justification(reaction: "Not correct!") {
+                    Filtering is done by `select` and `reject`. `collect` transforms every element in the collection.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Can you chain collection operations together?
+
+            @Choice(isCorrect: true) {
+                Yes, operations return collections that can be chained
+
+                @Justification(reaction: "Exactly!") {
+                    Collection operations return new collections, so you can chain them: `collection->select(...)->collect(...)`. This enables functional-style programming.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                No, only one operation per expression
+
+                @Justification(reaction: "Incorrect!") {
+                    You can chain as many operations as needed. Each operation returns a collection that the next operation processes.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Only if you use temporary variables
+
+                @Justification(reaction: "Not quite!") {
+                    Whilst you can use variables for readability, chaining works directly without them.
+                }
+            }
+        }
+    }
+}

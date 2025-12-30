@@ -1,0 +1,181 @@
+@Tutorial(time: 50) {
+    @Intro(title: "Performance Optimisation") {
+        Optimise ATL transformations for better performance with large models and complex metamodels.
+
+        In this tutorial, you'll learn performance best practices, identify common bottlenecks, and apply optimisation techniques.
+
+        You'll discover how to write efficient helpers, optimise collection operations, and structure transformations for maximum performance.
+
+        @Image(source: "atl-transformations.svg", alt: "ATL Transformations")
+    }
+
+    @Section(title: "Identifying Performance Issues") {
+        @ContentAndMedia {
+            Performance problems typically arise from inefficient collection operations, redundant computations, and poorly structured helpers.
+
+            Following best practices prevents most performance issues before they occur.
+        }
+
+        @Steps {
+            @Step {
+                Identify inefficient patterns.
+
+                @Code(name: "OptimisationExample.atl", file: atl-08-step-01-inefficient-patterns.atl)
+
+                Common anti-patterns include nested iterations, redundant filtering, and repeated collection traversals.
+            }
+
+            @Step {
+                Cache expensive computations.
+
+                @Code(name: "OptimisationExample.atl", file: atl-08-step-02-caching-results.atl)
+
+                Store expensive computation results in helpers to avoid recalculation.
+            }
+
+            @Step {
+                Optimise collection operations.
+
+                @Code(name: "OptimisationExample.atl", file: atl-08-step-03-optimised-collections.atl)
+
+                Combine operations and avoid unnecessary intermediate collections.
+            }
+
+            @Step {
+                Use appropriate rule types.
+
+                @Code(name: "OptimisationExample.atl", file: atl-08-step-04-efficient-rules.atl)
+
+                Choose matched, lazy, or called rules based on transformation requirements.
+            }
+        }
+    }
+
+    @Section(title: "Advanced Optimisation Techniques") {
+        @ContentAndMedia {
+            Advanced optimisation focuses on reducing computational overhead, eliminating redundant operations, and measuring actual performance improvements.
+
+            These techniques target specific bottlenecks in transformation execution.
+        }
+
+        @Steps {
+            @Step {
+                Minimise helper call overhead.
+
+                @Code(name: "OptimisationExample.atl", file: atl-08-step-05-helper-optimisation.atl)
+
+                Reduce the number of helper calls in performance-critical sections.
+            }
+
+            @Step {
+                Avoid unnecessary type checking.
+
+                @Code(name: "OptimisationExample.atl", file: atl-08-step-06-type-optimisation.atl)
+
+                Use guard conditions instead of repeated type checks in bindings.
+            }
+
+            @Step {
+                Profile and measure improvements.
+
+                @Code(name: "OptimisationExample.atl", file: atl-08-step-07-profiling.atl)
+
+                Measure transformation performance to identify actual bottlenecks.
+            }
+
+            @Step {
+                Build an optimised transformation.
+
+                @Code(name: "OptimisationExample.atl", file: atl-08-step-08-complete-optimised.atl)
+
+                The complete transformation demonstrates all optimisation techniques working together.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What is the most common performance bottleneck in ATL?
+
+            @Choice(isCorrect: true) {
+                Nested collection iterations
+
+                @Justification(reaction: "Correct!") {
+                    Nested iterations have O(n²) or worse complexity. Combining operations or restructuring logic can often eliminate nesting and dramatically improve performance.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Using too many helpers
+
+                @Justification(reaction: "Not quite!") {
+                    Helpers themselves don't cause performance problems. The issue is what operations they perform, not how many exist.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Creating too many target elements
+
+                @Justification(reaction: "Incorrect!") {
+                    Element creation is generally fast. Performance issues come from inefficient queries and redundant computations.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            When should you cache helper results?
+
+            @Choice(isCorrect: false) {
+                Always, for every helper
+
+                @Justification(reaction: "Too broad!") {
+                    Only cache expensive computations that are called multiple times. Simple helpers don't need caching.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                When the helper performs expensive computations called multiple times
+
+                @Justification(reaction: "That's right!") {
+                    Cache results when a helper performs expensive operations (like large collection traversals) and is called repeatedly. For simple helpers, caching adds unnecessary complexity.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Never, it doesn't improve performance
+
+                @Justification(reaction: "Incorrect!") {
+                    Caching expensive computations can significantly improve performance by eliminating redundant work.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            How can you reduce collection operation overhead?
+
+            @Choice(isCorrect: false) {
+                Avoid using collections entirely
+
+                @Justification(reaction: "Impractical!") {
+                    Collections are fundamental to model transformations. The goal is to use them efficiently, not avoid them.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                Chain operations together instead of creating intermediate collections
+
+                @Justification(reaction: "Exactly!") {
+                    Chaining operations like `collection->select(...)-> collect(...)` is more efficient than storing intermediate results in separate variables.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Use only `forAll` and `exists`
+
+                @Justification(reaction: "Too restrictive!") {
+                    Different operations serve different purposes. The key is combining them efficiently, not limiting your toolkit.
+                }
+            }
+        }
+    }
+}

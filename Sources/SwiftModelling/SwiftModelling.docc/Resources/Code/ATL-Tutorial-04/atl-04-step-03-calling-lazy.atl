@@ -1,0 +1,29 @@
+-- @path Project=/Project/Project.ecore
+-- @path Report=/Report/Report.ecore
+
+module ProjectTransform;
+create OUT: Report from IN: Project;
+
+-- Lazy rule: creates task summaries only when needed
+lazy rule TaskSummary {
+    from
+        s: Project!Task
+    to
+        t: Report!Summary (
+            title <- s.name,
+            status <- if s.completed then 'Done' else 'Pending' endif
+        )
+}
+
+-- Matched rule that calls lazy rule for high-priority tasks
+rule HighPriorityProject {
+    from
+        s: Project!Project
+    to
+        t: Report!Document (
+            name <- s.name,
+            summaries <- s.tasks
+                ->select(task | task.priority > 5)
+                ->collect(task | thisModule.TaskSummary(task))
+        )
+}

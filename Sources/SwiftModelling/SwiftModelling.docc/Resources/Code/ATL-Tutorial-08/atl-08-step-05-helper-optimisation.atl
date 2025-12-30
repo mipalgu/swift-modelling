@@ -1,0 +1,11 @@
+-- @path Source=/Source/Source.ecore
+-- @path Target=/Target/Target.ecore
+
+module OptimisationExample;
+create OUT: Target from IN: Source;
+
+-- Call expensive helper once, reuse result
+helper context Source!Container def: statistics: String =
+    let count : Integer = self.elements->size() in
+    let active : Integer = self.elements->select(e | e.active)->size() in
+    'Total: ' + count.toString() + ', Active: ' + active.toString();

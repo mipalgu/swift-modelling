@@ -1,0 +1,13 @@
+-- @path Organisation=/Organisation/Organisation.ecore
+-- @path Report=/Report/Report.ecore
+
+module OrganisationTransform;
+create OUT: Report from IN: Organisation;
+
+-- Helper using oclIsTypeOf for exact type match
+helper context Organisation!Employee def: isManager(): Boolean =
+    self.oclIsTypeOf(Organisation!Manager);
+
+-- Helper using oclIsKindOf for subtype match
+helper context Organisation!Employee def: isEmployeeOrSubtype(): Boolean =
+    self.oclIsKindOf(Organisation!Employee);

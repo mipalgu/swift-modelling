@@ -1,0 +1,25 @@
+-- @path Source=/Source/Source.ecore
+-- @path Target=/Target/Target.ecore
+
+module OptimisationExample;
+create OUT: Target from IN: Source;
+
+-- Optimised helper: cache collection result
+helper context Source!Container def: activeElements: Sequence(Source!Element) =
+    self.elements->select(e | e.active);
+
+-- Optimised helper: combine operations
+helper context Source!Container def: activeElementNames: Sequence(String) =
+    self.activeElements->collect(e | e.name);
+
+-- Efficient rule using guard to filter early
+rule OptimisedTransform {
+    from
+        s: Source!Container (s.elements->size() > 0)
+    to
+        t: Target!Item (
+            name <- s.name,
+            count <- s.activeElements->size(),
+            names <- s.activeElementNames
+        )
+}

@@ -1,0 +1,62 @@
+-- @path Organisation=/Organisation/Organisation.ecore
+-- @path Report=/Report/Report.ecore
+
+module OrganisationTransform;
+create OUT: Report from IN: Organisation;
+
+-- Helper: format employee information
+helper context Organisation!Employee def: formattedInfo(): String =
+    self.name + ' (ID: ' + self.id.toString() + ')';
+
+-- Helper: get manager-specific information
+helper context Organisation!Employee def: getManagerInfo(): String =
+    if self.oclIsTypeOf(Organisation!Manager) then
+        let mgr : Organisation!Manager = self.oclAsType(Organisation!Manager) in
+        'Manager of ' + mgr.teamSize.toString() + ' people'
+    else
+        'Not a manager'
+    endif;
+
+-- Helper: get developer-specific information
+helper context Organisation!Employee def: getDeveloperInfo(): String =
+    if self.oclIsTypeOf(Organisation!Developer) then
+        let dev : Organisation!Developer = self.oclAsType(Organisation!Developer) in
+        'Develops in ' + dev.programmingLanguage
+    else
+        'Not a developer'
+    endif;
+
+-- Helper: calculate department statistics
+helper context Organisation!Department def: statistics(): String =
+    let total : Integer = self.employees->size() in
+    let managers : Integer = self.employees
+        ->select(e | e.oclIsTypeOf(Organisation!Manager))
+        ->size() in
+    let developers : Integer = self.employees
+        ->select(e | e.oclIsTypeOf(Organisation!Developer))
+        ->size() in
+    'Total: ' + total.toString() + 
+    ', Managers: ' + managers.toString() + 
+    ', Developers: ' + developers.toString();
+
+-- Rule: Transform department to report
+rule DepartmentToReport {
+    from
+        s: Organisation!Department
+    to
+        t: Report!DepartmentReport (
+            name <- s.name,
+            statistics <- s.statistics(),
+            employees <- s.employees
+                ->collect(e | e.formattedInfo() + ' - ' + 
+                    if e.oclIsTypeOf(Organisation!Manager) then
+                        e.getManagerInfo()
+                    else
+                        if e.oclIsTypeOf(Organisation!Developer) then
+                            e.getDeveloperInfo()
+                        else
+                            'Employee'
+                        endif
+                    endif)
+        )
+}

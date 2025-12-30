@@ -1,0 +1,80 @@
+-- @path Project=/Project/Project.ecore
+-- @path Report=/Report/Report.ecore
+
+module ProjectTransform;
+create OUT: Report from IN: Project;
+
+-- Helper: calculate completion percentage
+helper context Project!Project def: completionPercentage(): Integer =
+    let completedCount : Integer = self.tasks->select(t | t.completed)->size() in
+    let totalCount : Integer = self.tasks->size() in
+    if totalCount > 0 then
+        (completedCount * 100) / totalCount
+    else
+        0
+    endif;
+
+-- Lazy rule: creates task summaries on demand
+lazy rule TaskSummary {
+    from
+        s: Project!Task
+    to
+        t: Report!Summary (
+            title <- s.name,
+            status <- if s.completed then 'Done' else 'Pending' endif,
+            priorityLevel <- s.priority
+        )
+}
+
+-- Lazy rule: creates resource listings
+lazy rule ResourceListing {
+    from
+        s: Project!Resource
+    to
+        t: Report!ResourceItem (
+            name <- s.name,
+            category <- s.type
+        )
+}
+
+-- Called rule: creates executive summaries
+rule CreateExecutiveSummary(proj : Project!Project) {
+    to
+        summary: Report!ExecutiveSummary (
+            projectName <- proj.name,
+            completion <- proj.completionPercentage(),
+            taskCount <- proj.tasks->size(),
+            resourceCount <- proj.resources->size()
+        )
+    do {
+        summary;
+    }
+}
+
+-- Main matched rule combining all patterns
+rule ProjectToReport {
+    from
+        s: Project!Project
+    to
+        t: Report!Document (
+            name <- s.name,
+            completionRate <- s.completionPercentage(),
+            taskSummaries <- s.tasks
+                ->select(task | task.priority >= 3)
+                ->collect(task | thisModule.TaskSummary(task)),
+            resources <- s.resources
+                ->collect(res | thisModule.ResourceListing(res))
+        )
+    do {
+        -- Create executive summary via called rule
+        thisModule.CreateExecutiveSummary(s);
+        
+        -- Add completion status message
+        if s.completionPercentage() = 100 then
+            t.statusMessage <- 'Project complete!'
+        else
+            t.statusMessage <- 'Project in progress: ' + 
+                s.completionPercentage().toString() + '% complete'
+        endif;
+    }
+}

@@ -1,0 +1,13 @@
+-- @path University=/University/University.ecore
+-- @path Catalog=/Catalog/Catalog.ecore
+
+module UniversityTransform;
+create OUT: Catalog from IN: University;
+
+-- Helper using collect: get all course titles from a department
+helper context University!Department def: courseTitles: Sequence(String) =
+    self.courses->collect(c | c.title);
+
+-- Helper using select: get only advanced courses (300+ level)
+helper context University!Department def: advancedCourses: Sequence(University!Course) =
+    self.courses->select(c | c.level >= 300);

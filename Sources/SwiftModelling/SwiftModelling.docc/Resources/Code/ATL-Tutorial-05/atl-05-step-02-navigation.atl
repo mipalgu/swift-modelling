@@ -1,0 +1,13 @@
+-- @path Organisation=/Organisation/Organisation.ecore
+-- @path Report=/Report/Report.ecore
+
+module OrganisationTransform;
+create OUT: Report from IN: Organisation;
+
+-- Helper demonstrating navigation
+helper context Organisation!Department def: employeeNames: Sequence(String) =
+    self.employees->collect(e | e.name);
+
+-- Helper navigating to check employee count
+helper context Organisation!Department def: isLarge(): Boolean =
+    self.employees->size() > 10;

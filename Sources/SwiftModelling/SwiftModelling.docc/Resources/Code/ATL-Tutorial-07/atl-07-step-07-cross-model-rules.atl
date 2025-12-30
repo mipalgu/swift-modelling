@@ -1,0 +1,19 @@
+-- @path ModelA=/ModelA/ModelA.ecore
+-- @path ModelB=/ModelB/ModelB.ecore
+-- @path Target=/Target/Target.ecore
+
+module MultiModelExample;
+create OUT: Target from INA: ModelA, INB: ModelB;
+
+-- Coordinate information from multiple sources
+rule CoordinatedTransform {
+    from
+        a: ModelA!ElementA
+    to
+        t: Target!Item (
+            nameFromA <- a.name,
+            relatedB <- INB!ElementB.allInstances()
+                ->select(b | b.refId = a.id)
+                ->collect(b | b.name)
+        )
+}

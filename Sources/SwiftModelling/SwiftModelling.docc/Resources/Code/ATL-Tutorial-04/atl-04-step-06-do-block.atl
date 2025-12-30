@@ -1,0 +1,25 @@
+-- @path Project=/Project/Project.ecore
+-- @path Report=/Report/Report.ecore
+
+module ProjectTransform;
+create OUT: Report from IN: Project;
+
+-- Rule with do block for imperative operations
+rule ProjectReport {
+    from
+        s: Project!Project
+    to
+        t: Report!Document (
+            name <- s.name
+        )
+    do {
+        -- Imperative code: calculate completion percentage
+        let completedCount : Integer = s.tasks->select(task | task.completed)->size() in
+        let totalCount : Integer = s.tasks->size() in
+        if totalCount > 0 then
+            t.completionRate <- (completedCount * 100) / totalCount
+        else
+            t.completionRate <- 0
+        endif;
+    }
+}

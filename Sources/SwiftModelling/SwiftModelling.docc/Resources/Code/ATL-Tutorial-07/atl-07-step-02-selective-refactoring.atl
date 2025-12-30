@@ -1,0 +1,15 @@
+-- @path Model=/Model/Model.ecore
+
+module RefiningExample;
+refining Model;
+
+-- Only transform elements matching criteria
+rule UpdateSpecificElements {
+    from
+        s: Model!Element (s.version < 2)
+    to
+        t: Model!Element (
+            name <- s.name,
+            version <- 2
+        )
+}

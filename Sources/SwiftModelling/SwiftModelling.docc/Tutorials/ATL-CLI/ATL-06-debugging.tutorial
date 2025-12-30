@@ -1,0 +1,181 @@
+@Tutorial(time: 35) {
+    @Intro(title: "Debugging Transformations") {
+        Learn techniques for debugging ATL transformations and diagnosing common transformation issues.
+
+        In this tutorial, you'll discover how to trace transformation execution, diagnose binding errors, and resolve common ATL problems.
+
+        You'll master systematic debugging approaches that help you quickly identify and fix transformation issues.
+
+        @Image(source: "atl-transformations.svg", alt: "ATL Transformations")
+    }
+
+    @Section(title: "Understanding Transformation Errors") {
+        @ContentAndMedia {
+            ATL transformations can fail for various reasons: missing bindings, type mismatches, undefined references, or OCL expression errors.
+
+            Understanding error messages and common failure patterns is essential for efficient debugging.
+        }
+
+        @Steps {
+            @Step {
+                Recognise common error patterns.
+
+                @Code(name: "DebugExample.atl", file: atl-06-step-01-common-errors.atl)
+
+                This example shows typical error scenarios: undefined bindings, null references, and type mismatches.
+            }
+
+            @Step {
+                Add defensive checks.
+
+                @Code(name: "DebugExample.atl", file: atl-06-step-02-defensive-checks.atl)
+
+                Use `oclIsUndefined()` and type checks to prevent runtime errors.
+            }
+
+            @Step {
+                Validate helper results.
+
+                @Code(name: "DebugExample.atl", file: atl-06-step-03-helper-validation.atl)
+
+                Ensure helpers return valid values before using them in bindings.
+            }
+
+            @Step {
+                Handle edge cases.
+
+                @Code(name: "DebugExample.atl", file: atl-06-step-04-edge-cases.atl)
+
+                Test boundary conditions like empty collections and optional references.
+            }
+        }
+    }
+
+    @Section(title: "Debugging Techniques") {
+        @ContentAndMedia {
+            Systematic debugging involves tracing execution, validating intermediate results, and testing transformations incrementally.
+
+            Use logging helpers, incremental development, and careful testing to identify issues.
+        }
+
+        @Steps {
+            @Step {
+                Add logging helpers for debugging.
+
+                @Code(name: "DebugExample.atl", file: atl-06-step-05-logging-helpers.atl)
+
+                Create helpers that output diagnostic information during transformation.
+            }
+
+            @Step {
+                Debug collection operations.
+
+                @Code(name: "DebugExample.atl", file: atl-06-step-06-collection-debugging.atl)
+
+                Verify collection operations produce expected results.
+            }
+
+            @Step {
+                Test transformations incrementally.
+
+                @Code(name: "DebugExample.atl", file: atl-06-step-07-incremental-testing.atl)
+
+                Build transformations gradually, testing each rule independently.
+            }
+
+            @Step {
+                Build a robust transformation with error handling.
+
+                @Code(name: "DebugExample.atl", file: atl-06-step-08-robust-transformation.atl)
+
+                The complete transformation demonstrates defensive programming and error handling techniques.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What is the most common cause of ATL transformation failures?
+
+            @Choice(isCorrect: false) {
+                Syntax errors in the ATL file
+
+                @Justification(reaction: "Try again!") {
+                    Syntax errors are caught during parsing. Runtime failures typically occur during transformation execution.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                Null or undefined references in bindings
+
+                @Justification(reaction: "Correct!") {
+                    Most runtime failures occur when bindings try to access properties of null or undefined objects. Always check with `oclIsUndefined()` before navigating.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Using too many helpers
+
+                @Justification(reaction: "Incorrect!") {
+                    Helpers don't cause failures. They're reusable functions that help organise transformation logic.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            When should you use `oclIsUndefined()`?
+
+            @Choice(isCorrect: false) {
+                Only when debugging
+
+                @Justification(reaction: "Not quite!") {
+                    `oclIsUndefined()` should be used in production code to handle optional references safely, not just during debugging.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                Before navigating optional references
+
+                @Justification(reaction: "That's right!") {
+                    Always check if a reference is undefined before accessing its properties to prevent null pointer errors during transformation.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                After every collection operation
+
+                @Justification(reaction: "Incorrect!") {
+                    Collection operations return collections (possibly empty), not undefined values. Check for empty with `isEmpty()` instead.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What is the best approach to debugging complex transformations?
+
+            @Choice(isCorrect: true) {
+                Build and test incrementally, rule by rule
+
+                @Justification(reaction: "Exactly!") {
+                    Incremental development lets you verify each rule works correctly before adding the next. This makes it much easier to identify which rule causes problems.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Write all rules first, then test everything together
+
+                @Justification(reaction: "Not recommended!") {
+                    Testing everything at once makes it difficult to isolate which rule is causing problems.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Rely on error messages to find all problems
+
+                @Justification(reaction: "Insufficient!") {
+                    Whilst error messages help, proactive testing and validation catches more issues earlier.
+                }
+            }
+        }
+    }
+}

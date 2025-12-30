@@ -1,0 +1,11 @@
+-- @path Source=/Source/Source.ecore
+-- @path Target=/Target/Target.ecore
+
+module OptimisationExample;
+create OUT: Target from IN: Source;
+
+-- Add timing helpers to measure performance
+helper def: timestamp(): String =
+    'Processing at time: ' + thisModule.getCurrentTime();
+
+-- Measure transformation sections to identify bottlenecks

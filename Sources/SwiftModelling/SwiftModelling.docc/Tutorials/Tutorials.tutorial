@@ -24,9 +24,16 @@
     @Chapter(name: "ATL Transformations") {
         Transform models with the Atlas Transformation Language.
 
-        @Image(source: "atl-transformations.png", alt: "ATL Transformations")
+        @Image(source: "atl-transformations.svg", alt: "ATL Transformations")
 
         @TutorialReference(tutorial: "doc:01-first-transformation")
+        @TutorialReference(tutorial: "doc:ATL-02-helpers-guards")
+        @TutorialReference(tutorial: "doc:ATL-03-collections")
+        @TutorialReference(tutorial: "doc:ATL-04-advanced-rules")
+        @TutorialReference(tutorial: "doc:ATL-05-ocl-expressions")
+        @TutorialReference(tutorial: "doc:ATL-06-debugging")
+        @TutorialReference(tutorial: "doc:ATL-07-complex-transformations")
+        @TutorialReference(tutorial: "doc:ATL-08-performance")
     }
 
     @Chapter(name: "MTL Code Generation") {

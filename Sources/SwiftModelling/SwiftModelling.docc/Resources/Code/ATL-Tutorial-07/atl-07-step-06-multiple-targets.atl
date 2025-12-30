@@ -1,0 +1,26 @@
+-- @path Source=/Source/Source.ecore
+-- @path TargetA=/TargetA/TargetA.ecore
+-- @path TargetB=/TargetB/TargetB.ecore
+
+module MultiModelExample;
+create OUTA: TargetA, OUTB: TargetB from IN: Source;
+
+-- Create elements in first target model
+rule ToTargetA {
+    from
+        s: Source!Element
+    to
+        t: OUTA!ItemA (
+            name <- s.name
+        )
+}
+
+-- Create elements in second target model
+rule ToTargetB {
+    from
+        s: Source!Element  
+    to
+        t: OUTB!ItemB (
+            title <- s.name
+        )
+}

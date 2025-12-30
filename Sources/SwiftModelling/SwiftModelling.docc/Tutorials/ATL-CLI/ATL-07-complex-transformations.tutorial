@@ -1,0 +1,181 @@
+@Tutorial(time: 60) {
+    @Intro(title: "Complex Model Transformations") {
+        Master complex transformation scenarios including refining mode, multiple source/target models, and sophisticated rule coordination.
+
+        In this tutorial, you'll tackle real-world transformation challenges that require advanced ATL features and careful architectural design.
+
+        You'll learn how to handle model refactoring, multi-model transformations, and complex metamodel mappings.
+
+        @Image(source: "atl-transformations.svg", alt: "ATL Transformations")
+    }
+
+    @Section(title: "Refining Mode Transformations") {
+        @ContentAndMedia {
+            Refining mode enables in-place transformations where unmatched elements are automatically copied to the output. This is useful for model refactoring and partial transformations.
+
+            Declare refining mode with `refining` instead of `create` in the module header.
+        }
+
+        @Steps {
+            @Step {
+                Understand refining mode syntax.
+
+                @Code(name: "RefiningExample.atl", file: atl-07-step-01-refining-mode.atl)
+
+                Refining mode uses `refining` and automatically copies unmatched elements.
+            }
+
+            @Step {
+                Refactor model elements selectively.
+
+                @Code(name: "RefiningExample.atl", file: atl-07-step-02-selective-refactoring.atl)
+
+                Only matched elements are transformed; others pass through unchanged.
+            }
+
+            @Step {
+                Combine matched and lazy rules in refining mode.
+
+                @Code(name: "RefiningExample.atl", file: atl-07-step-03-refining-with-lazy.atl)
+
+                Use lazy rules to create new elements whilst refactoring existing ones.
+            }
+
+            @Step {
+                Build a complete refactoring transformation.
+
+                @Code(name: "RefiningExample.atl", file: atl-07-step-04-complete-refactoring.atl)
+
+                This transformation demonstrates practical model refactoring using refining mode.
+            }
+        }
+    }
+
+    @Section(title: "Multi-Model Transformations") {
+        @ContentAndMedia {
+            Complex transformations may consume multiple source models or produce multiple target models. ATL supports arbitrary source/target model configurations.
+
+            Declare multiple models in the module header and reference them by name in rules.
+        }
+
+        @Steps {
+            @Step {
+                Set up multiple source models.
+
+                @Code(name: "MultiModelExample.atl", file: atl-07-step-05-multiple-sources.atl)
+
+                Transformations can read from multiple source models simultaneously.
+            }
+
+            @Step {
+                Generate multiple target models.
+
+                @Code(name: "MultiModelExample.atl", file: atl-07-step-06-multiple-targets.atl)
+
+                Rules can create elements in different target models based on transformation logic.
+            }
+
+            @Step {
+                Coordinate rules across models.
+
+                @Code(name: "MultiModelExample.atl", file: atl-07-step-07-cross-model-rules.atl)
+
+                Complex transformations coordinate multiple rules that work across different models.
+            }
+
+            @Step {
+                Build a complete multi-model transformation.
+
+                @Code(name: "MultiModelExample.atl", file: atl-07-step-08-complete-multi-model.atl)
+
+                This transformation demonstrates sophisticated multi-model processing.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What is refining mode used for?
+
+            @Choice(isCorrect: true) {
+                In-place transformations that copy unmatched elements
+
+                @Justification(reaction: "Correct!") {
+                    Refining mode automatically copies elements that don't match any rule, making it ideal for model refactoring where you only want to change specific elements.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Improving transformation performance
+
+                @Justification(reaction: "Not quite!") {
+                    Whilst refining mode may affect performance, its primary purpose is enabling partial transformations, not optimisation.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Transforming between incompatible metamodels
+
+                @Justification(reaction: "Incorrect!") {
+                    Refining mode requires compatible source and target metamodels since unmatched elements are copied.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Can you mix refining mode with lazy rules?
+
+            @Choice(isCorrect: true) {
+                Yes, lazy rules work normally in refining mode
+
+                @Justification(reaction: "That's right!") {
+                    Lazy rules function the same way in refining mode. The only difference is that unmatched elements are automatically copied.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                No, refining mode disables lazy rules
+
+                @Justification(reaction: "Incorrect!") {
+                    Lazy rules work perfectly in refining mode. They're invoked explicitly regardless of the transformation mode.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Only if you declare them specially
+
+                @Justification(reaction: "Not required!") {
+                    Lazy rules use the same syntax in both normal and refining modes.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            How do you specify which target model to create elements in?
+
+            @Choice(isCorrect: false) {
+                By the order of rule definitions
+
+                @Justification(reaction: "Try again!") {
+                    Rule order doesn't determine target models. You explicitly specify the target model in each rule.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                By prefixing the type with the target model name
+
+                @Justification(reaction: "Exactly!") {
+                    Use syntax like `OUT1!Type` or `OUT2!Type` to specify which target model should contain the created element.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                ATL automatically decides based on metamodel
+
+                @Justification(reaction: "Incorrect!") {
+                    You must explicitly specify the target model. ATL doesn't automatically determine it.
+                }
+            }
+        }
+    }
+}

@@ -1,16 +1,16 @@
 @Tutorial(time: 15) {
     @Intro(title: "Hello World Template") {
 
-        Learn the basics of MTL (Model-to-Text Language) by creating your first code generation template.
+        Learn the basics of MTL (Model-to-Text Language) by creating your first code generation template using the OMG MOFM2T standard.
 
-        In this tutorial, you'll create a simple "Hello, World!" template, understand MTL syntax, and generate your first output using swift-mtl.
+        In this tutorial, you'll create a simple "Hello, World!" template, understand MOFM2T syntax, and generate your first output using swift-mtl.
 
         @Image(source: "mtl-code-generation.svg", alt: "MTL Code Generation")
     }
 
     @Section(title: "Understanding MTL Templates") {
         @ContentAndMedia {
-            MTL (Model-to-Text Language) is Acceleo's template language for generating code and text from models. Templates combine static text with dynamic expressions to produce output.
+            MTL (Model-to-Text Language) is the OMG MOFM2T (MOF Model-to-Text Transformation) standard for generating code and text from models. Templates combine static text with dynamic expressions to produce output.
 
             Every MTL template starts with a module declaration and contains at least one template definition. Think of templates as functions that generate text instead of returning values.
 

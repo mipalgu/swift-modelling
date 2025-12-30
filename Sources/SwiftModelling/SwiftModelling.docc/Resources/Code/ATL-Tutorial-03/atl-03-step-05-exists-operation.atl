@@ -1,0 +1,9 @@
+-- @path University=/University/University.ecore
+-- @path Catalog=/Catalog/Catalog.ecore
+
+module UniversityTransform;
+create OUT: Catalog from IN: University;
+
+-- Helper using exists: check if department has any graduate courses
+helper context University!Department def: hasGraduateCourses(): Boolean =
+    self.courses->exists(c | c.level >= 500);

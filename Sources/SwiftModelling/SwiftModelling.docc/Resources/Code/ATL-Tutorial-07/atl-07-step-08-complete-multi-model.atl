@@ -1,0 +1,41 @@
+-- @path ModelA=/ModelA/ModelA.ecore
+-- @path ModelB=/ModelB/ModelB.ecore
+-- @path Target=/Target/Target.ecore
+
+module MultiModelExample;
+create OUT: Target from INA: ModelA, INB: ModelB;
+
+-- Transform from first source model
+rule TransformA {
+    from
+        s: ModelA!ElementA
+    to
+        t: Target!Item (
+            name <- s.name,
+            source <- 'ModelA'
+        )
+}
+
+-- Transform from second source model  
+rule TransformB {
+    from
+        s: ModelB!ElementB
+    to
+        t: Target!Item (
+            name <- s.name,
+            source <- 'ModelB'
+        )
+}
+
+-- Combine information from both models
+rule CombineModels {
+    from
+        a: ModelA!ElementA,
+        b: ModelB!ElementB
+    to
+        t: Target!Combined (
+            nameA <- a.name,
+            nameB <- b.name,
+            combined <- a.name + ' + ' + b.name
+        )
+}

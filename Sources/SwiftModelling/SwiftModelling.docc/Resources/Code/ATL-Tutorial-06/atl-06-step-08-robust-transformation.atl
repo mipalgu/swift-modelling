@@ -1,0 +1,36 @@
+-- @path Source=/Source/Source.ecore
+-- @path Target=/Target/Target.ecore
+
+module DebugExample;
+create OUT: Target from IN: Source;
+
+-- Defensive helper with null checking
+helper context Source!Element def: safeName(): String =
+    if not self.parent.oclIsUndefined() then
+        self.parent.name
+    else
+        'Root Element'
+    endif;
+
+-- Helper with collection validation
+helper context Source!Container def: validChildren: Sequence(Source!Element) =
+    if not self.children.oclIsUndefined() then
+        self.children->select(c | not c.oclIsUndefined())
+    else
+        Sequence{}
+    endif;
+
+-- Robust rule with comprehensive error handling
+rule ElementTransform {
+    from
+        s: Source!Element
+    to
+        t: Target!Item (
+            name <- s.safeName(),
+            description <- if not s.description.oclIsUndefined() then
+                s.description
+            else
+                'No description provided'
+            endif
+        )
+}

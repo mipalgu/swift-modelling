@@ -1,0 +1,11 @@
+-- @path Source=/Source/Source.ecore
+-- @path Target=/Target/Target.ecore
+
+module OptimisationExample;
+create OUT: Target from IN: Source;
+
+-- ANTI-PATTERN: Nested iterations (O(n²))
+helper context Source!Container def: inefficientSearch(): Sequence(Source!Element) =
+    self.elements->select(e1 | 
+        self.elements->exists(e2 | e2.name = e1.name)
+    );

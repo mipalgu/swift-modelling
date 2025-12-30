@@ -1,0 +1,14 @@
+-- @path Model=/Model/Model.ecore
+
+module RefiningExample;
+refining Model;
+
+-- Lazy rule in refining mode
+lazy rule CreateSummary {
+    from
+        s: Model!Element
+    to
+        t: Model!Summary (
+            elementName <- s.name
+        )
+}

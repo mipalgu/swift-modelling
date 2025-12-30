@@ -8,8 +8,8 @@ Swift Modelling provides comprehensive support for Model-Driven Engineering (MDE
 
 - **Ecore/EMF**: Define metamodels and manage model instances
 - **ATL**: Transform models with the Atlas Transformation Language
-- **MTL**: Generate code from models using templates
-- **AQL**: Query and navigate models with the Acceleo Query Language
+- **MTL**: Generate code from models using the OMG MOFM2T (MOF Model-to-Text Transformation) standard
+- **AQL**: Query and navigate models with the Acceleo Query Language (AQL)
 
 ## Topics
 

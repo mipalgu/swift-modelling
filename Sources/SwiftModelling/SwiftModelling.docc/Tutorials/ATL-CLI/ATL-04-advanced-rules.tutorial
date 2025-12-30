@@ -1,0 +1,181 @@
+@Tutorial(time: 40) {
+    @Intro(title: "Advanced Rule Patterns") {
+        Explore advanced ATL rule patterns including lazy rules, called rules, and imperative sections.
+
+        In this tutorial, you'll learn when and how to use different rule types for sophisticated transformation scenarios.
+
+        You'll discover how lazy rules enable on-demand element creation and how called rules provide explicit control over transformation flow.
+
+        @Image(source: "atl-transformations.svg", alt: "ATL Transformations")
+    }
+
+    @Section(title: "Lazy Rules") {
+        @ContentAndMedia {
+            Lazy rules create target elements only when explicitly requested. Unlike matched rules that automatically apply to all matching source elements, lazy rules provide on-demand element creation.
+
+            Lazy rules are defined with the `lazy rule` keyword and invoked using `thisModule.resolveLazy` or through bindings.
+        }
+
+        @Steps {
+            @Step {
+                Create a metamodel with optional relationships.
+
+                @Code(name: "Project.ecore", file: atl-04-step-01-project-metamodel.ecore)
+
+                This metamodel defines Project, Task, and Resource classes with various relationships.
+            }
+
+            @Step {
+                Define a basic lazy rule.
+
+                @Code(name: "ProjectTransform.atl", file: atl-04-step-02-lazy-rule.atl)
+
+                Lazy rules only execute when explicitly called, useful for optional or conditional transformations.
+            }
+
+            @Step {
+                Call a lazy rule from a matched rule.
+
+                @Code(name: "ProjectTransform.atl", file: atl-04-step-03-calling-lazy.atl)
+
+                Use `thisModule.resolveLazy` to invoke lazy rules selectively.
+            }
+
+            @Step {
+                Create multiple lazy rules.
+
+                @Code(name: "ProjectTransform.atl", file: atl-04-step-04-multiple-lazy.atl)
+
+                Different lazy rules handle different transformation scenarios on demand.
+            }
+        }
+    }
+
+    @Section(title: "Called Rules and Imperative Sections") {
+        @ContentAndMedia {
+            Called rules are explicitly invoked procedures that can create multiple target elements and execute imperative code. They provide procedural control flow within declarative transformations.
+
+            The `do` block enables imperative operations like assignments, loops, and conditional execution.
+        }
+
+        @Steps {
+            @Step {
+                Define a called rule.
+
+                @Code(name: "ProjectTransform.atl", file: atl-04-step-05-called-rule.atl)
+
+                Called rules are invoked explicitly and can accept parameters.
+            }
+
+            @Step {
+                Add an imperative do block.
+
+                @Code(name: "ProjectTransform.atl", file: atl-04-step-06-do-block.atl)
+
+                The `do` block contains imperative code that executes after target element creation.
+            }
+
+            @Step {
+                Combine called rules with matched rules.
+
+                @Code(name: "ProjectTransform.atl", file: atl-04-step-07-combined-rules.atl)
+
+                Matched rules invoke called rules to handle complex transformation scenarios.
+            }
+
+            @Step {
+                Build a complete transformation with advanced patterns.
+
+                @Code(name: "ProjectTransform.atl", file: atl-04-step-08-complete-transformation.atl)
+
+                The complete transformation demonstrates lazy rules, called rules, and imperative sections working together.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            When should you use a lazy rule instead of a matched rule?
+
+            @Choice(isCorrect: true) {
+                When target elements should only be created on demand
+
+                @Justification(reaction: "Correct!") {
+                    Lazy rules enable conditional element creation. They only execute when explicitly invoked, whereas matched rules automatically process all matching elements.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                When you want faster transformation
+
+                @Justification(reaction: "Not quite!") {
+                    Performance isn't the main consideration. Lazy rules provide control over when elements are created.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                When working with large models
+
+                @Justification(reaction: "Incorrect!") {
+                    Model size doesn't determine rule type. Lazy rules are about conditional creation, not optimisation.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What is the purpose of a called rule?
+
+            @Choice(isCorrect: false) {
+                To automatically match source elements
+
+                @Justification(reaction: "Try again!") {
+                    Matched rules handle automatic matching. Called rules are explicitly invoked like functions.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                To provide explicit procedural control over transformation
+
+                @Justification(reaction: "That's right!") {
+                    Called rules act like functions that can be explicitly invoked with parameters, providing procedural control within declarative transformations.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                To replace helper functions
+
+                @Justification(reaction: "Not correct!") {
+                    Called rules create target elements and can contain imperative code. Helpers compute values without side effects.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What can you do in a `do` block that you can't do in bindings?
+
+            @Choice(isCorrect: false) {
+                Create new target elements
+
+                @Justification(reaction: "Try again!") {
+                    Target elements are created in the `to` section. The `do` block executes after creation.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                Execute imperative statements like assignments and loops
+
+                @Justification(reaction: "Exactly!") {
+                    The `do` block allows imperative operations including assignments, conditional statements, and iteration that aren't available in declarative bindings.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Call helper functions
+
+                @Justification(reaction: "Incorrect!") {
+                    You can call helpers in both bindings and `do` blocks. The distinguishing feature is imperative operations.
+                }
+            }
+        }
+    }
+}

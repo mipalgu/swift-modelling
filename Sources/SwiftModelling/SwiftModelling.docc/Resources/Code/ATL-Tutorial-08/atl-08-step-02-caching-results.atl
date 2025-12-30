@@ -1,0 +1,12 @@
+-- @path Source=/Source/Source.ecore
+-- @path Target=/Target/Target.ecore
+
+module OptimisationExample;
+create OUT: Target from IN: Source;
+
+-- OPTIMISED: Cache expensive computation
+helper context Source!Container def: elementNames: Set(String) =
+    self.elements->collect(e | e.name)->asSet();
+
+helper context Source!Container def: hasElement(name : String): Boolean =
+    self.elementNames->includes(name);

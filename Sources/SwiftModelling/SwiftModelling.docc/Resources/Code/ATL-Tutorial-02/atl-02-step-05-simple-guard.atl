@@ -1,0 +1,16 @@
+-- @path Library=/Library/Library.ecore
+-- @path Catalog=/Catalog/Catalog.ecore
+
+module LibraryTransform;
+create OUT: Catalog from IN: Library;
+
+-- Rule with simple guard: only modern books
+rule ModernBook {
+    from
+        s: Library!Book (s.yearPublished >= 1950)
+    to
+        t: Catalog!Item (
+            title <- s.title,
+            category <- 'Modern'
+        )
+}

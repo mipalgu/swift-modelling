@@ -1,0 +1,7 @@
+-- @path Model=/Model/Model.ecore
+
+module RefiningExample;
+refining Model;
+
+-- Refining mode: unmatched elements copied automatically
+-- Only transform specific elements

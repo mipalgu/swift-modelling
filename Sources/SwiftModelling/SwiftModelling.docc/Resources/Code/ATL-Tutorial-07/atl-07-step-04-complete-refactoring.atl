@@ -1,0 +1,19 @@
+-- @path Model=/Model/Model.ecore
+
+module RefiningExample;
+refining Model;
+
+-- Helper to identify elements needing refactoring
+helper context Model!Element def: needsRefactoring(): Boolean =
+    self.deprecated = true;
+
+-- Only refactor deprecated elements
+rule RefactorDeprecated {
+    from
+        s: Model!Element (s.needsRefactoring())
+    to
+        t: Model!Element (
+            name <- 'Updated_' + s.name,
+            deprecated <- false
+        )
+}

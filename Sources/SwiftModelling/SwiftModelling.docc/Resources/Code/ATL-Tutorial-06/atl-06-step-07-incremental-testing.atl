@@ -1,0 +1,17 @@
+-- @path Source=/Source/Source.ecore
+-- @path Target=/Target/Target.ecore
+
+module DebugExample;
+create OUT: Target from IN: Source;
+
+-- Test one rule at a time
+rule SimpleTransform {
+    from
+        s: Source!Element
+    to
+        t: Target!Item (
+            name <- s.name
+        )
+}
+
+-- Add more rules incrementally after testing above

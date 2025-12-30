@@ -1,0 +1,13 @@
+-- @path Source=/Source/Source.ecore
+-- @path Target=/Target/Target.ecore
+
+module DebugExample;
+create OUT: Target from IN: Source;
+
+-- Handle empty collections
+helper context Source!Container def: firstElementName(): String =
+    if self.elements->notEmpty() then
+        self.elements->first().name
+    else
+        'Empty container'
+    endif;

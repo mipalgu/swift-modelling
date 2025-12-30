@@ -1,0 +1,20 @@
+-- @path Library=/Library/Library.ecore
+-- @path Catalog=/Catalog/Catalog.ecore
+
+module LibraryTransform;
+create OUT: Catalog from IN: Library;
+
+-- Attribute helper: determines if a book is a classic
+helper context Library!Book def: isClassic(): Boolean =
+    self.yearPublished < 1950;
+
+-- Rule using helper in guard: only classic books
+rule ClassicBook {
+    from
+        s: Library!Book (s.isClassic())
+    to
+        t: Catalog!Item (
+            title <- s.title,
+            category <- 'Classic'
+        )
+}

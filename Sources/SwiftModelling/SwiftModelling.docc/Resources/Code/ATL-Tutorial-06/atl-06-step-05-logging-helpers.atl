@@ -1,0 +1,9 @@
+-- @path Source=/Source/Source.ecore
+-- @path Target=/Target/Target.ecore
+
+module DebugExample;
+create OUT: Target from IN: Source;
+
+-- Debug helper that traces execution
+helper context Source!Element def: debugInfo(): String =
+    'Processing: ' + self.name + ' (type: ' + self.oclType().name + ')';

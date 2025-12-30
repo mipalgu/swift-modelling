@@ -1,0 +1,17 @@
+-- @path Project=/Project/Project.ecore
+-- @path Report=/Report/Report.ecore
+
+module ProjectTransform;
+create OUT: Report from IN: Project;
+
+-- Called rule: explicitly invoked to create status reports
+rule CreateStatusReport(proj : Project!Project, taskCount : Integer) {
+    to
+        report: Report!StatusReport (
+            projectName <- proj.name,
+            totalTasks <- taskCount
+        )
+    do {
+        report;
+    }
+}

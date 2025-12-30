@@ -1,0 +1,29 @@
+-- @path Project=/Project/Project.ecore
+-- @path Report=/Report/Report.ecore
+
+module ProjectTransform;
+create OUT: Report from IN: Project;
+
+-- Lazy rule 1: creates brief task summaries
+lazy rule BriefTaskSummary {
+    from
+        s: Project!Task
+    to
+        t: Report!Summary (
+            title <- s.name,
+            status <- if s.completed then 'Done' else 'Pending' endif
+        )
+}
+
+-- Lazy rule 2: creates detailed task summaries
+lazy rule DetailedTaskSummary {
+    from
+        s: Project!Task
+    to
+        t: Report!DetailedSummary (
+            title <- s.name,
+            status <- if s.completed then 'Done' else 'Pending' endif,
+            priority <- s.priority,
+            description <- 'Priority ' + s.priority.toString() + ' task'
+        )
+}
