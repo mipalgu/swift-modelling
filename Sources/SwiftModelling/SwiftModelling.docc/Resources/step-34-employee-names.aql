@@ -1,0 +1,1 @@
+self.employees->collect(e | e.name)

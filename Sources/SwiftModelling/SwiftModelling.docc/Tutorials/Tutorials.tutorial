@@ -8,6 +8,19 @@
         Start with the beginner tutorials in any technology area, then progress to intermediate and advanced topics.
     }
 
+    @Chapter(name: "Ecore Metamodeling") {
+        Define metamodels and work with model instances using Ecore.
+
+        @Image(source: "ecore-metamodeling.svg", alt: "Ecore Metamodeling Workflow")
+
+        @TutorialReference(tutorial: "doc:01-first-metamodel")
+        @TutorialReference(tutorial: "doc:02-model-instances")
+        @TutorialReference(tutorial: "doc:03-metamodel-relationships")
+        @TutorialReference(tutorial: "doc:04-advanced-features")
+        @TutorialReference(tutorial: "doc:05-xmi-json-conversion")
+        @TutorialReference(tutorial: "doc:06-querying-models")
+    }
+
     @Chapter(name: "ATL Transformations") {
         Transform models with the Atlas Transformation Language.
 

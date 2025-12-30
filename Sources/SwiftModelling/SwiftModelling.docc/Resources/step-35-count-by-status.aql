@@ -1,0 +1,4 @@
+let fullTime = self.employees->select(e | e.status = EmploymentStatus::FULL_TIME)->size() in
+let partTime = self.employees->select(e | e.status = EmploymentStatus::PART_TIME)->size() in
+let contractors = self.employees->select(e | e.status = EmploymentStatus::CONTRACTOR)->size() in
+Tuple{fullTime=fullTime, partTime=partTime, contractors=contractors}

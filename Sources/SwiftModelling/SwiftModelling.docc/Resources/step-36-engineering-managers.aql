@@ -1,0 +1,1 @@
+self.employees->select(e | e.oclIsKindOf(Manager) and e.department = 'Engineering')

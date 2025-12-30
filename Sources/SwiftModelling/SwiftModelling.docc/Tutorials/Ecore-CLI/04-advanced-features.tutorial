@@ -1,0 +1,220 @@
+@Tutorial(time: 35) {
+    @Intro(title: "Advanced Metamodel Features") {
+
+        Learn how to use enumerations, inheritance, and abstract classes to create sophisticated metamodels.
+
+        In this tutorial, you'll extend the Company metamodel with advanced Ecore features including EEnum for typed constants, class inheritance hierarchies, and abstract base classes.
+
+        @Image(source: "ecore-metamodeling.svg", alt: "Advanced Metamodel Features")
+    }
+
+    @Section(title: "Understanding EEnum") {
+        @ContentAndMedia {
+            EEnum defines enumeration types—fixed sets of named values. Use enumerations to model properties that can only take specific predefined values, such as employment status or project priority.
+
+            Enumerations provide type safety and make your models more expressive by replacing generic strings or integers with meaningful, constrained values.
+
+            @Image(source: "ecore-metamodeling.svg", alt: "EEnum for Typed Constants")
+        }
+
+        @Steps {
+            @Step {
+                Start with the bidirectional Company metamodel from Tutorial 03.
+
+                @Code(name: "Company.ecore", file: step-14-bidirectional-reference.ecore)
+
+                We'll add an EEnum to represent employment status for Person instances.
+            }
+
+            @Step {
+                Add an EEnum for employment status.
+
+                @Code(name: "Company.ecore", file: step-17-employment-status-enum.ecore)
+
+                The EEnum defines three literal values: `FULL_TIME`, `PART_TIME`, and `CONTRACTOR`. Each literal has a name and a numeric value attribute.
+            }
+
+            @Step {
+                Add an attribute to Person using the enum type.
+
+                @Code(name: "Company.ecore", file: step-18-person-with-status.ecore)
+
+                The `status` attribute references the EmploymentStatus enum using `eType="#//EmploymentStatus"`. Now Person instances can only have one of the three defined status values.
+            }
+        }
+    }
+
+    @Section(title: "Class Inheritance") {
+        @ContentAndMedia {
+            Class inheritance lets you create hierarchies where subclasses inherit attributes and references from parent classes. Use `eSuperTypes` to establish inheritance relationships.
+
+            Inheritance promotes reuse and models "is-a" relationships. For example, Employee and Manager are both types of Person, inheriting common properties whilst adding their own specialisations.
+        }
+
+        @Steps {
+            @Step {
+                Create a class hierarchy with inheritance.
+
+                @Code(name: "Company.ecore", file: step-19-employee-hierarchy.ecore)
+
+                `Employee` and `Manager` both extend `Person` through the `eSuperTypes` attribute. They inherit `name` and `email` from Person whilst adding their own attributes (`employeeId` for Employee, `department` for Manager).
+            }
+
+            @Step {
+                Use the inspect command to view the inheritance structure.
+
+                @Code(name: "Terminal", file: step-20-inspect-hierarchy.sh)
+
+                The `--show-supertypes` flag displays the inheritance relationships, showing which classes extend others and what members they inherit.
+            }
+        }
+    }
+
+    @Section(title: "Abstract Classes") {
+        @ContentAndMedia {
+            Abstract classes cannot be instantiated directly—they serve as base types that other classes extend. Mark a class as abstract when it represents a concept that only makes sense through its concrete subclasses.
+
+            Abstract classes let you define common structure and behaviour whilst ensuring only complete, concrete implementations can be created.
+        }
+
+        @Steps {
+            @Step {
+                Mark Person as abstract since only Employee or Manager instances should exist.
+
+                @Code(name: "Company.ecore", file: step-21-abstract-person.ecore)
+
+                Adding `abstract="true"` to Person prevents direct instantiation. You can only create Employee or Manager instances, which inherit Person's structure.
+            }
+
+            @Step {
+                Create a model instance using concrete classes.
+
+                @Code(name: "company-model.xmi", file: step-22-concrete-instances.xmi)
+
+                The XMI contains `company:Employee` and `company:Manager` elements, not `company:Person`. Abstract classes only exist at the metamodel level to define shared structure.
+            }
+
+            @Step {
+                Validate the metamodel to ensure abstract classes are correctly defined.
+
+                @Code(name: "Terminal", file: step-23-validate-abstract.sh)
+
+                The validation confirms that abstract classes have at least one concrete subclass and verifies the inheritance structure is sound.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What is the purpose of an EEnum?
+
+            @Choice(isCorrect: false) {
+                To define relationships between classes
+
+                @Justification {
+                    Incorrect. Relationships are defined using EReference. EEnum is for defining typed constant values.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                To define a fixed set of named values for type-safe attributes
+
+                @Justification {
+                    Correct! EEnum provides enumeration types with predefined values, ensuring attributes can only hold specific valid constants rather than arbitrary strings or numbers.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                To create abstract base classes
+
+                @Justification {
+                    Incorrect. Abstract classes are defined using the `abstract="true"` attribute on EClass, not EEnum.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            How do you establish inheritance between classes in Ecore?
+
+            @Choice(isCorrect: true) {
+                Use the eSuperTypes attribute to reference the parent class
+
+                @Justification {
+                    Correct! The `eSuperTypes` attribute on EClass creates inheritance relationships. A class inherits all attributes and references from its supertypes.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Use the extends attribute like in programming languages
+
+                @Justification {
+                    Incorrect. Ecore uses `eSuperTypes` to define inheritance, not an `extends` keyword.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Use an EReference with inheritance="true"
+
+                @Justification {
+                    Incorrect. EReference is for object relationships, not inheritance. Inheritance is defined through eSuperTypes.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What does marking a class as abstract mean?
+
+            @Choice(isCorrect: false) {
+                The class cannot have any attributes or references
+
+                @Justification {
+                    Incorrect. Abstract classes can and should define attributes and references that subclasses will inherit.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                The class cannot be instantiated directly—only its concrete subclasses can
+
+                @Justification {
+                    Correct! Abstract classes (`abstract="true"`) serve as templates that concrete subclasses extend. You cannot create instances of abstract classes, only their non-abstract descendants.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The class must be defined in a separate package
+
+                @Justification {
+                    Incorrect. Abstract and concrete classes can coexist in the same package. The `abstract` attribute controls instantiation, not packaging.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            When should you use an EEnum instead of a String attribute?
+
+            @Choice(isCorrect: false) {
+                Whenever you need to store text data
+
+                @Justification {
+                    Incorrect. String attributes are for free-form text. Use EEnum only when values must come from a specific predefined set.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                When a property can only have specific predefined values
+
+                @Justification {
+                    Correct! EEnum provides type safety for properties with constrained values. Use it when you need to enforce that an attribute can only be one of several specific options, like status codes, priority levels, or categories.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                When you need to store numbers
+
+                @Justification {
+                    Incorrect. Use EInt or other numeric types for numbers. EEnum is for named constants, though each literal does have an associated numeric value for serialisation.
+                }
+            }
+        }
+    }
+}

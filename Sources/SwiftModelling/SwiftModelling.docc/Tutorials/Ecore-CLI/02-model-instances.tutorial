@@ -1,0 +1,179 @@
+@Tutorial(time: 25) {
+    @Intro(title: "Working with Model Instances") {
+
+        Learn how to create and manage XMI model instances that conform to your Ecore metamodel.
+
+        In this tutorial, you'll create model instances using the Company metamodel from Tutorial 01, populate them with data, and validate that they conform to the metamodel structure.
+
+        @Image(source: "ecore-metamodeling.svg", alt: "Working with Model Instances")
+    }
+
+    @Section(title: "Understanding Model Instances") {
+        @ContentAndMedia {
+            A metamodel defines the structure (classes and attributes), whilst model instances contain the actual data. Think of it like the relationship between a database schema and database records.
+
+            Model instances in Ecore are typically stored in XMI (XML Metadata Interchange) format, which is a standard way of serialising models.
+
+            @Image(source: "ecore-metamodeling.svg", alt: "Metamodel vs Model Instance")
+        }
+
+        @Steps {
+            @Step {
+                Use the Company metamodel from Tutorial 01 as the schema.
+
+                @Code(name: "Company.ecore", file: step-04-company-class.ecore)
+
+                This metamodel defines two classes: Person (with name and email) and Company (with name). We'll create instances that conform to this structure.
+            }
+
+            @Step {
+                Create an empty XMI model file.
+
+                @Code(name: "company-model.xmi", file: step-07-empty-company-model.xmi)
+
+                The XMI file starts with XML and XMI declarations, plus the namespace for the company metamodel. The `xmlns:company` must match the `nsURI` from your metamodel.
+            }
+        }
+    }
+
+    @Section(title: "Creating Model Instances") {
+        @ContentAndMedia {
+            Model instances are created by adding elements that correspond to classes defined in your metamodel.
+
+            Each instance must have an `xmi:id` for unique identification and can have attribute values matching those defined in the metamodel.
+        }
+
+        @Steps {
+            @Step {
+                Add a Person instance to your model.
+
+                @Code(name: "company-model.xmi", file: step-08-person-instance.xmi)
+
+                The `<company:Person>` element creates an instance of the Person class. The `name` and `email` attributes match those defined in the metamodel.
+            }
+
+            @Step {
+                Add multiple instances including a Company and several Persons.
+
+                @Code(name: "company-model.xmi", file: step-09-company-with-employees.xmi)
+
+                You can create multiple instances of the same class. Each must have a unique `xmi:id`. Here we have one Company and three Person instances.
+            }
+        }
+    }
+
+    @Section(title: "Validating Model Instances") {
+        @ContentAndMedia {
+            After creating model instances, you should validate them against the metamodel to ensure they conform to the defined structure.
+
+            The swift-ecore validation tool checks that:
+            - All element types exist in the metamodel
+            - All attributes are defined in the metamodel
+            - Attribute types match the metamodel definitions
+        }
+
+        @Steps {
+            @Step {
+                Validate your model instance against the metamodel.
+
+                @Code(name: "Terminal", file: step-10-validate-model.sh)
+
+                The validate command checks that company-model.xmi conforms to Company.ecore. If validation succeeds, the model is structurally correct.
+            }
+
+            @Step {
+                View the model structure using the query command.
+
+                @Code(name: "Terminal", file: step-11-query-model.sh)
+
+                The query command lets you inspect the contents of your model, listing all instances organised by class type.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What is the relationship between a metamodel and a model instance?
+
+            @Choice(isCorrect: false) {
+                They are the same thing with different names
+
+                @Justification {
+                    Incorrect. A metamodel defines structure (like a schema), whilst a model instance contains actual data (like database records).
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                A metamodel defines the structure, and model instances contain the data
+
+                @Justification {
+                    Correct! The metamodel is like a blueprint or schema that defines what can exist, whilst model instances are the actual data conforming to that structure.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Model instances are used to generate metamodels
+
+                @Justification {
+                    Incorrect. The opposite is true—metamodels come first and define what model instances can contain.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Why does each model element need an `xmi:id` attribute?
+
+            @Choice(isCorrect: true) {
+                To uniquely identify each instance for cross-references
+
+                @Justification {
+                    Correct! The `xmi:id` provides a unique identifier for each element, which is essential for creating references between elements and ensuring model consistency.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                To specify the element's type
+
+                @Justification {
+                    Incorrect. The element type is specified by the element name (e.g., `<company:Person>`), not the `xmi:id`.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                To define the element's attributes
+
+                @Justification {
+                    Incorrect. Attributes are defined separately. The `xmi:id` is solely for identification purposes.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What does the `xmlns:company` declaration specify?
+
+            @Choice(isCorrect: false) {
+                The name of your company
+
+                @Justification {
+                    Incorrect. It's not about company names—it's a technical XML namespace declaration.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                The namespace URI that connects the model to its metamodel
+
+                @Justification {
+                    Correct! The namespace declaration maps the `company:` prefix to the metamodel's nsURI, telling the system which metamodel this instance conforms to.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The file path where the model is stored
+
+                @Justification {
+                    Incorrect. The namespace is a logical identifier (URI), not a file system path.
+                }
+            }
+        }
+    }
+}

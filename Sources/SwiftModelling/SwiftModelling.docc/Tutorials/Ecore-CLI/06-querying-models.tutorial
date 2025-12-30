@@ -1,0 +1,264 @@
+@Tutorial(time: 40) {
+    @Intro(title: "Querying Models with AQL") {
+
+        Learn how to query and navigate models using AQL (ATLAS Query Language), including element selection, collection operations, and complex queries.
+
+        In this tutorial, you'll explore AQL's powerful query capabilities to extract information from models, filter collections, and navigate relationships programmatically.
+
+        @Image(source: "ecore-metamodeling.svg", alt: "Querying Models with AQL")
+    }
+
+    @Section(title: "Introduction to AQL") {
+        @ContentAndMedia {
+            AQL (ATLAS Query Language) is a powerful query language for model-driven engineering. It lets you navigate models, select elements, and compute derived values without writing imperative code.
+
+            Use AQL for model validation, reporting, metrics collection, and transformation—any task that needs to extract or compute information from your models.
+
+            @Image(source: "ecore-metamodeling.svg", alt: "AQL Query Language")
+        }
+
+        @Steps {
+            @Step {
+                Start with a Company model containing multiple employees.
+
+                @Code(name: "company-model.xmi", file: step-22-concrete-instances.xmi)
+
+                We'll query this model to extract information about employees, filter by attributes, and compute statistics.
+            }
+
+            @Step {
+                Write a simple AQL query to get all employees.
+
+                @Code(name: "queries/all-employees.aql", file: step-31-all-employees.aql)
+
+                This query navigates from the Company to its employees collection. The `self` keyword refers to the current context element (the Company instance).
+            }
+
+            @Step {
+                Execute the query against the model.
+
+                @Code(name: "Terminal", file: step-32-execute-query.sh)
+
+                The `query` command evaluates AQL expressions against a model and displays results. Use `--context` to specify which element the query evaluates on.
+            }
+        }
+    }
+
+    @Section(title: "Filtering and Selection") {
+        @ContentAndMedia {
+            AQL provides powerful collection operations for filtering, mapping, and selecting elements. Use `select()` to filter collections, `collect()` to transform elements, and `size()` to count.
+
+            These operations enable declarative queries that are concise and expressive, letting you focus on what you want to find rather than how to find it.
+        }
+
+        @Steps {
+            @Step {
+                Query for full-time employees only.
+
+                @Code(name: "queries/fulltime-employees.aql", file: step-33-fulltime-employees.aql)
+
+                The `select()` operation filters the employees collection, keeping only elements where the lambda expression evaluates to true.
+            }
+
+            @Step {
+                Get just the names of all employees.
+
+                @Code(name: "queries/employee-names.aql", file: step-34-employee-names.aql)
+
+                The `collect()` operation transforms each employee into their name, producing a collection of strings.
+            }
+
+            @Step {
+                Count employees by status.
+
+                @Code(name: "queries/count-by-status.aql", file: step-35-count-by-status.aql)
+
+                You can combine multiple queries to compute statistics. This example uses `select()` to filter and `size()` to count.
+            }
+        }
+    }
+
+    @Section(title: "Navigation and Complex Queries") {
+        @ContentAndMedia {
+            AQL supports chaining operations and navigating complex object graphs. You can traverse references, combine filters, and build sophisticated queries.
+
+            Complex queries enable advanced model analytics, validation rules, and transformation logic without writing procedural code.
+        }
+
+        @Steps {
+            @Step {
+                Query for managers in a specific department.
+
+                @Code(name: "queries/engineering-managers.aql", file: step-36-engineering-managers.aql)
+
+                This query combines type filtering (`oclIsKindOf()`) with attribute filtering to find specific managers.
+            }
+
+            @Step {
+                Navigate bidirectional references.
+
+                @Code(name: "queries/employee-companies.aql", file: step-37-employee-companies.aql)
+
+                Starting from an employee, navigate back to their employer using the opposite reference. AQL makes bidirectional navigation natural.
+            }
+
+            @Step {
+                Compute derived statistics.
+
+                @Code(name: "queries/company-stats.aql", file: step-38-company-stats.aql)
+
+                Combine multiple queries to compute complex statistics like percentage of full-time employees.
+            }
+
+            @Step {
+                Use queries in validation workflows.
+
+                @Code(name: "Terminal", file: step-39-validate-with-queries.sh)
+
+                Integrate AQL queries into validation scripts to check model constraints programmatically.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What is AQL used for?
+
+            @Choice(isCorrect: false) {
+                Modifying model instances in place
+
+                @Justification {
+                    Incorrect. AQL is a query language for reading and computing over models, not for making modifications. For transformations, use ATL or similar transformation languages.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                Querying and navigating models to extract information
+
+                @Justification {
+                    Correct! AQL (ATLAS Query Language) is designed for querying models, navigating relationships, and computing derived values. It's declarative and read-only, focused on extracting information rather than modifying models.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Defining metamodel structure
+
+                @Justification {
+                    Incorrect. Metamodels are defined using Ecore, not AQL. AQL operates on model instances that conform to a metamodel.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What does the `select()` operation do?
+
+            @Choice(isCorrect: true) {
+                Filters a collection based on a condition, keeping matching elements
+
+                @Justification {
+                    Correct! The `select()` operation takes a lambda expression and returns a new collection containing only elements where the expression evaluates to true. It's the primary filtering operation in AQL.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Transforms each element in a collection to a new value
+
+                @Justification {
+                    Incorrect. That's what `collect()` does. The `select()` operation filters elements based on a condition without transforming them.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Sorts a collection by a property
+
+                @Justification {
+                    Incorrect. AQL provides `sortedBy()` for sorting. The `select()` operation only filters based on a condition.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What does `self` refer to in an AQL query?
+
+            @Choice(isCorrect: false) {
+                The entire model file
+
+                @Justification {
+                    Incorrect. `self` refers to the specific context element the query evaluates on, not the whole model.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                The current context element being queried
+
+                @Justification {
+                    Correct! In AQL, `self` is a special variable that refers to the context element—the object on which the query is being evaluated. When querying a Company, `self` is that Company instance.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                A reserved keyword with no meaning
+
+                @Justification {
+                    Incorrect. `self` has specific meaning—it's the primary way to reference the context element in AQL expressions.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            How do you navigate a reference in AQL?
+
+            @Choice(isCorrect: false) {
+                Using the navigate() function
+
+                @Justification {
+                    Incorrect. AQL doesn't require a special function. You navigate references using simple property access.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                Using dot notation to access the reference property
+
+                @Justification {
+                    Correct! AQL uses natural dot notation for navigation. To access employees from a Company, you write `self.employees`. For opposite references, use the opposite property name like `self.employer`.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                References cannot be navigated in AQL
+
+                @Justification {
+                    Incorrect. Navigation is a core feature of AQL, including both forward and bidirectional references.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What is the difference between `collect()` and `select()`?
+
+            @Choice(isCorrect: false) {
+                They do the same thing with different names
+
+                @Justification {
+                    Incorrect. They serve different purposes—`collect()` transforms elements whilst `select()` filters them.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                `collect()` transforms elements, `select()` filters based on a condition
+
+                @Justification {
+                    Correct! `select()` filters a collection keeping only elements matching a condition, whilst `collect()` transforms each element to a new value using a lambda expression. Use `select()` to filter, `collect()` to map.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `collect()` is for numbers, `select()` is for strings
+
+                @Justification {
+                    Incorrect. Both operations work on any collection types. The difference is functional—filtering versus transformation.
+                }
+            }
+        }
+    }
+}

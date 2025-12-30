@@ -1,0 +1,204 @@
+@Tutorial(time: 30) {
+    @Intro(title: "Metamodel Relationships") {
+
+        Learn how to create relationships between classes using EReference, including containment, cardinality, and bidirectional references.
+
+        In this tutorial, you'll extend the Company metamodel to create relationships between Company and Person, exploring the powerful features of Ecore references.
+
+        @Image(source: "ecore-metamodeling.svg", alt: "Metamodel Relationships")
+    }
+
+    @Section(title: "Understanding EReference") {
+        @ContentAndMedia {
+            Whilst EAttribute defines properties with primitive types (strings, numbers), EReference defines relationships between classes.
+
+            References are fundamental to modelling complex domains where objects are connected to each other, such as companies having employees or projects having tasks.
+
+            @Image(source: "ecore-metamodeling.svg", alt: "EAttribute vs EReference")
+        }
+
+        @Steps {
+            @Step {
+                Start with the Company metamodel from previous tutorials.
+
+                @Code(name: "Company.ecore", file: step-04-company-class.ecore)
+
+                This metamodel has two independent classes. We'll add relationships to connect them.
+            }
+
+            @Step {
+                Add an EReference from Company to Person for employees.
+
+                @Code(name: "Company.ecore", file: step-12-company-with-employees-ref.ecore)
+
+                The `employees` reference has `upperBound="-1"` meaning unlimited (zero or more). The `eType="#//Person"` points to the Person class in this package.
+            }
+        }
+    }
+
+    @Section(title: "Containment References") {
+        @ContentAndMedia {
+            Containment references define ownership—when a Company contains Persons, those Persons belong to the Company and are saved inside it in XMI.
+
+            Containment is crucial for defining the structure and scope of your models. Contained objects are owned by their container and typically cannot exist independently.
+        }
+
+        @Steps {
+            @Step {
+                Mark the employees reference as containment.
+
+                @Code(name: "Company.ecore", file: step-13-containment-reference.ecore)
+
+                Adding `containment="true"` makes this a containment reference. Now Person instances will be nested inside Company in XMI files, establishing clear ownership.
+            }
+
+            @Step {
+                Create a model instance using containment.
+
+                @Code(name: "company-model.xmi", file: step-15-containment-instance.xmi)
+
+                With containment, Person elements are nested inside the Company element. The hierarchy shows ownership: these Persons belong to this Company.
+            }
+        }
+    }
+
+    @Section(title: "Bidirectional References") {
+        @ContentAndMedia {
+            Bidirectional references link two classes in both directions using eOpposite. When you navigate from Company to Person via employees, you can also navigate back from Person to Company via employer.
+
+            The framework automatically maintains consistency—when you add a Person to a Company's employees, the Person's employer is automatically set.
+        }
+
+        @Steps {
+            @Step {
+                Add a bidirectional reference between Company and Person.
+
+                @Code(name: "Company.ecore", file: step-14-bidirectional-reference.ecore)
+
+                Person now has an `employer` reference pointing back to Company. The `eOpposite` attributes link the two references, making them bidirectional.
+            }
+
+            @Step {
+                Inspect the metamodel to see the reference structure.
+
+                @Code(name: "Terminal", file: step-16-inspect-references.sh)
+
+                The `--show-references` flag displays all references, their types, cardinalities, and opposites, helping you verify your relationship structure.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What is the difference between EAttribute and EReference?
+
+            @Choice(isCorrect: false) {
+                EAttribute is for numbers and EReference is for strings
+
+                @Justification {
+                    Incorrect. Both EAttribute can handle various primitive types. The key difference is that EAttribute holds primitive values whilst EReference creates relationships between classes.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                EAttribute defines properties with primitive types, EReference defines relationships between classes
+
+                @Justification {
+                    Correct! EAttribute is for primitive types (String, Int, Boolean), whilst EReference creates typed relationships to other classes in your metamodel.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                They are the same thing with different names
+
+                @Justification {
+                    Incorrect. They serve completely different purposes—attributes hold values, references connect objects.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What does `containment="true"` mean for an EReference?
+
+            @Choice(isCorrect: false) {
+                The reference can contain multiple objects
+
+                @Justification {
+                    Incorrect. Multiplicity is controlled by upperBound, not containment. Containment defines ownership.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                The referenced objects are owned by and nested inside the container
+
+                @Justification {
+                    Correct! Containment means the container owns the contained objects. In XMI, contained objects appear nested inside their container, and they typically cannot exist independently.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The reference must point to exactly one object
+
+                @Justification {
+                    Incorrect. Containment is about ownership, not cardinality. You can have containment with zero, one, or many objects.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What does `upperBound="-1"` specify?
+
+            @Choice(isCorrect: false) {
+                The reference cannot have any objects
+
+                @Justification {
+                    Incorrect. That would be upperBound="0". The value -1 has special meaning in Ecore.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                The reference can have unlimited (zero or more) objects
+
+                @Justification {
+                    Correct! In Ecore, -1 means unbounded—there's no upper limit on how many objects the reference can hold. It's equivalent to "0..*" in UML.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The reference must have at least one object
+
+                @Justification {
+                    Incorrect. That would be controlled by lowerBound, not upperBound. And -1 means unlimited, not required.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What is the purpose of eOpposite in a bidirectional reference?
+
+            @Choice(isCorrect: true) {
+                To link two references so they're automatically kept consistent
+
+                @Justification {
+                    Correct! The eOpposite attribute creates a bidirectional relationship. When you set one side, the framework automatically updates the other side, maintaining consistency.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                To reverse the direction of a reference
+
+                @Justification {
+                    Incorrect. It doesn't reverse—it creates a two-way connection. Both references exist simultaneously and are kept in sync.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                To prevent circular references
+
+                @Justification {
+                    Incorrect. eOpposite creates circular references (bidirectional connections), it doesn't prevent them.
+                }
+            }
+        }
+    }
+}

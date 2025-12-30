@@ -1,0 +1,37 @@
+digraph EcoreMetamodeling {
+    rankdir=LR;
+    node [shape=box, style=rounded, fontname="Arial"];
+    edge [fontname="Arial"];
+
+    // Input
+    metamodel [label="Ecore Metamodel\n(.ecore)", style="rounded,filled", fillcolor="#E8F4F8"];
+
+    // Core operations
+    create [label="Create\nMetamodel", shape=ellipse, fillcolor="#D4E6F1"];
+    instances [label="Model\nInstances", shape=ellipse, fillcolor="#D4E6F1"];
+    validate [label="Validate\nModels", shape=ellipse, fillcolor="#D4E6F1"];
+    convert [label="Convert\nFormats", shape=ellipse, fillcolor="#D4E6F1"];
+    query [label="Query\nModels", shape=ellipse, fillcolor="#D4E6F1"];
+
+    // Outputs
+    xmi [label="XMI Models\n(.xmi)", style="rounded,filled", fillcolor="#E8F8F5"];
+    json [label="JSON Models\n(.json)", style="rounded,filled", fillcolor="#E8F8F5"];
+
+    // Flow
+    create -> metamodel [label="define"];
+    metamodel -> instances [label="instantiate"];
+    instances -> xmi [label="serialise"];
+    instances -> json [label="serialise"];
+    xmi -> validate [label="check"];
+    xmi -> convert [label="transform"];
+    convert -> json;
+    json -> validate;
+    xmi -> query [label="navigate"];
+    json -> query;
+
+    // Legend
+    {
+        rank=same;
+        legendTitle [label="Ecore Workflow", shape=plaintext, fontsize=16, fontname="Arial Bold"];
+    }
+}

@@ -1,0 +1,31 @@
+{
+  "$type": "company:Company",
+  "$id": "company1",
+  "name": "Tech Innovations Ltd",
+  "employees": [
+    {
+      "$type": "company:Employee",
+      "$id": "emp1",
+      "name": "Alice Johnson",
+      "email": "alice@techinnovations.com",
+      "status": "FULL_TIME",
+      "employeeId": "E001"
+    },
+    {
+      "$type": "company:Employee",
+      "$id": "emp2",
+      "name": "Bob Smith",
+      "email": "bob@techinnovations.com",
+      "status": "PART_TIME",
+      "employeeId": "E002"
+    },
+    {
+      "$type": "company:Manager",
+      "$id": "mgr1",
+      "name": "Carol Williams",
+      "email": "carol@techinnovations.com",
+      "status": "FULL_TIME",
+      "department": "Engineering"
+    }
+  ]
+}

@@ -1,0 +1,176 @@
+@Tutorial(time: 20) {
+    @Intro(title: "Creating Your First Ecore Metamodel") {
+
+        Learn how to define a domain metamodel using Ecore by creating a simple company management system.
+
+        In this tutorial, you'll create an Ecore metamodel that defines the structure for Person and Company entities, add attributes, and validate your metamodel using the swift-ecore command-line tool.
+
+        @Image(source: "ecore-metamodeling.svg", alt: "Ecore Metamodeling Workflow")
+    }
+
+    @Section(title: "Understanding Ecore Metamodels") {
+        @ContentAndMedia {
+            Ecore is a metamodeling framework that lets you define the structure of your domain models. A metamodel describes what kinds of objects exist in your domain and how they're related.
+
+            Think of a metamodel as a schema or blueprint: just as a database schema defines tables and columns, an Ecore metamodel defines classes and attributes that your model instances will use.
+
+            @Image(source: "ecore-metamodeling.svg", alt: "Metamodel Hierarchy")
+        }
+
+        @Steps {
+            @Step {
+                Create an empty Ecore package with namespace information.
+
+                @Code(name: "Company.ecore", file: step-01-empty-package.ecore)
+
+                Create a new file called `Company.ecore` in your working directory. The `EPackage` is the root container for your metamodel. The `nsURI` uniquely identifies your metamodel, whilst the `nsPrefix` is used in serialised models.
+            }
+        }
+    }
+
+    @Section(title: "Defining Model Classes") {
+        @ContentAndMedia {
+            Classes in Ecore (called `EClass`) represent the types of objects in your domain. Each class can have attributes and references to other classes.
+
+            We'll start by creating a `Person` class, then add a `Company` class to build out our domain model.
+        }
+
+        @Steps {
+            @Step {
+                Add a Person class to your metamodel.
+
+                @Code(name: "Company.ecore", file: step-02-person-class.ecore)
+
+                The `EClass` defines a new type in your metamodel. At this point, Person has no attributes—it's just an empty class.
+            }
+
+            @Step {
+                Add attributes to the Person class.
+
+                @Code(name: "Company.ecore", file: step-03-person-attributes.ecore)
+
+                Attributes (`EAttribute`) define the properties of a class. Here, Person has `name` and `email` attributes, both of type `EString`.
+            }
+
+            @Step {
+                Add a Company class with its own attributes.
+
+                @Code(name: "Company.ecore", file: step-04-company-class.ecore)
+
+                Your metamodel now defines two classes: Person and Company. Each has a name attribute, and Person also has an email.
+            }
+        }
+    }
+
+    @Section(title: "Validating Your Metamodel") {
+        @ContentAndMedia {
+            Once you've defined your metamodel, it's important to validate it to ensure there are no structural errors.
+
+            The `swift-ecore validate` command checks that your metamodel is well-formed and follows Ecore's rules.
+        }
+
+        @Steps {
+            @Step {
+                Validate your metamodel using the swift-ecore tool.
+
+                @Code(name: "Terminal", file: step-05-validate-command.sh)
+
+                If validation succeeds, you'll see a confirmation message. If there are errors, swift-ecore will report what needs to be fixed.
+            }
+
+            @Step {
+                Inspect your metamodel to see its structure.
+
+                @Code(name: "Terminal", file: step-06-inspect-command.sh)
+
+                The inspect command shows detailed information about your metamodel, including all classes, attributes, and their types.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What is the purpose of an Ecore metamodel?
+
+            @Choice(isCorrect: false) {
+                To store actual data like person names and companies
+
+                @Justification {
+                    Incorrect. The metamodel defines the *structure*, not the data itself. Actual data is stored in model instances.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                To define the structure and types of objects in your domain
+
+                @Justification {
+                    Correct! A metamodel is like a schema or blueprint that defines what classes exist and what attributes they have.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                To transform models from one format to another
+
+                @Justification {
+                    Incorrect. Model transformation is done with ATL, not metamodels. Metamodels define structure.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What does the `nsURI` in an EPackage represent?
+
+            @Choice(isCorrect: false) {
+                The file system path to the metamodel file
+
+                @Justification {
+                    Incorrect. The nsURI is a logical identifier, not a file path.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                A unique identifier for the metamodel namespace
+
+                @Justification {
+                    Correct! The nsURI uniquely identifies your metamodel, similar to XML namespaces. It prevents naming conflicts when using multiple metamodels.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The URL where the metamodel can be downloaded
+
+                @Justification {
+                    Incorrect. The nsURI is just an identifier, not an actual URL.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What is an EAttribute used for?
+
+            @Choice(isCorrect: true) {
+                To define properties of a class with primitive types
+
+                @Justification {
+                    Correct! EAttributes define properties like strings, numbers, and booleans. For references to other classes, you'd use EReference instead.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                To create relationships between classes
+
+                @Justification {
+                    Incorrect. Relationships between classes are defined using EReference, not EAttribute.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                To validate model instances
+
+                @Justification {
+                    Incorrect. EAttributes define structure, not validation logic.
+                }
+            }
+        }
+    }
+}

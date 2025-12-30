@@ -1,0 +1,218 @@
+@Tutorial(time: 30) {
+    @Intro(title: "JSON and XMI Formats") {
+
+        Learn how to convert models between JSON and XMI formats, and validate round-trip conversions.
+
+        In this tutorial, you'll explore both serialisation formats supported by swift-ecore, understand their trade-offs, and master the conversion tools for working with models in different formats.
+
+        @Image(source: "ecore-metamodeling.svg", alt: "JSON and XMI Formats")
+    }
+
+    @Section(title: "Understanding Serialisation Formats") {
+        @ContentAndMedia {
+            swift-ecore supports two serialisation formats: XMI (XML Metadata Interchange) and JSON. XMI is the standard EMF format with rich metadata, whilst JSON provides a lightweight, modern alternative.
+
+            Choose XMI for interoperability with Eclipse EMF tools, or JSON for web applications and modern workflows. Both formats preserve complete model structure and can be converted losslessly.
+        }
+
+        @Steps {
+            @Step {
+                Start with a Company model in XMI format.
+
+                @Code(name: "company-model.xmi", file: step-22-concrete-instances.xmi)
+
+                This XMI file contains a Company with Employee and Manager instances, using the advanced features from Tutorial 04.
+            }
+
+            @Step {
+                Convert the XMI model to JSON format.
+
+                @Code(name: "Terminal", file: step-24-convert-to-json.sh)
+
+                The `convert` command transforms XMI to JSON whilst preserving all model data, including type information and cross-references.
+            }
+
+            @Step {
+                Examine the JSON representation.
+
+                @Code(name: "company-model.json", file: step-25-company-model.json)
+
+                The JSON format uses `$type` for metamodel types and `$id` for identifiers. It's more concise than XMI and easier to work with in modern tools.
+            }
+        }
+    }
+
+    @Section(title: "Converting Between Formats") {
+        @ContentAndMedia {
+            Converting between JSON and XMI is bidirectional and lossless. You can freely move between formats depending on your workflow needs.
+
+            Use `swift-ecore convert` with appropriate input and output file extensions—the tool automatically detects and handles both formats.
+        }
+
+        @Steps {
+            @Step {
+                Convert JSON back to XMI format.
+
+                @Code(name: "Terminal", file: step-26-convert-to-xmi.sh)
+
+                Converting from JSON to XMI produces standard EMF-compatible XMI that can be opened in Eclipse or other EMF tools.
+            }
+
+            @Step {
+                Compare the round-trip result with the original.
+
+                @Code(name: "Terminal", file: step-27-compare-roundtrip.sh)
+
+                The `diff` command should show minimal or no differences. Format-specific details like whitespace or attribute order may vary, but semantic content remains identical.
+            }
+        }
+    }
+
+    @Section(title: "Format Trade-offs and Best Practices") {
+        @ContentAndMedia {
+            Each format has specific advantages. XMI provides comprehensive metadata and cross-resource references, making it ideal for complex model repositories. JSON offers simplicity and modern tooling support.
+
+            Consider your workflow: use XMI when working with Eclipse EMF tools or complex model structures, and JSON for web applications, APIs, or when readability matters.
+        }
+
+        @Steps {
+            @Step {
+                Validate a JSON model against its metamodel.
+
+                @Code(name: "Terminal", file: step-28-validate-json.sh)
+
+                The `validate` command works with both formats, checking type conformance, cardinality constraints, and reference integrity.
+            }
+
+            @Step {
+                Inspect a JSON model structure.
+
+                @Code(name: "Terminal", file: step-29-inspect-json.sh)
+
+                All swift-ecore commands accept both JSON and XMI inputs interchangeably, providing a unified experience regardless of format.
+            }
+
+            @Step {
+                Use format conversion in your workflow.
+
+                @Code(name: "Terminal", file: step-30-batch-convert.sh)
+
+                Batch convert multiple models using shell scripting. This example converts all XMI files in a directory to JSON.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What is the primary difference between XMI and JSON formats?
+
+            @Choice(isCorrect: false) {
+                JSON can store more data than XMI
+
+                @Justification {
+                    Incorrect. Both formats can represent the complete model structure with equal fidelity. They differ in syntax and tooling, not capacity.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                XMI is XML-based and EMF-standard, whilst JSON is lightweight and modern
+
+                @Justification {
+                    Correct! XMI is the standard EMF serialisation format based on XML, providing comprehensive metadata and EMF tool compatibility. JSON offers a modern, concise alternative that's easier to work with in web and API contexts.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                You cannot convert between the two formats
+
+                @Justification {
+                    Incorrect. swift-ecore provides bidirectional, lossless conversion between XMI and JSON using the `convert` command.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            When should you use XMI format instead of JSON?
+
+            @Choice(isCorrect: true) {
+                When working with Eclipse EMF tools or requiring standard EMF interoperability
+
+                @Justification {
+                    Correct! XMI is the standard EMF format, making it the best choice for interoperability with Eclipse modelling tools, EMF-based frameworks, and when you need comprehensive cross-resource reference support.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                XMI should always be used instead of JSON
+
+                @Justification {
+                    Incorrect. Both formats have their place—JSON is often better for web applications, APIs, and modern workflows where readability and tooling matter.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                When you need to store employee data
+
+                @Justification {
+                    Incorrect. The choice of format doesn't depend on what data you're storing, but rather on your tooling, interoperability needs, and workflow preferences.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What does "round-trip conversion" mean?
+
+            @Choice(isCorrect: false) {
+                Converting a model twice for backup
+
+                @Justification {
+                    Incorrect. Round-trip conversion is about testing format conversion fidelity, not creating backups.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                Converting from format A to B and back to A, verifying no data is lost
+
+                @Justification {
+                    Correct! Round-trip conversion tests format conversion quality by converting XMI → JSON → XMI (or vice versa) and verifying the result matches the original, proving the conversion is lossless.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Loading and saving a model in the same format
+
+                @Justification {
+                    Incorrect. That's just persistence. Round-trip specifically involves converting between different formats and back again.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            How does swift-ecore determine input format when converting?
+
+            @Choice(isCorrect: false) {
+                You must specify a --format flag
+
+                @Justification {
+                    Incorrect. swift-ecore automatically detects the format based on file extension and content, making conversion commands simple and intuitive.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                Automatically from the file extension (.xmi or .json)
+
+                @Justification {
+                    Correct! swift-ecore uses file extensions to automatically detect input format. Files ending in `.xmi` are treated as XMI, whilst `.json` files are parsed as JSON.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                By examining the first line of the file
+
+                @Justification {
+                    Incorrect. Whilst file content can provide hints, swift-ecore primarily uses file extensions for format detection, making it predictable and fast.
+                }
+            }
+        }
+    }
+}

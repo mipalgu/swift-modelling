@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:company="http://www.example.org/company">
+
+  <company:Company xmi:id="company1" name="Tech Innovations Ltd">
+    <employees xmi:id="person1" name="Alice Johnson" email="alice@techinnovations.com"/>
+    <employees xmi:id="person2" name="Bob Smith" email="bob@techinnovations.com"/>
+    <employees xmi:id="person3" name="Carol Williams" email="carol@techinnovations.com"/>
+  </company:Company>
+
+</xmi:XMI>

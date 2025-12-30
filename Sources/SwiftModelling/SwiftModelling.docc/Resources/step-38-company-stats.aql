@@ -1,0 +1,4 @@
+let total = self.employees->size() in
+let fullTime = self.employees->select(e | e.status = EmploymentStatus::FULL_TIME)->size() in
+let percentage = if total > 0 then (fullTime * 100) / total else 0 endif in
+Tuple{totalEmployees=total, fullTimeCount=fullTime, fullTimePercentage=percentage}
