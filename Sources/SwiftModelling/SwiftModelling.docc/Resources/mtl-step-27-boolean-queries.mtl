@@ -1,0 +1,8 @@
+[module Queries('http://example.com')]
+
+[query isEven(n : Integer) : Boolean = (n - (n / 2) * 2) = 0/]
+
+[template main()]
+Is 4 even? [isEven(4)/]
+Is 7 even? [isEven(7)/]
+[/template]

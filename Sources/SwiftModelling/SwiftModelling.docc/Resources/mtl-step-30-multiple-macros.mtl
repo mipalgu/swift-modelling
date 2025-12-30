@@ -1,0 +1,19 @@
+[module Macros('http://example.com')]
+
+[macro section(title : String, content : Body)]
+========================================
+[title/]
+========================================
+[content/]
+
+[/macro]
+
+[macro emphasis(content : Body)]
+*** [content/] ***
+[/macro]
+
+[template main()]
+[section('Important Notice')]
+[emphasis()]This section contains critical information[/emphasis]
+[/section]
+[/template]

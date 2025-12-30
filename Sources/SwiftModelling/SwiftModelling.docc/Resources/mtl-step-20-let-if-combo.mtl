@@ -1,0 +1,11 @@
+[module ControlFlow('http://example.com')]
+
+[template main()]
+[let isProduction = false]
+[if (isProduction)]
+   // Production configuration
+[else]
+   // Development configuration
+[/if]
+[/let]
+[/template]

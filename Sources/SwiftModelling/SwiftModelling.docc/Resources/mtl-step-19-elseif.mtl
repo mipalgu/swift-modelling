@@ -1,0 +1,13 @@
+[module ControlFlow('http://example.com')]
+
+[template main()]
+[let value = 15]
+[if (value < 10)]
+   Value is less than 10
+[elseif (value < 20)]
+   Value is between 10 and 20 (current: [value/])
+[else]
+   Value is 20 or greater
+[/if]
+[/let]
+[/template]

@@ -1,0 +1,15 @@
+[module Macros('http://example.com')]
+
+[macro codeBlock(language : String, content : Body)]
+```[language/]
+[content/]
+```
+[/macro]
+
+[template main()]
+[codeBlock('swift')]
+func greet(name: String) {
+    print("Hello, \(name)!")
+}
+[/codeBlock]
+[/template]

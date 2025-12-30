@@ -1,0 +1,9 @@
+[module Expressions('http://example.com')]
+
+[query getVersion() : String = '1.0.0'/]
+[query add(a : Integer, b : Integer) : Integer = a + b/]
+
+[template main()]
+Version: [getVersion()/]
+Sum of 10 + 20 = [add(10, 20)/]
+[/template]

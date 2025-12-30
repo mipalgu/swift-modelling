@@ -1,0 +1,10 @@
+[module Expressions('http://example.com')]
+
+[template main()]
+=== MTL Expression Examples ===
+
+1. Arithmetic:
+   5 + 3 = [5 + 3/]
+   10 - 4 = [10 - 4/]
+   6 * 7 = [6 * 7/]
+[/template]

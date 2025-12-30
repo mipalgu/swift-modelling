@@ -1,0 +1,16 @@
+[comment]
+MTL Hello World Template
+This template demonstrates the basics of MTL code generation.
+
+Usage:
+  swift-mtl generate HelloWorld.mtl --output generated/
+[/comment]
+
+[module HelloWorld('http://example.com')]
+
+[template main()]
+Hello, World!
+
+This is the simplest MTL template.
+It generates a "Hello, World!" message to demonstrate basic text generation.
+[/template]

@@ -1,0 +1,4 @@
+Hello, World!
+
+This is the simplest MTL template.
+It generates a "Hello, World!" message to demonstrate basic text generation.

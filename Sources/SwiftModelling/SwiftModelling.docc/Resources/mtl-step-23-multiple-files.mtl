@@ -1,0 +1,14 @@
+[module FileBlocks('http://example.com')]
+
+[template main()]
+[file ('greeting.txt', 'overwrite', 'UTF-8')]
+Hello from MTL!
+[/file]
+
+[file ('data.txt', 'overwrite', 'UTF-8')]
+Data File
+=========
+Item 1: Alpha
+Item 2: Beta
+[/file]
+[/template]

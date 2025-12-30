@@ -1,0 +1,127 @@
+@Tutorial(time: 25) {
+    @Intro(title: "Control Flow") {
+        Learn how to use conditional statements and iteration in MTL templates.
+
+        In this tutorial, you'll explore if/else conditionals, elseif chains, and let bindings to control the flow of code generation based on runtime conditions.
+
+        @Image(source: "mtl-code-generation.svg", alt: "MTL Control Flow")
+    }
+
+    @Section(title: "Conditional Generation with If") {
+        @ContentAndMedia {
+            The `if` directive lets you conditionally generate content based on boolean expressions. Use it to customise output based on model properties or template parameters.
+
+            If statements can include `else` branches and multiple `elseif` conditions for complex decision logic.
+        }
+
+        @Steps {
+            @Step {
+                Use a simple if statement.
+
+                @Code(name: "ControlFlow.mtl", file: mtl-step-17-simple-if.mtl)
+
+                The condition `(true)` is always satisfied, so the content inside `[if]...[/if]` is generated. False conditions skip their content.
+            }
+
+            @Step {
+                Add an else branch.
+
+                @Code(name: "ControlFlow.mtl", file: mtl-step-18-if-else.mtl)
+
+                When the if condition is false, the else branch executes instead. Use this for either/or generation logic.
+            }
+
+            @Step {
+                Use elseif for multiple conditions.
+
+                @Code(name: "ControlFlow.mtl", file: mtl-step-19-elseif.mtl)
+
+                The elseif directive lets you test multiple conditions sequentially. The first true condition executes, then MTL skips the rest.
+            }
+        }
+    }
+
+    @Section(title: "Working with Let Bindings") {
+        @ContentAndMedia {
+            Let bindings create scoped variables for use in conditions and expressions. They make complex templates more readable by naming intermediate values.
+
+            Variables defined with let are available throughout their scope block and can be used in any MTL construct.
+        }
+
+        @Steps {
+            @Step {
+                Combine let with if statements.
+
+                @Code(name: "ControlFlow.mtl", file: mtl-step-20-let-if-combo.mtl)
+
+                Define a variable with let, then use it in if conditions. This separates value computation from conditional logic, improving readability.
+            }
+
+            @Step {
+                Nest let bindings.
+
+                @Code(name: "ControlFlow.mtl", file: mtl-step-21-nested-let.mtl)
+
+                Inner let blocks can access variables from outer blocks. Each `/let]` closes one level of scope.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What happens when an if condition is false?
+
+            @Choice(isCorrect: true) {
+                The content inside the if block is skipped
+
+                @Justification {
+                    Correct! When a condition evaluates to false, MTL skips all content inside that if block and moves to the else or elseif branch if present.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The template fails with an error
+
+                @Justification {
+                    Incorrect. False conditions are normal—they just skip content. Templates only fail on syntax errors or invalid operations.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The condition is automatically inverted
+
+                @Justification {
+                    Incorrect. MTL doesn't invert conditions. If you want opposite behaviour, use an else branch or explicitly negate the condition.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            How do you close a let binding?
+
+            @Choice(isCorrect: true) {
+                With [/let]
+
+                @Justification {
+                    Correct! The `[/let]` directive closes the let scope. Variables defined in that let are no longer available after the closing tag.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Let bindings close automatically
+
+                @Justification {
+                    Incorrect. You must explicitly close let blocks with `[/let]`. Forgetting the closing tag causes syntax errors.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                With [endlet]
+
+                @Justification {
+                    Incorrect. MTL uses the standard closing syntax `[/directive]` for all block directives, including let.
+                }
+            }
+        }
+    }
+}

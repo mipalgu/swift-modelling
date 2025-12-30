@@ -1,0 +1,65 @@
+@Tutorial(time: 30) {
+    @Intro(title: "Protected Areas") {
+        Learn how to preserve manual code changes across regenerations using protected areas.
+
+        In this tutorial, you'll explore the protected directive, custom markers, and strategies for mixing generated and hand-written code safely.
+
+        @Image(source: "mtl-code-generation.svg", alt: "Protected Areas")
+    }
+
+    @Section(title: "Understanding Protected Areas") {
+        @ContentAndMedia {
+            Protected areas mark sections of generated code that can be edited manually. During regeneration, MTL preserves these sections whilst updating surrounding generated code.
+
+            This solves the classic code generation problem: how to regenerate without losing manual customisations.
+        }
+
+        @Steps {
+            @Step {
+                Create a basic protected area.
+
+                @Code(name: "ProtectedAreas.mtl", file: mtl-step-36-basic-protected.mtl)
+
+                The protected directive takes an ID and optional marker parameters. Content inside is preserved across regenerations.
+            }
+
+            @Step {
+                Use custom markers.
+
+                @Code(name: "ProtectedAreas.mtl", file: mtl-step-37-custom-markers.mtl)
+
+                Custom markers let protected areas blend with your target language's comment syntax. Users recognise them more easily than default markers.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What is the purpose of protected areas?
+
+            @Choice(isCorrect: true) {
+                To preserve manual code changes during regeneration
+
+                @Justification {
+                    Correct! Protected areas let developers add custom code in generated files. Regeneration updates generated code whilst preserving protected sections.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                To prevent the template from executing
+
+                @Justification {
+                    Incorrect. Protected areas don't affect template execution. They mark output sections to preserve during future regenerations.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                To encrypt generated code
+
+                @Justification {
+                    Incorrect. Protected areas have nothing to do with encryption. They're about preserving manual edits in generated files.
+                }
+            }
+        }
+    }
+}

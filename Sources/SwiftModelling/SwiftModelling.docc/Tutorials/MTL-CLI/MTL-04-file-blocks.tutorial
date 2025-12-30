@@ -1,0 +1,91 @@
+@Tutorial(time: 30) {
+    @Intro(title: "File Blocks") {
+        Learn how to generate multiple output files from a single MTL template using file blocks.
+
+        In this tutorial, you'll explore file generation modes, character encodings, and strategies for organising generated code across multiple files.
+
+        @Image(source: "mtl-code-generation.svg", alt: "MTL File Blocks")
+    }
+
+    @Section(title: "Understanding File Blocks") {
+        @ContentAndMedia {
+            File blocks let you generate multiple files from one template. Each file block specifies a filename, generation mode, and encoding.
+
+            Without file blocks, MTL generates a single output file. File blocks give you fine-grained control over the generated file structure.
+        }
+
+        @Steps {
+            @Step {
+                Create a basic file block.
+
+                @Code(name: "FileBlocks.mtl", file: mtl-step-22-basic-file.mtl)
+
+                The file directive takes three parameters: filename, mode ('overwrite'/'append'/'create'), and encoding (typically 'UTF-8').
+            }
+
+            @Step {
+                Generate multiple files.
+
+                @Code(name: "FileBlocks.mtl", file: mtl-step-23-multiple-files.mtl)
+
+                Each file block creates a separate output file. The main template can contain multiple file blocks to generate an entire project structure.
+            }
+
+            @Step {
+                Execute and verify file generation.
+
+                @Code(name: "Terminal", file: mtl-step-24-generate-files.sh)
+
+                When you run swift-mtl with an output directory, each file block creates its named file in that directory.
+            }
+        }
+    }
+
+    @Section(title: "File Generation Modes") {
+        @ContentAndMedia {
+            File modes control how MTL handles existing files. Use 'overwrite' for complete regeneration, 'append' for incremental updates, and 'create' to avoid overwriting manual changes.
+
+            Choosing the right mode prevents accidental data loss and enables collaborative development with generated and hand-written code.
+        }
+
+        @Steps {
+            @Step {
+                Compare file modes.
+
+                @Code(name: "FileBlocks.mtl", file: mtl-step-25-file-modes.mtl)
+
+                Overwrite replaces the file completely, append adds to the end, and create only writes if the file doesn't exist.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What does the 'overwrite' file mode do?
+
+            @Choice(isCorrect: true) {
+                Replaces the entire file with new content
+
+                @Justification {
+                    Correct! Overwrite mode deletes any existing file and creates a new one with the generated content. Use this for fully generated files.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Appends content to the end of the file
+
+                @Justification {
+                    Incorrect. That's what 'append' mode does. Overwrite replaces the entire file.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Only writes if the file doesn't exist
+
+                @Justification {
+                    Incorrect. That's what 'create' mode does. Overwrite always writes, destroying existing content.
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,192 @@
+@Tutorial(time: 15) {
+    @Intro(title: "Hello World Template") {
+
+        Learn the basics of MTL (Model-to-Text Language) by creating your first code generation template.
+
+        In this tutorial, you'll create a simple "Hello, World!" template, understand MTL syntax, and generate your first output using swift-mtl.
+
+        @Image(source: "mtl-code-generation.svg", alt: "MTL Code Generation")
+    }
+
+    @Section(title: "Understanding MTL Templates") {
+        @ContentAndMedia {
+            MTL (Model-to-Text Language) is Acceleo's template language for generating code and text from models. Templates combine static text with dynamic expressions to produce output.
+
+            Every MTL template starts with a module declaration and contains at least one template definition. Think of templates as functions that generate text instead of returning values.
+
+            @Image(source: "mtl-code-generation.svg", alt: "MTL Template Structure")
+        }
+
+        @Steps {
+            @Step {
+                Create an MTL module with a namespace.
+
+                @Code(name: "HelloWorld.mtl", file: mtl-step-01-module.mtl)
+
+                The module declaration defines the template's namespace and metamodel URI. The URI can be any valid identifier—for simple templates without models, use a placeholder like `'http://example.com'`.
+            }
+
+            @Step {
+                Add a template definition.
+
+                @Code(name: "HelloWorld.mtl", file: mtl-step-02-template.mtl)
+
+                The `[template main()]` directive defines a template named `main`. This is the entry point—the template that will be executed when you run swift-mtl.
+            }
+
+            @Step {
+                Add static text content.
+
+                @Code(name: "HelloWorld.mtl", file: mtl-step-03-content.mtl)
+
+                Any text outside of MTL directives (which use `[brackets]`) is generated literally to the output. This is your first complete MTL template!
+            }
+        }
+    }
+
+    @Section(title: "Generating Output") {
+        @ContentAndMedia {
+            MTL templates generate output through the swift-mtl command-line tool. The generator executes your template and writes the result to files.
+
+            You can generate to standard output for quick testing or to a directory for persistent file creation.
+        }
+
+        @Steps {
+            @Step {
+                Generate output to the console.
+
+                @Code(name: "Terminal", file: mtl-step-04-generate-console.sh)
+
+                The `generate` command executes the template. Without `--output`, it prints to standard output—perfect for testing small templates.
+            }
+
+            @Step {
+                Generate output to a file.
+
+                @Code(name: "Terminal", file: mtl-step-05-generate-file.sh)
+
+                Using `--output` creates files in the specified directory. MTL automatically creates a file named after your module (HelloWorld.txt by default).
+            }
+
+            @Step {
+                View the generated output.
+
+                @Code(name: "HelloWorld.txt", file: mtl-step-06-output.txt)
+
+                The generated file contains exactly what you wrote in the template—MTL copied the static text to the output file.
+            }
+        }
+    }
+
+    @Section(title: "Template Structure Best Practices") {
+        @ContentAndMedia {
+            Well-structured templates are easy to read and maintain. Follow MTL conventions for module names, template organisation, and documentation.
+
+            Use descriptive names, add comments for complex logic, and keep templates focused on a single purpose.
+        }
+
+        @Steps {
+            @Step {
+                Add comments to document your template.
+
+                @Code(name: "HelloWorld.mtl", file: mtl-step-07-with-comments.mtl)
+
+                MTL comments use `[comment]` blocks. Comments are ignored during generation—use them to explain what your template does and how to use it.
+            }
+
+            @Step {
+                Verify your template structure.
+
+                @Code(name: "Terminal", file: mtl-step-08-validate.sh)
+
+                The `validate` command checks template syntax without generating output. Use it to catch errors early before running generation.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What is the purpose of the module directive in MTL?
+
+            @Choice(isCorrect: false) {
+                To generate the output file
+
+                @Justification {
+                    Incorrect. The module directive defines the template's namespace and metamodel, not the output. File generation happens through file blocks or the main template execution.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                To define the template's namespace and metamodel URI
+
+                @Justification {
+                    Correct! The module directive establishes the template's identity and declares which metamodel it works with. For simple templates without models, you can use a placeholder URI.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                To import other MTL files
+
+                @Justification {
+                    Incorrect. Whilst modules can import other templates, the module directive's primary purpose is to define the namespace and metamodel URI.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What happens to text outside MTL directives?
+
+            @Choice(isCorrect: true) {
+                It's copied literally to the generated output
+
+                @Justification {
+                    Correct! Static text outside of MTL directives (the `[brackets]`) is generated exactly as written. This makes MTL templates readable—most of the template looks like the output you want.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                It's treated as a comment and ignored
+
+                @Justification {
+                    Incorrect. Static text becomes part of the output. Only content inside `[comment]` blocks is ignored during generation.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                It causes a syntax error
+
+                @Justification {
+                    Incorrect. Static text is a fundamental feature of MTL—templates are mostly static text with dynamic expressions inserted where needed.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What does the main template represent?
+
+            @Choice(isCorrect: false) {
+                A helper function called by other templates
+
+                @Justification {
+                    Incorrect. The main template is the entry point, not a helper. Helper templates would have different names and be called from main.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                The entry point template that swift-mtl executes
+
+                @Justification {
+                    Correct! When you run swift-mtl generate, it looks for and executes the main template. This is the starting point for your code generation.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The metamodel definition
+
+                @Justification {
+                    Incorrect. Metamodels are defined in .ecore files, not in MTL templates. The template references a metamodel URI but doesn't define it.
+                }
+            }
+        }
+    }
+}

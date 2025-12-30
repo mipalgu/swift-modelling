@@ -1,0 +1,15 @@
+[module ProtectedAreas('http://example.com')]
+
+[template main()]
+class MyClass {
+    var id: Int
+
+[protected ('custom-init', '// START_CUSTOM', '// END_CUSTOM')]
+    // Add custom initialization here
+[/protected]
+
+    init(id: Int) {
+        self.id = id
+    }
+}
+[/template]

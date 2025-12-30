@@ -1,0 +1,9 @@
+[module Expressions('http://example.com')]
+
+[query square(n : Integer) : Integer = n * n/]
+[query fullName(first : String, last : String) : String = first + ' ' + last/]
+
+[template main()]
+Square of 5: [square(5)/]
+Full name: [fullName('John', 'Doe')/]
+[/template]

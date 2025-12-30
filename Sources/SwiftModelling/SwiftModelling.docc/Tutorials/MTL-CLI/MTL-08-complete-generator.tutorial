@@ -1,0 +1,73 @@
+@Tutorial(time: 60) {
+    @Intro(title: "Complete Code Generator") {
+        Build a complete Swift code generator from the Company metamodel, applying all MTL concepts together.
+
+        In this tutorial, you'll create a production-quality generator that produces Swift structs with properties, initialisers, and utility methods.
+
+        @Image(source: "mtl-code-generation.svg", alt: "Complete Code Generator")
+    }
+
+    @Section(title: "Designing the Generator") {
+        @ContentAndMedia {
+            A complete generator combines multiple templates, queries, and macros to produce well-structured code. Plan your template architecture before coding.
+
+            Separate concerns: use helper templates for repeated patterns, queries for logic, and macros for formatting.
+        }
+
+        @Steps {
+            @Step {
+                Create the main generation template.
+
+                @Code(name: "SwiftGenerator.mtl", file: mtl-step-38-main-generator.mtl)
+
+                The main template orchestrates file generation, calling helper templates for each model element.
+            }
+
+            @Step {
+                Add helper templates for classes.
+
+                @Code(name: "SwiftGenerator.mtl", file: mtl-step-39-class-helper.mtl)
+
+                Helper templates focus on generating specific parts. This one generates a Swift struct from an EClass.
+            }
+
+            @Step {
+                Generate the complete project.
+
+                @Code(name: "Terminal", file: mtl-step-40-generate-project.sh)
+
+                Run the complete generator against your Company model to produce a full Swift module.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            Why use helper templates instead of putting everything in main?
+
+            @Choice(isCorrect: true) {
+                To improve maintainability and enable reuse
+
+                @Justification {
+                    Correct! Helper templates separate concerns, making each template focused and reusable. This improves readability and maintenance.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Helper templates run faster
+
+                @Justification {
+                    Incorrect. Performance is not the reason. Helper templates improve code organization and reuse, not execution speed.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                MTL requires using helper templates
+
+                @Justification {
+                    Incorrect. Helper templates are optional. Use them to improve template structure, not because MTL requires them.
+                }
+            }
+        }
+    }
+}

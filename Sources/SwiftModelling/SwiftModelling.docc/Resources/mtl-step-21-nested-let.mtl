@@ -1,0 +1,9 @@
+[module ControlFlow('http://example.com')]
+
+[template main()]
+[let firstName = 'John']
+[let lastName = 'Doe']
+   Full Name: [firstName + ' ' + lastName/]
+[/let]
+[/let]
+[/template]

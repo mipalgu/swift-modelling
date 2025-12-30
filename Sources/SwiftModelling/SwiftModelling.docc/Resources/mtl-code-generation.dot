@@ -1,0 +1,32 @@
+digraph MTLCodeGeneration {
+    rankdir=LR;
+    node [shape=box, style=rounded, fontname="Arial"];
+    edge [fontname="Arial"];
+
+    // Inputs
+    template [label="MTL Template\n(.mtl)", style="rounded,filled", fillcolor="#E8F4F8"];
+    model [label="Model Instance\n(.xmi/.json)", style="rounded,filled", fillcolor="#E8F4F8"];
+
+    // Core operations
+    parse [label="Parse\nTemplate", shape=ellipse, fillcolor="#D4E6F1"];
+    load [label="Load\nModel", shape=ellipse, fillcolor="#D4E6F1"];
+    generate [label="Generate\nCode", shape=ellipse, fillcolor="#D4E6F1"];
+    write [label="Write\nFiles", shape=ellipse, fillcolor="#D4E6F1"];
+
+    // Output
+    code [label="Generated Code\n(.swift/.txt)", style="rounded,filled", fillcolor="#E8F8F5"];
+
+    // Flow
+    template -> parse [label="read"];
+    model -> load [label="deserialise"];
+    parse -> generate [label="execute"];
+    load -> generate [label="navigate"];
+    generate -> write [label="output"];
+    write -> code [label="create"];
+
+    // Legend
+    {
+        rank=same;
+        legendTitle [label="MTL Code Generation", shape=plaintext, fontsize=16, fontname="Arial Bold"];
+    }
+}

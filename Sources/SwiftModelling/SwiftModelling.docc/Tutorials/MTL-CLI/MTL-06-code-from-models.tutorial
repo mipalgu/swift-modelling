@@ -1,0 +1,99 @@
+@Tutorial(time: 40) {
+    @Intro(title: "Code Generation from Models") {
+        Learn how to load models and navigate them in MTL templates to generate code based on metamodel structure.
+
+        In this tutorial, you'll work with the Company metamodel from earlier tutorials, loading model instances and generating Swift code from them.
+
+        @Image(source: "mtl-code-generation.svg", alt: "Model-Based Code Generation")
+    }
+
+    @Section(title: "Loading Models in Templates") {
+        @ContentAndMedia {
+            MTL templates can reference metamodels and navigate loaded model instances. The module declaration specifies the metamodel URI, and template parameters define model types.
+
+            This connects your templates to actual model data, enabling true model-driven code generation.
+        }
+
+        @Steps {
+            @Step {
+                Declare a metamodel-aware module.
+
+                @Code(name: "CompanyGenerator.mtl", file: mtl-step-31-metamodel-module.mtl)
+
+                The module declaration now references the Company metamodel's nsURI. This lets MTL understand the metamodel's structure.
+            }
+
+            @Step {
+                Create a template that accepts a model element.
+
+                @Code(name: "CompanyGenerator.mtl", file: mtl-step-32-model-template.mtl)
+
+                The template parameter `c : Company` indicates this template expects a Company model element. You can access the element's properties using dot notation.
+            }
+
+            @Step {
+                Generate code from the model.
+
+                @Code(name: "Terminal", file: mtl-step-33-generate-from-model.sh)
+
+                Pass both the template and model file to swift-mtl. It loads the model and executes the template with the root element.
+            }
+        }
+    }
+
+    @Section(title: "Navigating Model References") {
+        @ContentAndMedia {
+            Models contain references to other elements. Navigate them using dot notation—the same way you access properties in Swift.
+
+            MTL automatically follows containment and non-containment references, letting you traverse the entire model graph.
+        }
+
+        @Steps {
+            @Step {
+                Access referenced elements.
+
+                @Code(name: "CompanyGenerator.mtl", file: mtl-step-34-navigate-refs.mtl)
+
+                Use dot notation to navigate from Company to employees. MTL understands the metamodel's references and provides access to related elements.
+            }
+
+            @Step {
+                Iterate over collections.
+
+                @Code(name: "CompanyGenerator.mtl", file: mtl-step-35-iterate-collection.mtl)
+
+                The for directive iterates over collections. Each iteration binds the variable to one element, letting you generate code for each item.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            How do you specify that a template works with a specific metamodel?
+
+            @Choice(isCorrect: true) {
+                In the module declaration using the metamodel's nsURI
+
+                @Justification {
+                    Correct! The module declaration's URI parameter should match the metamodel's nsURI from its Ecore definition.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Using an import statement
+
+                @Justification {
+                    Incorrect. MTL doesn't use import statements. The module declaration establishes the metamodel connection.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                In the template parameter types
+
+                @Justification {
+                    Incorrect. Parameter types use the metamodel's classes, but the module declaration establishes which metamodel is active.
+                }
+            }
+        }
+    }
+}

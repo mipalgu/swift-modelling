@@ -1,0 +1,190 @@
+@Tutorial(time: 20) {
+    @Intro(title: "Expressions and Variables") {
+
+        Learn how to use dynamic expressions and variables in MTL templates to generate computed values.
+
+        In this tutorial, you'll explore arithmetic operations, string concatenation, variable bindings, and query definitions—the building blocks of dynamic code generation.
+
+        @Image(source: "mtl-code-generation.svg", alt: "MTL Expressions")
+    }
+
+    @Section(title: "Understanding MTL Expressions") {
+        @ContentAndMedia {
+            MTL expressions are dynamic computations enclosed in brackets. They can perform arithmetic, manipulate strings, call queries, and reference variables.
+
+            Expressions are evaluated at generation time and their results are inserted into the output. This transforms static templates into dynamic code generators.
+        }
+
+        @Steps {
+            @Step {
+                Use arithmetic expressions.
+
+                @Code(name: "Expressions.mtl", file: mtl-step-09-arithmetic.mtl)
+
+                Arithmetic expressions (`+`, `-`, `*`, `/`) work with integers and are enclosed in `[expression/]` tags. The forward slash closes the expression.
+            }
+
+            @Step {
+                Concatenate strings with the plus operator.
+
+                @Code(name: "Expressions.mtl", file: mtl-step-10-string-concat.mtl)
+
+                String literals use single quotes. The `+` operator concatenates strings, letting you build dynamic text from multiple parts.
+            }
+
+            @Step {
+                Generate output with expressions.
+
+                @Code(name: "Terminal", file: mtl-step-11-generate-expressions.sh)
+
+                When you generate the template, MTL evaluates all expressions and inserts their results into the output at the positions where they appear.
+            }
+        }
+    }
+
+    @Section(title: "Working with Queries") {
+        @ContentAndMedia {
+            Queries are reusable functions that encapsulate logic and return computed values. They make templates more maintainable by avoiding duplication and improving readability.
+
+            Define queries before your templates using the `[query name(parameters) : ReturnType = expression/]` syntax.
+        }
+
+        @Steps {
+            @Step {
+                Define a simple query.
+
+                @Code(name: "Expressions.mtl", file: mtl-step-12-simple-query.mtl)
+
+                Queries have a name, optional parameters with types, a return type, and an expression. They're similar to functions but execute at generation time.
+            }
+
+            @Step {
+                Call queries from templates.
+
+                @Code(name: "Expressions.mtl", file: mtl-step-13-call-query.mtl)
+
+                Call queries using the same bracket syntax as expressions. Pass arguments in parentheses: `[queryName(arg1, arg2)/]`.
+            }
+
+            @Step {
+                Define queries with parameters.
+
+                @Code(name: "Expressions.mtl", file: mtl-step-14-query-params.mtl)
+
+                Parameters make queries reusable with different inputs. Each parameter needs a name and type (String, Integer, Boolean, etc.).
+            }
+        }
+    }
+
+    @Section(title: "Variable Bindings with Let") {
+        @ContentAndMedia {
+            The `let` directive creates local variables that hold computed values. Use them to avoid repeating complex expressions and to make templates more readable.
+
+            Variables are scoped to their let block and can be referenced in any expression within that scope.
+        }
+
+        @Steps {
+            @Step {
+                Create a variable with let.
+
+                @Code(name: "Expressions.mtl", file: mtl-step-15-let-binding.mtl)
+
+                The `let` directive binds a name to a value. The variable is available within the let block until `[/let]` closes the scope.
+            }
+
+            @Step {
+                Use multiple variables.
+
+                @Code(name: "Expressions.mtl", file: mtl-step-16-multiple-let.mtl)
+
+                You can nest let bindings or create multiple variables in sequence. Each variable can reference previously defined ones.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            How do you close an MTL expression?
+
+            @Choice(isCorrect: false) {
+                With a closing bracket: ]
+
+                @Justification {
+                    Incorrect. A closing bracket alone doesn't work—MTL needs the forward slash to distinguish expressions from other directives.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                With a forward slash and closing bracket: /]
+
+                @Justification {
+                    Correct! MTL expressions use `[expression/]` syntax. The `/` indicates this is an expression that should be evaluated and output.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                With [/expression]
+
+                @Justification {
+                    Incorrect. That syntax is for closing block directives like templates or if statements, not for inline expressions.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What is the purpose of a query in MTL?
+
+            @Choice(isCorrect: true) {
+                To encapsulate reusable logic that returns a computed value
+
+                @Justification {
+                    Correct! Queries are like functions—they take parameters, compute a result, and return it. They make templates maintainable by avoiding code duplication.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                To query a database for data
+
+                @Justification {
+                    Incorrect. Despite the name, MTL queries don't access databases. They're computational functions that work with template data and models.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                To generate multiple output files
+
+                @Justification {
+                    Incorrect. File generation is handled by file blocks, not queries. Queries compute and return values.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What does the let directive do?
+
+            @Choice(isCorrect: false) {
+                It generates a let statement in Swift code
+
+                @Justification {
+                    Incorrect. The let directive is an MTL construct for template variables, not for generating let statements in output code.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                It creates a local variable scoped to the let block
+
+                @Justification {
+                    Correct! The let directive binds a name to a value within a specific scope. The variable exists until the closing `[/let]` and can be used in expressions within that block.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                It imports a variable from another template
+
+                @Justification {
+                    Incorrect. Let creates local variables—it doesn't import from other templates. For sharing logic between templates, use queries or macros.
+                }
+            }
+        }
+    }
+}

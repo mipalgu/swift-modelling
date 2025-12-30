@@ -28,4 +28,19 @@
 
         @TutorialReference(tutorial: "doc:01-first-transformation")
     }
+
+    @Chapter(name: "MTL Code Generation") {
+        Generate code from models using the Model-to-Text Language.
+
+        @Image(source: "mtl-code-generation.svg", alt: "MTL Code Generation Workflow")
+
+        @TutorialReference(tutorial: "doc:MTL-01-hello-world")
+        @TutorialReference(tutorial: "doc:MTL-02-expressions-variables")
+        @TutorialReference(tutorial: "doc:MTL-03-control-flow")
+        @TutorialReference(tutorial: "doc:MTL-04-file-blocks")
+        @TutorialReference(tutorial: "doc:MTL-05-queries-macros")
+        @TutorialReference(tutorial: "doc:MTL-06-code-from-models")
+        @TutorialReference(tutorial: "doc:MTL-07-protected-areas")
+        @TutorialReference(tutorial: "doc:MTL-08-complete-generator")
+    }
 }

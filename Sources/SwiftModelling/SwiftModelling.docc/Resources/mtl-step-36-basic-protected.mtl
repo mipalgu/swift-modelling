@@ -1,0 +1,17 @@
+[module ProtectedAreas('http://example.com')]
+
+[template main()]
+class MyClass {
+    var id: Int
+    var name: String
+
+[protected ('custom-methods')]
+    // Add your custom methods here
+[/protected]
+
+    init(id: Int, name: String) {
+        self.id = id
+        self.name = name
+    }
+}
+[/template]

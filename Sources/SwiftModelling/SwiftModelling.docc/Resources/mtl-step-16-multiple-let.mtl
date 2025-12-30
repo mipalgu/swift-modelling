@@ -1,0 +1,11 @@
+[module Expressions('http://example.com')]
+
+[template main()]
+[let firstName = 'John']
+[let lastName = 'Doe']
+[let fullName = firstName + ' ' + lastName]
+Full Name: [fullName/]
+[/let]
+[/let]
+[/let]
+[/template]

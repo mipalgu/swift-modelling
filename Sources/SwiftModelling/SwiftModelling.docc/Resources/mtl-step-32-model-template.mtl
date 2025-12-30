@@ -1,0 +1,5 @@
+[module CompanyGenerator('http://www.example.org/company')]
+
+[template main(c : Company)]
+Company: [c.name/]
+[/template]

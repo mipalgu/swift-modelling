@@ -1,0 +1,16 @@
+[module FileBlocks('http://example.com')]
+
+[template main()]
+[file ('overwrite-mode.txt', 'overwrite', 'UTF-8')]
+This file is completely replaced on each generation.
+[/file]
+
+[file ('append-mode.txt', 'append', 'UTF-8')]
+This line is added to the end of the file.
+[/file]
+
+[file ('create-mode.txt', 'create', 'UTF-8')]
+This file is only created if it doesn't exist.
+Manual changes are preserved.
+[/file]
+[/template]

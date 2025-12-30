@@ -1,0 +1,127 @@
+@Tutorial(time: 35) {
+    @Intro(title: "Queries and Macros") {
+        Learn how to create reusable template components with queries and macros.
+
+        In this tutorial, you'll combine queries for logic with macros for structural patterns, creating maintainable and DRY (Don't Repeat Yourself) templates.
+
+        @Image(source: "mtl-code-generation.svg", alt: "MTL Queries and Macros")
+    }
+
+    @Section(title: "Advanced Queries") {
+        @ContentAndMedia {
+            Queries encapsulate complex logic and make templates more maintainable. Use them for calculations, boolean tests, and data transformations.
+
+            Well-designed queries abstract away implementation details, making templates read like domain-specific languages.
+        }
+
+        @Steps {
+            @Step {
+                Define mathematical queries.
+
+                @Code(name: "Queries.mtl", file: mtl-step-26-math-queries.mtl)
+
+                Create queries that perform common calculations. They can call other queries, building complex logic from simple parts.
+            }
+
+            @Step {
+                Create boolean test queries.
+
+                @Code(name: "Queries.mtl", file: mtl-step-27-boolean-queries.mtl)
+
+                Boolean queries return true/false and are perfect for use in if conditions, making your conditional logic more readable.
+            }
+        }
+    }
+
+    @Section(title: "Creating Macros") {
+        @ContentAndMedia {
+            Macros are template fragments that accept parameters and a body. They're ideal for wrapping repeated structures like headers, sections, or code blocks.
+
+            Unlike queries which return values, macros generate text using their body parameter and embedded content.
+        }
+
+        @Steps {
+            @Step {
+                Define a simple macro.
+
+                @Code(name: "Macros.mtl", file: mtl-step-28-simple-macro.mtl)
+
+                Macros take parameters and a Body parameter. The body is inserted where you write `[content/]` inside the macro.
+            }
+
+            @Step {
+                Use macros in templates.
+
+                @Code(name: "Macros.mtl", file: mtl-step-29-use-macro.mtl)
+
+                Call macros by name, passing arguments and providing content between the opening and closing tags. The content becomes the body parameter.
+            }
+
+            @Step {
+                Combine multiple macros.
+
+                @Code(name: "Macros.mtl", file: mtl-step-30-multiple-macros.mtl)
+
+                Macros can call other macros, building complex formatting from simple building blocks. This creates consistent, maintainable templates.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What is the difference between queries and macros?
+
+            @Choice(isCorrect: true) {
+                Queries return computed values, macros generate formatted text
+
+                @Justification {
+                    Correct! Queries are for logic and return values (strings, integers, booleans). Macros generate text using parameters and a body block.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                They are the same thing
+
+                @Justification {
+                    Incorrect. Queries and macros serve different purposes—queries for computation, macros for text generation with structure.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Queries generate text, macros return values
+
+                @Justification {
+                    Incorrect. This is backwards—queries compute and return values, whilst macros generate and output text.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            How do you pass content to a macro?
+
+            @Choice(isCorrect: true) {
+                Place content between the macro's opening and closing tags
+
+                @Justification {
+                    Correct! Macros accept content as a Body parameter by wrapping it: `[macroName()]content here[/macroName]`. The content is available inside the macro.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Pass it as a string parameter
+
+                @Justification {
+                    Incorrect. Whilst macros can have string parameters, the body content is passed by nesting it between opening and closing tags, not as a parameter.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Use the content keyword
+
+                @Justification {
+                    Incorrect. The body content is automatically available through the Body parameter name you define in the macro signature.
+                }
+            }
+        }
+    }
+}

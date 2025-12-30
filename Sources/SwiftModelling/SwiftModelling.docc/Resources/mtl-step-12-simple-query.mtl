@@ -1,0 +1,7 @@
+[module Expressions('http://example.com')]
+
+[query getVersion() : String = '1.0.0'/]
+
+[template main()]
+Version: [getVersion()/]
+[/template]

@@ -1,0 +1,15 @@
+[module Macros('http://example.com')]
+
+[macro section(title : String, content : Body)]
+========================================
+[title/]
+========================================
+[content/]
+
+[/macro]
+
+[template main()]
+[section('Introduction')]
+This is the introduction section.
+[/section]
+[/template]

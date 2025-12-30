@@ -1,0 +1,4 @@
+[module HelloWorld('http://example.com')]
+
+[template main()]
+[/template]

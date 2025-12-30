@@ -1,0 +1,8 @@
+[module FileBlocks('http://example.com')]
+
+[template main()]
+[file ('greeting.txt', 'overwrite', 'UTF-8')]
+Hello from MTL!
+This file was generated using a file block.
+[/file]
+[/template]

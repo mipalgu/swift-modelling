@@ -1,0 +1,9 @@
+[module ControlFlow('http://example.com')]
+
+[template main()]
+[if (false)]
+   ✗ This branch is NOT executed
+[else]
+   ✓ This branch is executed
+[/if]
+[/template]

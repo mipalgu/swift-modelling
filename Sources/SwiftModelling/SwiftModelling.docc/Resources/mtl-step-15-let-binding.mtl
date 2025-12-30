@@ -1,0 +1,7 @@
+[module Expressions('http://example.com')]
+
+[template main()]
+[let version = '1.0.0']
+Application Version: [version/]
+[/let]
+[/template]

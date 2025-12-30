@@ -1,0 +1,19 @@
+[module SwiftGenerator('http://www.example.org/company')]
+
+[template main(pkg : EPackage)]
+[file (pkg.name + '.swift', 'overwrite', 'UTF-8')]
+// Generated from [pkg.name/]
+
+[for (cls : EClass | pkg.eClassifiers->filter(EClass))]
+[generateClass(cls)/]
+[/for]
+[/file]
+[/template]
+
+[template generateClass(cls : EClass)]
+struct [cls.name/] {
+[for (attr : EAttribute | cls.eStructuralFeatures->filter(EAttribute))]
+    var [attr.name/]: String
+[/for]
+}
+[/template]

@@ -1,0 +1,9 @@
+[module Queries('http://example.com')]
+
+[query square(n : Integer) : Integer = n * n/]
+[query cube(n : Integer) : Integer = n * n * n/]
+
+[template main()]
+Square of 5: [square(5)/]
+Cube of 3: [cube(3)/]
+[/template]
