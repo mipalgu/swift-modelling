@@ -43,6 +43,19 @@ These tools provide comprehensive support for Eclipse Modelling Framework (EMF),
 - Swift 6.0 or later
 - macOS 15.0+ or Linux
 
+## Installation
+
+### Homebrew
+
+You can install the suite of modelling tools using Homebrew:
+
+```bash
+brew tap mipalgu/tap
+brew install swift-modelling
+```
+
+This will install `swift-ecore`, `swift-atl`, and `swift-mtl` to your system.
+
 ## Building
 
 ```bash
