@@ -1,0 +1,335 @@
+@Tutorial(time: 30) {
+    @Intro(title: "Collection Operations") {
+        Master AQL's collection operations for transforming and manipulating model data.
+
+        In this tutorial, you'll learn how to use `collect`, `flatten`, iteration operations, and aggregation functions to transform collections and extract computed values. These operations are essential for sophisticated model analysis and data transformation.
+
+        @Image(source: "aql-collection-ops.svg", alt: "AQL Collection Operations")
+    }
+
+    @Section(title: "Understanding Collection Transformation") {
+        @ContentAndMedia {
+            AQL provides powerful operations for transforming collections into new forms. The `collect` operation extracts values from each element, `flatten` merges nested collections, and various aggregation operations compute summary statistics.
+
+            These operations form the core of data processing pipelines in AQL, allowing you to reshape model data for analysis, reporting, and code generation.
+
+            @Image(source: "aql-transformation-pipeline.svg", alt: "AQL Transformation Pipeline")
+        }
+
+        @Steps {
+            @Step {
+                Set up a comprehensive model for collection examples.
+
+                @Code(name: "Library.ecore", file: aql-03-step-01-library-metamodel.ecore)
+
+                This metamodel represents a library system with Books, Authors, Categories, and Loans. It provides rich data relationships perfect for demonstrating collection operations.
+            }
+
+            @Step {
+                Create a model instance with nested collections.
+
+                @Code(name: "library-data.xmi", file: aql-03-step-02-library-instance.xmi)
+
+                This model contains multiple books by various authors, different categories, and loan records. The nested structure demonstrates collection operations across related objects.
+            }
+
+            @Step {
+                Explore basic collection properties.
+
+                @Code(name: "Terminal", file: aql-03-step-03-collection-basics.sh)
+
+                Start with fundamental collection operations: size calculation, empty/notEmpty checks, and basic element access. These form the foundation for more complex operations.
+            }
+
+            @Step {
+                Access nested collections through navigation.
+
+                @Code(name: "Terminal", file: aql-03-step-04-nested-access.sh)
+
+                Navigate through model relationships to access collections at different levels. Understanding navigation is crucial for effective collection processing.
+            }
+        }
+    }
+
+    @Section(title: "Collect Operations") {
+        @ContentAndMedia {
+            The `collect` operation is AQL's most powerful transformation tool. It applies an expression to each element in a collection and returns a new collection with the results.
+
+            Think of `collect` as a mapping operation—it transforms each element according to a rule you specify, creating a new collection with the transformed values.
+        }
+
+        @Steps {
+            @Step {
+                Extract simple properties with collect.
+
+                @Code(name: "Terminal", file: aql-03-step-05-simple-collect.sh)
+
+                Use `collect` to extract property values from each element in a collection. This creates a new collection containing just the values you're interested in.
+            }
+
+            @Step {
+                Transform elements with expressions.
+
+                @Code(name: "Terminal", file: aql-03-step-06-expression-collect.sh)
+
+                Apply complex expressions within `collect` operations. Combine property access with calculations, string operations, and conditional logic.
+            }
+
+            @Step {
+                Navigate through references in collect.
+
+                @Code(name: "Terminal", file: aql-03-step-07-navigation-collect.sh)
+
+                Use `collect` to navigate through references and extract properties from related objects. This enables cross-object data extraction.
+            }
+
+            @Step {
+                Chain collect operations.
+
+                @Code(name: "Terminal", file: aql-03-step-08-chained-collect.sh)
+
+                Chain multiple `collect` operations to perform multi-step transformations. Each operation works on the result of the previous one.
+            }
+        }
+    }
+
+    @Section(title: "Flatten and Nested Collections") {
+        @ContentAndMedia {
+            When working with nested collections (collections that contain other collections), you often need to flatten the structure into a single collection. The `flatten` operation merges nested collections into one flat collection.
+
+            This is essential when navigation produces collections of collections, and you need to work with all elements at once.
+        }
+
+        @Steps {
+            @Step {
+                Understand when flattening is needed.
+
+                @Code(name: "Terminal", file: aql-03-step-09-nested-problem.sh)
+
+                When you collect collections, you get nested structures. Identify situations where you need to flatten these into a single collection for further processing.
+            }
+
+            @Step {
+                Use flatten to merge collections.
+
+                @Code(name: "Terminal", file: aql-03-step-10-flatten-basic.sh)
+
+                The `flatten` operation takes a collection of collections and returns a single collection containing all elements from the nested collections.
+            }
+
+            @Step {
+                Combine collect and flatten.
+
+                @Code(name: "Terminal", file: aql-03-step-11-collect-flatten.sh)
+
+                A common pattern is to collect related objects (creating nested collections) then flatten the result. This extracts all related elements across multiple parent objects.
+            }
+
+            @Step {
+                Work with deeply nested structures.
+
+                @Code(name: "Terminal", file: aql-03-step-12-deep-nesting.sh)
+
+                Handle complex model structures with multiple levels of nesting. Use multiple flatten operations or careful navigation to access deeply nested data.
+            }
+        }
+    }
+
+    @Section(title: "Aggregation and Statistical Operations") {
+        @ContentAndMedia {
+            AQL provides aggregation operations for computing summary statistics and aggregate values from collections. These operations reduce collections to single values.
+
+            Common aggregations include sum, maximum, minimum, and average calculations. These are essential for reporting and analysis queries.
+        }
+
+        @Steps {
+            @Step {
+                Calculate sums and totals.
+
+                @Code(name: "Terminal", file: aql-03-step-13-sum-operations.sh)
+
+                Use `sum()` to calculate totals from numeric collections. This is useful for computing aggregate statistics across model elements.
+            }
+
+            @Step {
+                Find maximum and minimum values.
+
+                @Code(name: "Terminal", file: aql-03-step-14-minmax-operations.sh)
+
+                Use `max()` and `min()` to find extreme values in collections. These operations work with any comparable values, including numbers, strings, and dates.
+            }
+
+            @Step {
+                Count elements with specific properties.
+
+                @Code(name: "Terminal", file: aql-03-step-15-counting.sh)
+
+                Combine filtering with size calculation to count elements that meet specific criteria. This pattern is essential for statistical analysis.
+            }
+
+            @Step {
+                Create complex aggregations.
+
+                @Code(name: "Terminal", file: aql-03-step-16-complex-aggregation.sh)
+
+                Build sophisticated aggregation queries that combine multiple operations, filtering, and transformation to produce comprehensive statistics.
+            }
+        }
+    }
+
+    @Section(title: "Iteration and Advanced Patterns") {
+        @ContentAndMedia {
+            Advanced collection operations include iteration patterns, grouping operations, and complex data transformation pipelines.
+
+            These patterns combine multiple AQL operations to solve complex model analysis problems and prepare data for code generation or reporting.
+        }
+
+        @Steps {
+            @Step {
+                Use iteration for complex processing.
+
+                @Code(name: "Terminal", file: aql-03-step-17-iteration.sh)
+
+                Apply iterative processing patterns when simple collect operations aren't sufficient. Use nested operations to handle complex data relationships.
+            }
+
+            @Step {
+                Group elements by properties.
+
+                @Code(name: "Terminal", file: aql-03-step-18-grouping.sh)
+
+                While AQL doesn't have built-in grouping, you can achieve grouping effects by filtering collections based on common property values.
+            }
+
+            @Step {
+                Build transformation pipelines.
+
+                @Code(name: "Terminal", file: aql-03-step-19-pipelines.sh)
+
+                Chain multiple operations together to create data transformation pipelines. This approach breaks complex queries into manageable steps.
+            }
+
+            @Step {
+                Optimize collection operations.
+
+                @Code(name: "Terminal", file: aql-03-step-20-optimization.sh)
+
+                Apply optimization techniques to improve query performance: minimize navigation, combine operations efficiently, and avoid redundant calculations.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What does `books->collect(b | b.title)` return?
+
+            @Choice(isCorrect: true) {
+                A collection of book titles (strings)
+
+                @Justification(reaction: "Correct!") {
+                    The `collect` operation extracts the title property from each book, creating a new collection containing just the title strings.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                A collection of book objects
+
+                @Justification(reaction: "Not quite!") {
+                    The expression inside collect (b.title) extracts the title property, not the book object itself. Just `books` would return book objects.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                A single concatenated string of all titles
+
+                @Justification(reaction: "Incorrect!") {
+                    `collect` returns a collection, not a single value. To concatenate titles, you'd need additional string operations.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            When do you need to use `flatten`?
+
+            @Choice(isCorrect: false) {
+                When you want to sort a collection
+
+                @Justification(reaction: "That's not what flatten does!") {
+                    `flatten` merges nested collections, it doesn't sort elements. Sorting requires different operations.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                When you have a collection of collections and need a single flat collection
+
+                @Justification(reaction: "Exactly right!") {
+                    `flatten` takes nested collections (collections containing other collections) and merges them into a single flat collection.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                When you want to remove duplicate elements
+
+                @Justification(reaction: "Not quite!") {
+                    `flatten` doesn't remove duplicates, it just merges collections. Duplicate removal requires different operations.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What's the result of `numbers->select(n | n > 10)->size()`?
+
+            @Choice(isCorrect: false) {
+                All numbers greater than 10
+
+                @Justification(reaction: "That would be without size()!") {
+                    Without the `size()` call, you'd get the collection of numbers > 10. The `size()` operation counts the elements.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                The count of numbers greater than 10
+
+                @Justification(reaction: "Perfect!") {
+                    `select` filters to numbers > 10, then `size()` counts how many elements are in the filtered collection.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The largest number greater than 10
+
+                @Justification(reaction: "That would need max()!") {
+                    To find the largest number, you'd use `max()` instead of `size()`. `size()` returns a count, not a value from the collection.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            How do you get the total of all book pages across all books?
+
+            @Choice(isCorrect: false) {
+                `books->collect(b | b.pages)->max()`
+
+                @Justification(reaction: "That gives the maximum!") {
+                    `max()` finds the largest page count, not the total. You need `sum()` to add all the page counts together.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                `books->collect(b | b.pages)->sum()`
+
+                @Justification(reaction: "Exactly!") {
+                    `collect` extracts page counts into a collection of numbers, then `sum()` adds them all together for the total.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `books->sum(b | b.pages)`
+
+                @Justification(reaction: "Sum doesn't take a lambda!") {
+                    The `sum()` operation works on collections of numbers, not on arbitrary collections with lambda expressions. You need `collect` first.
+                }
+            }
+        }
+    }
+}

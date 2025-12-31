@@ -1,0 +1,1 @@
+swift run swift-ecore validate ProjectA.xmi

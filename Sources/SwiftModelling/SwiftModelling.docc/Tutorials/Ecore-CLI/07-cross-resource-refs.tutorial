@@ -1,0 +1,142 @@
+@Tutorial(time: 45) {
+    @Intro(title: "Cross-Resource References") {
+        Learn how to split models across multiple files and manage cross-resource references in Swift-Ecore.
+
+        In this tutorial, you'll explore how to break down large models into smaller, linked resources. You'll understand how Ecore handles references between files using proxies and URIs, and how to work with ResourceSets to load dependent models.
+
+        @Image(source: "ecore-metamodeling.svg", alt: "Cross-Resource References")
+    }
+
+    @Section(title: "Understanding Resources and Proxies") {
+        @ContentAndMedia {
+            In EMF and Swift-Ecore, a **Resource** represents a single file containing model data. A **ResourceSet** is a collection of Resources that are loaded and linked together.
+
+            When a model element in one resource refers to an element in another resource, it uses a **proxy**. A proxy is a placeholder that identifies the target element via a URI. When you access the reference, the engine "resolves" the proxy by loading the target resource.
+        }
+
+        @Steps {
+            @Step {
+                Create a metamodel that supports cross-referencing.
+
+                @Code(name: "Organization.ecore", file: ecore-07-step-01-organization.ecore)
+
+                This metamodel defines `Department` and `Employee` classes. A Department contains Employees, but can also refer to related Departments (potentially in other files).
+            }
+
+            @Step {
+                Understand the `href` syntax.
+
+                In XMI, cross-resource references use the `href` attribute.
+                `href="targetFile.xmi#//TargetElementID"`
+
+                The part before `#` is the URI of the target resource. The part after `#` is the fragment identifier (ID or path) of the element within that resource.
+            }
+        }
+    }
+
+    @Section(title: "Creating Linked Models") {
+        @ContentAndMedia {
+            We will create two separate model files: a "Library" of shared definitions, and a "Project" that references them.
+        }
+
+        @Steps {
+            @Step {
+                Create the referenced resource (The Library).
+
+                @Code(name: "SharedDeps.xmi", file: ecore-07-step-02-shared.xmi)
+
+                This file contains common departments (e.g., "HR", "IT") that other projects might refer to. It acts as a shared library.
+            }
+
+            @Step {
+                Create the referencing resource (The Project).
+
+                @Code(name: "ProjectA.xmi", file: ecore-07-step-03-project.xmi)
+
+                This file defines a specific project. It refers to the "IT" department defined in `SharedDeps.xmi`. Note the `href` pointing to the other file.
+            }
+        }
+    }
+
+    @Section(title: "Resolving References") {
+        @ContentAndMedia {
+            When you load `ProjectA.xmi`, Swift-Ecore initially sees a proxy for the IT department. If you navigate to it or validate the model, the engine automatically loads `SharedDeps.xmi` to resolve the reference.
+        }
+
+        @Steps {
+            @Step {
+                Validate the linked models.
+
+                @Code(name: "Terminal", file: ecore-07-step-04-validate.sh)
+
+                Run the validation command on `ProjectA.xmi`. The tool will follow the reference to `SharedDeps.xmi` to ensure the target element exists and matches the type.
+            }
+
+            @Step {
+                Inspect the resolved model.
+
+                @Code(name: "Terminal", file: ecore-07-step-05-inspect.sh)
+
+                Use the query command to verify that the reference is correctly resolved. You can navigate from ProjectA to the properties of the shared IT department.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What is a "proxy" in Ecore?
+
+            @Choice(isCorrect: true) {
+                A placeholder for an object that resides in another resource
+
+                @Justification(reaction: "Correct!") {
+                    Proxies allow resources to reference each other without loading everything at once. The proxy contains the URI to find the real object.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                A server that intercepts network requests
+
+                @Justification(reaction: "Incorrect context.") {
+                    In networking, yes, but in Ecore, a proxy is a model element placeholder.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                A backup copy of a resource
+
+                @Justification(reaction: "No.") {
+                    Proxies are references, not backups.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What syntax is used in XMI for cross-resource references?
+
+            @Choice(isCorrect: true) {
+                `href="file.xmi#fragment"`
+
+                @Justification(reaction: "Exactly!") {
+                    The `href` attribute contains the resource URI and the fragment identifier separated by a hash sign.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `src="file.xmi"`
+
+                @Justification(reaction: "Incorrect.") {
+                    `href` is the standard XMI attribute for references.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `import "file.xmi"`
+
+                @Justification(reaction: "No.") {
+                    This syntax is more common in programming languages, not XMI serialization.
+                }
+            }
+        }
+    }
+}

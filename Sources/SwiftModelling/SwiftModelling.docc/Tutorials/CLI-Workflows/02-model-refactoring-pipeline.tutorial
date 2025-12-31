@@ -1,0 +1,335 @@
+@Tutorial(time: 75) {
+    @Intro(title: "Model Refactoring Pipeline") {
+        Learn how to refactor existing models and metamodels using a systematic pipeline approach.
+
+        In this tutorial, you'll take a legacy metamodel, identify refactoring opportunities, apply systematic transformations, migrate existing instances, and validate the results. This demonstrates how MDE tools support model evolution and maintenance.
+
+        @Image(source: "model-refactoring-pipeline.svg", alt: "Model Refactoring Pipeline")
+    }
+
+    @Section(title: "Analysing Legacy Models") {
+        @ContentAndMedia {
+            Refactoring starts with understanding the current model structure and identifying improvement opportunities. We'll analyse a legacy customer management system that has grown organically over time.
+
+            Systematic analysis reveals structural issues, naming inconsistencies, and missing relationships that need to be addressed through refactoring.
+
+            @Image(source: "legacy-model-analysis.svg", alt: "Legacy Model Analysis")
+        }
+
+        @Steps {
+            @Step {
+                Examine the legacy metamodel.
+
+                @Code(name: "LegacyCustomer.ecore", file: workflow-02-step-01-legacy-metamodel.ecore)
+
+                This legacy metamodel shows common problems: inconsistent naming, unclear relationships, missing abstractions, and structural issues accumulated over time.
+            }
+
+            @Step {
+                Create sample legacy instances.
+
+                @Code(name: "legacy-data.xmi", file: workflow-02-step-02-legacy-instances.xmi)
+
+                These instances represent existing data in the legacy format. They demonstrate the complexity and inconsistencies that refactoring aims to resolve.
+            }
+
+            @Step {
+                Analyse structural issues with AQL.
+
+                @Code(name: "Terminal", file: workflow-02-step-03-analyse-issues.sh)
+
+                Use AQL queries to identify structural problems, data quality issues, and opportunities for improvement in the legacy model.
+            }
+
+            @Step {
+                Document refactoring goals.
+
+                @Code(name: "refactoring-plan.md", file: workflow-02-step-04-refactoring-plan.md)
+
+                Create a systematic plan that identifies specific refactoring goals, success criteria, and validation approaches to ensure the refactoring improves model quality.
+            }
+        }
+    }
+
+    @Section(title: "Designing the Target Model") {
+        @ContentAndMedia {
+            Based on the analysis, design an improved metamodel that addresses identified issues while maintaining compatibility with existing data and processes.
+
+            The target model should follow best practices for naming, structure, and relationships while solving the specific problems identified in the legacy system.
+        }
+
+        @Steps {
+            @Step {
+                Design the improved metamodel structure.
+
+                @Code(name: "ImprovedCustomer.ecore", file: workflow-02-step-05-improved-metamodel.ecore)
+
+                This metamodel addresses the legacy issues: consistent naming conventions, clear abstractions, proper inheritance hierarchies, and well-defined relationships.
+            }
+
+            @Step {
+                Validate the target design.
+
+                @Code(name: "Terminal", file: workflow-02-step-06-validate-target.sh)
+
+                Ensure the improved metamodel is well-formed and addresses the identified issues without introducing new problems.
+            }
+
+            @Step {
+                Create mapping documentation.
+
+                @Code(name: "legacy-to-improved-mapping.md", file: workflow-02-step-07-mapping-docs.md)
+
+                Document how legacy concepts map to improved concepts. This guides transformation development and helps stakeholders understand the changes.
+            }
+
+            @Step {
+                Design backwards compatibility strategy.
+
+                @Code(name: "compatibility-strategy.md", file: workflow-02-step-08-compatibility-strategy.md)
+
+                Plan how to maintain compatibility with existing tools and processes during the refactoring transition period.
+            }
+        }
+    }
+
+    @Section(title: "Creating Migration Transformations") {
+        @ContentAndMedia {
+            ATL transformations automate the migration from legacy to improved model structures. These transformations must handle data preservation, relationship updates, and structural changes.
+
+            Migration transformations are critical for maintaining data integrity during refactoring while enabling systematic application of improvements across all instances.
+        }
+
+        @Steps {
+            @Step {
+                Create the core migration transformation.
+
+                @Code(name: "MigrateLegacyToImproved.atl", file: workflow-02-step-09-migration-transformation.atl)
+
+                This transformation handles the systematic conversion of legacy structures to improved formats, preserving data while applying structural improvements.
+            }
+
+            @Step {
+                Add data quality improvements.
+
+                @Code(name: "DataQualityImprovements.atl", file: workflow-02-step-10-quality-improvements.atl)
+
+                Enhance the migration with data quality improvements: standardising formats, filling missing values, and resolving inconsistencies.
+            }
+
+            @Step {
+                Create validation transformations.
+
+                @Code(name: "ValidationTransforms.atl", file: workflow-02-step-11-validation-transforms.atl)
+
+                Build transformations that validate migration results by checking data integrity, relationship consistency, and business rule compliance.
+            }
+
+            @Step {
+                Test transformations with sample data.
+
+                @Code(name: "Terminal", file: workflow-02-step-12-test-transformations.sh)
+
+                Execute transformations with the legacy sample data to verify they produce correct results and handle edge cases appropriately.
+            }
+        }
+    }
+
+    @Section(title: "Batch Instance Migration") {
+        @ContentAndMedia {
+            Apply migration transformations to all legacy instances systematically. This requires careful orchestration to handle large datasets while maintaining data integrity.
+
+            Batch migration processes must be robust, resumable, and provide comprehensive logging to track migration progress and identify any issues.
+        }
+
+        @Steps {
+            @Step {
+                Create migration orchestration scripts.
+
+                @Code(name: "migrate-all-instances.sh", file: workflow-02-step-13-migration-scripts.sh)
+
+                These scripts orchestrate the migration of multiple instance files, providing progress tracking, error handling, and result validation.
+            }
+
+            @Step {
+                Set up validation pipelines.
+
+                @Code(name: "validate-migration.sh", file: workflow-02-step-14-validation-pipeline.sh)
+
+                Create automated validation that checks migration results for completeness, correctness, and data integrity across all migrated instances.
+            }
+
+            @Step {
+                Execute batch migration.
+
+                @Code(name: "Terminal", file: workflow-02-step-15-run-batch-migration.sh)
+
+                Run the complete batch migration process, converting all legacy instances to the improved format while tracking progress and validating results.
+            }
+
+            @Step {
+                Generate migration reports.
+
+                @Code(name: "Terminal", file: workflow-02-step-16-generate-reports.sh)
+
+                Create comprehensive reports that document migration results, statistics, and any issues encountered during the process.
+            }
+        }
+    }
+
+    @Section(title: "Quality Assurance and Rollout") {
+        @ContentAndMedia {
+            Validate the refactored models thoroughly before deploying them to production. Quality assurance ensures that refactoring improves the system without introducing regressions.
+
+            A systematic rollout plan manages the transition from legacy to improved models while minimising disruption to existing processes and users.
+        }
+
+        @Steps {
+            @Step {
+                Perform comprehensive quality validation.
+
+                @Code(name: "comprehensive-qa.sh", file: workflow-02-step-17-comprehensive-qa.sh)
+
+                Execute extensive quality assurance tests that validate model structure, data integrity, business rules, and system integration.
+            }
+
+            @Step {
+                Create rollback procedures.
+
+                @Code(name: "rollback-procedures.sh", file: workflow-02-step-18-rollback-procedures.sh)
+
+                Develop reliable rollback procedures that can quickly restore legacy models if issues are discovered after deployment.
+            }
+
+            @Step {
+                Update dependent tools and processes.
+
+                @Code(name: "update-toolchain.sh", file: workflow-02-step-19-update-toolchain.sh)
+
+                Systematically update all tools, scripts, and processes that depend on the model structure to work with the improved metamodel.
+            }
+
+            @Step {
+                Deploy and monitor the refactored models.
+
+                @Code(name: "Terminal", file: workflow-02-step-20-deploy-and-monitor.sh)
+
+                Deploy the refactored models to production with comprehensive monitoring to ensure they perform correctly and meet quality expectations.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What should be the first step in model refactoring?
+
+            @Choice(isCorrect: true) {
+                Analyse the legacy model to identify issues and opportunities
+
+                @Justification(reaction: "Correct!") {
+                    Systematic analysis of existing models identifies specific problems and improvement opportunities, providing a foundation for targeted refactoring efforts.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Start creating the improved metamodel immediately
+
+                @Justification(reaction: "Too hasty!") {
+                    Without analysing the legacy model first, you might miss important issues or create improvements that don't address the real problems.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Begin migrating instances to a new format
+
+                @Justification(reaction: "No target to migrate to!") {
+                    You need to analyse the legacy model and design the target model before you can create migration transformations.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Why is backwards compatibility important during model refactoring?
+
+            @Choice(isCorrect: false) {
+                It prevents any changes from being made to the model
+
+                @Justification(reaction: "That would defeat the purpose!") {
+                    Backwards compatibility allows necessary changes while minimising disruption. The goal is controlled evolution, not stagnation.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                It minimises disruption to existing tools and processes
+
+                @Justification(reaction: "Exactly!") {
+                    Backwards compatibility strategies allow refactoring to proceed while maintaining system stability and minimising the impact on existing workflows.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                It's only important for large-scale refactoring projects
+
+                @Justification(reaction: "Important for all projects!") {
+                    Even small refactoring efforts benefit from considering backwards compatibility to avoid unexpected disruptions.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What role do ATL transformations play in model refactoring?
+
+            @Choice(isCorrect: true) {
+                They automate the migration from legacy to improved model structures
+
+                @Justification(reaction: "Perfect!") {
+                    ATL transformations provide systematic, repeatable migration that preserves data integrity while applying structural improvements across all instances.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                They replace the need for manual analysis
+
+                @Justification(reaction: "Analysis is still needed!") {
+                    Transformations implement migration logic, but human analysis is essential for understanding problems and designing appropriate solutions.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                They only work for simple structural changes
+
+                @Justification(reaction: "They handle complex changes too!") {
+                    ATL transformations can handle sophisticated refactoring including structural changes, data quality improvements, and relationship modifications.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            How should you validate model refactoring results?
+
+            @Choice(isCorrect: false) {
+                Only check that the new metamodel is well-formed
+
+                @Justification(reaction: "Much more validation needed!") {
+                    Comprehensive validation must check metamodel quality, instance migration correctness, data integrity, and system integration.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                Use multiple validation approaches: structural, data integrity, and functional testing
+
+                @Justification(reaction: "Comprehensive approach!") {
+                    Effective validation combines metamodel validation, instance checking, data integrity tests, and functional verification to ensure refactoring success.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Rely on automated tools exclusively
+
+                @Justification(reaction: "Human oversight is important!") {
+                    While automated validation is essential, human review and testing provide additional assurance that refactoring meets business requirements.
+                }
+            }
+        }
+    }
+}

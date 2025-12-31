@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<org:Department xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:org="http://www.example.org/organization" name="Project Alpha">
+  <!-- Reference to the IT department in the shared library -->
+  <relatedDepartments href="SharedDeps.xmi#//@relatedDepartments.0"/>
+  <employees name="Alice"/>
+  <employees name="Bob"/>
+</org:Department>

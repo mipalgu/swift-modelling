@@ -1,0 +1,335 @@
+@Tutorial(time: 40) {
+    @Intro(title: "Complex Queries") {
+        Master advanced AQL query patterns for sophisticated model analysis and cross-model operations.
+
+        In this tutorial, you'll learn how to build complex queries using let bindings, nested iterations, cross-model navigation, and advanced query composition techniques. These patterns enable powerful model analysis and validation scenarios.
+
+        @Image(source: "aql-complex-queries.svg", alt: "Advanced AQL Query Patterns")
+    }
+
+    @Section(title: "Let Bindings and Variable Scope") {
+        @ContentAndMedia {
+            Let bindings allow you to store intermediate results and build complex queries step by step. They improve query readability and performance by avoiding repeated computation of expensive expressions.
+
+            Understanding variable scope in let bindings is crucial for building maintainable and efficient queries that work correctly across different contexts.
+
+            @Image(source: "aql-let-bindings.svg", alt: "AQL Let Binding Patterns")
+        }
+
+        @Steps {
+            @Step {
+                Set up a complex model for advanced query examples.
+
+                @Code(name: "Enterprise.ecore", file: aql-05-step-01-enterprise-metamodel.ecore)
+
+                This comprehensive metamodel represents an enterprise system with Organizations, Projects, Teams, and Resources. The complex relationships provide rich opportunities for sophisticated queries.
+            }
+
+            @Step {
+                Create a complex model instance.
+
+                @Code(name: "enterprise-data.xmi", file: aql-05-step-02-enterprise-instance.xmi)
+
+                This model contains multiple organizations with overlapping projects, shared resources, and complex team structures. Perfect for demonstrating advanced query patterns.
+            }
+
+            @Step {
+                Use simple let bindings for intermediate results.
+
+                @Code(name: "Terminal", file: aql-05-step-03-simple-let.sh)
+
+                Let bindings store query results in variables for reuse. This avoids repeated computation and makes complex queries more readable.
+            }
+
+            @Step {
+                Chain multiple let bindings.
+
+                @Code(name: "Terminal", file: aql-05-step-04-chained-let.sh)
+
+                Build complex queries by chaining let bindings together. Each binding can use variables from previous bindings, creating step-by-step query construction.
+            }
+        }
+    }
+
+    @Section(title: "Nested Iterations and Cross-Products") {
+        @ContentAndMedia {
+            Advanced queries often require nested iterations to explore all combinations of model elements. These patterns are essential for relationship analysis, validation, and comprehensive model inspection.
+
+            Nested iterations create cross-products between collections, allowing you to analyze relationships between elements from different parts of the model.
+        }
+
+        @Steps {
+            @Step {
+                Create nested iterations for relationship analysis.
+
+                @Code(name: "Terminal", file: aql-05-step-05-nested-iteration.sh)
+
+                Use nested collection operations to explore relationships between elements from different collections. This enables comprehensive cross-analysis.
+            }
+
+            @Step {
+                Build cross-product queries.
+
+                @Code(name: "Terminal", file: aql-05-step-06-cross-product.sh)
+
+                Generate all combinations of elements from multiple collections to analyze potential relationships and conflicts across the model.
+            }
+
+            @Step {
+                Filter cross-products with complex conditions.
+
+                @Code(name: "Terminal", file: aql-05-step-07-filtered-cross-product.sh)
+
+                Apply sophisticated filtering to cross-products to find specific relationship patterns or constraint violations across model elements.
+            }
+
+            @Step {
+                Optimize nested queries for performance.
+
+                @Code(name: "Terminal", file: aql-05-step-08-optimized-nested.sh)
+
+                Use efficient query patterns to minimize computation in nested iterations. Order operations to filter early and reduce unnecessary processing.
+            }
+        }
+    }
+
+    @Section(title: "Cross-Model Navigation") {
+        @ContentAndMedia {
+            Real-world modeling scenarios often involve multiple related models. AQL can navigate across model boundaries through references and shared elements.
+
+            Cross-model queries enable comprehensive analysis that spans multiple model files, supporting complex enterprise scenarios and distributed model architectures.
+        }
+
+        @Steps {
+            @Step {
+                Set up related models for cross-model queries.
+
+                @Code(name: "setup-cross-models.sh", file: aql-05-step-09-setup-cross-models.sh)
+
+                Create multiple related model files that reference each other. This simulates real-world scenarios where models are distributed across multiple files.
+            }
+
+            @Step {
+                Navigate between models through references.
+
+                @Code(name: "Terminal", file: aql-05-step-10-cross-model-navigation.sh)
+
+                Use AQL to navigate from elements in one model to related elements in other models. This enables queries that span multiple model files.
+            }
+
+            @Step {
+                Query across model hierarchies.
+
+                @Code(name: "Terminal", file: aql-05-step-11-hierarchical-queries.sh)
+
+                Build queries that traverse model hierarchies across files, analyzing relationships between parent and child models in complex architectures.
+            }
+
+            @Step {
+                Validate cross-model consistency.
+
+                @Code(name: "Terminal", file: aql-05-step-12-cross-model-validation.sh)
+
+                Use cross-model queries to validate consistency and integrity constraints that span multiple model files, ensuring system-wide correctness.
+            }
+        }
+    }
+
+    @Section(title: "Query Composition and Abstraction") {
+        @ContentAndMedia {
+            Complex queries benefit from composition and abstraction techniques. Build reusable query components that can be combined to solve larger problems.
+
+            Query composition enables modular query development, making complex analysis tasks manageable and maintainable.
+        }
+
+        @Steps {
+            @Step {
+                Create reusable query components.
+
+                @Code(name: "Terminal", file: aql-05-step-13-query-components.sh)
+
+                Build focused query components that solve specific analysis problems. These can be combined to create comprehensive analysis queries.
+            }
+
+            @Step {
+                Compose queries for comprehensive analysis.
+
+                @Code(name: "Terminal", file: aql-05-step-14-query-composition.sh)
+
+                Combine multiple query components to perform comprehensive model analysis. This approach scales to complex enterprise analysis scenarios.
+            }
+
+            @Step {
+                Build query libraries for domain-specific analysis.
+
+                @Code(name: "Terminal", file: aql-05-step-15-query-libraries.sh)
+
+                Create libraries of domain-specific queries that can be reused across different models and analysis scenarios within the same domain.
+            }
+
+            @Step {
+                Parameterize queries for flexibility.
+
+                @Code(name: "Terminal", file: aql-05-step-16-parameterized-queries.sh)
+
+                Design flexible queries that can be adapted to different scenarios through parameterization, increasing reusability and maintainability.
+            }
+        }
+    }
+
+    @Section(title: "Advanced Analysis Patterns") {
+        @ContentAndMedia {
+            Advanced AQL patterns enable sophisticated model analysis including graph traversal, pattern matching, and statistical analysis.
+
+            These patterns support complex modeling scenarios such as dependency analysis, impact assessment, and comprehensive model validation.
+        }
+
+        @Steps {
+            @Step {
+                Implement graph traversal algorithms.
+
+                @Code(name: "Terminal", file: aql-05-step-17-graph-traversal.sh)
+
+                Use recursive-style queries to traverse graph structures in models, finding paths, cycles, and connectivity patterns.
+            }
+
+            @Step {
+                Build pattern matching queries.
+
+                @Code(name: "Terminal", file: aql-05-step-18-pattern-matching.sh)
+
+                Create queries that match complex structural patterns in models, enabling sophisticated model analysis and transformation planning.
+            }
+
+            @Step {
+                Perform statistical analysis on models.
+
+                @Code(name: "Terminal", file: aql-05-step-19-statistical-analysis.sh)
+
+                Apply statistical operations to model data to generate insights about model complexity, distribution patterns, and structural characteristics.
+            }
+
+            @Step {
+                Create comprehensive model reports.
+
+                @Code(name: "Terminal", file: aql-05-step-20-comprehensive-reports.sh)
+
+                Combine all advanced query patterns to generate comprehensive model analysis reports that provide deep insights into model structure and quality.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What is the primary benefit of using let bindings in complex AQL queries?
+
+            @Choice(isCorrect: false) {
+                They make queries run faster by caching results
+
+                @Justification(reaction: "Partially true, but not the primary benefit!") {
+                    While let bindings can improve performance by avoiding repeated computation, their primary benefit is making complex queries more readable and maintainable.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                They improve query readability and avoid repeated computation
+
+                @Justification(reaction: "Exactly right!") {
+                    Let bindings store intermediate results in named variables, making complex queries easier to understand and avoiding the need to repeat expensive computations.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                They allow queries to modify model data
+
+                @Justification(reaction: "Incorrect!") {
+                    AQL queries are read-only. Let bindings store query results, but they don't enable data modification—that would require transformation languages like ATL.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            When would you use nested iterations in AQL queries?
+
+            @Choice(isCorrect: true) {
+                To analyze relationships between elements from different collections
+
+                @Justification(reaction: "Correct!") {
+                    Nested iterations create cross-products between collections, allowing you to examine all combinations of elements to find relationships, conflicts, or patterns.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                To improve query performance
+
+                @Justification(reaction: "Actually the opposite!") {
+                    Nested iterations can be expensive computationally. They're used when you need comprehensive cross-analysis, despite potential performance costs.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                To iterate through single collections more efficiently
+
+                @Justification(reaction: "Not quite!") {
+                    For single collections, simple iteration operations like `collect` or `select` are more appropriate. Nested iterations are for multiple collections.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            How do cross-model queries differ from single-model queries?
+
+            @Choice(isCorrect: false) {
+                They use different AQL syntax
+
+                @Justification(reaction: "The syntax is the same!") {
+                    Cross-model queries use the same AQL syntax as single-model queries. The difference is in the scope of navigation, not the language syntax.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                They navigate across references between different model files
+
+                @Justification(reaction: "Perfect!") {
+                    Cross-model queries traverse references that span multiple model files, enabling analysis across distributed model architectures.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                They require special import statements
+
+                @Justification(reaction: "Not necessarily!") {
+                    While model loading may require configuration, the AQL syntax for cross-model navigation is the same as for single-model references.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What makes a query pattern "reusable"?
+
+            @Choice(isCorrect: false) {
+                It works only with specific metamodel types
+
+                @Justification(reaction: "That's the opposite of reusable!") {
+                    Reusable patterns are typically more generic and can work across different metamodels or model structures.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                It can be parameterized and applied to different scenarios
+
+                @Justification(reaction: "Exactly!") {
+                    Reusable query patterns are designed to be flexible through parameterization, allowing them to be applied across different models and analysis contexts.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                It produces the same results every time
+
+                @Justification(reaction: "That's consistency, not reusability!") {
+                    Reusable patterns may produce different results for different inputs—that's the point of reusability. Consistency means reliable behavior, which is different.
+                }
+            }
+        }
+    }
+}

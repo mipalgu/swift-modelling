@@ -1,53 +1,55 @@
+-- ATL Transformation: Families to Persons
+-- This transformation converts family structures into individual person records
 -- @path Families=/Families2Persons/Families.ecore
 -- @path Persons=/Families2Persons/Persons.ecore
 
 module Families2Persons;
 create OUT: Persons from IN: Families;
 
--- Helper to determine if a Member is female
+-- Helper: Determine if a member is female based on family role
 helper context Families!Member def: isFemale(): Boolean =
-	if not self.familyMother.oclIsUndefined() then
-		true
-	else
-		if not self.familyDaughter.oclIsUndefined() then
-			true
-		else
-			false
-		endif
-	endif;
+    if not self.familyMother.oclIsUndefined() then
+        true
+    else
+        if not self.familyDaughter.oclIsUndefined() then
+            true
+        else
+            false
+        endif
+    endif;
 
--- Helper to get the family name of a Member
-helper context Families!Member def: familyName: String =
-	if not self.familyFather.oclIsUndefined() then
-		self.familyFather.lastName
-	else
-		if not self.familyMother.oclIsUndefined() then
-			self.familyMother.lastName
-		else
-			if not self.familySon.oclIsUndefined() then
-				self.familySon.lastName
-			else
-				self.familyDaughter.lastName
-			endif
-		endif
-	endif;
+-- Helper: Get the family surname for a member
+helper context Families!Member def: familyName(): String =
+    if not self.familyFather.oclIsUndefined() then
+        self.familyFather.lastName
+    else
+        if not self.familyMother.oclIsUndefined() then
+            self.familyMother.lastName
+        else
+            if not self.familySon.oclIsUndefined() then
+                self.familySon.lastName
+            else
+                self.familyDaughter.lastName
+            endif
+        endif
+    endif;
 
--- Transform male family members to Male persons
+-- Rule: Transform male family members to Male persons
 rule Member2Male {
-	from
-		s: Families!Member (not s.isFemale())
-	to
-		t: Persons!Male (
-			fullName <- s.firstName + ' ' + s.familyName
-		)
+    from
+        s: Families!Member (not s.isFemale())
+    to
+        t: Persons!Male (
+            fullName <- s.firstName + ' ' + s.familyName()
+        )
 }
 
--- Transform female family members to Female persons
+-- Rule: Transform female family members to Female persons
 rule Member2Female {
-	from
-		s: Families!Member (s.isFemale())
-	to
-		t: Persons!Female (
-			fullName <- s.firstName + ' ' + s.familyName
-		)
+    from
+        s: Families!Member (s.isFemale())
+    to
+        t: Persons!Female (
+            fullName <- s.firstName + ' ' + s.familyName()
+        )
 }

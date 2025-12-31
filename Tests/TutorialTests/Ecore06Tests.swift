@@ -206,21 +206,21 @@ struct Ecore06Tests {
     @Test("Query progression: Simple → Filtering → Complex")
     func testQueryProgression() async throws {
         // Step 1: Simple navigation
-        let step1 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-31-all-employees.aql"))
+        let step1 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-31-all-employees.aql"), encoding: .utf8)
         #expect(step1.contains("self.employees"))
         #expect(!step1.contains("select"))
         #expect(!step1.contains("collect"))
 
         // Step 2: Filtering with select
-        let step2 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-33-fulltime-employees.aql"))
+        let step2 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-33-fulltime-employees.aql"), encoding: .utf8)
         #expect(step2.contains("select"))
 
         // Step 3: Transformation with collect
-        let step3 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-34-employee-names.aql"))
+        let step3 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-34-employee-names.aql"), encoding: .utf8)
         #expect(step3.contains("collect"))
 
         // Step 4: Complex query with let bindings
-        let step4 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-35-count-by-status.aql"))
+        let step4 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-35-count-by-status.aql"), encoding: .utf8)
         #expect(step4.contains("let"))
         #expect(step4.contains("Tuple"))
     }
@@ -228,9 +228,9 @@ struct Ecore06Tests {
     @Test("Collection operations validation")
     func testCollectionOperations() async throws {
         // Load queries that use different collection operations
-        let selectQuery = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-33-fulltime-employees.aql"))
-        let collectQuery = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-34-employee-names.aql"))
-        let sizeQuery = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-35-count-by-status.aql"))
+        let selectQuery = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-33-fulltime-employees.aql"), encoding: .utf8)
+        let collectQuery = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-34-employee-names.aql"), encoding: .utf8)
+        let sizeQuery = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-35-count-by-status.aql"), encoding: .utf8)
 
         // Verify select uses arrow syntax and lambda
         #expect(selectQuery.contains("->select("))
@@ -271,8 +271,8 @@ struct Ecore06Tests {
     @Test("Query context and navigation validation")
     func testQueryContextAndNavigation() async throws {
         // Verify queries use appropriate context
-        let companyQuery = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-31-all-employees.aql"))
-        let employeeQuery = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-37-employee-companies.aql"))
+        let companyQuery = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-31-all-employees.aql"), encoding: .utf8)
+        let employeeQuery = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-37-employee-companies.aql"), encoding: .utf8)
 
         // Company-context query navigates to employees
         #expect(companyQuery.contains("self.employees"))
@@ -284,8 +284,8 @@ struct Ecore06Tests {
     @Test("Advanced query features validation")
     func testAdvancedQueryFeatures() async throws {
         // Load queries with advanced features
-        let typeCheckQuery = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-36-engineering-managers.aql"))
-        let statsQuery = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-38-company-stats.aql"))
+        let typeCheckQuery = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-36-engineering-managers.aql"), encoding: .utf8)
+        let statsQuery = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-38-company-stats.aql"), encoding: .utf8)
 
         // Verify type checking
         #expect(typeCheckQuery.contains("oclIsKindOf(Manager)"))

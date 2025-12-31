@@ -241,11 +241,11 @@ struct Ecore04Tests {
     @Test("EEnum progression: No enum → Enum → Enum with usage")
     func testEEnumProgression() async throws {
         // Step 1: No enum
-        let step1 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-14-bidirectional-reference.ecore"))
+        let step1 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-14-bidirectional-reference.ecore"), encoding: .utf8)
         #expect(!step1.contains("ecore:EEnum"))
 
         // Step 2: Enum defined but not used
-        let step2 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-17-employment-status-enum.ecore"))
+        let step2 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-17-employment-status-enum.ecore"), encoding: .utf8)
         #expect(step2.contains("ecore:EEnum"))
         #expect(step2.contains("name=\"EmploymentStatus\""))
         let step2PersonStart = step2.range(of: "name=\"Person\"")!.upperBound
@@ -254,7 +254,7 @@ struct Ecore04Tests {
         #expect(!step2PersonSection.contains("name=\"status\""))
 
         // Step 3: Enum used in Person
-        let step3 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-18-person-with-status.ecore"))
+        let step3 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-18-person-with-status.ecore"), encoding: .utf8)
         let step3PersonStart = step3.range(of: "name=\"Person\"")!.upperBound
         let step3PersonEnd = step3.range(of: "name=\"Company\"")!.lowerBound
         let step3PersonSection = String(step3[step3PersonStart..<step3PersonEnd])
@@ -265,13 +265,13 @@ struct Ecore04Tests {
     @Test("Inheritance progression: No hierarchy → Hierarchy → Abstract base")
     func testInheritanceProgression() async throws {
         // Step 1: No Employee/Manager classes
-        let step1 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-18-person-with-status.ecore"))
+        let step1 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-18-person-with-status.ecore"), encoding: .utf8)
         #expect(!step1.contains("name=\"Employee\""))
         #expect(!step1.contains("name=\"Manager\""))
         #expect(!step1.contains("eSuperTypes"))
 
         // Step 2: Employee and Manager inherit from Person
-        let step2 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-19-employee-hierarchy.ecore"))
+        let step2 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-19-employee-hierarchy.ecore"), encoding: .utf8)
         #expect(step2.contains("name=\"Employee\""))
         #expect(step2.contains("name=\"Manager\""))
         let step2SuperTypesCount = step2.components(separatedBy: "eSuperTypes=\"#//Person\"").count - 1
@@ -281,7 +281,7 @@ struct Ecore04Tests {
         #expect(!step2.contains("abstract=\"true\""))
 
         // Step 3: Person is now abstract
-        let step3 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-21-abstract-person.ecore"))
+        let step3 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-21-abstract-person.ecore"), encoding: .utf8)
         let step3PersonStart = step3.range(of: "name=\"Person\"")!.lowerBound
         let step3PersonEnd = step3.range(of: "name=\"Employee\"")!.lowerBound
         let step3PersonSection = String(step3[step3PersonStart..<step3PersonEnd])

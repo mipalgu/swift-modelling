@@ -1,0 +1,335 @@
+@Tutorial(time: 60) {
+    @Intro(title: "Cross-Format Integration") {
+        Master cross-format model integration by connecting XMI, JSON, and native Swift data sources.
+
+        In this tutorial, you'll integrate models from different sources and formats, create unified workflows that span multiple platforms, and build APIs that bridge between model-driven and traditional development approaches.
+
+        @Image(source: "cross-format-integration.svg", alt: "Cross-Format Integration Pipeline")
+    }
+
+    @Section(title: "Understanding Format Integration Challenges") {
+        @ContentAndMedia {
+            Modern systems often involve multiple data formats and platforms. XMI from Java EMF tools, JSON from web APIs, and native Swift data structures each have different characteristics and constraints.
+
+            Cross-format integration enables Swift Modelling tools to work seamlessly with existing toolchains while providing the benefits of model-driven development.
+
+            @Image(source: "format-ecosystem.svg", alt: "Multi-Format Ecosystem")
+        }
+
+        @Steps {
+            @Step {
+                Set up the integration scenario.
+
+                @Code(name: "integration-overview.md", file: workflow-03-step-01-scenario.md)
+
+                This scenario involves integrating a Java EMF-based design tool, a web-based model editor that uses JSON, and a Swift application that needs native data structures.
+            }
+
+            @Step {
+                Create the shared metamodel.
+
+                @Code(name: "ProjectManagement.ecore", file: workflow-03-step-02-shared-metamodel.ecore)
+
+                This metamodel defines project management concepts that will be represented in multiple formats across different tools and platforms.
+            }
+
+            @Step {
+                Identify format-specific constraints.
+
+                @Code(name: "format-constraints.md", file: workflow-03-step-03-constraints.md)
+
+                Document the specific limitations and features of each format to understand integration challenges and design appropriate bridging strategies.
+            }
+
+            @Step {
+                Plan the integration architecture.
+
+                @Code(name: "integration-architecture.md", file: workflow-03-step-04-architecture.md)
+
+                Design the overall architecture that connects different format sources while maintaining data integrity and enabling bidirectional synchronisation.
+            }
+        }
+    }
+
+    @Section(title: "XMI to JSON Bridge") {
+        @ContentAndMedia {
+            The first integration challenge is converting between XMI (used by Java EMF tools) and JSON (used by web applications). This bridge enables model data to flow between enterprise tools and web interfaces.
+
+            XMI contains rich metamodel information and references, while JSON provides simple, web-friendly data structures that are easy to consume in modern web applications.
+        }
+
+        @Steps {
+            @Step {
+                Create sample XMI data from Java EMF.
+
+                @Code(name: "project-data.xmi", file: workflow-03-step-05-xmi-data.xmi)
+
+                This XMI file represents project data created by a Java EMF-based tool. It includes complex references and metamodel-specific information typical of enterprise modeling tools.
+            }
+
+            @Step {
+                Design JSON schema for web consumption.
+
+                @Code(name: "project-schema.json", file: workflow-03-step-06-json-schema.json)
+
+                This JSON schema defines a web-friendly representation of project data that's optimized for REST APIs and JavaScript consumption while preserving essential model information.
+            }
+
+            @Step {
+                Create XMI-to-JSON transformation.
+
+                @Code(name: "XMI2JSON.atl", file: workflow-03-step-07-xmi-to-json.atl)
+
+                This ATL transformation converts XMI project data into JSON format, handling reference resolution and adapting the structure for web consumption.
+            }
+
+            @Step {
+                Execute the XMI-to-JSON conversion.
+
+                @Code(name: "Terminal", file: workflow-03-step-08-run-xmi-to-json.sh)
+
+                Run the transformation to convert XMI data to JSON format, demonstrating how model data can flow from enterprise tools to web applications.
+            }
+        }
+    }
+
+    @Section(title: "JSON to Swift Integration") {
+        @ContentAndMedia {
+            Web applications often modify model data through JSON APIs. These changes need to be integrated back into the Swift modeling environment and potentially synchronized with other tools.
+
+            This integration enables web-based model editing while maintaining the benefits of strong typing and validation available in Swift Modelling tools.
+        }
+
+        @Steps {
+            @Step {
+                Create modified JSON data from web interface.
+
+                @Code(name: "updated-project-data.json", file: workflow-03-step-09-updated-json.json)
+
+                This JSON represents project data modified through a web interface. It includes new projects, updated tasks, and changed relationships that need to be integrated.
+            }
+
+            @Step {
+                Create JSON-to-XMI reverse transformation.
+
+                @Code(name: "JSON2XMI.atl", file: workflow-03-step-10-json-to-xmi.atl)
+
+                This transformation converts JSON data back to XMI format, handling data validation and ensuring the result conforms to the original metamodel constraints.
+            }
+
+            @Step {
+                Generate Swift data structures.
+
+                @Code(name: "GenerateSwiftModels.mtl", file: workflow-03-step-11-swift-generation.mtl)
+
+                MTL templates generate Swift data structures from the model, creating native Swift classes that provide type safety and integrate seamlessly with Swift applications.
+            }
+
+            @Step {
+                Create the complete JSON-to-Swift pipeline.
+
+                @Code(name: "Terminal", file: workflow-03-step-12-json-to-swift-pipeline.sh)
+
+                Execute the complete pipeline that takes JSON input, validates it against the metamodel, and generates type-safe Swift code for native application use.
+            }
+        }
+    }
+
+    @Section(title: "Bidirectional Synchronisation") {
+        @ContentAndMedia {
+            Real integration scenarios require bidirectional synchronisation where changes in any format can be propagated to all other formats while maintaining data consistency.
+
+            This requires careful change detection, conflict resolution, and synchronisation protocols that preserve data integrity across the entire ecosystem.
+        }
+
+        @Steps {
+            @Step {
+                Design change detection mechanisms.
+
+                @Code(name: "change-detection.md", file: workflow-03-step-13-change-detection.md)
+
+                Document strategies for detecting changes in different formats and identifying conflicts that require resolution during synchronisation.
+            }
+
+            @Step {
+                Create synchronisation transformations.
+
+                @Code(name: "SynchroniseFormats.atl", file: workflow-03-step-14-sync-transformations.atl)
+
+                These transformations handle bidirectional synchronisation by comparing model states and applying changes while resolving conflicts according to defined policies.
+            }
+
+            @Step {
+                Build conflict resolution logic.
+
+                @Code(name: "ConflictResolution.atl", file: workflow-03-step-15-conflict-resolution.atl)
+
+                Implement conflict resolution strategies that handle simultaneous changes in multiple formats, ensuring consistent resolution across the entire system.
+            }
+
+            @Step {
+                Test synchronisation scenarios.
+
+                @Code(name: "Terminal", file: workflow-03-step-16-test-synchronisation.sh)
+
+                Execute comprehensive tests that validate synchronisation behaviour under various scenarios including conflicts, partial updates, and error conditions.
+            }
+        }
+    }
+
+    @Section(title: "API Integration Layer") {
+        @ContentAndMedia {
+            Production integration requires robust APIs that handle format conversion, validation, and synchronisation seamlessly. These APIs abstract the complexity from client applications while ensuring data integrity.
+
+            The integration layer provides REST APIs for web clients, native Swift APIs for iOS/macOS apps, and event-driven synchronisation for real-time collaboration.
+        }
+
+        @Steps {
+            @Step {
+                Generate REST API definitions.
+
+                @Code(name: "GenerateRestAPI.mtl", file: workflow-03-step-17-rest-api-generation.mtl)
+
+                These templates generate OpenAPI specifications and server stubs from the metamodel, creating consistent APIs that support all format conversions and validation.
+            }
+
+            @Step {
+                Create Swift API client libraries.
+
+                @Code(name: "GenerateSwiftAPI.mtl", file: workflow-03-step-18-swift-api-generation.mtl)
+
+                Generate Swift client libraries that provide type-safe access to the integration APIs, handling format conversion transparently for Swift applications.
+            }
+
+            @Step {
+                Build real-time synchronisation support.
+
+                @Code(name: "GenerateEventAPI.mtl", file: workflow-03-step-19-event-api-generation.mtl)
+
+                Create event-driven APIs that support real-time synchronisation between different clients and formats, enabling collaborative modeling scenarios.
+            }
+
+            @Step {
+                Deploy and test the complete integration system.
+
+                @Code(name: "Terminal", file: workflow-03-step-20-deploy-integration.sh)
+
+                Deploy the complete cross-format integration system and run comprehensive tests that validate end-to-end functionality across all supported formats and clients.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What is the main challenge in cross-format integration?
+
+            @Choice(isCorrect: true) {
+                Preserving semantic meaning while adapting to different format constraints
+
+                @Justification(reaction: "Exactly right!") {
+                    Each format has different capabilities and constraints. The challenge is maintaining the model's semantic meaning while adapting to what each format can represent.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Converting between different file extensions
+
+                @Justification(reaction: "More than just file formats!") {
+                    The challenge goes beyond file formats to include different data models, reference mechanisms, and platform constraints.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Making all formats identical
+
+                @Justification(reaction: "That's not practical!") {
+                    Different formats exist for different reasons. The goal is interoperability while preserving each format's strengths.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Why might JSON representation differ from XMI representation?
+
+            @Choice(isCorrect: false) {
+                JSON is always simpler than XMI
+
+                @Justification(reaction: "Not necessarily simpler!") {
+                    JSON can be complex too. The difference is more about structure, references, and intended use than complexity.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                JSON is optimized for web consumption while XMI preserves full metamodel information
+
+                @Justification(reaction: "Perfect!") {
+                    JSON representations are typically flattened and optimized for web APIs, while XMI preserves the full metamodel structure and references.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                XMI cannot represent the same data as JSON
+
+                @Justification(reaction: "Both can represent the same data!") {
+                    Both formats can represent the same logical model data, but they structure and present it differently.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What is bidirectional synchronisation?
+
+            @Choice(isCorrect: false) {
+                Converting from one format to another and back
+
+                @Justification(reaction: "That's just conversion!") {
+                    Bidirectional synchronisation is more sophisticated—it involves detecting and merging changes from multiple sources over time.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                Keeping multiple format representations synchronized as they change independently
+
+                @Justification(reaction: "Correct!") {
+                    Bidirectional synchronisation maintains consistency between multiple format representations that can be modified independently by different tools or users.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Making sure all formats contain exactly the same information
+
+                @Justification(reaction: "They may have different perspectives!") {
+                    Synchronisation maintains logical consistency while allowing each format to emphasize different aspects of the model.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            How should conflicts be handled during synchronisation?
+
+            @Choice(isCorrect: false) {
+                Always prefer the most recent change
+
+                @Justification(reaction: "Too simplistic!") {
+                    Timestamp-based resolution can lead to data loss. Conflict resolution needs to consider the semantic meaning of changes.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                Use domain-specific resolution policies that preserve data integrity
+
+                @Justification(reaction: "Excellent approach!") {
+                    Conflict resolution should be based on the domain semantics and business rules, ensuring that resolution preserves data integrity and business meaning.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Manual resolution is always required
+
+                @Justification(reaction: "Automation is often possible!") {
+                    Many conflicts can be resolved automatically using well-designed policies. Manual resolution should be reserved for genuine semantic conflicts.
+                }
+            }
+        }
+    }
+}

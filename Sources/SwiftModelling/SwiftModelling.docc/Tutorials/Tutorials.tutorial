@@ -50,4 +50,26 @@
         @TutorialReference(tutorial: "doc:MTL-07-protected-areas")
         @TutorialReference(tutorial: "doc:MTL-08-complete-generator")
     }
+
+    @Chapter(name: "AQL Query Language") {
+        Query and navigate models with the Acceleo Query Language.
+
+        @Image(source: "aql-querying.svg", alt: "AQL Model Querying")
+
+        @TutorialReference(tutorial: "doc:AQL-01-basics")
+        @TutorialReference(tutorial: "doc:AQL-02-filtering-selection")
+        @TutorialReference(tutorial: "doc:AQL-03-collection-operations")
+        @TutorialReference(tutorial: "doc:AQL-04-aql-in-mtl")
+        @TutorialReference(tutorial: "doc:AQL-05-complex-queries")
+    }
+
+    @Chapter(name: "Integrated Workflows") {
+        Complete end-to-end model-driven engineering workflows.
+
+        @Image(source: "integrated-workflows.svg", alt: "Integrated MDE Workflows")
+
+        @TutorialReference(tutorial: "doc:01-complete-mde-workflow")
+        @TutorialReference(tutorial: "doc:02-model-refactoring-pipeline")
+        @TutorialReference(tutorial: "doc:03-cross-format-integration")
+    }
 }

@@ -1,0 +1,335 @@
+@Tutorial(time: 90) {
+    @Intro(title: "Complete MDE Workflow: From Metamodel to Code") {
+        Experience the full model-driven engineering workflow by building a complete system from metamodel design through code generation.
+
+        In this comprehensive tutorial, you'll create a metamodel, build sample instances, transform models with ATL, generate code with MTL, and query results with AQL. This demonstrates how all Swift Modelling tools work together in a real-world scenario.
+
+        @Image(source: "complete-mde-workflow.svg", alt: "Complete MDE Workflow")
+    }
+
+    @Section(title: "Designing the Metamodel") {
+        @ContentAndMedia {
+            Every MDE project starts with metamodel design. We'll create a simple e-commerce system metamodel that captures the essential concepts and relationships.
+
+            This metamodel will serve as the foundation for all subsequent transformation and generation steps, demonstrating how metamodel quality affects the entire workflow.
+
+            @Image(source: "ecommerce-metamodel.svg", alt: "E-commerce Metamodel Structure")
+        }
+
+        @Steps {
+            @Step {
+                Create the core e-commerce metamodel.
+
+                @Code(name: "ECommerce.ecore", file: workflow-01-step-01-metamodel.ecore)
+
+                This metamodel defines a simple e-commerce system with Products, Categories, Customers, and Orders. The relationships capture typical business rules and constraints.
+            }
+
+            @Step {
+                Validate the metamodel structure.
+
+                @Code(name: "Terminal", file: workflow-01-step-02-validate-metamodel.sh)
+
+                Use swift-ecore to validate that the metamodel is well-formed and follows Ecore conventions. This catches design issues early in the workflow.
+            }
+
+            @Step {
+                Generate metamodel documentation.
+
+                @Code(name: "Terminal", file: workflow-01-step-03-metamodel-docs.sh)
+
+                Create visual documentation of the metamodel to share with stakeholders and team members. Good documentation is essential for collaborative MDE.
+            }
+
+            @Step {
+                Export metamodel to different formats.
+
+                @Code(name: "Terminal", file: workflow-01-step-04-metamodel-export.sh)
+
+                Export the metamodel to JSON format for web-based tools and integration scenarios. This demonstrates metamodel interoperability.
+            }
+        }
+    }
+
+    @Section(title: "Creating Model Instances") {
+        @ContentAndMedia {
+            With a validated metamodel, we can create instance models that represent actual business data. These instances serve as input for transformations and code generation.
+
+            Model instances should reflect realistic business scenarios to ensure that transformations and generators produce useful results.
+        }
+
+        @Steps {
+            @Step {
+                Create a sample e-commerce instance.
+
+                @Code(name: "shop-data.xmi", file: workflow-01-step-05-instance.xmi)
+
+                This instance represents a small online shop with various products, categories, customers, and order history. It provides rich data for transformation examples.
+            }
+
+            @Step {
+                Validate the instance against the metamodel.
+
+                @Code(name: "Terminal", file: workflow-01-step-06-validate-instance.sh)
+
+                Ensure the instance conforms to the metamodel constraints. Instance validation prevents errors in later workflow steps.
+            }
+
+            @Step {
+                Query the instance with AQL.
+
+                @Code(name: "Terminal", file: workflow-01-step-07-query-instance.sh)
+
+                Use AQL to explore the instance data and verify it contains the expected information. This validates both the metamodel design and instance quality.
+            }
+
+            @Step {
+                Create additional test instances.
+
+                @Code(name: "create-test-instances.sh", file: workflow-01-step-08-create-test-instances.sh)
+
+                Generate multiple instance variations to test transformation and generation robustness across different data scenarios.
+            }
+        }
+    }
+
+    @Section(title: "Model Transformation with ATL") {
+        @ContentAndMedia {
+            ATL transformations reshape model data for different purposes. We'll transform our e-commerce model into a reporting-focused structure that emphasises analytics over operational data.
+
+            This transformation demonstrates how ATL can adapt model structures to meet different system requirements.
+        }
+
+        @Steps {
+            @Step {
+                Design the target reporting metamodel.
+
+                @Code(name: "Reporting.ecore", file: workflow-01-step-09-reporting-metamodel.ecore)
+
+                This metamodel focuses on analytics and reporting needs, with different structure and relationships optimised for data analysis rather than operational use.
+            }
+
+            @Step {
+                Create the ATL transformation.
+
+                @Code(name: "ECommerce2Reporting.atl", file: workflow-01-step-10-transformation.atl)
+
+                This transformation converts operational e-commerce data into analytical reporting structures, demonstrating complex model reshaping with ATL.
+            }
+
+            @Step {
+                Execute the transformation.
+
+                @Code(name: "Terminal", file: workflow-01-step-11-run-transformation.sh)
+
+                Run the ATL transformation to convert the e-commerce instance into the reporting format. This produces the target model for code generation.
+            }
+
+            @Step {
+                Validate transformation results.
+
+                @Code(name: "Terminal", file: workflow-01-step-12-validate-transformation.sh)
+
+                Verify that the transformation produced correct results by querying the output model and checking key relationships and data integrity.
+            }
+        }
+    }
+
+    @Section(title: "Code Generation with MTL") {
+        @ContentAndMedia {
+            MTL templates generate code artifacts from transformed models. We'll create templates that generate Swift classes, JSON APIs, and documentation from our reporting model.
+
+            This demonstrates how MTL can produce multiple types of artifacts from a single model source, maximising the value of model-driven development.
+        }
+
+        @Steps {
+            @Step {
+                Create Swift class generation templates.
+
+                @Code(name: "GenerateSwiftClasses.mtl", file: workflow-01-step-13-swift-templates.mtl)
+
+                These templates generate Swift data classes from the reporting model, creating a type-safe API for working with the analytics data.
+            }
+
+            @Step {
+                Create JSON API templates.
+
+                @Code(name: "GenerateJSONAPI.mtl", file: workflow-01-step-14-json-templates.mtl)
+
+                Generate REST API specifications and JSON schema definitions from the model, enabling web integration and data exchange.
+            }
+
+            @Step {
+                Create documentation templates.
+
+                @Code(name: "GenerateDocumentation.mtl", file: workflow-01-step-15-docs-templates.mtl)
+
+                Automatically generate comprehensive documentation from the model structure, ensuring documentation stays synchronized with the model.
+            }
+
+            @Step {
+                Execute all code generation.
+
+                @Code(name: "Terminal", file: workflow-01-step-16-generate-code.sh)
+
+                Run all MTL templates to generate the complete codebase. This produces Swift classes, API definitions, and documentation from the transformed model.
+            }
+        }
+    }
+
+    @Section(title: "Integration and Validation") {
+        @ContentAndMedia {
+            The final workflow step integrates all generated artifacts and validates the complete system. This ensures that the MDE workflow produces working, high-quality results.
+
+            Integration testing validates that generated code works correctly and that the entire workflow chain maintains consistency and quality.
+        }
+
+        @Steps {
+            @Step {
+                Compile generated Swift code.
+
+                @Code(name: "Terminal", file: workflow-01-step-17-compile-swift.sh)
+
+                Verify that generated Swift classes compile without errors and integrate correctly with the target application framework.
+            }
+
+            @Step {
+                Test generated APIs.
+
+                @Code(name: "TestAPIs.swift", file: workflow-01-step-18-test-apis.swift)
+
+                Create comprehensive tests for generated APIs to ensure they behave correctly and handle edge cases appropriately.
+            }
+
+            @Step {
+                Validate generated documentation.
+
+                @Code(name: "Terminal", file: workflow-01-step-19-validate-docs.sh)
+
+                Check that generated documentation is complete, accurate, and properly formatted. Good documentation is essential for maintainable systems.
+            }
+
+            @Step {
+                Perform end-to-end workflow validation.
+
+                @Code(name: "Terminal", file: workflow-01-step-20-end-to-end-validation.sh)
+
+                Execute comprehensive tests that validate the entire workflow from metamodel through generated code, ensuring consistency and correctness throughout.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What is the correct order for a complete MDE workflow?
+
+            @Choice(isCorrect: true) {
+                Metamodel design → Instance creation → Model transformation → Code generation → Integration
+
+                @Justification(reaction: "Perfect!") {
+                    This is the canonical MDE workflow: start with metamodel design, create instances, transform as needed, generate code, then integrate and validate the results.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Code generation → Metamodel design → Instance creation → Transformation → Integration
+
+                @Justification(reaction: "Not quite!") {
+                    Code generation can't come first—you need a metamodel and instances before you can generate code from models.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Instance creation → Metamodel design → Code generation → Transformation → Integration
+
+                @Justification(reaction: "Incorrect order!") {
+                    You need the metamodel before you can create valid instances. The metamodel defines the structure that instances must follow.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Why is metamodel validation important in the MDE workflow?
+
+            @Choice(isCorrect: false) {
+                It makes the metamodel run faster
+
+                @Justification(reaction: "Not about performance!") {
+                    Metamodel validation is about correctness and quality, not performance. It ensures the metamodel follows proper conventions and constraints.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                It catches design issues before they affect the entire workflow
+
+                @Justification(reaction: "Exactly right!") {
+                    Early validation prevents design problems from cascading through instance creation, transformation, and code generation stages.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                It's only needed for complex metamodels
+
+                @Justification(reaction: "All metamodels benefit!") {
+                    Even simple metamodels benefit from validation. It's a best practice that should be applied consistently across all MDE projects.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What role does model transformation play in the MDE workflow?
+
+            @Choice(isCorrect: true) {
+                It adapts models to meet different system requirements
+
+                @Justification(reaction: "Correct!") {
+                    Transformations reshape models for different purposes—operational to analytical, platform-independent to platform-specific, or domain-specific adaptations.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                It's only needed when working with multiple metamodels
+
+                @Justification(reaction: "Not just for multiple metamodels!") {
+                    Even single-metamodel projects often benefit from transformations to create specialized views or structures for different purposes.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                It replaces the need for code generation
+
+                @Justification(reaction: "They work together!") {
+                    Transformation and code generation are complementary. Transformation prepares models, then code generation produces artifacts from the transformed models.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            How should you validate the complete MDE workflow?
+
+            @Choice(isCorrect: false) {
+                Test each step in isolation only
+
+                @Justification(reaction: "End-to-end testing is crucial!") {
+                    While individual step testing is important, end-to-end validation ensures the entire workflow produces correct and consistent results.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                Combine individual step validation with end-to-end workflow testing
+
+                @Justification(reaction: "Perfect approach!") {
+                    Comprehensive validation tests each step individually for quality, then validates the entire workflow for consistency and integration.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Only validate the final generated code
+
+                @Justification(reaction: "Too late in the process!") {
+                    Validation throughout the workflow catches issues early and ensures quality at every step, not just at the end.
+                }
+            }
+        }
+    }
+}

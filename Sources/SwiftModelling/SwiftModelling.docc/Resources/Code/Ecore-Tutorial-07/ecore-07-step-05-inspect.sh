@@ -1,0 +1,1 @@
+swift run swift-ecore query ProjectA.xmi --query "relatedDepartments"

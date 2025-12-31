@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "swift-modelling",
     platforms: [
-        .macOS(.v15),
+        .macOS(.v15)
     ],
     products: [
         .library(
@@ -35,7 +35,10 @@ let package = Package(
     targets: [
         .target(
             name: "SwiftModelling",
-            dependencies: []
+            dependencies: [],
+            resources: [
+                .copy("SwiftModelling.docc")
+            ]
         ),
         .executableTarget(
             name: "swift-ecore",
@@ -86,7 +89,7 @@ let package = Package(
         .testTarget(
             name: "swift-atl-tests",
             dependencies: [
-                .product(name: "Subprocess", package: "swift-subprocess"),
+                .product(name: "Subprocess", package: "swift-subprocess")
             ],
             resources: [
                 .copy("Resources")

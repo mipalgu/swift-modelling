@@ -191,26 +191,26 @@ struct Ecore03Tests {
     @Test("Reference progression: No refs → Simple ref → Containment → Bidirectional")
     func testReferenceProgression() async throws {
         // Step 1: No references
-        let step1 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-04-company-class.ecore"))
+        let step1 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-04-company-class.ecore"), encoding: .utf8)
         let step1RefCount = step1.components(separatedBy: "ecore:EReference").count - 1
         #expect(step1RefCount == 0)
 
         // Step 2: One reference (employees), not containment
-        let step2 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-12-company-with-employees-ref.ecore"))
+        let step2 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-12-company-with-employees-ref.ecore"), encoding: .utf8)
         let step2RefCount = step2.components(separatedBy: "ecore:EReference").count - 1
         let step2Containment = step2.contains("containment=\"true\"")
         #expect(step2RefCount == 1)
         #expect(!step2Containment)
 
         // Step 3: One reference, now with containment
-        let step3 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-13-containment-reference.ecore"))
+        let step3 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-13-containment-reference.ecore"), encoding: .utf8)
         let step3RefCount = step3.components(separatedBy: "ecore:EReference").count - 1
         let step3Containment = step3.contains("containment=\"true\"")
         #expect(step3RefCount == 1)
         #expect(step3Containment)
 
         // Step 4: Two references (bidirectional), one with containment
-        let step4 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-14-bidirectional-reference.ecore"))
+        let step4 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-14-bidirectional-reference.ecore"), encoding: .utf8)
         let step4RefCount = step4.components(separatedBy: "ecore:EReference").count - 1
         let step4OppositeCount = step4.components(separatedBy: "eOpposite=").count - 1
         #expect(step4RefCount == 2)

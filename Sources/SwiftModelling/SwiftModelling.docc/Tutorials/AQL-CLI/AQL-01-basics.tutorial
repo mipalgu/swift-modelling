@@ -1,0 +1,223 @@
+@Tutorial(time: 20) {
+    @Intro(title: "AQL Basics") {
+        Learn the fundamentals of the Acceleo Query Language (AQL) for navigating and querying models.
+
+        In this tutorial, you'll explore AQL syntax, basic navigation operations, literal values, and simple expressions. AQL is the query language used throughout the Swift Modelling framework for model navigation in both ATL transformations and MTL templates.
+
+        @Image(source: "aql-basics.svg", alt: "AQL Query Navigation")
+    }
+
+    @Section(title: "Understanding AQL") {
+        @ContentAndMedia {
+            AQL (Acceleo Query Language) is an expression language for navigating and querying models. It provides a concise syntax for accessing model elements, their properties, and relationships.
+
+            AQL expressions are used extensively in ATL transformations and MTL templates to navigate model structures and extract information.
+
+            @Image(source: "aql-navigation.svg", alt: "AQL Model Navigation")
+        }
+
+        @Steps {
+            @Step {
+                Create a simple metamodel for testing AQL queries.
+
+                @Code(name: "Company.ecore", file: aql-01-step-01-metamodel.ecore)
+
+                This metamodel defines a Company with Employees. Each Employee has a name, age, and department. We'll use this to explore AQL navigation.
+            }
+
+            @Step {
+                Create a model instance to query.
+
+                @Code(name: "company-instance.xmi", file: aql-01-step-02-instance.xmi)
+
+                This model instance contains a company with several employees in different departments. We'll query this data using AQL expressions.
+            }
+
+            @Step {
+                Test basic property access.
+
+                @Code(name: "Terminal", file: aql-01-step-03-property-access.sh)
+
+                The simplest AQL expressions access properties directly. Use dot notation to navigate from objects to their attributes and references.
+            }
+
+            @Step {
+                Use literal values and operations.
+
+                @Code(name: "Terminal", file: aql-01-step-04-literals.sh)
+
+                AQL supports various literal types: strings ('text'), integers (42), booleans (true/false), and real numbers (3.14). You can combine these with basic operations.
+            }
+        }
+    }
+
+    @Section(title: "Navigation Operations") {
+        @ContentAndMedia {
+            AQL provides powerful navigation operations for traversing model relationships. You can navigate forward through references, access collection elements, and combine multiple navigation steps.
+
+            Understanding navigation is key to writing effective queries that extract the information you need from complex model structures.
+        }
+
+        @Steps {
+            @Step {
+                Navigate through single-valued references.
+
+                @Code(name: "Terminal", file: aql-01-step-05-single-navigation.sh)
+
+                Use dot notation to navigate from one object to another through references. This works for both containment and non-containment references.
+            }
+
+            @Step {
+                Navigate through multi-valued references.
+
+                @Code(name: "Terminal", file: aql-01-step-06-multi-navigation.sh)
+
+                When navigating to collections, AQL returns all elements. You can chain navigation operations to traverse deeper into the model structure.
+            }
+
+            @Step {
+                Combine navigation with property access.
+
+                @Code(name: "Terminal", file: aql-01-step-07-combined-navigation.sh)
+
+                Chain multiple navigation steps together to reach deeply nested properties. Each step in the chain operates on the result of the previous step.
+            }
+
+            @Step {
+                Use safe navigation for optional references.
+
+                @Code(name: "Terminal", file: aql-01-step-08-safe-navigation.sh)
+
+                When references might be null, use safe navigation to avoid errors. This is especially important when working with optional references or uncertain model structures.
+            }
+        }
+    }
+
+    @Section(title: "Basic Operations and Comparisons") {
+        @ContentAndMedia {
+            AQL supports arithmetic operations, string manipulation, and comparison operators. These form the foundation for more complex queries and filtering operations.
+
+            Operations work with both literal values and model properties, allowing you to perform calculations and comparisons directly in your queries.
+        }
+
+        @Steps {
+            @Step {
+                Perform arithmetic operations.
+
+                @Code(name: "Terminal", file: aql-01-step-09-arithmetic.sh)
+
+                AQL supports standard arithmetic: addition (+), subtraction (-), multiplication (*), division (/), and modulo (%). Operations follow standard precedence rules.
+            }
+
+            @Step {
+                Work with string operations.
+
+                @Code(name: "Terminal", file: aql-01-step-10-strings.sh)
+
+                String operations include concatenation (+), size calculation, and case conversion. These are essential for text processing and code generation.
+            }
+
+            @Step {
+                Use comparison operators.
+
+                @Code(name: "Terminal", file: aql-01-step-11-comparisons.sh)
+
+                Comparison operations (=, <>, <, >, <=, >=) return boolean values. These form the basis for filtering and conditional logic in more complex queries.
+            }
+
+            @Step {
+                Combine operations in expressions.
+
+                @Code(name: "Terminal", file: aql-01-step-12-combined-expressions.sh)
+
+                Complex expressions combine multiple operations, navigation steps, and function calls. Use parentheses to control evaluation order when needed.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What does the AQL expression `employee.name` return?
+
+            @Choice(isCorrect: true) {
+                The value of the name attribute for the employee object
+
+                @Justification(reaction: "Correct!") {
+                    AQL uses dot notation for property access. `employee.name` navigates to the name attribute and returns its value.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                A collection of all employee names
+
+                @Justification(reaction: "Not quite!") {
+                    This would return a single name, not a collection. To get all names, you'd need to start with a collection of employees.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The employee object itself
+
+                @Justification(reaction: "Incorrect!") {
+                    The expression navigates to the name attribute, not the employee. Just `employee` would return the employee object.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            How do you safely navigate through a reference that might be null?
+
+            @Choice(isCorrect: false) {
+                Use the `->` operator instead of `.`
+
+                @Justification(reaction: "Incorrect!") {
+                    The `->` operator is for collection operations, not safe navigation. It doesn't protect against null references.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                Check for null first or use conditional expressions
+
+                @Justification(reaction: "That's right!") {
+                    Safe navigation involves checking if references are null before accessing their properties, or using conditional expressions to handle null cases.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                AQL automatically handles null references
+
+                @Justification(reaction: "Not quite!") {
+                    While AQL provides some null handling, you should still be explicit about handling potentially null references in your queries.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What is the result of the AQL expression `'Hello' + ' ' + 'World'`?
+
+            @Choice(isCorrect: true) {
+                'Hello World'
+
+                @Justification(reaction: "Exactly!") {
+                    The `+` operator concatenates strings in AQL. The three string literals are joined together to form 'Hello World'.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                An error because you can't add strings
+
+                @Justification(reaction: "Incorrect!") {
+                    AQL supports string concatenation using the `+` operator, just like many programming languages.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                'HelloWorld' (without spaces)
+
+                @Justification(reaction: "Not quite!") {
+                    The middle string is a space character (' '), so it's included in the concatenation result.
+                }
+            }
+        }
+    }
+}

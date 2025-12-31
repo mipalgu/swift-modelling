@@ -1,0 +1,293 @@
+@Tutorial(time: 25) {
+    @Intro(title: "Filtering and Selection") {
+        Master AQL's powerful filtering and selection operations to extract specific elements from collections.
+
+        In this tutorial, you'll learn how to use `select`, `reject`, `exists`, and `forAll` operations to filter collections based on conditions. These operations are essential for writing precise queries that find exactly the model elements you need.
+
+        @Image(source: "aql-filtering.svg", alt: "AQL Filtering Operations")
+    }
+
+    @Section(title: "Understanding Collection Filtering") {
+        @ContentAndMedia {
+            AQL provides several operations for working with collections of model elements. Filtering operations allow you to select subsets of collections based on boolean conditions.
+
+            The most important filtering operations are `select` (keep elements that match), `reject` (remove elements that match), `exists` (test if any element matches), and `forAll` (test if all elements match).
+
+            @Image(source: "aql-collection-operations.svg", alt: "AQL Collection Operations")
+        }
+
+        @Steps {
+            @Step {
+                Set up a richer model for filtering examples.
+
+                @Code(name: "University.ecore", file: aql-02-step-01-university-metamodel.ecore)
+
+                This extended metamodel includes Students with grades, Courses with credit hours, and Professors with specializations. We'll use this to demonstrate sophisticated filtering operations.
+            }
+
+            @Step {
+                Create a model instance with diverse data.
+
+                @Code(name: "university-data.xmi", file: aql-02-step-02-university-instance.xmi)
+
+                This model contains students with different grades, courses with varying credit hours, and professors with different specializations. Perfect for demonstrating filtering operations.
+            }
+
+            @Step {
+                Test basic collection access.
+
+                @Code(name: "Terminal", file: aql-02-step-03-collection-access.sh)
+
+                Before filtering, understand how to access collections. Use navigation to get collections of related objects, then apply filtering operations.
+            }
+
+            @Step {
+                Explore collection sizes and basic properties.
+
+                @Code(name: "Terminal", file: aql-02-step-04-collection-info.sh)
+
+                Use `size()` to count elements, `isEmpty()` to check for empty collections, and `notEmpty()` to check for non-empty collections. These are often used in conditions.
+            }
+        }
+    }
+
+    @Section(title: "Select and Reject Operations") {
+        @ContentAndMedia {
+            The `select` operation filters collections to keep only elements that satisfy a condition. The `reject` operation does the opposite—it filters out elements that satisfy a condition.
+
+            Both operations use lambda expressions with a variable that represents each element being tested. The condition must evaluate to a boolean value.
+        }
+
+        @Steps {
+            @Step {
+                Select elements with simple conditions.
+
+                @Code(name: "Terminal", file: aql-02-step-05-simple-select.sh)
+
+                The `select` operation keeps elements where the condition is true. Use comparison operators to test properties against literal values.
+            }
+
+            @Step {
+                Use reject to exclude elements.
+
+                @Code(name: "Terminal", file: aql-02-step-06-reject.sh)
+
+                The `reject` operation removes elements where the condition is true. This is the logical opposite of `select` and often reads more naturally for negative conditions.
+            }
+
+            @Step {
+                Combine multiple conditions.
+
+                @Code(name: "Terminal", file: aql-02-step-07-multiple-conditions.sh)
+
+                Use `and` and `or` operators to combine conditions. Parentheses can group conditions for complex logic. This allows precise filtering with multiple criteria.
+            }
+
+            @Step {
+                Filter based on related object properties.
+
+                @Code(name: "Terminal", file: aql-02-step-08-related-properties.sh)
+
+                Filter elements based on properties of related objects. Navigate through references within the filter condition to access nested properties.
+            }
+        }
+    }
+
+    @Section(title: "Existence and Universal Quantifiers") {
+        @ContentAndMedia {
+            The `exists` operation tests whether any element in a collection satisfies a condition. The `forAll` operation tests whether all elements satisfy a condition.
+
+            These quantifier operations return boolean values and are often used in conditional logic or as part of larger filtering expressions.
+        }
+
+        @Steps {
+            @Step {
+                Test for existence with exists.
+
+                @Code(name: "Terminal", file: aql-02-step-09-exists.sh)
+
+                Use `exists` to check if any element meets a condition. This is useful for conditional logic and validation queries.
+            }
+
+            @Step {
+                Verify conditions with forAll.
+
+                @Code(name: "Terminal", file: aql-02-step-10-forall.sh)
+
+                Use `forAll` to verify that all elements meet a condition. This is essential for validation and constraint checking.
+            }
+
+            @Step {
+                Combine quantifiers with filtering.
+
+                @Code(name: "Terminal", file: aql-02-step-11-quantifiers-with-filters.sh)
+
+                Combine `exists` and `forAll` with `select` and `reject` operations. This allows complex queries that both filter collections and test conditions.
+            }
+
+            @Step {
+                Use quantifiers in nested contexts.
+
+                @Code(name: "Terminal", file: aql-02-step-12-nested-quantifiers.sh)
+
+                Apply quantifier operations to collections obtained through navigation. This enables deep queries that test conditions across multiple levels of the model.
+            }
+        }
+    }
+
+    @Section(title: "Advanced Filtering Patterns") {
+        @ContentAndMedia {
+            Advanced filtering combines multiple operations, uses nested conditions, and applies filters at different levels of the model hierarchy.
+
+            These patterns are essential for complex model queries and form the foundation for sophisticated model analysis and validation.
+        }
+
+        @Steps {
+            @Step {
+                Chain multiple filter operations.
+
+                @Code(name: "Terminal", file: aql-02-step-13-chained-filters.sh)
+
+                Chain `select` and `reject` operations to apply multiple filters in sequence. Each operation works on the result of the previous operation.
+            }
+
+            @Step {
+                Filter collections of collections.
+
+                @Code(name: "Terminal", file: aql-02-step-14-nested-collections.sh)
+
+                When working with collections that contain other collections, apply filtering at the appropriate level. Use `flatten()` when needed to work with flattened results.
+            }
+
+            @Step {
+                Create custom filtering predicates.
+
+                @Code(name: "Terminal", file: aql-02-step-15-custom-predicates.sh)
+
+                Build reusable filtering logic by combining conditions in meaningful ways. This makes queries more readable and maintainable.
+            }
+
+            @Step {
+                Combine filtering with other operations.
+
+                @Code(name: "Terminal", file: aql-02-step-16-filtering-plus-operations.sh)
+
+                Use filtering as part of larger query pipelines. Combine with operations like `collect`, `size`, and arithmetic to create comprehensive model analyses.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What does `students->select(s | s.grade >= 85)` return?
+
+            @Choice(isCorrect: true) {
+                A collection of students with grades 85 or higher
+
+                @Justification(reaction: "Correct!") {
+                    The `select` operation keeps elements where the condition is true. Students with grades >= 85 satisfy the condition and are included in the result.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                A collection of grades that are 85 or higher
+
+                @Justification(reaction: "Not quite!") {
+                    The operation returns student objects, not grade values. To get just grades, you'd need to use `collect` after the `select`.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                A boolean indicating whether any student has a grade >= 85
+
+                @Justification(reaction: "Incorrect!") {
+                    That would be the result of `exists`. The `select` operation returns a filtered collection, not a boolean.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What's the difference between `select` and `reject`?
+
+            @Choice(isCorrect: true) {
+                `select` keeps elements that match the condition, `reject` removes them
+
+                @Justification(reaction: "Exactly right!") {
+                    `select` and `reject` are logical opposites. `select` keeps matching elements, while `reject` filters them out.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `select` works on single elements, `reject` works on collections
+
+                @Justification(reaction: "Incorrect!") {
+                    Both operations work on collections. They differ in whether matching elements are kept or removed from the result.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                There is no difference, they're synonyms
+
+                @Justification(reaction: "Not correct!") {
+                    They have opposite behaviors. `reject(condition)` is equivalent to `select(not condition)`.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            When would you use `exists` instead of `select`?
+
+            @Choice(isCorrect: false) {
+                When you want to get all matching elements
+
+                @Justification(reaction: "That's what select does!") {
+                    `select` returns all matching elements as a collection. `exists` only tells you if any elements match.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                When you only need to know if any element matches a condition
+
+                @Justification(reaction: "Perfect!") {
+                    `exists` returns true/false indicating whether any element satisfies the condition. Use it for conditional logic when you don't need the actual elements.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                When working with empty collections
+
+                @Justification(reaction: "Not specifically!") {
+                    Both `exists` and `select` handle empty collections correctly. `exists` returns false for empty collections, `select` returns an empty collection.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What does `courses->forAll(c | c.credits >= 3)` return?
+
+            @Choice(isCorrect: false) {
+                All courses with 3 or more credits
+
+                @Justification(reaction: "That would be select!") {
+                    `forAll` doesn't return a collection of elements. It returns a boolean value indicating whether the condition is true for all elements.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                True if all courses have 3 or more credits, false otherwise
+
+                @Justification(reaction: "Correct!") {
+                    `forAll` is a universal quantifier that returns true only if the condition is satisfied by every element in the collection.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The number of courses with 3 or more credits
+
+                @Justification(reaction: "Not quite!") {
+                    That would require `courses->select(c | c.credits >= 3)->size()`. `forAll` returns a boolean, not a count.
+                }
+            }
+        }
+    }
+}

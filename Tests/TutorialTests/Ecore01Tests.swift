@@ -183,26 +183,26 @@ struct Ecore01Tests {
     @Test("Metamodel progression: Empty → Person → Attributes → Company")
     func testMetamodelProgression() async throws {
         // Step 1: Empty package has no classes
-        let step1 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-01-empty-package.ecore"))
+        let step1 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-01-empty-package.ecore"), encoding: .utf8)
         let step1ClassCount = step1.components(separatedBy: "eClassifiers").count - 1
         #expect(step1ClassCount == 0)
 
         // Step 2: One class (Person), no attributes
-        let step2 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-02-person-class.ecore"))
+        let step2 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-02-person-class.ecore"), encoding: .utf8)
         let step2ClassCount = step2.components(separatedBy: "xsi:type=\"ecore:EClass\"").count - 1
         let step2AttrCount = step2.components(separatedBy: "eStructuralFeatures").count - 1
         #expect(step2ClassCount == 1)
         #expect(step2AttrCount == 0)
 
         // Step 3: One class (Person), two attributes
-        let step3 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-03-person-attributes.ecore"))
+        let step3 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-03-person-attributes.ecore"), encoding: .utf8)
         let step3ClassCount = step3.components(separatedBy: "xsi:type=\"ecore:EClass\"").count - 1
         let step3AttrCount = step3.components(separatedBy: "xsi:type=\"ecore:EAttribute\"").count - 1
         #expect(step3ClassCount == 1)
         #expect(step3AttrCount == 2)
 
         // Step 4: Two classes (Person + Company), three attributes total
-        let step4 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-04-company-class.ecore"))
+        let step4 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-04-company-class.ecore"), encoding: .utf8)
         let step4ClassCount = step4.components(separatedBy: "xsi:type=\"ecore:EClass\"").count - 1
         let step4AttrCount = step4.components(separatedBy: "xsi:type=\"ecore:EAttribute\"").count - 1
         #expect(step4ClassCount == 2)

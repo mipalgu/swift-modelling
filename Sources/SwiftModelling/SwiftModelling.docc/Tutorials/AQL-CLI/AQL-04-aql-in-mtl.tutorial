@@ -1,0 +1,335 @@
+@Tutorial(time: 35) {
+    @Intro(title: "AQL in MTL Templates") {
+        Learn how to integrate AQL queries seamlessly into MTL templates for powerful model-driven code generation.
+
+        In this tutorial, you'll discover how AQL expressions work within MTL templates, how to navigate models during code generation, and how to build sophisticated template logic using AQL's querying capabilities.
+
+        @Image(source: "aql-mtl-integration.svg", alt: "AQL and MTL Integration")
+    }
+
+    @Section(title: "Understanding AQL-MTL Integration") {
+        @ContentAndMedia {
+            AQL serves as the expression language within MTL templates. Every dynamic expression in an MTL template—from simple property access to complex model queries—uses AQL syntax.
+
+            This tight integration makes MTL templates both powerful and intuitive: you can navigate models naturally while generating code, creating templates that adapt to model structure and content.
+
+            @Image(source: "mtl-aql-workflow.svg", alt: "MTL Template with AQL Expressions")
+        }
+
+        @Steps {
+            @Step {
+                Set up a model for code generation examples.
+
+                @Code(name: "WebApp.ecore", file: aql-04-step-01-webapp-metamodel.ecore)
+
+                This metamodel represents a web application with Controllers, Models, and Views. We'll use this to demonstrate how AQL queries drive code generation patterns.
+            }
+
+            @Step {
+                Create a model instance for the web application.
+
+                @Code(name: "webapp-model.xmi", file: aql-04-step-02-webapp-instance.xmi)
+
+                This model defines a simple web application with user management functionality. The model provides rich data for demonstrating AQL-driven template generation.
+            }
+
+            @Step {
+                Create a basic MTL template with AQL expressions.
+
+                @Code(name: "BasicGeneration.mtl", file: aql-04-step-03-basic-template.mtl)
+
+                This template shows how AQL expressions appear within MTL syntax. Square brackets contain AQL expressions that are evaluated during template execution.
+            }
+
+            @Step {
+                Generate code to see AQL expressions in action.
+
+                @Code(name: "Terminal", file: aql-04-step-04-basic-generation.sh)
+
+                Run the template to see how AQL expressions are evaluated and their results inserted into the generated output. This demonstrates the fundamental AQL-MTL integration.
+            }
+        }
+    }
+
+    @Section(title: "Navigation and Property Access") {
+        @ContentAndMedia {
+            The most common AQL usage in MTL templates is navigating model structures to access properties and related objects. This forms the backbone of model-driven code generation.
+
+            Template expressions use the same AQL navigation syntax you've learned, making the transition from standalone queries to template expressions seamless.
+        }
+
+        @Steps {
+            @Step {
+                Access simple properties in templates.
+
+                @Code(name: "PropertyAccess.mtl", file: aql-04-step-05-property-template.mtl)
+
+                Use dot notation within template expressions to access object properties. This is the most basic form of AQL integration in MTL templates.
+            }
+
+            @Step {
+                Navigate through model relationships.
+
+                @Code(name: "NavigationTemplate.mtl", file: aql-04-step-06-navigation-template.mtl)
+
+                Navigate through references to access related objects and their properties. Chain navigation steps to reach deeply nested information.
+            }
+
+            @Step {
+                Handle optional references safely.
+
+                @Code(name: "SafeNavigation.mtl", file: aql-04-step-07-safe-navigation.mtl)
+
+                Use conditional expressions and null checks to handle optional references gracefully in templates. This prevents generation errors when references are missing.
+            }
+
+            @Step {
+                Generate code with navigation expressions.
+
+                @Code(name: "Terminal", file: aql-04-step-08-navigation-output.sh)
+
+                Run templates with navigation expressions to see how model relationships drive code structure. The generated code reflects the model's organization.
+            }
+        }
+    }
+
+    @Section(title: "Collection Operations in Templates") {
+        @ContentAndMedia {
+            AQL's collection operations become particularly powerful within MTL templates. They enable templates to generate repetitive code structures based on model collections.
+
+            Combine MTL's iteration constructs with AQL's filtering and transformation operations to create sophisticated code generation patterns.
+        }
+
+        @Steps {
+            @Step {
+                Use AQL collections in for loops.
+
+                @Code(name: "CollectionIteration.mtl", file: aql-04-step-09-collection-loops.mtl)
+
+                MTL's `[for]` construct iterates over AQL collection expressions. This enables generating code for each element in model collections.
+            }
+
+            @Step {
+                Filter collections before iteration.
+
+                @Code(name: "FilteredIteration.mtl", file: aql-04-step-10-filtered-loops.mtl)
+
+                Apply AQL filtering operations within for loop expressions. Generate code only for elements that meet specific criteria.
+            }
+
+            @Step {
+                Transform collections with collect.
+
+                @Code(name: "CollectTransform.mtl", file: aql-04-step-11-collect-template.mtl)
+
+                Use AQL's `collect` operation to transform collections before iteration. This enables sophisticated data reshaping within templates.
+            }
+
+            @Step {
+                Generate complex structures from collections.
+
+                @Code(name: "Terminal", file: aql-04-step-12-collection-output.sh)
+
+                Run templates with collection operations to see how AQL queries shape the generated code structure. Collections drive code organization.
+            }
+        }
+    }
+
+    @Section(title: "Conditional Logic with AQL") {
+        @ContentAndMedia {
+            AQL's boolean expressions integrate with MTL's conditional statements to create adaptive templates. Templates can generate different code based on model properties and relationships.
+
+            This enables templates to respond intelligently to model variations, generating appropriate code for different scenarios.
+        }
+
+        @Steps {
+            @Step {
+                Use AQL boolean expressions in conditions.
+
+                @Code(name: "ConditionalLogic.mtl", file: aql-04-step-13-conditional-template.mtl)
+
+                MTL's `[if]` statements use AQL boolean expressions as conditions. This enables templates to make decisions based on model content.
+            }
+
+            @Step {
+                Combine multiple conditions.
+
+                @Code(name: "ComplexConditions.mtl", file: aql-04-step-14-complex-conditions.mtl)
+
+                Use AQL's `and`, `or`, and `not` operators to create complex conditional logic. Templates can respond to sophisticated model patterns.
+            }
+
+            @Step {
+                Use quantifiers in template conditions.
+
+                @Code(name: "QuantifierConditions.mtl", file: aql-04-step-15-quantifier-conditions.mtl)
+
+                Apply AQL's `exists` and `forAll` operations in template conditions. Generate code based on the existence or universality of model patterns.
+            }
+
+            @Step {
+                Generate adaptive code structures.
+
+                @Code(name: "Terminal", file: aql-04-step-16-adaptive-output.sh)
+
+                Run templates with conditional logic to see how AQL expressions create adaptive code generation. The same template generates different code for different models.
+            }
+        }
+    }
+
+    @Section(title: "Advanced AQL-MTL Patterns") {
+        @ContentAndMedia {
+            Advanced patterns combine AQL's full querying power with MTL's template features. These patterns enable sophisticated code generation scenarios and complex model analysis.
+
+            Master these patterns to create professional-grade code generators that handle real-world modeling scenarios.
+        }
+
+        @Steps {
+            @Step {
+                Create reusable AQL expressions with let bindings.
+
+                @Code(name: "LetBindings.mtl", file: aql-04-step-17-let-template.mtl)
+
+                Use MTL's `[let]` construct to bind complex AQL expressions to variables. This improves template readability and avoids repeated computation.
+            }
+
+            @Step {
+                Build query-driven template libraries.
+
+                @Code(name: "QueryLibrary.mtl", file: aql-04-step-18-query-library.mtl)
+
+                Create templates that serve as AQL query libraries. These templates can be imported and reused across multiple generation scenarios.
+            }
+
+            @Step {
+                Handle cross-reference resolution.
+
+                @Code(name: "CrossReferences.mtl", file: aql-04-step-19-cross-references.mtl)
+
+                Use AQL to navigate cross-model references and generate code that maintains referential integrity across generated artifacts.
+            }
+
+            @Step {
+                Create comprehensive code generation pipelines.
+
+                @Code(name: "Terminal", file: aql-04-step-20-comprehensive-generation.sh)
+
+                Combine all AQL-MTL patterns to create sophisticated code generators. See how queries drive every aspect of code structure and content.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            How are AQL expressions used within MTL templates?
+
+            @Choice(isCorrect: true) {
+                They are enclosed in square brackets and evaluated during template execution
+
+                @Justification(reaction: "Correct!") {
+                    AQL expressions in MTL templates are written within square brackets [expression] and are evaluated when the template runs, with results inserted into the generated output.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                They are written as separate query files and imported
+
+                @Justification(reaction: "Not quite!") {
+                    While you can organize queries in separate templates, AQL expressions are typically embedded directly within MTL templates using square bracket notation.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                They require special AQL import statements
+
+                @Justification(reaction: "Incorrect!") {
+                    AQL is the native expression language for MTL templates. No special imports are needed—AQL expressions work directly within template syntax.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What happens when you use `[for (item : Type | collection.select(x | x.property > 5))]` in an MTL template?
+
+            @Choice(isCorrect: true) {
+                It iterates over only the collection elements where property > 5
+
+                @Justification(reaction: "Exactly right!") {
+                    The AQL select expression filters the collection first, then the for loop iterates over only the elements that satisfy the condition.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                It generates an error because select cannot be used in for loops
+
+                @Justification(reaction: "Incorrect!") {
+                    AQL collection operations work perfectly within MTL for loops. This is a common and powerful pattern for selective code generation.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                It iterates over all elements but only generates code when property > 5
+
+                @Justification(reaction: "Not quite!") {
+                    The select operation filters the collection before iteration, so the loop only sees elements that match the condition.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            When should you use `[let variable = aqlExpression]` in templates?
+
+            @Choice(isCorrect: false) {
+                Never, because let bindings slow down template execution
+
+                @Justification(reaction: "That's not true!") {
+                    Let bindings can actually improve performance by avoiding repeated evaluation of complex expressions. They also improve template readability.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                When you have complex AQL expressions used multiple times
+
+                @Justification(reaction: "Perfect!") {
+                    Let bindings store the result of complex AQL expressions in variables, avoiding repeated computation and making templates more readable and maintainable.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Only when working with simple property access
+
+                @Justification(reaction: "Not quite!") {
+                    Let bindings are most beneficial for complex expressions. Simple property access usually doesn't need to be stored in variables.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            How do you safely handle optional references in MTL templates?
+
+            @Choice(isCorrect: false) {
+                Optional references are automatically handled by MTL
+
+                @Justification(reaction: "Not automatically!") {
+                    While MTL provides some null handling, you should explicitly check for null references in your template logic to ensure robust generation.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                Use conditional statements to check for null before accessing properties
+
+                @Justification(reaction: "Correct!") {
+                    Use [if (reference <> null)] or similar AQL conditions to verify references exist before accessing their properties, preventing generation errors.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Use try-catch blocks around AQL expressions
+
+                @Justification(reaction: "MTL doesn't have try-catch!") {
+                    MTL doesn't support exception handling syntax. Use AQL conditional expressions and null checking to handle optional references gracefully.
+                }
+            }
+        }
+    }
+}

@@ -190,7 +190,7 @@ struct Ecore02Tests {
     @Test("Model progression: Empty → One Person → Multiple Instances")
     func testModelProgression() async throws {
         // Step 1: Empty model has no instances
-        let step1 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-07-empty-company-model.xmi"))
+        let step1 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-07-empty-company-model.xmi"), encoding: .utf8)
         // Count actual instance elements (not namespace declarations)
         let step1PersonCount = step1.components(separatedBy: "<company:Person").count - 1
         let step1CompanyCount = step1.components(separatedBy: "<company:Company").count - 1
@@ -198,14 +198,14 @@ struct Ecore02Tests {
         #expect(step1CompanyCount == 0)
 
         // Step 2: One Person instance, no Company
-        let step2 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-08-person-instance.xmi"))
+        let step2 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-08-person-instance.xmi"), encoding: .utf8)
         let step2PersonCount = step2.components(separatedBy: "<company:Person").count - 1
         let step2CompanyCount = step2.components(separatedBy: "<company:Company").count - 1
         #expect(step2PersonCount == 1)
         #expect(step2CompanyCount == 0)
 
         // Step 3: One Company and three Persons
-        let step3 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-09-company-with-employees.xmi"))
+        let step3 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-09-company-with-employees.xmi"), encoding: .utf8)
         let step3PersonCount = step3.components(separatedBy: "<company:Person").count - 1
         let step3CompanyCount = step3.components(separatedBy: "<company:Company").count - 1
         #expect(step3PersonCount == 3)
