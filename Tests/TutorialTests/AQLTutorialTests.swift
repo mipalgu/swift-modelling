@@ -15,7 +15,16 @@ struct AQLTutorialTests {
 
     // MARK: - Test Resources
 
-    static let testResourcesPath = "Tests/TutorialTests/Resources/AQL"
+    static var tutorialResourcesPath: URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Sources")
+            .appendingPathComponent("SwiftModelling")
+            .appendingPathComponent("SwiftModelling.docc")
+            .appendingPathComponent("Resources")
+    }
 
     // MARK: - AQL-01: Basics Tests
 
@@ -25,8 +34,9 @@ struct AQLTutorialTests {
         @Test("Step 1: Company metamodel is well-formed")
         func testStep01CompanyMetamodel() async throws {
             // Validate that the company metamodel from step 1 is structurally correct
-            let metamodelPath =
-                "\(AQLTutorialTests.testResourcesPath)/AQL-01/company-metamodel.ecore"
+            let metamodelPath = AQLTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("AQL-01")
+                .appendingPathComponent("aql-01-step-01-company-metamodel.ecore")
 
             // Test that metamodel contains expected classes
             // Company, Employee classes should exist
@@ -41,7 +51,9 @@ struct AQLTutorialTests {
         @Test("Step 2: Company instance is valid")
         func testStep02CompanyInstance() async throws {
             // Validate the company instance from step 2
-            let instancePath = "\(AQLTutorialTests.testResourcesPath)/AQL-01/company-instance.xmi"
+            let instancePath = AQLTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("AQL-01")
+                .appendingPathComponent("aql-01-step-02-company-instance.xmi")
 
             // Test that instance conforms to metamodel
             // Should contain company with multiple employees
@@ -171,10 +183,12 @@ struct AQLTutorialTests {
         @Test("Step 1-2: University metamodel and instance")
         func testStep01to02UniversityModel() async throws {
             // Validate university metamodel and instance structure
-            let metamodelPath =
-                "\(AQLTutorialTests.testResourcesPath)/AQL-02/university-metamodel.ecore"
-            let instancePath =
-                "\(AQLTutorialTests.testResourcesPath)/AQL-02/university-instance.xmi"
+            let metamodelPath = AQLTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("AQL-02")
+                .appendingPathComponent("aql-02-step-01-university-metamodel.ecore")
+            let instancePath = AQLTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("AQL-02")
+                .appendingPathComponent("aql-02-step-02-university-instance.xmi")
 
             // Should contain Student, Course, Professor classes
             // Students should have grades, Courses should have credit hours
@@ -271,9 +285,12 @@ struct AQLTutorialTests {
         @Test("Step 1-4: Library model setup")
         func testStep01to04LibraryModel() async throws {
             // Validate library metamodel with Books, Authors, Categories, Loans
-            let metamodelPath =
-                "\(AQLTutorialTests.testResourcesPath)/AQL-03/library-metamodel.ecore"
-            let instancePath = "\(AQLTutorialTests.testResourcesPath)/AQL-03/library-instance.xmi"
+            let metamodelPath = AQLTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("AQL-03")
+                .appendingPathComponent("aql-03-step-01-library-metamodel.ecore")
+            let instancePath = AQLTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("AQL-03")
+                .appendingPathComponent("aql-03-step-04-library-instance.xmi")
 
             #expect(true, "Library model validation placeholder")
         }
@@ -363,10 +380,15 @@ struct AQLTutorialTests {
         @Test("Step 1-4: WebApp model for MTL integration")
         func testStep01to04WebAppModel() async throws {
             // Validate webapp metamodel and basic MTL template structure
-            let metamodelPath =
-                "\(AQLTutorialTests.testResourcesPath)/AQL-04/webapp-metamodel.ecore"
-            let instancePath = "\(AQLTutorialTests.testResourcesPath)/AQL-04/webapp-instance.xmi"
-            let templatePath = "\(AQLTutorialTests.testResourcesPath)/AQL-04/basic-template.mtl"
+            let metamodelPath = AQLTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("AQL-04")
+                .appendingPathComponent("aql-04-step-01-webapp-metamodel.ecore")
+            let instancePath = AQLTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("AQL-04")
+                .appendingPathComponent("aql-04-step-02-webapp-instance.xmi")
+            let templatePath = AQLTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("AQL-04")
+                .appendingPathComponent("aql-04-step-04-basic-template.mtl")
 
             #expect(true, "WebApp model and template validation placeholder")
         }
@@ -451,10 +473,12 @@ struct AQLTutorialTests {
         @Test("Step 1-4: Enterprise model for complex queries")
         func testStep01to04EnterpriseModel() async throws {
             // Validate enterprise metamodel with Organizations, Projects, Teams, Resources
-            let metamodelPath =
-                "\(AQLTutorialTests.testResourcesPath)/AQL-05/enterprise-metamodel.ecore"
-            let instancePath =
-                "\(AQLTutorialTests.testResourcesPath)/AQL-05/enterprise-instance.xmi"
+            let metamodelPath = AQLTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("AQL-05")
+                .appendingPathComponent("aql-05-step-01-enterprise-metamodel.ecore")
+            let instancePath = AQLTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("AQL-05")
+                .appendingPathComponent("aql-05-step-02-enterprise-instance.xmi")
 
             #expect(true, "Enterprise model validation placeholder")
         }

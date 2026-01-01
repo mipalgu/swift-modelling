@@ -15,7 +15,16 @@ struct WorkflowTutorialTests {
 
     // MARK: - Test Resources
 
-    static let testResourcesPath = "Tests/TutorialTests/Resources/Workflows"
+    static var tutorialResourcesPath: URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Sources")
+            .appendingPathComponent("SwiftModelling")
+            .appendingPathComponent("SwiftModelling.docc")
+            .appendingPathComponent("Resources")
+    }
 
     // MARK: - Workflow-01: Complete MDE Workflow Tests
 
@@ -25,8 +34,9 @@ struct WorkflowTutorialTests {
         @Test("Step 1-4: E-commerce metamodel design and validation")
         func testStep01to04ECommerceMetamodel() async throws {
             // Validate the e-commerce metamodel structure
-            let metamodelPath =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-01/ecommerce-metamodel.ecore"
+            let metamodelPath = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-01")
+                .appendingPathComponent("workflow-01-step-01-ecommerce-metamodel.ecore")
 
             // Should contain Product, Category, Customer, Order classes
             // Should have proper relationships and attributes
@@ -38,8 +48,9 @@ struct WorkflowTutorialTests {
         @Test("Step 5-8: E-commerce instance creation and validation")
         func testStep05to08ECommerceInstance() async throws {
             // Validate the shop data instance
-            let instancePath =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-01/shop-data.xmi"
+            let instancePath = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-01")
+                .appendingPathComponent("workflow-01-step-05-shop-data.xmi")
 
             // Should contain realistic business data
             // Should conform to metamodel constraints
@@ -51,14 +62,18 @@ struct WorkflowTutorialTests {
         @Test("Step 9-12: ATL transformation to reporting model")
         func testStep09to12TransformationToReporting() async throws {
             // Test the transformation from e-commerce to reporting
-            let sourceMetamodel =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-01/ecommerce-metamodel.ecore"
-            let targetMetamodel =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-01/reporting-metamodel.ecore"
-            let transformation =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-01/ecommerce-to-reporting.atl"
-            let sourceInstance =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-01/shop-data.xmi"
+            let sourceMetamodel = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-01")
+                .appendingPathComponent("workflow-01-step-01-ecommerce-metamodel.ecore")
+            let targetMetamodel = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-01")
+                .appendingPathComponent("workflow-01-step-09-reporting-metamodel.ecore")
+            let transformation = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-01")
+                .appendingPathComponent("workflow-01-step-10-ecommerce-to-reporting.atl")
+            let sourceInstance = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-01")
+                .appendingPathComponent("workflow-01-step-05-shop-data.xmi")
 
             // Transformation should execute without errors
             // Output should conform to reporting metamodel
@@ -70,14 +85,18 @@ struct WorkflowTutorialTests {
         @Test("Step 13-16: MTL code generation from reporting model")
         func testStep13to16CodeGeneration() async throws {
             // Test MTL templates for Swift, JSON, and documentation generation
-            let swiftTemplate =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-01/generate-swift-classes.mtl"
-            let jsonTemplate =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-01/generate-json-api.mtl"
-            let docsTemplate =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-01/generate-documentation.mtl"
-            let reportingModel =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-01/reporting-data.xmi"
+            let swiftTemplate = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-01")
+                .appendingPathComponent("workflow-01-step-13-generate-swift-classes.mtl")
+            let jsonTemplate = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-01")
+                .appendingPathComponent("workflow-01-step-14-generate-json-api.mtl")
+            let docsTemplate = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-01")
+                .appendingPathComponent("workflow-01-step-15-generate-documentation.mtl")
+            let reportingModel = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-01")
+                .appendingPathComponent("workflow-01-step-12-reporting-data.xmi")
 
             // Templates should execute without syntax errors
             // Generated Swift code should compile
@@ -90,12 +109,18 @@ struct WorkflowTutorialTests {
         @Test("Step 17-20: Integration and end-to-end validation")
         func testStep17to20Integration() async throws {
             // Test complete workflow integration
-            let generatedSwift =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-01/Generated/ReportingModels.swift"
-            let generatedJSON =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-01/Generated/api-schema.json"
-            let generatedDocs =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-01/Generated/documentation.md"
+            let generatedSwift = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-01")
+                .appendingPathComponent("Generated")
+                .appendingPathComponent("ReportingModels.swift")
+            let generatedJSON = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-01")
+                .appendingPathComponent("Generated")
+                .appendingPathComponent("api-schema.json")
+            let generatedDocs = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-01")
+                .appendingPathComponent("Generated")
+                .appendingPathComponent("documentation.md")
 
             // Generated artifacts should integrate correctly
             // Swift code should compile and pass tests
@@ -126,12 +151,15 @@ struct WorkflowTutorialTests {
         @Test("Step 1-4: Legacy model analysis")
         func testStep01to04LegacyAnalysis() async throws {
             // Validate legacy customer metamodel and instances
-            let legacyMetamodel =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-02/legacy-customer.ecore"
-            let legacyInstance =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-02/legacy-data.xmi"
-            let analysisQueries =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-02/analysis-queries.aql"
+            let legacyMetamodel = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-02")
+                .appendingPathComponent("workflow-02-step-01-legacy-customer.ecore")
+            let legacyInstance = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-02")
+                .appendingPathComponent("workflow-02-step-02-legacy-data.xmi")
+            let analysisQueries = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-02")
+                .appendingPathComponent("workflow-02-step-04-analysis-queries.aql")
 
             // Legacy model should load despite structural issues
             // Analysis queries should identify problems
@@ -143,10 +171,12 @@ struct WorkflowTutorialTests {
         @Test("Step 5-8: Improved model design")
         func testStep05to08ImprovedDesign() async throws {
             // Validate improved metamodel design
-            let improvedMetamodel =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-02/improved-customer.ecore"
-            let mappingDocs =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-02/legacy-to-improved-mapping.md"
+            let improvedMetamodel = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-02")
+                .appendingPathComponent("workflow-02-step-05-improved-customer.ecore")
+            let mappingDocs = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-02")
+                .appendingPathComponent("workflow-02-step-08-legacy-to-improved-mapping.md")
 
             // Improved model should address identified issues
             // Should follow better design practices
@@ -158,12 +188,15 @@ struct WorkflowTutorialTests {
         @Test("Step 9-12: Migration transformations")
         func testStep09to12MigrationTransformations() async throws {
             // Test ATL transformations for migration
-            let migrationATL =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-02/migrate-legacy-to-improved.atl"
-            let qualityATL =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-02/data-quality-improvements.atl"
-            let validationATL =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-02/validation-transforms.atl"
+            let migrationATL = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-02")
+                .appendingPathComponent("workflow-02-step-09-migrate-legacy-to-improved.atl")
+            let qualityATL = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-02")
+                .appendingPathComponent("workflow-02-step-10-data-quality-improvements.atl")
+            let validationATL = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-02")
+                .appendingPathComponent("workflow-02-step-11-validation-transforms.atl")
 
             // Migration transformations should execute correctly
             // Data quality should be improved
@@ -175,10 +208,12 @@ struct WorkflowTutorialTests {
         @Test("Step 13-16: Batch migration execution")
         func testStep13to16BatchMigration() async throws {
             // Test batch migration process
-            let migrationScript =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-02/migrate-all-instances.sh"
-            let validationScript =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-02/validate-migration.sh"
+            let migrationScript = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-02")
+                .appendingPathComponent("workflow-02-step-13-migrate-all-instances.sh")
+            let validationScript = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-02")
+                .appendingPathComponent("workflow-02-step-14-validate-migration.sh")
 
             // Batch migration should handle multiple files
             // Progress tracking should work correctly
@@ -190,12 +225,15 @@ struct WorkflowTutorialTests {
         @Test("Step 17-20: Quality assurance and rollout")
         func testStep17to20QualityAssurance() async throws {
             // Test comprehensive QA and deployment
-            let qaScript =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-02/comprehensive-qa.sh"
-            let rollbackScript =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-02/rollback-procedures.sh"
-            let deployScript =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-02/deploy-and-monitor.sh"
+            let qaScript = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-02")
+                .appendingPathComponent("workflow-02-step-17-comprehensive-qa.sh")
+            let rollbackScript = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-02")
+                .appendingPathComponent("workflow-02-step-18-rollback-procedures.sh")
+            let deployScript = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-02")
+                .appendingPathComponent("workflow-02-step-20-deploy-and-monitor.sh")
 
             // QA should validate all aspects of refactored models
             // Rollback procedures should be tested
@@ -234,12 +272,15 @@ struct WorkflowTutorialTests {
         @Test("Step 1-4: Integration scenario setup")
         func testStep01to04IntegrationSetup() async throws {
             // Validate integration scenario and shared metamodel
-            let sharedMetamodel =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-03/project-management.ecore"
-            let constraints =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-03/format-constraints.md"
-            let architecture =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-03/integration-architecture.md"
+            let sharedMetamodel = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-03")
+                .appendingPathComponent("workflow-03-step-01-project-management.ecore")
+            let constraints = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-03")
+                .appendingPathComponent("workflow-03-step-03-format-constraints.md")
+            let architecture = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-03")
+                .appendingPathComponent("workflow-03-step-04-integration-architecture.md")
 
             // Shared metamodel should work across formats
             // Constraints should be documented
@@ -251,11 +292,15 @@ struct WorkflowTutorialTests {
         @Test("Step 5-8: XMI to JSON bridge")
         func testStep05to08XMIToJSON() async throws {
             // Test XMI to JSON transformation
-            let xmiData = "\(WorkflowTutorialTests.testResourcesPath)/Workflow-03/project-data.xmi"
-            let jsonSchema =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-03/project-schema.json"
-            let xmiToJsonATL =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-03/xmi-to-json.atl"
+            let xmiData = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-03")
+                .appendingPathComponent("workflow-03-step-05-project-data.xmi")
+            let jsonSchema = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-03")
+                .appendingPathComponent("workflow-03-step-06-project-schema.json")
+            let xmiToJsonATL = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-03")
+                .appendingPathComponent("workflow-03-step-08-xmi-to-json.atl")
 
             // XMI data should be valid
             // JSON schema should be web-friendly
@@ -267,12 +312,15 @@ struct WorkflowTutorialTests {
         @Test("Step 9-12: JSON to Swift integration")
         func testStep09to12JSONToSwift() async throws {
             // Test JSON to Swift code generation pipeline
-            let updatedJSON =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-03/updated-project-data.json"
-            let jsonToXmiATL =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-03/json-to-xmi.atl"
-            let swiftGenMTL =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-03/generate-swift-models.mtl"
+            let updatedJSON = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-03")
+                .appendingPathComponent("workflow-03-step-09-updated-project-data.json")
+            let jsonToXmiATL = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-03")
+                .appendingPathComponent("workflow-03-step-10-json-to-xmi.atl")
+            let swiftGenMTL = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-03")
+                .appendingPathComponent("workflow-03-step-12-generate-swift-models.mtl")
 
             // JSON should validate against schema
             // Reverse transformation should work
@@ -284,10 +332,12 @@ struct WorkflowTutorialTests {
         @Test("Step 13-16: Bidirectional synchronisation")
         func testStep13to16BidirectionalSync() async throws {
             // Test synchronisation between formats
-            let syncATL =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-03/synchronise-formats.atl"
-            let conflictResolutionATL =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-03/conflict-resolution.atl"
+            let syncATL = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-03")
+                .appendingPathComponent("workflow-03-step-13-synchronise-formats.atl")
+            let conflictResolutionATL = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-03")
+                .appendingPathComponent("workflow-03-step-15-conflict-resolution.atl")
 
             // Synchronisation should handle changes in any format
             // Conflict resolution should be consistent
@@ -299,12 +349,15 @@ struct WorkflowTutorialTests {
         @Test("Step 17-20: API integration layer")
         func testStep17to20APIIntegration() async throws {
             // Test generated API integration layer
-            let restAPIGen =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-03/generate-rest-api.mtl"
-            let swiftAPIGen =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-03/generate-swift-api.mtl"
-            let eventAPIGen =
-                "\(WorkflowTutorialTests.testResourcesPath)/Workflow-03/generate-event-api.mtl"
+            let restAPIGen = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-03")
+                .appendingPathComponent("workflow-03-step-17-generate-rest-api.mtl")
+            let swiftAPIGen = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-03")
+                .appendingPathComponent("workflow-03-step-18-generate-swift-api.mtl")
+            let eventAPIGen = WorkflowTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("Workflow-03")
+                .appendingPathComponent("workflow-03-step-20-generate-event-api.mtl")
 
             // REST APIs should be OpenAPI compliant
             // Swift APIs should be type-safe
