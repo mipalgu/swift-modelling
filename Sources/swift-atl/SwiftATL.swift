@@ -52,8 +52,11 @@ struct SwiftATLCommand: AsyncParsableCommand {
         commandName: "swift-atl",
         abstract: "Atlas Transformation Language command-line tool",
         discussion: """
-            Swift ATL provides comprehensive support for model transformation using the
-            Atlas Transformation Language (ATL). It enables parsing, validation, testing,
+            Copyright (c) 2025 Rene Hexel.
+            All rights reserved.
+
+            Swift ATL provides support for model transformation using ATL, the
+            Atlas Transformation Language. It enables parsing, validation, testing,
             analysis, compilation of ATL transformations, execution of model-to-model
             transformations, and generation of code from models.
 
@@ -61,7 +64,7 @@ struct SwiftATLCommand: AsyncParsableCommand {
             transformations while providing enhanced performance through Swift's concurrent
             execution model and type safety.
             """,
-        version: "1.0.0",
+        version: "0.1.1",
         subcommands: [
             ParseCommand.self,
             ValidateCommand.self,
