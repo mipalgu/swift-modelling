@@ -1,0 +1,154 @@
+[comment encoding = UTF-8 /]
+[module NavigationTemplate('http://www.example.org/webapp')]
+
+[comment]
+  Model Navigation with AQL Expressions
+
+  This template demonstrates navigating through model
+  relationships using AQL's chained dot notation.
+
+  Navigation is essential for traversing from one object
+  to related objects through references and containment.
+[/comment]
+
+[template main(app : WebApp)]
+[file ('navigation-demo.txt', 'overwrite', 'UTF-8')]
+Model Navigation with AQL Expressions
+=====================================
+
+Application: [app.name/]
+
+[comment ================================================================ /]
+[comment             SINGLE-STEP NAVIGATION                               /]
+[comment ================================================================ /]
+
+1. Single-Step Navigation
+-------------------------
+[comment]
+  Navigate from container to contained elements.
+  app.pages navigates from WebApp to its Page collection.
+[/comment]
+
+Pages in application:
+[for (page : Page | app.pages)]
+- [page.name/] ([page.route/])
+[/for]
+
+Entities in application:
+[for (entity : Entity | app.entities)]
+- [entity.name/] (table: [entity.tableName/])
+[/for]
+
+[comment ================================================================ /]
+[comment             MULTI-STEP NAVIGATION                                /]
+[comment ================================================================ /]
+
+2. Multi-Step Navigation (Chaining)
+-----------------------------------
+[comment]
+  Chain navigation steps with dots to traverse
+  multiple relationships in a single expression.
+[/comment]
+
+Entity attributes:
+[for (entity : Entity | app.entities)]
+[entity.name/]:
+[for (attr : Attribute | entity.attributes)]
+  - [attr.name/]: [attr.dataType/]
+[/for]
+
+[/for]
+
+Page components:
+[for (page : Page | app.pages)]
+[page.name/]:
+[for (comp : Component | page.components)]
+  - [comp.name/] (css: [comp.cssClass/])
+[/for]
+
+[/for]
+
+[comment ================================================================ /]
+[comment             NAVIGATING CROSS-REFERENCES                          /]
+[comment ================================================================ /]
+
+3. Navigating Cross-References
+------------------------------
+[comment]
+  Non-containment references link to objects elsewhere.
+  Navigate them the same way as containment references.
+[/comment]
+
+Entity relationships:
+[for (entity : Entity | app.entities)]
+[entity.name/]:
+[for (rel : Relationship | entity.relationships)]
+  - [rel.name/] -> [rel.targetEntity.name/] ([rel.relationType/])
+[/for]
+
+[/for]
+
+Page links:
+[for (page : Page | app.pages)]
+[page.name/] links to:
+[for (linked : Page | page.linkedPages)]
+  - [linked.name/] ([linked.route/])
+[/for]
+
+[/for]
+
+[comment ================================================================ /]
+[comment             DEEP NAVIGATION CHAINS                               /]
+[comment ================================================================ /]
+
+4. Deep Navigation Chains
+-------------------------
+[comment]
+  Navigate through multiple levels of containment
+  and references to access deeply nested data.
+[/comment]
+
+Form field bindings:
+[for (page : Page | app.pages)]
+[for (comp : Component | page.components->select(c | c.oclIsTypeOf(Form)))]
+[let form = comp.oclAsType(Form)]
+[page.name/]/[form.name/]:
+[for (field : Field | form.fields)]
+[if (field.boundAttribute <> null)]
+  - [field.name/] -> [field.boundAttribute.name/] ([field.boundAttribute.dataType/])
+[else]
+  - [field.name/] (unbound)
+[/if]
+[/for]
+[/let]
+[/for]
+[/for]
+
+[comment ================================================================ /]
+[comment             NAVIGATION WITH TYPE CASTING                         /]
+[comment ================================================================ /]
+
+5. Navigation with Type Casting
+-------------------------------
+[comment]
+  When navigating to subtype-specific features,
+  use oclAsType() to cast to the specific type.
+[/comment]
+
+DataTable configurations:
+[for (page : Page | app.pages)]
+[for (comp : Component | page.components->select(c | c.oclIsTypeOf(DataTable)))]
+[let table = comp.oclAsType(DataTable)]
+[page.name/]/[table.name/]:
+  Data source: [if (table.dataSource <> null)][table.dataSource.name/][else]not set[/if]
+  Paginated: [table.isPaginated/] (page size: [table.pageSize/])
+  Columns:
+[for (col : Column | table.columns)]
+    - [col.header/] ([col.name/])
+[/for]
+[/let]
+[/for]
+[/for]
+
+[/file]
+[/template]

@@ -1,0 +1,194 @@
+[comment encoding = UTF-8 /]
+[module ComplexConditions('http://www.example.org/webapp')]
+
+[comment]
+  Complex Conditional Logic in MTL Templates
+
+  This template demonstrates combining multiple AQL
+  conditions using 'and', 'or', and 'not' operators.
+
+  Complex conditions enable sophisticated decision-making
+  based on multiple model properties.
+[/comment]
+
+[template main(app : WebApp)]
+[file ('complex-conditions.txt', 'overwrite', 'UTF-8')]
+Complex Conditional Logic with AQL
+==================================
+
+Application: [app.name/]
+
+[comment ================================================================ /]
+[comment             AND OPERATOR                                         /]
+[comment ================================================================ /]
+
+1. AND Operator - All Conditions Must Be True
+---------------------------------------------
+[comment]
+  Use 'and' to require multiple conditions.
+  All conditions must be true for the block to execute.
+[/comment]
+
+Required string attributes (not null AND string type AND not nullable):
+[for (entity : Entity | app.entities)]
+[entity.name/]:
+[for (attr : Attribute | entity.attributes)]
+[if (attr.dataType = DataType::string and not attr.isNullable and not attr.isPrimaryKey)]
+  - [attr.name/] (required string)
+[/if]
+[/for]
+
+[/for]
+
+[comment ================================================================ /]
+[comment             OR OPERATOR                                          /]
+[comment ================================================================ /]
+
+2. OR Operator - Any Condition Can Be True
+------------------------------------------
+[comment]
+  Use 'or' to allow alternative conditions.
+  At least one condition must be true.
+[/comment]
+
+Temporal attributes (date OR datetime):
+[for (entity : Entity | app.entities)]
+[entity.name/]:
+[for (attr : Attribute | entity.attributes)]
+[if (attr.dataType = DataType::date or attr.dataType = DataType::datetime)]
+  - [attr.name/]: [attr.dataType/]
+[/if]
+[/for]
+
+[/for]
+
+Authentication-related pages (login OR register route):
+[for (page : Page | app.pages)]
+[if (page.route = '/login' or page.route = '/register')]
+- [page.name/] ([page.route/]) - Authentication page
+[/if]
+[/for]
+
+[comment ================================================================ /]
+[comment             NOT OPERATOR                                         /]
+[comment ================================================================ /]
+
+3. NOT Operator - Negating Conditions
+-------------------------------------
+[comment]
+  Use 'not' to negate a condition.
+  The block executes when the condition is false.
+[/comment]
+
+Non-primary-key attributes:
+[for (entity : Entity | app.entities)]
+[entity.name/]:
+[for (attr : Attribute | entity.attributes)]
+[if (not attr.isPrimaryKey)]
+  - [attr.name/]
+[/if]
+[/for]
+
+[/for]
+
+[comment ================================================================ /]
+[comment             COMBINED OPERATORS                                   /]
+[comment ================================================================ /]
+
+4. Combined Operators
+---------------------
+[comment]
+  Combine and, or, not for sophisticated logic.
+  Use parentheses to control precedence.
+[/comment]
+
+Complex attribute filter (string type AND (nullable OR has default)):
+[for (entity : Entity | app.entities)]
+[entity.name/]:
+[for (attr : Attribute | entity.attributes)]
+[if (attr.dataType = DataType::string and (attr.isNullable or (attr.defaultValue <> null and attr.defaultValue.size() > 0)))]
+  - [attr.name/]: optional string
+[/if]
+[/for]
+
+[/for]
+
+Non-trivial pages (protected AND has components AND has links):
+[for (page : Page | app.pages)]
+[if (page.requiresAuth and page.components->notEmpty() and page.linkedPages->notEmpty())]
+- [page.name/] - full-featured protected page
+[/if]
+[/for]
+
+[comment ================================================================ /]
+[comment             NESTED CONDITIONALS                                  /]
+[comment ================================================================ /]
+
+5. Nested Conditionals
+----------------------
+[comment]
+  Nest if statements for multi-level decisions.
+  Inner conditions are evaluated only when outer is true.
+[/comment]
+
+Page security analysis:
+[for (page : Page | app.pages)]
+[page.name/]:
+[if (page.requiresAuth)]
+  Access: Protected
+  [if (page.components->exists(c | c.oclIsTypeOf(Form)))]
+    Type: Authenticated data entry
+    [if (page.components->select(c | c.oclIsTypeOf(Form))->size() > 1)]
+      Note: Multiple forms present
+    [/if]
+  [elseif (page.components->exists(c | c.oclIsTypeOf(DataTable)))]
+    Type: Authenticated data viewing
+  [else]
+    Type: Authenticated information
+  [/if]
+[else]
+  Access: Public
+  [if (page.route.contains('login') or page.route.contains('register'))]
+    Type: Authentication flow
+  [else]
+    Type: Public information
+  [/if]
+[/if]
+
+[/for]
+
+[comment ================================================================ /]
+[comment             CONDITIONAL WITH COMPUTATION                         /]
+[comment ================================================================ /]
+
+6. Conditional with Computation
+-------------------------------
+[comment]
+  Use computed values in conditions.
+  Let bindings help make complex conditions readable.
+[/comment]
+
+Entity analysis:
+[for (entity : Entity | app.entities)]
+[let attrCount = entity.attributes->size()]
+[let relCount = entity.relationships->size()]
+[let hasTimestamps = entity.attributes->exists(a | a.name.endsWith('At') or a.name.contains('Date'))]
+[entity.name/]:
+[if (attrCount > 5 and relCount > 1)]
+  Category: Core entity (many attributes and relationships)
+[elseif (attrCount > 3 or relCount > 0)]
+  Category: Standard entity
+[else]
+  Category: Simple entity
+[/if]
+[if (hasTimestamps)]
+  Features: Timestamped
+[/if]
+[/let]
+[/let]
+[/let]
+
+[/for]
+
+[/file]
+[/template]

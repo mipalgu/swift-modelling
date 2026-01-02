@@ -1,0 +1,26 @@
+digraph AQLFiltering {
+    bgcolor="white"
+    rankdir=LR
+    node [shape=box, style=rounded, fontname="Arial", fontsize=12]
+    edge [fontname="Arial", fontsize=10]
+    
+    input [label="Collection\n[a, b, c, d, e]" shape=box fillcolor="#e8f4f8" style=filled]
+    
+    select [label="->select(x | condition)" shape=note fillcolor="#f8f4e8" style=filled]
+    reject [label="->reject(x | condition)" shape=note fillcolor="#f8f4e8" style=filled]
+    
+    select_out [label="Matching\n[a, c]" shape=box fillcolor="#e8f8f5" style=filled]
+    reject_out [label="Non-matching\n[b, d, e]" shape=box fillcolor="#e8f8f5" style=filled]
+    
+    exists [label="->exists(x | cond)\n= true/false" shape=ellipse fillcolor="#f4e8f8" style=filled]
+    forall [label="->forAll(x | cond)\n= true/false" shape=ellipse fillcolor="#f4e8f8" style=filled]
+    
+    input -> select
+    input -> reject
+    select -> select_out
+    reject -> reject_out
+    input -> exists
+    input -> forall
+    
+    legendTitle [label="AQL Filtering Operations" shape=plaintext fontname="Arial Bold" fontsize=14]
+}

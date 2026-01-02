@@ -1,0 +1,130 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://api.acme.com.au/schemas/project-management/v1",
+  "title": "Project Management API Schema",
+  "description": "JSON Schema for web-based project management interface",
+
+  "definitions": {
+    "ProjectStatus": {
+      "type": "string",
+      "enum": ["PLANNING", "ACTIVE", "ON_HOLD", "COMPLETED", "CANCELLED"]
+    },
+
+    "TaskPriority": {
+      "type": "string",
+      "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    },
+
+    "TaskStatus": {
+      "type": "string",
+      "enum": ["NOT_STARTED", "IN_PROGRESS", "BLOCKED", "IN_REVIEW", "COMPLETED"]
+    },
+
+    "Department": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^DEPT-[A-Z0-9]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "code": { "type": "string", "pattern": "^[A-Z]{2,5}$" },
+        "managerId": { "type": "string" },
+        "memberIds": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["id", "name", "code"],
+      "additionalProperties": false
+    },
+
+    "TeamMember": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^MEMBER-[0-9]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string" },
+        "departmentId": { "type": "string" },
+        "avatarUrl": { "type": "string", "format": "uri" }
+      },
+      "required": ["id", "name", "email"],
+      "additionalProperties": false
+    },
+
+    "Comment": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^CMT-[0-9]+$" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "authorId": { "type": "string" }
+      },
+      "required": ["id", "text", "timestamp", "authorId"],
+      "additionalProperties": false
+    },
+
+    "Task": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^TASK-[0-9]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 4000 },
+        "priority": { "$ref": "#/definitions/TaskPriority" },
+        "status": { "$ref": "#/definitions/TaskStatus" },
+        "estimatedHours": { "type": "number", "minimum": 0 },
+        "actualHours": { "type": "number", "minimum": 0 },
+        "dueDate": { "type": "string", "format": "date" },
+        "assigneeId": { "type": "string" },
+        "dependencyIds": { "type": "array", "items": { "type": "string" } },
+        "comments": { "type": "array", "items": { "$ref": "#/definitions/Comment" } }
+      },
+      "required": ["id", "title", "priority", "status"],
+      "additionalProperties": false
+    },
+
+    "Milestone": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^MS-[0-9]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "dueDate": { "type": "string", "format": "date" },
+        "completed": { "type": "boolean", "default": false },
+        "deliverableIds": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["id", "name", "dueDate"],
+      "additionalProperties": false
+    },
+
+    "Project": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^PROJ-[0-9]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 4000 },
+        "status": { "$ref": "#/definitions/ProjectStatus" },
+        "startDate": { "type": "string", "format": "date" },
+        "targetEndDate": { "type": "string", "format": "date" },
+        "budget": { "type": "number", "minimum": 0 },
+        "ownerId": { "type": "string" },
+        "departmentId": { "type": "string" },
+        "teamMemberIds": { "type": "array", "items": { "type": "string" } },
+        "milestones": { "type": "array", "items": { "$ref": "#/definitions/Milestone" } },
+        "tasks": { "type": "array", "items": { "$ref": "#/definitions/Task" } }
+      },
+      "required": ["id", "name", "status"],
+      "additionalProperties": false
+    },
+
+    "Organisation": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "domain": { "type": "string", "format": "hostname" },
+        "departments": { "type": "array", "items": { "$ref": "#/definitions/Department" } },
+        "members": { "type": "array", "items": { "$ref": "#/definitions/TeamMember" } },
+        "projects": { "type": "array", "items": { "$ref": "#/definitions/Project" } }
+      },
+      "required": ["name"],
+      "additionalProperties": false
+    }
+  },
+
+  "type": "object",
+  "$ref": "#/definitions/Organisation"
+}

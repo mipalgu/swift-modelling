@@ -1,0 +1,46 @@
+digraph ocl_constraints {
+    rankdir=LR;
+    node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12];
+    edge [fontname="Helvetica", fontsize=10];
+
+    // Colours
+    node [fillcolor="#E8F4FD"];
+
+    subgraph cluster_model {
+        label="Model Layer";
+        style="rounded,filled";
+        fillcolor="#F5F5F5";
+        fontname="Helvetica Bold";
+
+        metamodel [label="Metamodel\n(EClass, EAttribute)", fillcolor="#4A90D9", fontcolor="white"];
+        instance [label="Model Instance\n(Objects)", fillcolor="#7CB342"];
+    }
+
+    subgraph cluster_constraints {
+        label="OCL Constraints";
+        style="rounded,filled";
+        fillcolor="#FFF8E1";
+        fontname="Helvetica Bold";
+
+        invariants [label="Invariants\n(inv:)", fillcolor="#FF9800", fontcolor="white"];
+        preconditions [label="Preconditions\n(pre:)", fillcolor="#FFA726"];
+        postconditions [label="Postconditions\n(post:)", fillcolor="#FFB74D"];
+    }
+
+    subgraph cluster_validation {
+        label="Validation";
+        style="rounded,filled";
+        fillcolor="#E8F5E9";
+        fontname="Helvetica Bold";
+
+        validator [label="Constraint\nValidator", fillcolor="#43A047", fontcolor="white"];
+        result [label="Validation\nResult", fillcolor="#66BB6A"];
+    }
+
+    metamodel -> invariants [label="defines"];
+    instance -> validator [label="validates"];
+    invariants -> validator;
+    preconditions -> validator;
+    postconditions -> validator;
+    validator -> result [label="produces"];
+}

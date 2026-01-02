@@ -1,0 +1,152 @@
+[comment encoding = UTF-8 /]
+[module QueryLibrary('http://www.example.org/webapp')]
+
+[comment]
+  Reusable AQL Query Templates
+
+  This module demonstrates creating a library of reusable
+  query templates that can be imported and invoked from
+  other templates.
+
+  Query libraries centralise complex AQL expressions,
+  promoting code reuse and maintainability.
+[/comment]
+
+[comment ================================================================ /]
+[comment             QUERY TEMPLATES (HELPERS)                            /]
+[comment ================================================================ /]
+
+[comment]
+  Query templates return computed values.
+  They encapsulate complex AQL expressions.
+[/comment]
+
+[template public getProtectedPages(app : WebApp)]
+[app.pages->select(p | p.requiresAuth)/]
+[/template]
+
+[template public getPublicPages(app : WebApp)]
+[app.pages->select(p | not p.requiresAuth)/]
+[/template]
+
+[template public getPrimaryKeyAttributes(entity : Entity)]
+[entity.attributes->select(a | a.isPrimaryKey)/]
+[/template]
+
+[template public getRequiredAttributes(entity : Entity)]
+[entity.attributes->reject(a | a.isPrimaryKey)->select(a | not a.isNullable)/]
+[/template]
+
+[template public getOptionalAttributes(entity : Entity)]
+[entity.attributes->select(a | a.isNullable)/]
+[/template]
+
+[template public getStringAttributes(entity : Entity)]
+[entity.attributes->select(a | a.dataType = DataType::string or a.dataType = DataType::text)/]
+[/template]
+
+[template public getNumericAttributes(entity : Entity)]
+[entity.attributes->select(a | a.dataType = DataType::integer or a.dataType = DataType::decimal)/]
+[/template]
+
+[template public getDateAttributes(entity : Entity)]
+[entity.attributes->select(a | a.dataType = DataType::date or a.dataType = DataType::datetime)/]
+[/template]
+
+[template public getFormsOnPage(page : Page)]
+[page.components->select(c | c.oclIsTypeOf(Form))->collect(c | c.oclAsType(Form))/]
+[/template]
+
+[template public getTablesOnPage(page : Page)]
+[page.components->select(c | c.oclIsTypeOf(DataTable))->collect(c | c.oclAsType(DataTable))/]
+[/template]
+
+[comment ================================================================ /]
+[comment             FORMATTED OUTPUT TEMPLATES                           /]
+[comment ================================================================ /]
+
+[comment]
+  Output templates generate formatted text.
+  They can be invoked from other templates.
+[/comment]
+
+[template public formatAttributeType(attr : Attribute)]
+[if (attr.dataType = DataType::string)]String[if (attr.maxLength > 0)]([attr.maxLength/])[/if][elseif (attr.dataType = DataType::integer)]Int[elseif (attr.dataType = DataType::decimal)]Decimal[elseif (attr.dataType = DataType::boolean)]Bool[elseif (attr.dataType = DataType::date)]Date[elseif (attr.dataType = DataType::datetime)]DateTime[elseif (attr.dataType = DataType::text)]Text[else][attr.dataType/][/if][/template]
+
+[template public formatFieldType(field : Field)]
+[if (field.fieldType = FieldType::text)]text[elseif (field.fieldType = FieldType::email)]email[elseif (field.fieldType = FieldType::password)]password[elseif (field.fieldType = FieldType::number)]number[elseif (field.fieldType = FieldType::date)]date[elseif (field.fieldType = FieldType::textarea)]textarea[elseif (field.fieldType = FieldType::select)]select[elseif (field.fieldType = FieldType::checkbox)]checkbox[elseif (field.fieldType = FieldType::hidden)]hidden[else][field.fieldType/][/if][/template]
+
+[template public formatRelationType(rel : Relationship)]
+[if (rel.relationType = RelationType::oneToOne)]1:1[elseif (rel.relationType = RelationType::oneToMany)]1:N[elseif (rel.relationType = RelationType::manyToOne)]N:1[elseif (rel.relationType = RelationType::manyToMany)]N:N[else][rel.relationType/][/if][/template]
+
+[comment ================================================================ /]
+[comment             MAIN TEMPLATE - USING THE LIBRARY                    /]
+[comment ================================================================ /]
+
+[template main(app : WebApp)]
+[file ('query-library-demo.txt', 'overwrite', 'UTF-8')]
+Query Library Demonstration
+===========================
+
+Application: [app.name/]
+
+Using Query Templates
+---------------------
+
+Protected pages (via query template):
+[for (page : Page | app.pages->select(p | p.requiresAuth))]
+- [page.name/]
+[/for]
+
+Public pages (via query template):
+[for (page : Page | app.pages->select(p | not p.requiresAuth))]
+- [page.name/]
+[/for]
+
+Entity attribute breakdown (using helper queries):
+[for (entity : Entity | app.entities)]
+[entity.name/]:
+  Primary keys: [entity.attributes->select(a | a.isPrimaryKey)->collect(a | a.name)->sep(', ')/]
+  Required: [entity.attributes->reject(a | a.isPrimaryKey)->select(a | not a.isNullable)->collect(a | a.name)->sep(', ')/]
+  Optional: [entity.attributes->select(a | a.isNullable)->collect(a | a.name)->sep(', ')/]
+
+[/for]
+
+Formatted attribute types:
+[for (entity : Entity | app.entities)]
+[entity.name/]:
+[for (attr : Attribute | entity.attributes)]
+  - [attr.name/]: [formatAttributeType(attr)/][if (attr.isPrimaryKey)] (PK)[/if][if (not attr.isNullable and not attr.isPrimaryKey)] (required)[/if]
+[/for]
+
+[/for]
+
+Formatted relationship types:
+[for (entity : Entity | app.entities)]
+[if (entity.relationships->notEmpty())]
+[entity.name/]:
+[for (rel : Relationship | entity.relationships)]
+  - [rel.name/] [formatRelationType(rel)/] [rel.targetEntity.name/]
+[/for]
+
+[/if]
+[/for]
+
+Forms and their fields (using helper queries):
+[for (page : Page | app.pages)]
+[let pageForms = page.components->select(c | c.oclIsTypeOf(Form))->collect(c | c.oclAsType(Form))]
+[if (pageForms->notEmpty())]
+[page.name/]:
+[for (form : Form | pageForms)]
+  [form.name/]:
+[for (field : Field | form.fields)]
+    - [field.name/]: [formatFieldType(field)/][if (field.isRequired)] (required)[/if]
+[/for]
+[/for]
+
+[/if]
+[/let]
+[/for]
+
+[/file]
+[/template]

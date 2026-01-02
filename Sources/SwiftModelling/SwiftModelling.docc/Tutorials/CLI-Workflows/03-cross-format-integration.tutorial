@@ -20,7 +20,7 @@
             @Step {
                 Set up the integration scenario.
 
-                @Code(name: "integration-overview.md", file: workflow-03-step-01-scenario.md)
+                @Code(name: "integration-overview.md", file: workflow-03-step-01-scenario.txt)
 
                 This scenario involves integrating a Java EMF-based design tool, a web-based model editor that uses JSON, and a Swift application that needs native data structures.
             }
@@ -36,7 +36,7 @@
             @Step {
                 Identify format-specific constraints.
 
-                @Code(name: "format-constraints.md", file: workflow-03-step-03-constraints.md)
+                @Code(name: "format-constraints.md", file: workflow-03-step-03-constraints.txt)
 
                 Document the specific limitations and features of each format to understand integration challenges and design appropriate bridging strategies.
             }
@@ -44,7 +44,7 @@
             @Step {
                 Plan the integration architecture.
 
-                @Code(name: "integration-architecture.md", file: workflow-03-step-04-architecture.md)
+                @Code(name: "integration-architecture.md", file: workflow-03-step-04-architecture.txt)
 
                 Design the overall architecture that connects different format sources while maintaining data integrity and enabling bidirectional synchronisation.
             }
@@ -146,7 +146,7 @@
             @Step {
                 Design change detection mechanisms.
 
-                @Code(name: "change-detection.md", file: workflow-03-step-13-change-detection.md)
+                @Code(name: "change-detection.md", file: workflow-03-step-13-change-detection.txt)
 
                 Document strategies for detecting changes in different formats and identifying conflicts that require resolution during synchronisation.
             }

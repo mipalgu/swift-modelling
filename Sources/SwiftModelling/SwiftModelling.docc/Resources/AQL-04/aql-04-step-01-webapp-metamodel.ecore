@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
+    name="WebApp" nsURI="http://www.example.org/webapp" nsPrefix="webapp">
+
+  <!-- WebApp: Root container for the web application -->
+  <eClassifiers xsi:type="ecore:EClass" name="WebApp">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="baseUrl"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="version"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="pages" upperBound="-1"
+        eType="#//Page" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="entities" upperBound="-1"
+        eType="#//Entity" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="stylesheets" upperBound="-1"
+        eType="#//Stylesheet" containment="true"/>
+  </eClassifiers>
+
+  <!-- Page: Represents a web page with a route -->
+  <eClassifiers xsi:type="ecore:EClass" name="Page">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="route" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="title"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="requiresAuth"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean" defaultValueLiteral="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="components" upperBound="-1"
+        eType="#//Component" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="linkedPages" upperBound="-1"
+        eType="#//Page"/>
+  </eClassifiers>
+
+  <!-- Component: Abstract base for UI components -->
+  <eClassifiers xsi:type="ecore:EClass" name="Component" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="cssClass"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isVisible"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean" defaultValueLiteral="true"/>
+  </eClassifiers>
+
+  <!-- Form: Input form with fields and validation -->
+  <eClassifiers xsi:type="ecore:EClass" name="Form" eSuperTypes="#//Component">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="action"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="method"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" defaultValueLiteral="POST"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="fields" upperBound="-1"
+        eType="#//Field" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="boundEntity"
+        eType="#//Entity"/>
+  </eClassifiers>
+
+  <!-- Field: Form input field -->
+  <eClassifiers xsi:type="ecore:EClass" name="Field">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="label"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="fieldType" lowerBound="1"
+        eType="#//FieldType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isRequired"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean" defaultValueLiteral="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="placeholder"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="validationPattern"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="boundAttribute"
+        eType="#//Attribute"/>
+  </eClassifiers>
+
+  <!-- FieldType: Enumeration of input types -->
+  <eClassifiers xsi:type="ecore:EEnum" name="FieldType">
+    <eLiterals name="text" value="0"/>
+    <eLiterals name="email" value="1"/>
+    <eLiterals name="password" value="2"/>
+    <eLiterals name="number" value="3"/>
+    <eLiterals name="date" value="4"/>
+    <eLiterals name="textarea" value="5"/>
+    <eLiterals name="select" value="6"/>
+    <eLiterals name="checkbox" value="7"/>
+    <eLiterals name="hidden" value="8"/>
+  </eClassifiers>
+
+  <!-- DataTable: Displays tabular data -->
+  <eClassifiers xsi:type="ecore:EClass" name="DataTable" eSuperTypes="#//Component">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isPaginated"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean" defaultValueLiteral="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="pageSize"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt" defaultValueLiteral="10"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="columns" upperBound="-1"
+        eType="#//Column" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dataSource"
+        eType="#//Entity"/>
+  </eClassifiers>
+
+  <!-- Column: Table column definition -->
+  <eClassifiers xsi:type="ecore:EClass" name="Column">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="header"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isSortable"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean" defaultValueLiteral="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="width"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="boundAttribute"
+        eType="#//Attribute"/>
+  </eClassifiers>
+
+  <!-- Navigation: Menu or navigation component -->
+  <eClassifiers xsi:type="ecore:EClass" name="Navigation" eSuperTypes="#//Component">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="navType"
+        eType="#//NavType" defaultValueLiteral="horizontal"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="items" upperBound="-1"
+        eType="#//NavItem" containment="true"/>
+  </eClassifiers>
+
+  <!-- NavType: Navigation layout type -->
+  <eClassifiers xsi:type="ecore:EEnum" name="NavType">
+    <eLiterals name="horizontal" value="0"/>
+    <eLiterals name="vertical" value="1"/>
+    <eLiterals name="dropdown" value="2"/>
+  </eClassifiers>
+
+  <!-- NavItem: Navigation menu item -->
+  <eClassifiers xsi:type="ecore:EClass" name="NavItem">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="label" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="icon"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isActive"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean" defaultValueLiteral="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="targetPage"
+        eType="#//Page"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="subItems" upperBound="-1"
+        eType="#//NavItem" containment="true"/>
+  </eClassifiers>
+
+  <!-- Entity: Data model entity -->
+  <eClassifiers xsi:type="ecore:EClass" name="Entity">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="tableName"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="attributes" upperBound="-1"
+        eType="#//Attribute" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="relationships" upperBound="-1"
+        eType="#//Relationship" containment="true"/>
+  </eClassifiers>
+
+  <!-- Attribute: Entity property -->
+  <eClassifiers xsi:type="ecore:EClass" name="Attribute">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="dataType" lowerBound="1"
+        eType="#//DataType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isPrimaryKey"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean" defaultValueLiteral="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isNullable"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean" defaultValueLiteral="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="defaultValue"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="maxLength"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+  </eClassifiers>
+
+  <!-- DataType: Attribute data types -->
+  <eClassifiers xsi:type="ecore:EEnum" name="DataType">
+    <eLiterals name="string" value="0"/>
+    <eLiterals name="integer" value="1"/>
+    <eLiterals name="decimal" value="2"/>
+    <eLiterals name="boolean" value="3"/>
+    <eLiterals name="date" value="4"/>
+    <eLiterals name="datetime" value="5"/>
+    <eLiterals name="text" value="6"/>
+  </eClassifiers>
+
+  <!-- Relationship: Entity relationship -->
+  <eClassifiers xsi:type="ecore:EClass" name="Relationship">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="relationType" lowerBound="1"
+        eType="#//RelationType"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="targetEntity" lowerBound="1"
+        eType="#//Entity"/>
+  </eClassifiers>
+
+  <!-- RelationType: Relationship cardinality -->
+  <eClassifiers xsi:type="ecore:EEnum" name="RelationType">
+    <eLiterals name="oneToOne" value="0"/>
+    <eLiterals name="oneToMany" value="1"/>
+    <eLiterals name="manyToOne" value="2"/>
+    <eLiterals name="manyToMany" value="3"/>
+  </eClassifiers>
+
+  <!-- Stylesheet: CSS stylesheet reference -->
+  <eClassifiers xsi:type="ecore:EClass" name="Stylesheet">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="path"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isExternal"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean" defaultValueLiteral="false"/>
+  </eClassifiers>
+
+</ecore:EPackage>

@@ -19,6 +19,7 @@
         @TutorialReference(tutorial: "doc:04-advanced-features")
         @TutorialReference(tutorial: "doc:05-xmi-json-conversion")
         @TutorialReference(tutorial: "doc:06-querying-models")
+        @TutorialReference(tutorial: "doc:07-cross-resource-refs")
     }
 
     @Chapter(name: "ATL Transformations") {
@@ -63,6 +64,14 @@
         @TutorialReference(tutorial: "doc:AQL-05-complex-queries")
     }
 
+    @Chapter(name: "OCL Constraints") {
+        Define and validate model constraints with the Object Constraint Language.
+
+        @Image(source: "ocl-constraints.svg", alt: "OCL Model Constraints")
+
+        @TutorialReference(tutorial: "doc:OCL-01-constraints")
+    }
+
     @Chapter(name: "Integrated Workflows") {
         Complete end-to-end model-driven engineering workflows.
 
@@ -71,5 +80,14 @@
         @TutorialReference(tutorial: "doc:01-complete-mde-workflow")
         @TutorialReference(tutorial: "doc:02-model-refactoring-pipeline")
         @TutorialReference(tutorial: "doc:03-cross-format-integration")
+    }
+
+    @Chapter(name: "Advanced Tutorials") {
+        Deep-dive tutorials covering advanced model transformation techniques.
+
+        @Image(source: "advanced-tutorials.svg", alt: "Advanced MDE Tutorials")
+
+        @TutorialReference(tutorial: "doc:ATL-Advanced-01-class2relational")
+        @TutorialReference(tutorial: "doc:MTL-Advanced-01-uml2swift")
     }
 }

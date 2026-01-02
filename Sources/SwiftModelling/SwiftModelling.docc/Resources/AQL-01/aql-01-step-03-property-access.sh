@@ -1,24 +1,26 @@
-#!/bin/bash
-# AQL-01 Step 3: Basic Property Access
+# Property Access - Reading simple attribute values
+# Access properties using dot notation
 
-echo "=== AQL Basics: Property Access ==="
-echo ""
-echo "Access a simple property using dot notation:"
-echo ""
-echo "Example 1: Employee name"
-echo "  AQL Expression: employee.name"
-echo "  Returns: The name of the employee (String)"
-echo ""
-echo "Example 2: Employee age"
-echo "  AQL Expression: employee.age"
-echo "  Returns: The age of the employee (Integer)"
-echo ""
-echo "Example 3: Company name"
-echo "  AQL Expression: company.name"
-echo "  Returns: 'TechCorp'"
-echo ""
-echo "Example 4: Employee department"
-echo "  AQL Expression: employee.department"
-echo "  Returns: The department name (e.g., 'Engineering', 'Sales')"
-echo ""
-echo "Key Point: The dot (.) operator navigates from an object to its properties"
+# Get the company name
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.name"
+
+# Output: "Acme Corp"
+
+# Get the founding year
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.founded"
+
+# Output: 1995
+
+# Get a department's budget
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments->first().budget"
+
+# Output: 500000.0
+
+# Get an employee's salary
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments->first().employees->first().salary"
+
+# Output: 120000.0

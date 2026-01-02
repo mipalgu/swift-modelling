@@ -1,117 +1,239 @@
 #!/bin/bash
-echo "=== AQL Complex Patterns: Performance Best Practices ==="
-echo ""
-echo "Patterns for high-performance model queries."
-echo ""
-echo "Pattern 1: Index Simulation with Let Bindings"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  -- Create 'indexes' for frequently accessed lookups"
-echo "  let booksByAuthor = library.authors->collect(a | Tuple{"
-echo "    author = a,"
-echo "    books = a.books"
-echo "  }) in"
-echo "  let booksByCategory = library.categories->collect(c | Tuple{"
-echo "    category = c,"
-echo "    books = c.books"
-echo "  }) in"
-echo "  -- Now queries use pre-computed collections"
-echo "  booksByAuthor->select(t | t.author.name = 'Orwell')->first().books"
-echo ""
-echo "Pattern 2: Lazy Evaluation with Conditional Logic"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  -- Only compute expensive operations when needed"
-echo "  library.books->collect(b | Tuple{"
-echo "    title = b.title,"
-echo "    rating = b.rating,"
-echo "    stats = if b.rating >= 4.5 then"
-echo "              Tuple{"
-echo "                authors = b.authors->collect(a | a.name),"
-echo "                similar = b.similarTo->size(),"
-echo "                reviews = b.reviews->size()"
-echo "              }"
-echo "            else"
-echo "              null  -- Skip computation for low-rated books"
-echo "            endif"
-echo "  })"
-echo ""
-echo "Pattern 3: Batch Processing with Chunking"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  -- Process large collections in chunks"
-echo "  let allBooks = library.books->sortedBy(b | b.title) in"
-echo "  let chunk1 = allBooks->subSequence(0, 100) in"
-echo "  let chunk2 = allBooks->subSequence(100, 100) in"
-echo "  let chunk3 = allBooks->subSequence(200, 100) in"
-echo "  Sequence{chunk1, chunk2, chunk3}"
-echo "    ->collect(chunk | Tuple{"
-echo "      avgRating = chunk->collect(b | b.rating)->sum() / chunk->size(),"
-echo "      count = chunk->size()"
-echo "    })"
-echo ""
-echo "Pattern 4: Memoization with Result Caching"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  -- Cache expensive computations"
-echo "  let expensiveAuthors = library.authors"
-echo "    ->select(a | a.books->size() > 10)  -- Filter first"
-echo "    in"
-echo "  let authorStats = expensiveAuthors->collect(a | Tuple{"
-echo "    author = a.name,"
-echo "    totalPages = a.books->collect(b | b.pages)->sum(),"
-echo "    avgRating = a.books->collect(b | b.rating)->sum() / a.books->size()"
-echo "  }) in"
-echo "  -- Reuse authorStats for multiple queries"
-echo "  Tuple{"
-echo "    topByPages = authorStats->sortedBy(t | t.totalPages)->reverse()->first(),"
-echo "    topByRating = authorStats->sortedBy(t | t.avgRating)->reverse()->first()"
-echo "  }"
-echo ""
-echo "Pattern 5: Short-Circuit Evaluation"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  -- Use exists() to stop early"
-echo "  library.books->exists(b | b.rating >= 4.8 and b.available)"
-echo "  -- Stops at first match (vs. ->select()->size() > 0)"
-echo ""
-echo "  -- Combine with forAll() for validation"
-echo "  library.books->forAll(b | b.pages > 0)  -- Stops at first violation"
-echo ""
-echo "Pattern 6: Set Operations for Deduplication"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  -- Remove duplicates early in pipeline"
-echo "  library.categories"
-echo "    ->collect(c | c.books)->flatten()"
-echo "    ->asSet()  -- Deduplicate immediately"
-echo "    ->collect(b | b.authors)->flatten()"
-echo "    ->asSet()  -- Deduplicate again"
-echo "  -- vs. deduplicating at the end (processes more elements)"
-echo ""
-echo "Pattern 7: Projection to Reduce Data Size"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  -- Extract only needed fields early"
-echo "  let bookTitles = library.books->collect(b | b.title) in"
-echo "  -- Work with strings instead of full objects"
-echo "  bookTitles->select(t | t.startsWith('The'))->sortedBy(t | t)"
-echo ""
-echo "Pattern 8: Avoid Cartesian Products"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  ❌ library.authors->collect(a |"
-echo "      library.books->collect(b | Tuple{author=a, book=b})"
-echo "    )->flatten()"
-echo "  -- Creates N*M tuples"
-echo ""
-echo "  ✅ library.authors->collect(a | Tuple{"
-echo "      author = a.name,"
-echo "      books = a.books->collect(b | b.title)"
-echo "    })"
-echo "  -- Creates only N tuples with nested data"
-echo ""
-echo "Performance Checklist:"
-echo "  ✓ Use let bindings to avoid recomputation"
-echo "  ✓ Filter collections early in the pipeline"
-echo "  ✓ Prefer exists()/forAll() over select()->size()"
-echo "  ✓ Use asSet() to deduplicate early"
-echo "  ✓ Project to minimal data (collect only needed fields)"
-echo "  ✓ Avoid unnecessary Cartesian products"
-echo "  ✓ Cache intermediate results for reuse"
-echo "  ✓ Use direct operations (min/max) instead of sort"
-echo ""
-echo "✅ Performance patterns enable queries on large models"
-echo "✅ Critical for production Model-Driven Engineering systems"
+# Performance best practices
+# Efficient patterns for fast query execution
+
+# Example 1: Use exists for early termination
+# Stop searching as soon as first match is found
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "organisation.departments
+    ->exists(d | d.budget > 2000000)"
+
+# Output: true (stops at first department meeting criteria)
+
+# Example 2: Use forAll with short-circuit evaluation
+# Terminate on first failure
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "organisation.projects
+    ->forAll(p | p.teamMembers->size() > 0)"
+
+# Output: true (validates all projects have teams, stops on first empty team)
+
+# Example 3: Avoid N+1 query pattern
+# BAD: Iterating and looking up for each item
+# GOOD: Collect all needed data first, then process
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "let projectTeamData = organisation.projects
+        ->collect(p | Tuple{
+            project = p.name,
+            members = p.teamMembers->collect(tm | tm.name)
+        })
+    in projectTeamData"
+
+# Output: [{project: "Cloud Migration", members: [...]}, ...]
+
+# Example 4: Use asSet for deduplication early
+# Remove duplicates before further processing
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "let uniqueRoles = organisation.departments.employees
+        ->flatten()
+        ->collect(e | e.role)
+        ->asSet()
+    in uniqueRoles->size()"
+
+# Output: 8 (unique roles across organisation)
+
+# Example 5: Batch data collection
+# Collect related data in one query instead of multiple
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "let deptStats = organisation.departments
+        ->collect(d | Tuple{
+            name = d.name,
+            code = d.code,
+            employeeCount = d.employees->size(),
+            totalSalary = d.employees->collect(e | e.salary)->sum(),
+            subDeptCount = d.subDepartments->size()
+        })
+    in deptStats"
+
+# Output: [{name: "Engineering", code: "ENG", employeeCount: 4, ...}, ...]
+
+# Example 6: Use let for result caching
+# Cache intermediate results to avoid recomputation
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "let allEmployees = organisation.departments.employees->flatten()
+    in let salaries = allEmployees->collect(e | e.salary)
+    in let avg = salaries->sum() / salaries->size()
+    in Tuple{
+        belowAverage = allEmployees->select(e | e.salary < avg)->size(),
+        atOrAbove = allEmployees->select(e | e.salary >= avg)->size()
+    }"
+
+# Output: {belowAverage: 12, atOrAbove: 8}
+
+# Example 7: Minimise collection transformations
+# Chain operations efficiently
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "organisation.departments.employees
+    ->flatten()
+    ->select(e | e.yearsOfService >= 10)
+    ->select(e | e.salary >= 120000)
+    ->collect(e | e.name)
+    ->sortedBy(n | n)"
+
+# Output: ["David Lee", "Jessica Moore", "Olivia Martinez", "Sarah Mitchell", "William Anderson"]
+
+# Example 8: Prefer isEmpty over size comparison
+# Use isEmpty() instead of size() = 0 for better performance
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "organisation.departments
+    ->select(d | d.employees->isEmpty())
+    ->collect(d | d.name)"
+
+# Output: [] (all departments have employees)
+
+# Example 9: Use includes for membership tests
+# More efficient than select with size check
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "let seniorStaff = organisation.departments.employees
+        ->flatten()
+        ->select(e | e.yearsOfService >= 10)
+    in organisation.projects
+        ->select(p | p.teamMembers->exists(tm | seniorStaff->includes(tm)))
+        ->size()"
+
+# Output: 4 (projects with senior team members)
+
+# Example 10: Flatten collections early
+# Avoid nested iteration where possible
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "let allMilestones = organisation.projects
+        ->collect(p | p.milestones)
+        ->flatten()
+    in allMilestones->select(m | m.completed)->size()"
+
+# Output: 7 (completed milestones across all projects)
+
+# Example 11: Use closure efficiently
+# Limit closure depth with filtering
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "let manager = organisation.departments.employees
+        ->flatten()
+        ->select(e | e.role = 'Director')
+        ->first()
+    in manager
+        ->closure(e | e.directReports->select(r | r.yearsOfService >= 3))
+        ->size()"
+
+# Output: 8 (experienced staff in reporting chain)
+
+# Example 12: Aggregate in single pass
+# Calculate multiple statistics in one traversal
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "let employees = organisation.departments.employees->flatten()
+    in let salaries = employees->collect(e | e.salary)
+    in Tuple{
+        count = employees->size(),
+        total = salaries->sum(),
+        average = salaries->sum() / salaries->size(),
+        minimum = salaries->min(),
+        maximum = salaries->max()
+    }"
+
+# Output: {count: 20, total: 2571428.6, average: 128571.43, minimum: 85000, maximum: 180000}
+
+# Example 13: Avoid redundant sorting
+# Sort only when necessary and only once
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "let topProjects = organisation.projects
+        ->sortedBy(p | p.budget)
+        ->reverse()
+        ->select(p | p.status = 'Active')
+        ->subSequence(1, 3)
+    in topProjects->collect(p | Tuple{name = p.name, budget = p.budget})"
+
+# Output: [{name: "Cloud Migration", budget: 500000}, ...]
+
+# Example 14: Use selectByKind for type filtering
+# More efficient than oclIsKindOf with select
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "organisation.eAllContents()
+    ->select(e | e.oclIsKindOf(Employee))
+    ->collect(e | e.oclAsType(Employee))
+    ->select(emp | emp.salary > 150000)
+    ->size()"
+
+# Output: 5 (high-earning employees)
+
+# Example 15: Batch reference navigation
+# Navigate references in batch rather than one-by-one
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "let projectData = organisation.projects
+        ->collect(p | Tuple{
+            name = p.name,
+            leadDept = p.leadDepartment.name,
+            dependencyCount = p.dependencies->size()
+        })
+    in projectData"
+
+# Output: [{name: "Cloud Migration", leadDept: "Engineering", dependencyCount: 0}, ...]
+
+# Example 16: Minimise type casting
+# Cast once and reuse
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "let departments = organisation.eAllContents()
+        ->select(e | e.oclIsKindOf(Department))
+        ->collect(d | d.oclAsType(Department))
+    in departments
+        ->collect(d | Tuple{
+            name = d.name,
+            budget = d.budget,
+            employeeCount = d.employees->size()
+        })
+        ->sortedBy(t | t.budget)
+        ->reverse()"
+
+# Output: [{name: "Engineering", budget: 2500000, employeeCount: 4}, ...]
+
+# Example 17: Use first() instead of at(1)
+# More semantic and potentially optimised
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "organisation.departments
+    ->select(d | d.code = 'ENG')
+    ->first()
+    .name"
+
+# Output: "Engineering"
+
+# Example 18: Prefer any over exists with complex predicates
+# Use simpler predicates with exists
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "organisation.projects
+    ->exists(p | p.priority >= 9 and p.status = 'Active')"
+
+# Output: true
+
+# Example 19: Limit collection size early
+# Filter before collect to reduce memory usage
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "organisation.departments.employees
+    ->flatten()
+    ->select(e | e.salary >= 130000)
+    ->collect(e | Tuple{
+        name = e.name,
+        salary = e.salary,
+        role = e.role
+    })
+    ->sortedBy(t | t.salary)
+    ->reverse()"
+
+# Output: [{name: "Sarah Mitchell", salary: 180000, role: "Director"}, ...]
+
+# Example 20: Combine filters for better optimisation
+# Single complex predicate better than multiple selects (when possible)
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "organisation.departments.employees
+    ->flatten()
+    ->select(e | e.yearsOfService >= 10 and e.salary >= 120000 and e.skills->includes('Leadership'))
+    ->collect(e | e.name)"
+
+# Output: ["Sarah Mitchell", "David Lee", "Jessica Moore"]

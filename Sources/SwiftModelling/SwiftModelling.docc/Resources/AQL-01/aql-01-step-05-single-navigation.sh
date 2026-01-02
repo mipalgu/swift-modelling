@@ -1,24 +1,26 @@
-#!/bin/bash
-# AQL-01 Step 5: Single-valued Navigation
+# Single Navigation - Traversing single-valued references
+# Navigate from one object to a related object
 
-echo "=== AQL Basics: Single-valued Navigation ==="
-echo ""
-echo "Navigate through single-valued references using dot notation:"
-echo ""
-echo "Example: If Employee had a 'manager' reference to another Employee"
-echo "  AQL Expression: employee.manager.name"
-echo "  Navigation: employee → manager → name"
-echo "  Returns: The name of the employee's manager"
-echo ""
-echo "Example: If Employee had a 'company' reference"
-echo "  AQL Expression: employee.company.name"
-echo "  Navigation: employee → company → name"
-echo "  Returns: The name of the company"
-echo ""
-echo "Key Points:"
-echo "  - Each dot (.) navigates to the next object or property"
-echo "  - Navigation works for both containment and non-containment references"
-echo "  - You can chain multiple navigation steps together"
-echo ""
-echo "Note: In our current Company metamodel, employees are contained within"
-echo "      the company, so you would navigate: company.employees to get all employees"
+# Navigate to manager (single reference)
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments->first().manager.name"
+
+# Output: "Alice Smith"
+
+# Navigate to supervisor
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments->first().employees->at(2).supervisor.name"
+
+# Output: "Bob Chen"
+
+# Navigate through multiple single references
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments->first().employees->at(3).supervisor.supervisor.name"
+
+# Output: "Alice Smith"
+
+# Check if reference is null
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments->first().manager.supervisor.oclIsUndefined()"
+
+# Output: true (the director has no supervisor)

@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Improved Customer Management Metamodel (Version 2.0) -->
+<!-- Refactored to address design issues from legacy version -->
+<!-- Uses Australian English spelling conventions throughout -->
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="CustomerManagement"
+    nsURI="http://www.example.org/customer/2.0" nsPrefix="customer">
+
+  <!-- Proper enumeration for organisation type -->
+  <eClassifiers xsi:type="ecore:EEnum" name="OrganisationType">
+    <eLiterals name="PRIVATE_COMPANY" value="0"/>
+    <eLiterals name="PUBLIC_COMPANY" value="1"/>
+    <eLiterals name="GOVERNMENT" value="2"/>
+    <eLiterals name="NON_PROFIT" value="3"/>
+    <eLiterals name="PARTNERSHIP" value="4"/>
+    <eLiterals name="SOLE_TRADER" value="5"/>
+  </eClassifiers>
+
+  <!-- Customer status enumeration -->
+  <eClassifiers xsi:type="ecore:EEnum" name="CustomerStatus">
+    <eLiterals name="PROSPECT" value="0"/>
+    <eLiterals name="ACTIVE" value="1"/>
+    <eLiterals name="INACTIVE" value="2"/>
+    <eLiterals name="SUSPENDED" value="3"/>
+    <eLiterals name="CLOSED" value="4"/>
+  </eClassifiers>
+
+  <!-- Contact type enumeration -->
+  <eClassifiers xsi:type="ecore:EEnum" name="ContactType">
+    <eLiterals name="PRIMARY" value="0"/>
+    <eLiterals name="BILLING" value="1"/>
+    <eLiterals name="TECHNICAL" value="2"/>
+    <eLiterals name="EMERGENCY" value="3"/>
+  </eClassifiers>
+
+  <!-- Address type enumeration -->
+  <eClassifiers xsi:type="ecore:EEnum" name="AddressType">
+    <eLiterals name="REGISTERED" value="0"/>
+    <eLiterals name="TRADING" value="1"/>
+    <eLiterals name="POSTAL" value="2"/>
+    <eLiterals name="DELIVERY" value="3"/>
+  </eClassifiers>
+
+  <!-- Abstract base class for named entities -->
+  <eClassifiers xsi:type="ecore:EClass" name="NamedElement" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+
+  <!-- Abstract base class for identifiable entities -->
+  <eClassifiers xsi:type="ecore:EClass" name="IdentifiableElement" abstract="true" eSuperTypes="#//NamedElement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="identifier" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="Unique identifier for this entity"/>
+      </eAnnotations>
+    </eStructuralFeatures>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="createdAt"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDate"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="modifiedAt"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDate"/>
+  </eClassifiers>
+
+  <!-- Structured address class -->
+  <eClassifiers xsi:type="ecore:EClass" name="Address">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="addressType" lowerBound="1"
+        eType="#//AddressType" defaultValueLiteral="TRADING"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="streetAddress" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="suburb" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="state" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="postcode" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="country" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"
+        defaultValueLiteral="Australia"/>
+  </eClassifiers>
+
+  <!-- Contact person class -->
+  <eClassifiers xsi:type="ecore:EClass" name="Contact" eSuperTypes="#//NamedElement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="contactType" lowerBound="1"
+        eType="#//ContactType" defaultValueLiteral="PRIMARY"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="email" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="phone"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="mobile"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="position"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="organisation"
+        eType="#//Organisation" eOpposite="#//Organisation/contacts"/>
+  </eClassifiers>
+
+  <!-- Organisation class (proper Australian English spelling) -->
+  <eClassifiers xsi:type="ecore:EClass" name="Organisation" eSuperTypes="#//IdentifiableElement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="organisationType" lowerBound="1"
+        eType="#//OrganisationType" defaultValueLiteral="PRIVATE_COMPANY"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="tradingName"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="australianBusinessNumber"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="ABN - Australian Business Number"/>
+      </eAnnotations>
+    </eStructuralFeatures>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="australianCompanyNumber"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="ACN - Australian Company Number"/>
+      </eAnnotations>
+    </eStructuralFeatures>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="addresses" upperBound="-1"
+        eType="#//Address" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="contacts" upperBound="-1"
+        eType="#//Contact" containment="true" eOpposite="#//Contact/organisation"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="customers" upperBound="-1"
+        eType="#//Customer" eOpposite="#//Customer/organisation"/>
+  </eClassifiers>
+
+  <!-- Customer class with proper references -->
+  <eClassifiers xsi:type="ecore:EClass" name="Customer" eSuperTypes="#//IdentifiableElement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="status" lowerBound="1"
+        eType="#//CustomerStatus" defaultValueLiteral="PROSPECT"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="creditLimit"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigDecimal"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="paymentTermsDays"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"
+        defaultValueLiteral="30"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="organisation" lowerBound="1"
+        eType="#//Organisation" eOpposite="#//Organisation/customers"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="primaryContact"
+        eType="#//Contact"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="billingAddress"
+        eType="#//Address"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="deliveryAddress"
+        eType="#//Address"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="category"
+        eType="#//CustomerCategory" eOpposite="#//CustomerCategory/customers"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="notes" upperBound="-1"
+        eType="#//CustomerNote" containment="true" eOpposite="#//CustomerNote/customer"/>
+  </eClassifiers>
+
+  <!-- Customer category for classification -->
+  <eClassifiers xsi:type="ecore:EClass" name="CustomerCategory" eSuperTypes="#//NamedElement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="code" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="discountPercentage"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigDecimal"
+        defaultValueLiteral="0"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="parent"
+        eType="#//CustomerCategory"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="customers" upperBound="-1"
+        eType="#//Customer" eOpposite="#//Customer/category"/>
+  </eClassifiers>
+
+  <!-- Customer notes for tracking interactions -->
+  <eClassifiers xsi:type="ecore:EClass" name="CustomerNote">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="content" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="createdAt" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDate"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="createdBy"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="customer" lowerBound="1"
+        eType="#//Customer" eOpposite="#//Customer/notes"/>
+  </eClassifiers>
+
+  <!-- Root container with organised structure -->
+  <eClassifiers xsi:type="ecore:EClass" name="CustomerManagementSystem" eSuperTypes="#//NamedElement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="organisations" upperBound="-1"
+        eType="#//Organisation" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="customers" upperBound="-1"
+        eType="#//Customer" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="categories" upperBound="-1"
+        eType="#//CustomerCategory" containment="true"/>
+  </eClassifiers>
+</ecore:EPackage>

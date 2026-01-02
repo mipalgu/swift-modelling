@@ -1,0 +1,176 @@
+# Model Refactoring Plan
+
+## Executive Summary
+
+This document outlines the systematic refactoring of the LegacyOrders metamodel (v1.0) to create an improved Orders metamodel (v2.0). The refactoring addresses structural issues, naming inconsistencies, and design problems that have accumulated over time.
+
+## Scope and Objectives
+
+### Primary Goals
+
+1. **Eliminate God Classes**: Break down the monolithic `Order` class into focused, cohesive entities
+2. **Standardise Naming Conventions**: Apply consistent Australian English naming throughout
+3. **Introduce Proper Abstractions**: Add base classes and interfaces where appropriate
+4. **Normalise Data Structures**: Remove denormalised data and redundant attributes
+5. **Strengthen Type Safety**: Replace string-based enumerations with proper EEnum types
+
+### Success Criteria
+
+- All validation tests pass on the improved metamodel
+- 100% of legacy instances successfully migrate
+- No data loss during migration
+- Improved metamodel scores higher on quality metrics
+- Backwards compatibility maintained for transition period
+
+## Identified Issues
+
+### Issue 1: God Class (Order)
+
+**Problem**: The `Order` class contains 14 attributes spanning multiple concerns:
+- Customer information (name, email, phone)
+- Address details (shipping, billing as strings)
+- Payment information (method, card details)
+- Order metadata (id, date, status)
+
+**Solution**: Extract into separate classes:
+- `Customer` for customer details
+- `Address` for structured address information
+- `Payment` for payment details
+- `Order` retains only order-specific attributes
+
+### Issue 2: String-Based Enumerations
+
+**Problem**: Status and payment method stored as strings, allowing invalid values.
+
+**Solution**: Create proper EEnum types:
+- `OrderStatus`: PENDING, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+- `PaymentMethod`: CREDIT_CARD, DEBIT_CARD, BANK_TRANSFER, PAYPAL, INVOICE
+
+### Issue 3: Denormalised Data
+
+**Problem**: Customer data duplicated in every order; product data duplicated in order items.
+
+**Solution**: Create proper references:
+- Orders reference Customers (many-to-one)
+- OrderItems reference Products (many-to-one)
+
+### Issue 4: Missing Abstractions
+
+**Problem**: No shared base for named entities; code duplication for name attributes.
+
+**Solution**: Introduce `NamedElement` abstract base class.
+
+### Issue 5: Mixed Concerns in Product
+
+**Problem**: Product class contains inventory attributes (stockQty, reorderLevel, warehouseLocation).
+
+**Solution**: Extract inventory into separate `InventoryItem` class.
+
+### Issue 6: Abbreviated Attribute Names
+
+**Problem**: `qty`, `desc` instead of clear names.
+
+**Solution**: Rename to `quantity`, `description`.
+
+### Issue 7: Unstructured Address Data
+
+**Problem**: Addresses stored as concatenated strings.
+
+**Solution**: Create structured `Address` class with:
+- streetAddress
+- suburb
+- state
+- postcode
+- country
+
+## Inheritance Hierarchy Improvements
+
+### Before (Flat Structure)
+```
+Order (standalone)
+OrderItem (standalone)
+Product (standalone)
+Store (standalone)
+```
+
+### After (Proper Hierarchy)
+```
+NamedElement (abstract)
+    ├── Customer
+    ├── Category
+    ├── Product
+    ├── Warehouse
+    └── Store
+
+Address (value object)
+Payment (embedded entity)
+InventoryItem (associated entity)
+OrderItem (embedded entity)
+Order (aggregate root)
+```
+
+## Naming Convention Guidelines
+
+### Australian English Spelling
+- organisation (not organization)
+- colour (not color)
+- standardising (not standardizing)
+- behaviour (not behavior)
+- centre (not center)
+
+### Attribute Naming
+- Use full words: `quantity` not `qty`
+- Use descriptive names: `description` not `desc`
+- Use camelCase for multi-word attributes
+- Required attributes should have `lowerBound="1"`
+
+### Class Naming
+- Use PascalCase for class names
+- Use singular nouns for entity classes
+- Use descriptive names that indicate purpose
+
+## Validation Approach
+
+### Structural Validation
+- Metamodel well-formedness
+- Reference integrity
+- Multiplicity constraints
+
+### Data Validation
+- No data loss verification
+- Value mapping correctness
+- Relationship preservation
+
+### Quality Metrics
+- Class cohesion improvement
+- Reduced data duplication
+- Improved normalisation score
+
+## Timeline
+
+| Phase | Duration | Activities |
+|-------|----------|------------|
+| Analysis | 1 week | Review legacy model, document issues |
+| Design | 1 week | Create improved metamodel, mapping docs |
+| Development | 2 weeks | Build transformations, validation rules |
+| Testing | 1 week | Execute migrations, validate results |
+| Rollout | 1 week | Deploy, monitor, support |
+
+## Risk Mitigation
+
+### Risk: Data Loss During Migration
+**Mitigation**: Comprehensive backup before migration; validation after each step.
+
+### Risk: Tool Breakage
+**Mitigation**: Maintain backwards compatibility transformations during transition.
+
+### Risk: Performance Degradation
+**Mitigation**: Test with production-scale data before deployment.
+
+## Approval
+
+| Role | Name | Date | Signature |
+|------|------|------|-----------|
+| Technical Lead | _____________ | ____/____/____ | _________ |
+| Architect | _____________ | ____/____/____ | _________ |
+| Product Owner | _____________ | ____/____/____ | _________ |

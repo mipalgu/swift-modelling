@@ -1,0 +1,21 @@
+digraph EcommerceMetamodel {
+    bgcolor="white"
+    rankdir=TB
+    node [shape=record, style=rounded, fontname="Arial", fontsize=12]
+    edge [fontname="Arial", fontsize=10]
+    
+    shop [label="{Shop|+ name : String\l+ url : String\l|+ products : Product[*]\l+ customers : Customer[*]\l}" fillcolor="#e8f4f8" style="filled,rounded"]
+    
+    product [label="{Product|+ name : String\l+ price : Double\l+ stock : Int\l|}" fillcolor="#f8f4e8" style="filled,rounded"]
+    
+    customer [label="{Customer|+ name : String\l+ email : String\l|+ orders : Order[*]\l}" fillcolor="#e8f8f5" style="filled,rounded"]
+    
+    order [label="{Order|+ date : Date\l+ total : Double\l|+ items : OrderItem[*]\l}" fillcolor="#f4e8f8" style="filled,rounded"]
+    
+    shop -> product [label="products"]
+    shop -> customer [label="customers"]
+    customer -> order [label="orders"]
+    order -> product [label="items" style=dashed]
+    
+    legendTitle [label="E-commerce Metamodel" shape=plaintext fontname="Arial Bold" fontsize=14]
+}

@@ -1,0 +1,378 @@
+-- ATL Transformation: Bidirectional Synchronisation
+-- Handles merging changes from multiple format sources
+-- Part of the Cross-Format Integration tutorial
+-- @path PM=/ProjectManagement/ProjectManagement.ecore
+-- @path SYNC=/Sync/SyncModel.ecore
+
+module SynchroniseFormats;
+create OUT: PM from BASE: PM, CHANGES_A: SYNC, CHANGES_B: SYNC;
+
+-- ===========================================================================
+-- Synchronisation Metadata Helpers
+-- ===========================================================================
+
+-- Get the latest modification timestamp
+helper context SYNC!ChangeRecord def: isNewerThan(other: SYNC!ChangeRecord): Boolean =
+    self.timestamp > other.timestamp;
+
+-- Check if change affects given element
+helper context SYNC!ChangeRecord def: affectsElement(elementId: String): Boolean =
+    self.elementId = elementId;
+
+-- Get all changes for a specific element
+helper def: changesForElement(elementId: String): Sequence(SYNC!ChangeRecord) =
+    SYNC!ChangeRecord.allInstances()->select(c | c.elementId = elementId);
+
+-- ===========================================================================
+-- Change Type Helpers
+-- ===========================================================================
+
+helper context SYNC!ChangeRecord def: isAddition(): Boolean =
+    self.changeType = #ADDITION;
+
+helper context SYNC!ChangeRecord def: isDeletion(): Boolean =
+    self.changeType = #DELETION;
+
+helper context SYNC!ChangeRecord def: isModification(): Boolean =
+    self.changeType = #MODIFICATION;
+
+-- ===========================================================================
+-- Conflict Detection Helpers
+-- ===========================================================================
+
+-- Check if two changes conflict
+helper def: areConflicting(changeA: SYNC!ChangeRecord, changeB: SYNC!ChangeRecord): Boolean =
+    changeA.elementId = changeB.elementId and (
+        -- Both modify same property with different values
+        (changeA.isModification() and changeB.isModification() and
+         changeA.modifiedProperties->exists(pA |
+            changeB.modifiedProperties->exists(pB |
+                pA.propertyName = pB.propertyName and pA.newValue <> pB.newValue
+            )
+         )) or
+        -- One deletes, other modifies
+        (changeA.isDeletion() and changeB.isModification()) or
+        (changeA.isModification() and changeB.isDeletion())
+    );
+
+-- Get all conflicts between two change sets
+helper def: detectConflicts(
+    changesA: Sequence(SYNC!ChangeRecord),
+    changesB: Sequence(SYNC!ChangeRecord)
+): Sequence(TupleType(changeA: SYNC!ChangeRecord, changeB: SYNC!ChangeRecord)) =
+    changesA->collect(cA |
+        changesB->select(cB | thisModule.areConflicting(cA, cB))
+            ->collect(cB | Tuple{changeA = cA, changeB = cB})
+    )->flatten();
+
+-- ===========================================================================
+-- Merge Strategy Helpers
+-- ===========================================================================
+
+-- Last-write-wins merge for property
+helper def: mergePropertyLastWriteWins(
+    changeA: SYNC!PropertyChange,
+    changeB: SYNC!PropertyChange
+): OclAny =
+    if changeA.timestamp > changeB.timestamp then changeA.newValue
+    else changeB.newValue
+    endif;
+
+-- Get non-conflicting changes for automatic merge
+helper def: getNonConflictingChanges(
+    changesA: Sequence(SYNC!ChangeRecord),
+    changesB: Sequence(SYNC!ChangeRecord)
+): Sequence(SYNC!ChangeRecord) =
+    let conflicts: Sequence(TupleType(changeA: SYNC!ChangeRecord, changeB: SYNC!ChangeRecord)) =
+        thisModule.detectConflicts(changesA, changesB) in
+    let conflictingIds: Set(String) = conflicts->collect(c | c.changeA.elementId)->asSet() in
+    changesA->union(changesB)->select(c | not conflictingIds->includes(c.elementId));
+
+-- ===========================================================================
+-- Rule: Synchronise Organisation (root element)
+-- ===========================================================================
+rule SyncOrganisation {
+    from
+        base: PM!Organisation
+    to
+        synced: PM!Organisation (
+            name <- thisModule.syncAttribute(base, 'name'),
+            domain <- thisModule.syncAttribute(base, 'domain'),
+            departments <- base.departments->collect(d |
+                thisModule.syncDepartment(d)
+            )->union(
+                thisModule.getAdditions('Department')->collect(a |
+                    thisModule.createDepartmentFromChange(a)
+                )
+            ),
+            members <- base.members->collect(m |
+                thisModule.syncTeamMember(m)
+            )->union(
+                thisModule.getAdditions('TeamMember')->collect(a |
+                    thisModule.createTeamMemberFromChange(a)
+                )
+            ),
+            projects <- base.projects->collect(p |
+                thisModule.syncProject(p)
+            )->union(
+                thisModule.getAdditions('Project')->collect(a |
+                    thisModule.createProjectFromChange(a)
+                )
+            )
+        )
+}
+
+-- ===========================================================================
+-- Lazy Rule: Synchronise Department
+-- ===========================================================================
+lazy rule syncDepartment {
+    from
+        base: PM!Department (
+            not thisModule.isDeleted(base.id)
+        )
+    to
+        synced: PM!Department (
+            id <- base.id,
+            name <- thisModule.syncAttribute(base, 'name'),
+            code <- thisModule.syncAttribute(base, 'code')
+        )
+}
+
+-- ===========================================================================
+-- Lazy Rule: Synchronise TeamMember
+-- ===========================================================================
+lazy rule syncTeamMember {
+    from
+        base: PM!TeamMember (
+            not thisModule.isDeleted(base.id)
+        )
+    to
+        synced: PM!TeamMember (
+            id <- base.id,
+            name <- thisModule.syncAttribute(base, 'name'),
+            email <- thisModule.syncAttribute(base, 'email'),
+            role <- thisModule.syncAttribute(base, 'role')
+        )
+}
+
+-- ===========================================================================
+-- Lazy Rule: Synchronise Project
+-- ===========================================================================
+lazy rule syncProject {
+    from
+        base: PM!Project (
+            not thisModule.isDeleted(base.id)
+        )
+    to
+        synced: PM!Project (
+            id <- base.id,
+            name <- thisModule.syncAttribute(base, 'name'),
+            description <- thisModule.syncAttribute(base, 'description'),
+            status <- thisModule.syncEnumAttribute(base, 'status'),
+            startDate <- thisModule.syncAttribute(base, 'startDate'),
+            targetEndDate <- thisModule.syncAttribute(base, 'targetEndDate'),
+            budget <- thisModule.syncAttribute(base, 'budget'),
+            milestones <- base.milestones->collect(m |
+                thisModule.syncMilestone(m)
+            ),
+            tasks <- base.tasks->collect(t |
+                thisModule.syncTask(t)
+            )->union(
+                thisModule.getAdditionsForContainer(base.id, 'Task')->collect(a |
+                    thisModule.createTaskFromChange(a)
+                )
+            )
+        )
+}
+
+-- ===========================================================================
+-- Lazy Rule: Synchronise Milestone
+-- ===========================================================================
+lazy rule syncMilestone {
+    from
+        base: PM!Milestone (
+            not thisModule.isDeleted(base.id)
+        )
+    to
+        synced: PM!Milestone (
+            id <- base.id,
+            name <- thisModule.syncAttribute(base, 'name'),
+            dueDate <- thisModule.syncAttribute(base, 'dueDate'),
+            completed <- thisModule.syncAttribute(base, 'completed')
+        )
+}
+
+-- ===========================================================================
+-- Lazy Rule: Synchronise Task
+-- ===========================================================================
+lazy rule syncTask {
+    from
+        base: PM!Task (
+            not thisModule.isDeleted(base.id)
+        )
+    to
+        synced: PM!Task (
+            id <- base.id,
+            title <- thisModule.syncAttribute(base, 'title'),
+            description <- thisModule.syncAttribute(base, 'description'),
+            priority <- thisModule.syncEnumAttribute(base, 'priority'),
+            status <- thisModule.syncEnumAttribute(base, 'status'),
+            estimatedHours <- thisModule.syncAttribute(base, 'estimatedHours'),
+            actualHours <- thisModule.syncAttribute(base, 'actualHours'),
+            dueDate <- thisModule.syncAttribute(base, 'dueDate'),
+            comments <- base.comments->collect(c |
+                thisModule.syncComment(c)
+            )->union(
+                thisModule.getAdditionsForContainer(base.id, 'Comment')->collect(a |
+                    thisModule.createCommentFromChange(a)
+                )
+            )
+        )
+}
+
+-- ===========================================================================
+-- Lazy Rule: Synchronise Comment
+-- ===========================================================================
+lazy rule syncComment {
+    from
+        base: PM!Comment (
+            not thisModule.isDeleted(base.id)
+        )
+    to
+        synced: PM!Comment (
+            id <- base.id,
+            text <- thisModule.syncAttribute(base, 'text'),
+            timestamp <- thisModule.syncAttribute(base, 'timestamp')
+        )
+}
+
+-- ===========================================================================
+-- Helper: Synchronise attribute with change merging
+-- ===========================================================================
+helper def: syncAttribute(element: OclAny, attrName: String): OclAny =
+    let changes: Sequence(SYNC!ChangeRecord) = thisModule.changesForElement(element.id) in
+    let propChanges: Sequence(SYNC!PropertyChange) = changes
+        ->collect(c | c.modifiedProperties)
+        ->flatten()
+        ->select(p | p.propertyName = attrName) in
+    if propChanges->isEmpty() then
+        element.refGetValue(attrName)
+    else
+        propChanges->sortedBy(p | p.timestamp)->last().newValue
+    endif;
+
+-- ===========================================================================
+-- Helper: Synchronise enum attribute
+-- ===========================================================================
+helper def: syncEnumAttribute(element: OclAny, attrName: String): OclAny =
+    let rawValue: OclAny = thisModule.syncAttribute(element, attrName) in
+    if rawValue.oclIsKindOf(String) then
+        rawValue.toEnum(element.refGetValue(attrName).oclType())
+    else
+        rawValue
+    endif;
+
+-- ===========================================================================
+-- Helper: Check if element is deleted
+-- ===========================================================================
+helper def: isDeleted(elementId: String): Boolean =
+    SYNC!ChangeRecord.allInstances()
+        ->exists(c | c.elementId = elementId and c.isDeletion());
+
+-- ===========================================================================
+-- Helper: Get addition changes for type
+-- ===========================================================================
+helper def: getAdditions(typeName: String): Sequence(SYNC!ChangeRecord) =
+    SYNC!ChangeRecord.allInstances()
+        ->select(c | c.isAddition() and c.elementType = typeName);
+
+-- ===========================================================================
+-- Helper: Get additions for a specific container
+-- ===========================================================================
+helper def: getAdditionsForContainer(containerId: String, typeName: String): Sequence(SYNC!ChangeRecord) =
+    SYNC!ChangeRecord.allInstances()
+        ->select(c | c.isAddition() and c.elementType = typeName and c.containerId = containerId);
+
+-- ===========================================================================
+-- Called Rule: Create new Department from change record
+-- ===========================================================================
+rule createDepartmentFromChange(change: SYNC!ChangeRecord) {
+    to
+        dept: PM!Department (
+            id <- change.elementId,
+            name <- change.getPropertyValue('name'),
+            code <- change.getPropertyValue('code')
+        )
+    do {
+        dept;
+    }
+}
+
+-- ===========================================================================
+-- Called Rule: Create new TeamMember from change record
+-- ===========================================================================
+rule createTeamMemberFromChange(change: SYNC!ChangeRecord) {
+    to
+        member: PM!TeamMember (
+            id <- change.elementId,
+            name <- change.getPropertyValue('name'),
+            email <- change.getPropertyValue('email'),
+            role <- change.getPropertyValue('role')
+        )
+    do {
+        member;
+    }
+}
+
+-- ===========================================================================
+-- Called Rule: Create new Project from change record
+-- ===========================================================================
+rule createProjectFromChange(change: SYNC!ChangeRecord) {
+    to
+        proj: PM!Project (
+            id <- change.elementId,
+            name <- change.getPropertyValue('name'),
+            description <- change.getPropertyValue('description'),
+            status <- change.getPropertyValue('status').toEnum(#ProjectStatus),
+            startDate <- change.getPropertyValue('startDate').toDate(),
+            targetEndDate <- change.getPropertyValue('targetEndDate').toDate(),
+            budget <- change.getPropertyValue('budget').toReal()
+        )
+    do {
+        proj;
+    }
+}
+
+-- ===========================================================================
+-- Called Rule: Create new Task from change record
+-- ===========================================================================
+rule createTaskFromChange(change: SYNC!ChangeRecord) {
+    to
+        task: PM!Task (
+            id <- change.elementId,
+            title <- change.getPropertyValue('title'),
+            description <- change.getPropertyValue('description'),
+            priority <- change.getPropertyValue('priority').toEnum(#TaskPriority),
+            status <- change.getPropertyValue('status').toEnum(#TaskStatus),
+            estimatedHours <- change.getPropertyValue('estimatedHours').toReal(),
+            dueDate <- change.getPropertyValue('dueDate').toDate()
+        )
+    do {
+        task;
+    }
+}
+
+-- ===========================================================================
+-- Called Rule: Create new Comment from change record
+-- ===========================================================================
+rule createCommentFromChange(change: SYNC!ChangeRecord) {
+    to
+        cmt: PM!Comment (
+            id <- change.elementId,
+            text <- change.getPropertyValue('text'),
+            timestamp <- change.getPropertyValue('timestamp').toDate()
+        )
+    do {
+        cmt;
+    }
+}

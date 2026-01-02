@@ -1,0 +1,279 @@
+-- ATL Transformation: JSON to XMI Format
+-- Converts web JSON data back to Project Management XMI format
+-- Part of the Cross-Format Integration tutorial
+-- @path JSON=/JSON/JsonModel.ecore
+-- @path PM=/ProjectManagement/ProjectManagement.ecore
+
+module JSON2XMI;
+create OUT: PM from IN: JSON;
+
+-- ===========================================================================
+-- Helpers: Extract property values from JSON objects
+-- ===========================================================================
+helper context JSON!JsonObject def: getProperty(key: String): JSON!JsonValue =
+    self.properties->any(p | p.key = key).value;
+
+helper context JSON!JsonObject def: getString(key: String): String =
+    let prop: JSON!JsonProperty = self.properties->any(p | p.key = key) in
+    if prop.oclIsUndefined() then ''
+    else prop.value.oclAsType(JSON!JsonString).value
+    endif;
+
+helper context JSON!JsonObject def: getNumber(key: String): Real =
+    let prop: JSON!JsonProperty = self.properties->any(p | p.key = key) in
+    if prop.oclIsUndefined() then 0.0
+    else prop.value.oclAsType(JSON!JsonNumber).value
+    endif;
+
+helper context JSON!JsonObject def: getBoolean(key: String): Boolean =
+    let prop: JSON!JsonProperty = self.properties->any(p | p.key = key) in
+    if prop.oclIsUndefined() then false
+    else prop.value.oclAsType(JSON!JsonBoolean).value
+    endif;
+
+helper context JSON!JsonObject def: getArray(key: String): Sequence(JSON!JsonValue) =
+    let prop: JSON!JsonProperty = self.properties->any(p | p.key = key) in
+    if prop.oclIsUndefined() then Sequence{}
+    else prop.value.oclAsType(JSON!JsonArray).elements
+    endif;
+
+-- ===========================================================================
+-- Helpers: Parse string values to enums
+-- ===========================================================================
+helper def: parseProjectStatus(s: String): PM!ProjectStatus =
+    if s = 'PLANNING' then #PLANNING
+    else if s = 'ACTIVE' then #ACTIVE
+    else if s = 'ON_HOLD' then #ON_HOLD
+    else if s = 'COMPLETED' then #COMPLETED
+    else if s = 'CANCELLED' then #CANCELLED
+    else #PLANNING
+    endif endif endif endif endif;
+
+helper def: parseTaskPriority(s: String): PM!TaskPriority =
+    if s = 'LOW' then #LOW
+    else if s = 'MEDIUM' then #MEDIUM
+    else if s = 'HIGH' then #HIGH
+    else if s = 'CRITICAL' then #CRITICAL
+    else #MEDIUM
+    endif endif endif endif;
+
+helper def: parseTaskStatus(s: String): PM!TaskStatus =
+    if s = 'NOT_STARTED' then #NOT_STARTED
+    else if s = 'IN_PROGRESS' then #IN_PROGRESS
+    else if s = 'BLOCKED' then #BLOCKED
+    else if s = 'IN_REVIEW' then #IN_REVIEW
+    else if s = 'COMPLETED' then #COMPLETED
+    else #NOT_STARTED
+    endif endif endif endif endif;
+
+-- ===========================================================================
+-- Helper: Parse ISO date string to Date
+-- ===========================================================================
+helper def: parseDate(s: String): OclAny =
+    if s.oclIsUndefined() or s = '' then OclUndefined
+    else s.toDate()
+    endif;
+
+-- ===========================================================================
+-- Helper: Lookup elements by ID for reference resolution
+-- ===========================================================================
+helper def: allMembers: Map(String, JSON!JsonObject) =
+    JSON!JsonObject.allInstances()
+        ->select(o | o.properties->exists(p | p.key = 'email'))
+        ->iterate(m; acc: Map(String, JSON!JsonObject) = Map{} |
+            acc.including(m.getString('id'), m)
+        );
+
+helper def: allDepartments: Map(String, JSON!JsonObject) =
+    JSON!JsonObject.allInstances()
+        ->select(o | o.properties->exists(p | p.key = 'code') and
+                     o.properties->exists(p | p.key = 'managerId'))
+        ->iterate(d; acc: Map(String, JSON!JsonObject) = Map{} |
+            acc.including(d.getString('id'), d)
+        );
+
+helper def: allTasks: Map(String, JSON!JsonObject) =
+    JSON!JsonObject.allInstances()
+        ->select(o | o.properties->exists(p | p.key = 'title') and
+                     o.properties->exists(p | p.key = 'priority'))
+        ->iterate(t; acc: Map(String, JSON!JsonObject) = Map{} |
+            acc.including(t.getString('id'), t)
+        );
+
+-- ===========================================================================
+-- Rule: Root Organisation
+-- ===========================================================================
+rule Organisation {
+    from
+        json: JSON!JsonObject (
+            json.properties->exists(p | p.key = 'domain') and
+            json.properties->exists(p | p.key = 'departments')
+        )
+    to
+        org: PM!Organisation (
+            name <- json.getString('name'),
+            domain <- json.getString('domain'),
+            departments <- json.getArray('departments')
+                ->collect(d | thisModule.Department(d.oclAsType(JSON!JsonObject))),
+            members <- json.getArray('members')
+                ->collect(m | thisModule.TeamMember(m.oclAsType(JSON!JsonObject))),
+            projects <- json.getArray('projects')
+                ->collect(p | thisModule.Project(p.oclAsType(JSON!JsonObject)))
+        )
+}
+
+-- ===========================================================================
+-- Lazy Rule: Department
+-- ===========================================================================
+lazy rule Department {
+    from
+        json: JSON!JsonObject
+    to
+        dept: PM!Department (
+            id <- json.getString('id'),
+            name <- json.getString('name'),
+            code <- json.getString('code')
+        )
+}
+
+-- ===========================================================================
+-- Lazy Rule: TeamMember
+-- ===========================================================================
+lazy rule TeamMember {
+    from
+        json: JSON!JsonObject
+    to
+        member: PM!TeamMember (
+            id <- json.getString('id'),
+            name <- json.getString('name'),
+            email <- json.getString('email'),
+            role <- json.getString('role')
+        )
+}
+
+-- ===========================================================================
+-- Lazy Rule: Project
+-- ===========================================================================
+lazy rule Project {
+    from
+        json: JSON!JsonObject
+    to
+        proj: PM!Project (
+            id <- json.getString('id'),
+            name <- json.getString('name'),
+            description <- json.getString('description'),
+            status <- thisModule.parseProjectStatus(json.getString('status')),
+            startDate <- thisModule.parseDate(json.getString('startDate')),
+            targetEndDate <- thisModule.parseDate(json.getString('targetEndDate')),
+            budget <- json.getNumber('budget'),
+            milestones <- json.getArray('milestones')
+                ->collect(m | thisModule.Milestone(m.oclAsType(JSON!JsonObject))),
+            tasks <- json.getArray('tasks')
+                ->collect(t | thisModule.Task(t.oclAsType(JSON!JsonObject)))
+        )
+}
+
+-- ===========================================================================
+-- Lazy Rule: Milestone
+-- ===========================================================================
+lazy rule Milestone {
+    from
+        json: JSON!JsonObject
+    to
+        ms: PM!Milestone (
+            id <- json.getString('id'),
+            name <- json.getString('name'),
+            dueDate <- thisModule.parseDate(json.getString('dueDate')),
+            completed <- json.getBoolean('completed')
+        )
+}
+
+-- ===========================================================================
+-- Lazy Rule: Task
+-- ===========================================================================
+lazy rule Task {
+    from
+        json: JSON!JsonObject
+    to
+        task: PM!Task (
+            id <- json.getString('id'),
+            title <- json.getString('title'),
+            description <- json.getString('description'),
+            priority <- thisModule.parseTaskPriority(json.getString('priority')),
+            status <- thisModule.parseTaskStatus(json.getString('status')),
+            estimatedHours <- json.getNumber('estimatedHours'),
+            actualHours <- json.getNumber('actualHours'),
+            dueDate <- thisModule.parseDate(json.getString('dueDate')),
+            comments <- json.getArray('comments')
+                ->collect(c | thisModule.Comment(c.oclAsType(JSON!JsonObject)))
+        )
+}
+
+-- ===========================================================================
+-- Lazy Rule: Comment
+-- ===========================================================================
+lazy rule Comment {
+    from
+        json: JSON!JsonObject
+    to
+        cmt: PM!Comment (
+            id <- json.getString('id'),
+            text <- json.getString('text'),
+            timestamp <- thisModule.parseDate(json.getString('timestamp'))
+        )
+}
+
+-- ===========================================================================
+-- Endpoint: Resolve references after main transformation
+-- ===========================================================================
+endpoint def: resolveReferences() : OclAny =
+    -- Resolve Department.manager references
+    PM!Department.allInstances()->collect(d |
+        let jsonDept: JSON!JsonObject = thisModule.allDepartments.get(d.id) in
+        let managerId: String = jsonDept.getString('managerId') in
+        d.manager <- PM!TeamMember.allInstances()->any(m | m.id = managerId)
+    );
+
+    -- Resolve TeamMember.department references
+    PM!TeamMember.allInstances()->collect(m |
+        let jsonMember: JSON!JsonObject = thisModule.allMembers.get(m.id) in
+        let deptId: String = jsonMember.getString('departmentId') in
+        m.department <- PM!Department.allInstances()->any(d | d.id = deptId)
+    );
+
+    -- Resolve Project references
+    PM!Project.allInstances()->collect(p |
+        let jsonProj: JSON!JsonObject = JSON!JsonObject.allInstances()
+            ->any(o | o.getString('id') = p.id and o.properties->exists(pr | pr.key = 'ownerId')) in
+        p.owner <- PM!TeamMember.allInstances()->any(m | m.id = jsonProj.getString('ownerId'));
+        p.department <- PM!Department.allInstances()->any(d | d.id = jsonProj.getString('departmentId'));
+        p.teamMembers <- jsonProj.getArray('teamMemberIds')
+            ->collect(id | PM!TeamMember.allInstances()->any(m | m.id = id.oclAsType(JSON!JsonString).value))
+    );
+
+    -- Resolve Task.assignee and Task.dependencies
+    PM!Task.allInstances()->collect(t |
+        let jsonTask: JSON!JsonObject = thisModule.allTasks.get(t.id) in
+        t.assignee <- PM!TeamMember.allInstances()->any(m | m.id = jsonTask.getString('assigneeId'));
+        t.dependencies <- jsonTask.getArray('dependencyIds')
+            ->collect(id | PM!Task.allInstances()->any(task | task.id = id.oclAsType(JSON!JsonString).value))
+    );
+
+    -- Resolve Comment.author
+    PM!Comment.allInstances()->collect(c |
+        let jsonComments: Sequence(JSON!JsonObject) = JSON!JsonObject.allInstances()
+            ->select(o | o.properties->exists(p | p.key = 'authorId')) in
+        let jsonCmt: JSON!JsonObject = jsonComments->any(o | o.getString('id') = c.id) in
+        c.author <- PM!TeamMember.allInstances()->any(m | m.id = jsonCmt.getString('authorId'))
+    );
+
+    -- Resolve Milestone.deliverables
+    PM!Milestone.allInstances()->collect(ms |
+        let jsonMilestones: Sequence(JSON!JsonObject) = JSON!JsonObject.allInstances()
+            ->select(o | o.properties->exists(p | p.key = 'deliverableIds')) in
+        let jsonMs: JSON!JsonObject = jsonMilestones->any(o | o.getString('id') = ms.id) in
+        ms.deliverables <- jsonMs.getArray('deliverableIds')
+            ->collect(id | PM!Task.allInstances()->any(t | t.id = id.oclAsType(JSON!JsonString).value))
+    );
+
+    OclUndefined;

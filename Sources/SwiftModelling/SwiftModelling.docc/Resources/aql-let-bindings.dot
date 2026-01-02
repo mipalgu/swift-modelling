@@ -1,0 +1,19 @@
+digraph AQLLetBindings {
+    bgcolor="white"
+    rankdir=LR
+    node [shape=box, style=rounded, fontname="Arial", fontsize=12]
+    edge [fontname="Arial", fontsize=10]
+    
+    input [label="Expression" shape=ellipse fillcolor="#e8f4f8" style=filled]
+    
+    let1 [label="let x = expr1" shape=note fillcolor="#f8f4e8" style=filled]
+    let2 [label="let y = expr2" shape=note fillcolor="#f8f4e8" style=filled]
+    
+    body [label="in x + y" shape=note fillcolor="#e8f8f5" style=filled]
+    
+    result [label="Result" shape=ellipse fillcolor="#f4e8f8" style=filled]
+    
+    input -> let1 -> let2 -> body -> result
+    
+    legendTitle [label="Let Bindings in AQL" shape=plaintext fontname="Arial Bold" fontsize=14]
+}

@@ -1,0 +1,32 @@
+digraph AQLBasics {
+    bgcolor="white"
+    rankdir=LR
+    node [shape=box, style=rounded, fontname="Arial", fontsize=12]
+    edge [fontname="Arial", fontsize=10]
+    
+    subgraph cluster_model {
+        label="Model Instance"
+        style=rounded
+        bgcolor="#e8f4f8"
+        
+        company [label="Company\n'Acme Corp'" shape=box]
+        dept [label="Department\n'Engineering'" shape=box]
+        emp [label="Employee\n'John'" shape=box]
+    }
+    
+    subgraph cluster_query {
+        label="AQL Query"
+        style=rounded
+        bgcolor="#f8f4e8"
+        
+        query [label="company.departments\n  ->select(d | d.employees\n    ->size() > 5)" shape=note]
+    }
+    
+    result [label="Query Results" shape=ellipse fillcolor="#e8f8f5" style=filled]
+    
+    company -> dept [label="departments"]
+    dept -> emp [label="employees"]
+    query -> result [label="execute"]
+    
+    legendTitle [label="AQL Query Flow" shape=plaintext fontname="Arial Bold" fontsize=14]
+}

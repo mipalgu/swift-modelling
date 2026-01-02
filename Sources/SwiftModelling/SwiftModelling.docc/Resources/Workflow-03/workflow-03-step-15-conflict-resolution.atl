@@ -1,0 +1,252 @@
+-- ATL Transformation: Conflict Resolution
+-- Implements policies for resolving synchronisation conflicts
+-- Part of the Cross-Format Integration tutorial
+-- @path PM=/ProjectManagement/ProjectManagement.ecore
+-- @path SYNC=/Sync/SyncModel.ecore
+-- @path RESOLVED=/Resolved/ResolvedModel.ecore
+
+module ConflictResolution;
+create OUT: RESOLVED from CONFLICTS: SYNC, POLICY: SYNC;
+
+-- ===========================================================================
+-- Resolution Policy Enumeration
+-- ===========================================================================
+
+-- Resolution policies:
+-- LAST_WRITE_WINS: Most recent timestamp wins
+-- SOURCE_PRIORITY: Predefined source priority order
+-- MERGE_FIELDS: Merge non-conflicting fields, prompt for others
+-- MANUAL: All conflicts require manual resolution
+-- PRESERVE_BOTH: Keep both versions with conflict markers
+
+-- ===========================================================================
+-- Helper: Get active resolution policy
+-- ===========================================================================
+helper def: resolutionPolicy: String =
+    SYNC!ResolutionPolicy.allInstances()->first().policy;
+
+-- ===========================================================================
+-- Helper: Get source priority order
+-- ===========================================================================
+helper def: sourcePriority: Sequence(String) =
+    SYNC!ResolutionPolicy.allInstances()->first().sourcePriorityOrder;
+
+-- ===========================================================================
+-- Conflict Analysis Helpers
+-- ===========================================================================
+
+-- Classify conflict severity
+helper context SYNC!Conflict def: severity: String =
+    if self.changeA.isDeletion() or self.changeB.isDeletion() then
+        'CRITICAL'  -- Deletion conflicts are critical
+    else if self.conflictingProperties->size() > 3 then
+        'HIGH'  -- Many conflicting properties
+    else if self.conflictingProperties->exists(p | p.isKeyProperty) then
+        'HIGH'  -- Key property conflict
+    else
+        'MEDIUM'
+    endif endif endif;
+
+-- Check if conflict can be auto-resolved
+helper context SYNC!Conflict def: canAutoResolve: Boolean =
+    thisModule.resolutionPolicy <> 'MANUAL' and
+    self.severity <> 'CRITICAL';
+
+-- Get conflicting property names
+helper context SYNC!Conflict def: conflictingPropertyNames: Set(String) =
+    self.conflictingProperties->collect(p | p.propertyName)->asSet();
+
+-- ===========================================================================
+-- Resolution Strategy Helpers
+-- ===========================================================================
+
+-- Resolve using last-write-wins
+helper def: resolveLastWriteWins(conflict: SYNC!Conflict): SYNC!ChangeRecord =
+    if conflict.changeA.timestamp > conflict.changeB.timestamp then
+        conflict.changeA
+    else
+        conflict.changeB
+    endif;
+
+-- Resolve using source priority
+helper def: resolveSourcePriority(conflict: SYNC!Conflict): SYNC!ChangeRecord =
+    let priorityA: Integer = thisModule.sourcePriority->indexOf(conflict.changeA.source) in
+    let priorityB: Integer = thisModule.sourcePriority->indexOf(conflict.changeB.source) in
+    if priorityA < priorityB then
+        conflict.changeA
+    else
+        conflict.changeB
+    endif;
+
+-- Create merged change from non-conflicting parts
+helper def: createMergedChange(conflict: SYNC!Conflict): SYNC!ChangeRecord =
+    let nonConflictingA: Sequence(SYNC!PropertyChange) =
+        conflict.changeA.modifiedProperties
+            ->select(p | not conflict.conflictingPropertyNames->includes(p.propertyName)) in
+    let nonConflictingB: Sequence(SYNC!PropertyChange) =
+        conflict.changeB.modifiedProperties
+            ->select(p | not conflict.conflictingPropertyNames->includes(p.propertyName)) in
+    -- Return merged properties (conflicting ones need manual resolution)
+    conflict.changeA;  -- Placeholder - actual merge would combine properties
+
+-- ===========================================================================
+-- Rule: Process Conflict
+-- ===========================================================================
+rule ProcessConflict {
+    from
+        conflict: SYNC!Conflict
+    to
+        resolution: RESOLVED!Resolution (
+            conflictId <- conflict.id,
+            elementId <- conflict.changeA.elementId,
+            elementType <- conflict.changeA.elementType,
+            severity <- conflict.severity,
+            autoResolved <- conflict.canAutoResolve,
+            resolutionStrategy <- thisModule.resolutionPolicy,
+            resolvedChange <- if conflict.canAutoResolve then
+                    thisModule.applyResolutionStrategy(conflict)
+                else
+                    OclUndefined
+                endif,
+            pendingConflicts <- if not conflict.canAutoResolve then
+                    conflict.conflictingProperties
+                else
+                    Sequence{}
+                endif,
+            sourceA <- sourceInfoA,
+            sourceB <- sourceInfoB
+        ),
+        sourceInfoA: RESOLVED!SourceInfo (
+            source <- conflict.changeA.source,
+            timestamp <- conflict.changeA.timestamp,
+            user <- conflict.changeA.modifiedBy,
+            changes <- conflict.changeA.modifiedProperties->collect(p |
+                thisModule.createPropertyInfo(p)
+            )
+        ),
+        sourceInfoB: RESOLVED!SourceInfo (
+            source <- conflict.changeB.source,
+            timestamp <- conflict.changeB.timestamp,
+            user <- conflict.changeB.modifiedBy,
+            changes <- conflict.changeB.modifiedProperties->collect(p |
+                thisModule.createPropertyInfo(p)
+            )
+        )
+}
+
+-- ===========================================================================
+-- Helper: Apply resolution strategy
+-- ===========================================================================
+helper def: applyResolutionStrategy(conflict: SYNC!Conflict): SYNC!ChangeRecord =
+    if thisModule.resolutionPolicy = 'LAST_WRITE_WINS' then
+        thisModule.resolveLastWriteWins(conflict)
+    else if thisModule.resolutionPolicy = 'SOURCE_PRIORITY' then
+        thisModule.resolveSourcePriority(conflict)
+    else if thisModule.resolutionPolicy = 'MERGE_FIELDS' then
+        thisModule.createMergedChange(conflict)
+    else
+        OclUndefined
+    endif endif endif;
+
+-- ===========================================================================
+-- Called Rule: Create property info for resolution report
+-- ===========================================================================
+rule createPropertyInfo(prop: SYNC!PropertyChange) {
+    to
+        info: RESOLVED!PropertyInfo (
+            name <- prop.propertyName,
+            oldValue <- prop.oldValue.toString(),
+            newValue <- prop.newValue.toString(),
+            isKey <- prop.isKeyProperty
+        )
+    do {
+        info;
+    }
+}
+
+-- ===========================================================================
+-- Rule: Generate Resolution Report
+-- ===========================================================================
+rule GenerateResolutionReport {
+    from
+        policy: SYNC!ResolutionPolicy
+    to
+        report: RESOLVED!ResolutionReport (
+            timestamp <- thisModule.currentTimestamp(),
+            policy <- policy.policy,
+            totalConflicts <- SYNC!Conflict.allInstances()->size(),
+            autoResolved <- SYNC!Conflict.allInstances()->select(c | c.canAutoResolve)->size(),
+            pendingManual <- SYNC!Conflict.allInstances()->select(c | not c.canAutoResolve)->size(),
+            resolutions <- SYNC!Conflict.allInstances()->collect(c |
+                thisModule.ProcessConflict(c)
+            )
+        )
+}
+
+-- ===========================================================================
+-- Helper: Get current timestamp
+-- ===========================================================================
+helper def: currentTimestamp(): String =
+    '2024-03-15T10:30:00Z';  -- In production, use actual system time
+
+-- ===========================================================================
+-- Rule: Create Manual Resolution Request
+-- ===========================================================================
+rule CreateManualResolutionRequest {
+    from
+        conflict: SYNC!Conflict (
+            not conflict.canAutoResolve
+        )
+    to
+        request: RESOLVED!ManualResolutionRequest (
+            conflictId <- conflict.id,
+            elementId <- conflict.changeA.elementId,
+            elementType <- conflict.changeA.elementType,
+            urgency <- if conflict.severity = 'CRITICAL' then 'IMMEDIATE'
+                      else 'NORMAL' endif,
+            description <- 'Conflict detected between ' + conflict.changeA.source +
+                          ' and ' + conflict.changeB.source +
+                          ' for ' + conflict.changeA.elementType +
+                          ' [' + conflict.changeA.elementId + ']',
+            affectedProperties <- conflict.conflictingPropertyNames->asSequence(),
+            optionA <- optionA,
+            optionB <- optionB,
+            suggestedResolution <- if conflict.changeA.timestamp > conflict.changeB.timestamp then
+                    'OPTION_A'
+                else
+                    'OPTION_B'
+                endif
+        ),
+        optionA: RESOLVED!ResolutionOption (
+            label <- 'Keep changes from ' + conflict.changeA.source,
+            description <- 'Accept all changes from ' + conflict.changeA.source +
+                          ' (modified by ' + conflict.changeA.modifiedBy +
+                          ' at ' + conflict.changeA.timestamp + ')',
+            preview <- conflict.changeA.modifiedProperties->collect(p |
+                p.propertyName + ': ' + p.newValue.toString()
+            )->iterate(s; acc: String = '' | acc + s + '\n')
+        ),
+        optionB: RESOLVED!ResolutionOption (
+            label <- 'Keep changes from ' + conflict.changeB.source,
+            description <- 'Accept all changes from ' + conflict.changeB.source +
+                          ' (modified by ' + conflict.changeB.modifiedBy +
+                          ' at ' + conflict.changeB.timestamp + ')',
+            preview <- conflict.changeB.modifiedProperties->collect(p |
+                p.propertyName + ': ' + p.newValue.toString()
+            )->iterate(s; acc: String = '' | acc + s + '\n')
+        )
+}
+
+-- ===========================================================================
+-- Endpoint: Generate Resolution Summary
+-- ===========================================================================
+endpoint def: generateSummary(): String =
+    let total: Integer = SYNC!Conflict.allInstances()->size() in
+    let auto: Integer = SYNC!Conflict.allInstances()->select(c | c.canAutoResolve)->size() in
+    let manual: Integer = total - auto in
+    'Resolution Summary\n' +
+    '==================\n' +
+    'Total Conflicts: ' + total.toString() + '\n' +
+    'Auto-Resolved: ' + auto.toString() + '\n' +
+    'Pending Manual: ' + manual.toString() + '\n' +
+    'Policy: ' + thisModule.resolutionPolicy;

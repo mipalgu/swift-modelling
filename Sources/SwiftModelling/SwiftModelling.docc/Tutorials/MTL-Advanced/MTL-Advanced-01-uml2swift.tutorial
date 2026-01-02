@@ -1,0 +1,229 @@
+@Tutorial(time: 50) {
+    @Intro(title: "UML to Swift Code Generation") {
+        Learn to generate Swift code from UML class diagrams using MTL templates.
+
+        In this advanced tutorial, you'll build a complete code generator that transforms UML models into Swift source files. You'll learn:
+        - Mapping UML classes to Swift structs and classes
+        - Generating properties with proper types
+        - Creating initialisers and method stubs
+        - Handling protocols and enumerations
+        - Organising output into multiple files
+
+        @Image(source: "mtl-code-generation.svg", alt: "MTL Code Generation Workflow")
+    }
+
+    @Section(title: "Understanding the UML Metamodel") {
+        @ContentAndMedia {
+            The UML metamodel defines the structure of class diagrams that we'll transform into Swift code. This simplified UML subset includes Swift-specific features.
+
+            Key concepts:
+            - **Package**: Container for classifiers
+            - **Class**: Types with properties and operations
+            - **Property**: Typed attributes with optionality
+            - **Operation**: Methods with parameters and return types
+            - **Protocol**: Interface definitions
+            - **Enumeration**: Fixed value sets
+        }
+
+        @Steps {
+            @Step {
+                Examine the UML metamodel with Swift extensions.
+
+                @Code(name: "uml-class.ecore", file: uml-class.ecore)
+
+                The metamodel includes Swift-specific attributes like isStruct, isFinal, isAsync, throws, isOptional, and isCollection. The VisibilityKind enumeration includes Swift access levels.
+            }
+        }
+    }
+
+    @Section(title: "Building the MTL Template") {
+        @ContentAndMedia {
+            MTL templates define how model elements become text output. We'll create templates for each UML element type, using AQL expressions to navigate the model and extract information.
+
+            The template structure follows a modular approach:
+            - Main entry point template
+            - Class/struct generation templates
+            - Property generation templates
+            - Operation generation templates
+            - Protocol and enumeration templates
+        }
+
+        @Steps {
+            @Step {
+                Review the complete UML to Swift template with main entry point, generateClassFile, generateProperty, generateOperation, generateProtocolFile, and generateEnumFile templates.
+
+                @Code(name: "uml2swift.mtl", file: uml2swift.mtl)
+            }
+        }
+    }
+
+    @Section(title: "Sample UML Model") {
+        @ContentAndMedia {
+            We'll use a Task Manager application model to demonstrate the code generator. This model includes:
+            - A struct (Task) with various properties
+            - A class (Project) with async methods
+            - Protocols (Identifiable, TaskRepository)
+            - Enumerations (Priority, Status)
+        }
+
+        @Steps {
+            @Step {
+                Examine the sample UML model.
+
+                @Code(name: "sample-model.xmi", file: sample-model.xmi)
+
+                The model defines a complete Task Manager domain with proper Swift types, optionality, collections, and method signatures including async/throws.
+            }
+        }
+    }
+
+    @Section(title: "Generated Swift Code") {
+        @ContentAndMedia {
+            Running the template produces multiple Swift files, one for each classifier. Let's examine the generated output to understand how UML elements map to Swift code.
+        }
+
+        @Steps {
+            @Step {
+                Examine the generated Identifiable protocol.
+
+                @Code(name: "Identifiable.swift", file: Identifiable.swift)
+
+                Protocols generate property requirements with get/set accessors and method requirements preserving async/throws modifiers.
+            }
+
+            @Step {
+                Examine the generated Priority enumeration.
+
+                @Code(name: "Priority.swift", file: Priority.swift)
+
+                Enumerations generate cases with optional raw values. The raw type is determined from the enumeration's attributes.
+            }
+
+            @Step {
+                Examine the generated Task struct.
+
+                @Code(name: "Task.swift", file: Task.swift)
+
+                Structs include MARK comments for organisation, properties with proper types and default values, memberwise initialisers, and method stubs.
+            }
+
+            @Step {
+                Examine the generated Project class.
+
+                @Code(name: "Project.swift", file: Project.swift)
+
+                Classes support inheritance (protocol conformance), async/throws methods, and proper access modifiers based on UML visibility.
+            }
+
+            @Step {
+                Examine the generated TaskRepository protocol.
+
+                @Code(name: "TaskRepository.swift", file: TaskRepository.swift)
+
+                Repository protocols define CRUD operations with proper parameter types and return types.
+            }
+        }
+    }
+
+    @Section(title: "Running the Generator") {
+        @ContentAndMedia {
+            Execute the MTL template to generate Swift code from the UML model. The output creates one file per classifier in the output directory.
+        }
+
+        @Steps {
+            @Step {
+                Run the code generator.
+
+                @Code(name: "Terminal", file: mtl-advanced-01-run.sh)
+
+                Execute swift-mtl with the template and model. Each classifier produces a separate Swift file with proper naming and structure.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            How does the template determine whether to generate a struct or class?
+
+            @Choice(isCorrect: true) {
+                By checking the isStruct attribute on the UML Class
+
+                @Justification(reaction: "Correct!") {
+                    The UML metamodel includes an isStruct boolean attribute that controls whether the generated Swift type is a struct or class.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                By checking if the class has inheritance
+
+                @Justification(reaction: "Not quite!") {
+                    While Swift structs can't inherit, the template uses the explicit isStruct attribute for this decision.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                By analysing the properties and methods
+
+                @Justification(reaction: "Incorrect!") {
+                    The decision is based on the explicit isStruct flag, not inferred from the class contents.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What AQL expression would get all required properties (non-optional) of a class?
+
+            @Choice(isCorrect: false) {
+                cls.properties->select(p | p.optional)
+
+                @Justification(reaction: "That's the opposite!") {
+                    This selects optional properties. Use `not p.isOptional` for required ones.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                cls.properties->select(p | not p.isOptional)
+
+                @Justification(reaction: "Correct!") {
+                    This selects properties where isOptional is false, giving you the required properties.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                cls.properties->reject(p | p.isOptional = false)
+
+                @Justification(reaction: "Not correct!") {
+                    This double-negative is confusing. The cleaner approach is select with not isOptional.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Why does each classifier get its own output file?
+
+            @Choice(isCorrect: true) {
+                The [file] block creates a separate file for each classifier
+
+                @Justification(reaction: "Exactly!") {
+                    MTL's [file] block directive creates new output files. Each classifier template uses its own [file] block.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Swift requires one type per file
+
+                @Justification(reaction: "Not a Swift requirement!") {
+                    Swift allows multiple types per file. This is a design choice in the template.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                MTL can only write one file at a time
+
+                @Justification(reaction: "Incorrect!") {
+                    MTL supports multiple [file] blocks, creating many output files from one template execution.
+                }
+            }
+        }
+    }
+}

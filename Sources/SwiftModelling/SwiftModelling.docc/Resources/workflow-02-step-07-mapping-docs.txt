@@ -1,0 +1,228 @@
+# Legacy to Improved Model Mapping
+
+## Overview
+
+This document describes how concepts from the legacy Customer metamodel (v1.0) map to the improved CustomerManagement metamodel (v2.0). These mappings guide the ATL transformation development and help stakeholders understand the refactoring changes.
+
+## Class Mappings
+
+### Legacy Customer -> Multiple Target Classes
+
+The legacy `Customer` class was a God class containing all customer-related data. It has been decomposed into:
+
+| Legacy Attribute | Target Class | Target Attribute | Notes |
+|------------------|--------------|------------------|-------|
+| `id` | Customer | `identifier` | Renamed for consistency |
+| `name` | Customer | `name` | Inherited from NamedElement |
+| `companyName` | Organisation | `name` | Extracted to separate class |
+| `companyType` | Organisation | `organisationType` | Converted to enum |
+| `abn` | Organisation | `australianBusinessNumber` | Expanded name |
+| `acn` | Organisation | `australianCompanyNumber` | Expanded name |
+| `contactName` | Contact | `name` | Extracted to separate class |
+| `contactEmail` | Contact | `email` | Extracted to separate class |
+| `contactPhone` | Contact | `phone` | Extracted to separate class |
+| `streetAddress` | Address | `streetAddress` | Structured address |
+| `city` | Address | `suburb` | Renamed (Australian terminology) |
+| `state` | Address | `state` | Direct mapping |
+| `postcode` | Address | `postcode` | Direct mapping |
+| `country` | Address | `country` | Direct mapping |
+| `status` | Customer | `status` | Converted to enum |
+| `creditLimit` | Customer | `creditLimit` | Direct mapping |
+| `notes` | CustomerNote | `content` | Extracted to separate class |
+
+### Legacy CustomerType (String) -> OrganisationType (Enum)
+
+| Legacy Value | Target Enum Literal |
+|--------------|---------------------|
+| `"Company"` | `PRIVATE_COMPANY` |
+| `"Public"` | `PUBLIC_COMPANY` |
+| `"Govt"`, `"Government"` | `GOVERNMENT` |
+| `"NFP"`, `"Non-Profit"` | `NON_PROFIT` |
+| `"Partnership"` | `PARTNERSHIP` |
+| `"Individual"`, `"Sole Trader"` | `SOLE_TRADER` |
+
+### Legacy Status (String) -> CustomerStatus (Enum)
+
+| Legacy Value | Target Enum Literal |
+|--------------|---------------------|
+| `"New"`, `"Prospect"` | `PROSPECT` |
+| `"Active"`, `"Current"` | `ACTIVE` |
+| `"Inactive"`, `"Dormant"` | `INACTIVE` |
+| `"Suspended"`, `"Hold"` | `SUSPENDED` |
+| `"Closed"`, `"Deleted"` | `CLOSED` |
+
+## Structural Changes
+
+### Address Extraction
+
+**Before (Legacy):**
+```
+Customer
+  ├── streetAddress: String
+  ├── city: String
+  ├── state: String
+  ├── postcode: String
+  └── country: String
+```
+
+**After (Improved):**
+```
+Customer
+  ├── billingAddress: Address
+  └── deliveryAddress: Address
+
+Address
+  ├── addressType: AddressType
+  ├── streetAddress: String
+  ├── suburb: String
+  ├── state: String
+  ├── postcode: String
+  └── country: String
+```
+
+**Migration Logic:**
+1. Parse legacy address fields into Address object
+2. Set `suburb` from legacy `city` (terminology change)
+3. Default `addressType` to `TRADING`
+4. Default `country` to "Australia" if empty
+5. Assign same address to both `billingAddress` and `deliveryAddress` initially
+
+### Organisation Extraction
+
+**Before (Legacy):**
+```
+Customer
+  ├── companyName: String
+  ├── companyType: String
+  ├── abn: String
+  └── acn: String
+```
+
+**After (Improved):**
+```
+Organisation
+  ├── name: String (inherited)
+  ├── organisationType: OrganisationType
+  ├── tradingName: String
+  ├── australianBusinessNumber: String
+  └── australianCompanyNumber: String
+
+Customer
+  └── organisation: Organisation [1]
+```
+
+**Migration Logic:**
+1. Create Organisation for each unique company
+2. Deduplicate by ABN (Australian Business Number)
+3. Map `companyType` string to `OrganisationType` enum
+4. Link multiple Customers to same Organisation if ABN matches
+
+### Contact Extraction
+
+**Before (Legacy):**
+```
+Customer
+  ├── contactName: String
+  ├── contactEmail: String
+  └── contactPhone: String
+```
+
+**After (Improved):**
+```
+Contact
+  ├── name: String (inherited)
+  ├── contactType: ContactType
+  ├── email: String
+  ├── phone: String
+  ├── mobile: String
+  └── position: String
+
+Organisation
+  └── contacts: Contact [*]
+
+Customer
+  └── primaryContact: Contact
+```
+
+**Migration Logic:**
+1. Create Contact for each Customer's contact details
+2. Set `contactType` to `PRIMARY`
+3. Add Contact to Organisation's contacts collection
+4. Set as Customer's `primaryContact`
+
+### Notes Extraction
+
+**Before (Legacy):**
+```
+Customer
+  └── notes: String
+```
+
+**After (Improved):**
+```
+CustomerNote
+  ├── content: String
+  ├── createdAt: Date
+  └── createdBy: String
+
+Customer
+  └── notes: CustomerNote [*]
+```
+
+**Migration Logic:**
+1. If legacy `notes` is non-empty, create CustomerNote
+2. Set `content` to legacy notes value
+3. Set `createdAt` to migration timestamp
+4. Set `createdBy` to "Migration"
+
+## Identifier Mappings
+
+### Primary Keys
+
+| Legacy | Improved | Generation Strategy |
+|--------|----------|---------------------|
+| `Customer.id` | `Customer.identifier` | Direct copy |
+| (none) | `Organisation.identifier` | Generate from ABN or UUID |
+| (none) | `Contact.identifier` | Generate UUID |
+| (none) | `CustomerCategory.code` | Generate from name |
+
+### Foreign Key Relationships
+
+| Legacy Pattern | Improved Pattern |
+|----------------|------------------|
+| Embedded data | Reference to shared object |
+| String matching | Object reference |
+| Denormalised copy | Single source of truth |
+
+## Data Quality Transformations
+
+### Standardisation Rules
+
+1. **Phone Numbers**: Normalise to format "+61 X XXXX XXXX"
+2. **Postcodes**: Ensure 4 digits, zero-pad if needed
+3. **States**: Standardise to uppercase abbreviations (NSW, VIC, QLD, etc.)
+4. **Country**: Default to "Australia" if empty or "AU"
+5. **Names**: Trim whitespace, title case
+
+### Deduplication Rules
+
+1. **Organisations**: Match by ABN, then by exact name match
+2. **Addresses**: Match by all fields (normalised)
+3. **Contacts**: Match by email within same organisation
+
+## Validation Requirements
+
+### Post-Migration Checks
+
+1. All Customers have Organisation reference
+2. All Customers have at least one Address
+3. All required enum fields have valid values
+4. No orphaned Contacts or Addresses
+5. CustomerNote.customer references are valid
+
+### Data Integrity
+
+1. Total Customer count matches
+2. All ABNs preserved
+3. All email addresses preserved
+4. Credit limits unchanged

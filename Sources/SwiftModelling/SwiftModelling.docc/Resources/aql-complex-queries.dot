@@ -1,0 +1,32 @@
+digraph AQLComplexQueries {
+    bgcolor="white"
+    rankdir=TB
+    node [shape=box, style=rounded, fontname="Arial", fontsize=12]
+    edge [fontname="Arial", fontsize=10]
+    
+    subgraph cluster_patterns {
+        label="Advanced Query Patterns"
+        style=rounded
+        bgcolor="#e8f4f8"
+        
+        let [label="let x = expr\nin body" shape=note fillcolor="#f8f4e8" style=filled]
+        nested [label="collection\n  ->collect(c | c.items\n    ->select(i | cond))" shape=note fillcolor="#f8f4e8" style=filled]
+        cross [label="a->cross(b)\n  ->select((x,y) | ...)" shape=note fillcolor="#f8f4e8" style=filled]
+    }
+    
+    subgraph cluster_uses {
+        label="Use Cases"
+        style=rounded
+        bgcolor="#e8f8f5"
+        
+        reports [label="Complex Reports" shape=box]
+        validation [label="Model Validation" shape=box]
+        transform [label="Transformation Logic" shape=box]
+    }
+    
+    let -> reports
+    nested -> validation
+    cross -> transform
+    
+    legendTitle [label="Complex AQL Queries" shape=plaintext fontname="Arial Bold" fontsize=14]
+}

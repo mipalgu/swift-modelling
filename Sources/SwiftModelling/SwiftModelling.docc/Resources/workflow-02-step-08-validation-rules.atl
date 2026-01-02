@@ -1,0 +1,92 @@
+-- ATL Validation Queries for Migrated Data
+-- Verifies data integrity after migration
+-- @path Orders=/Orders/Orders.ecore
+
+module OrdersValidation;
+create OUT: Orders refining IN: Orders;
+
+-- ===========================================================================
+-- Validation Helper: Check all orders have customers
+-- ===========================================================================
+helper def: ordersWithoutCustomer: Sequence(Orders!Order) =
+    Orders!Order.allInstances()->select(o | o.customer.oclIsUndefined());
+
+-- ===========================================================================
+-- Validation Helper: Check all order items have products
+-- ===========================================================================
+helper def: orphanedOrderItems: Sequence(Orders!OrderItem) =
+    Orders!OrderItem.allInstances()->select(i | i.product.oclIsUndefined());
+
+-- ===========================================================================
+-- Validation Helper: Check for duplicate customer emails
+-- ===========================================================================
+helper def: duplicateCustomerEmails: Set(String) =
+    let allEmails: Sequence(String) = Orders!Customer.allInstances()->collect(c | c.email) in
+    allEmails->select(e | allEmails->count(e) > 1)->asSet();
+
+-- ===========================================================================
+-- Validation Helper: Check products have valid prices
+-- ===========================================================================
+helper def: productsWithInvalidPrice: Sequence(Orders!Product) =
+    Orders!Product.allInstances()->select(p |
+        p.price.oclIsUndefined() or p.price <= 0
+    );
+
+-- ===========================================================================
+-- Validation Helper: Check inventory levels
+-- ===========================================================================
+helper def: inventoryBelowReorderLevel: Sequence(Orders!InventoryItem) =
+    Orders!InventoryItem.allInstances()->select(i |
+        i.stockQuantity < i.reorderLevel
+    );
+
+-- ===========================================================================
+-- Validation Helper: Check order totals are reasonable
+-- ===========================================================================
+helper context Orders!Order def: calculatedTotal: Real =
+    self.items->collect(i | i.quantity * i.unitPriceAtOrder)->sum();
+
+helper def: ordersWithPaymentMismatch: Sequence(Orders!Order) =
+    Orders!Order.allInstances()->select(o |
+        not o.payment.oclIsUndefined() and
+        (o.payment.amount - o.calculatedTotal).abs() > 0.01
+    );
+
+-- ===========================================================================
+-- Validation Helper: Check all categories have codes
+-- ===========================================================================
+helper def: categoriesWithoutCodes: Sequence(Orders!Category) =
+    Orders!Category.allInstances()->select(c |
+        c.code.oclIsUndefined() or c.code.size() = 0
+    );
+
+-- ===========================================================================
+-- Validation Query: Generate validation report
+-- ===========================================================================
+helper def: validationReport: String =
+    'Migration Validation Report\n' +
+    '===========================\n\n' +
+    'Orders without customer: ' + thisModule.ordersWithoutCustomer->size().toString() + '\n' +
+    'Orphaned order items: ' + thisModule.orphanedOrderItems->size().toString() + '\n' +
+    'Duplicate customer emails: ' + thisModule.duplicateCustomerEmails->size().toString() + '\n' +
+    'Products with invalid price: ' + thisModule.productsWithInvalidPrice->size().toString() + '\n' +
+    'Inventory below reorder level: ' + thisModule.inventoryBelowReorderLevel->size().toString() + '\n' +
+    'Orders with payment mismatch: ' + thisModule.ordersWithPaymentMismatch->size().toString() + '\n' +
+    'Categories without codes: ' + thisModule.categoriesWithoutCodes->size().toString() + '\n' +
+    '\nValidation ' +
+    if thisModule.ordersWithoutCustomer->isEmpty() and
+       thisModule.orphanedOrderItems->isEmpty() and
+       thisModule.duplicateCustomerEmails->isEmpty() and
+       thisModule.productsWithInvalidPrice->isEmpty()
+    then 'PASSED'
+    else 'FAILED - See issues above'
+    endif;
+
+-- ===========================================================================
+-- Entry point rule to trigger validation
+-- ===========================================================================
+entrypoint rule ValidateModel() {
+    do {
+        thisModule.validationReport.println();
+    }
+}

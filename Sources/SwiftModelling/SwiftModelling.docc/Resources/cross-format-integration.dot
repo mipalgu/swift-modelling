@@ -1,0 +1,37 @@
+digraph CrossFormatIntegration {
+    bgcolor="white"
+    rankdir=TB
+    node [shape=box, style=rounded, fontname="Arial", fontsize=12]
+    edge [fontname="Arial", fontsize=10]
+    
+    subgraph cluster_formats {
+        label="Format Ecosystem"
+        style=rounded
+        bgcolor="#e8f4f8"
+        
+        xmi [label="XMI\n(.xmi)" shape=box3d fillcolor="#f8f4e8" style=filled]
+        json [label="JSON\n(.json)" shape=box3d fillcolor="#e8f8f5" style=filled]
+        swift [label="Swift\n(.swift)" shape=note fillcolor="#f4e8f8" style=filled]
+    }
+    
+    subgraph cluster_tools {
+        label="Transformation Tools"
+        style=rounded
+        bgcolor="#fff8e8"
+        
+        atl [label="ATL" shape=ellipse]
+        mtl [label="MTL" shape=ellipse]
+        convert [label="Convert" shape=ellipse]
+    }
+    
+    xmi -> convert [label="to JSON"]
+    convert -> json
+    json -> convert [label="to XMI"]
+    convert -> xmi
+    xmi -> atl [label="transform"]
+    atl -> xmi
+    xmi -> mtl [label="generate"]
+    mtl -> swift
+    
+    legendTitle [label="Cross-Format Integration" shape=plaintext fontname="Arial Bold" fontsize=14]
+}

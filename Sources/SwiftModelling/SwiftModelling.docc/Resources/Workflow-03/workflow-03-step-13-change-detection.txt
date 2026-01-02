@@ -1,0 +1,184 @@
+# Change Detection Mechanisms
+
+## Overview
+
+Bidirectional synchronisation requires detecting changes made in different formats
+and tools. This document describes strategies for identifying and tracking changes
+across XMI, JSON, and Swift representations.
+
+## Change Types
+
+### Structural Changes
+- **Addition**: New elements added to the model
+- **Deletion**: Elements removed from the model
+- **Move**: Elements relocated in containment hierarchy
+
+### Property Changes
+- **Value Update**: Attribute value modified
+- **Reference Update**: Reference target changed
+- **Collection Modification**: Items added/removed from multi-valued features
+
+## Detection Strategies
+
+### Strategy 1: Timestamp-Based
+
+Track modification timestamps for each element.
+
+```
+Element Metadata:
+- id: "TASK-001"
+- createdAt: "2024-01-15T09:00:00Z"
+- modifiedAt: "2024-03-10T15:20:00Z"
+- modifiedBy: "MEMBER-002"
+- version: 3
+```
+
+**Pros**: Simple, low overhead
+**Cons**: Timestamp drift, concurrent edits
+
+### Strategy 2: Version Vectors
+
+Maintain version counters per source.
+
+```
+Element Metadata:
+- id: "TASK-001"
+- versions:
+    xmi: 5
+    json: 7
+    swift: 4
+```
+
+**Pros**: Detects concurrent modifications
+**Cons**: More storage, complex merge
+
+### Strategy 3: Content Hashing
+
+Compute hash of element content.
+
+```
+Element Metadata:
+- id: "TASK-001"
+- contentHash: "sha256:a1b2c3..."
+- previousHash: "sha256:x9y8z7..."
+```
+
+**Pros**: Detects any change, integrity verification
+**Cons**: Recomputation overhead, no semantic understanding
+
+---
+
+## Change Detection Algorithm
+
+```
+function detectChanges(oldModel, newModel):
+    changes = []
+
+    # Find new elements
+    for element in newModel.elements:
+        if element.id not in oldModel.elementIds:
+            changes.add(Addition(element))
+
+    # Find deleted elements
+    for element in oldModel.elements:
+        if element.id not in newModel.elementIds:
+            changes.add(Deletion(element))
+
+    # Find modified elements
+    for element in newModel.elements:
+        if element.id in oldModel.elementIds:
+            oldElement = oldModel.getElement(element.id)
+            if element.contentHash != oldElement.contentHash:
+                propertyChanges = detectPropertyChanges(oldElement, element)
+                changes.add(Modification(element, propertyChanges))
+
+    return changes
+```
+
+---
+
+## Conflict Detection
+
+### Definition
+A conflict occurs when the same element is modified differently
+in multiple sources between synchronisation points.
+
+### Conflict Scenarios
+
+| Scenario | Source A | Source B | Conflict Type |
+|----------|----------|----------|---------------|
+| 1 | Update field X | Update field X (different value) | Value Conflict |
+| 2 | Update field X | Update field Y | No Conflict (mergeable) |
+| 3 | Delete element | Update element | Update-Delete Conflict |
+| 4 | Add child | Add different child | No Conflict (both added) |
+| 5 | Move element | Delete element | Move-Delete Conflict |
+
+### Conflict Detection Algorithm
+
+```
+function detectConflicts(changesA, changesB):
+    conflicts = []
+
+    for changeA in changesA:
+        for changeB in changesB:
+            if changeA.elementId == changeB.elementId:
+                if isConflicting(changeA, changeB):
+                    conflicts.add(Conflict(changeA, changeB))
+
+    return conflicts
+
+function isConflicting(changeA, changeB):
+    # Same element, both modified
+    if changeA.type == MODIFY and changeB.type == MODIFY:
+        # Check if same properties modified with different values
+        for propA in changeA.properties:
+            for propB in changeB.properties:
+                if propA.name == propB.name:
+                    if propA.newValue != propB.newValue:
+                        return true
+        return false
+
+    # One deleted, one modified
+    if (changeA.type == DELETE and changeB.type == MODIFY) or
+       (changeA.type == MODIFY and changeB.type == DELETE):
+        return true
+
+    return false
+```
+
+---
+
+## Change Tracking Implementation
+
+### XMI Format
+- Use EMF Change Recorder
+- Store change descriptions in separate resource
+- Track containment path for each change
+
+### JSON Format
+- JSON Patch (RFC 6902) for change representation
+- Store patches with timestamps
+- Support operational transformation
+
+### Swift Format
+- Combine pattern with change notification
+- SwiftUI @Observable for reactive updates
+- Store change log in CoreData or file
+
+---
+
+## Synchronisation Checkpoints
+
+Regular checkpoints ensure recovery and audit trail:
+
+```
+Checkpoint Structure:
+- checkpointId: "CP-2024-03-10-001"
+- timestamp: "2024-03-10T18:00:00Z"
+- sources:
+    xmi: { version: 12, hash: "sha256:..." }
+    json: { version: 15, hash: "sha256:..." }
+    swift: { version: 10, hash: "sha256:..." }
+- pendingChanges: []
+- lastConflictResolution: "2024-03-09T14:30:00Z"
+```

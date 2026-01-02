@@ -1,0 +1,39 @@
+digraph AQLMTLIntegration {
+    bgcolor="white"
+    rankdir=TB
+    node [shape=box, style=rounded, fontname="Arial", fontsize=12]
+    edge [fontname="Arial", fontsize=10]
+    
+    subgraph cluster_model {
+        label="Model"
+        style=rounded
+        bgcolor="#e8f4f8"
+        model [label="XMI Instance" shape=box3d]
+    }
+    
+    subgraph cluster_template {
+        label="MTL Template"
+        style=rounded
+        bgcolor="#f8f4e8"
+        template [label="[template generate(c : Class)]\npublic class [c.name/] {\n  [for (p : c.properties)]\n    [p.type/] [p.name/];\n  [/for]\n}" shape=note fontname="Courier" fontsize=10]
+    }
+    
+    subgraph cluster_aql {
+        label="AQL Queries"
+        style=rounded
+        bgcolor="#e8f8f5"
+        aql1 [label="c.name" shape=ellipse]
+        aql2 [label="c.properties" shape=ellipse]
+        aql3 [label="p.type, p.name" shape=ellipse]
+    }
+    
+    output [label="Generated Code" shape=note fillcolor="#f4e8f8" style=filled]
+    
+    model -> template [label="process"]
+    template -> aql1 [style=dashed]
+    template -> aql2 [style=dashed]
+    template -> aql3 [style=dashed]
+    template -> output [label="generate"]
+    
+    legendTitle [label="AQL in MTL Templates" shape=plaintext fontname="Arial Bold" fontsize=14]
+}

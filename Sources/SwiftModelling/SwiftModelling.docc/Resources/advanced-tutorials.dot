@@ -1,0 +1,40 @@
+digraph advanced_tutorials {
+    rankdir=TB;
+    node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12];
+    edge [fontname="Helvetica", fontsize=10];
+
+    // Colours
+    node [fillcolor="#E8F4FD"];
+
+    subgraph cluster_advanced {
+        label="Advanced MDE Techniques";
+        style="rounded,filled";
+        fillcolor="#F3E5F5";
+        fontname="Helvetica Bold";
+
+        subgraph cluster_atl {
+            label="ATL Advanced";
+            style="rounded,filled";
+            fillcolor="#E1BEE7";
+
+            class2rel [label="Class to\nRelational", fillcolor="#9C27B0", fontcolor="white"];
+            complex [label="Complex\nPatterns", fillcolor="#AB47BC"];
+        }
+
+        subgraph cluster_mtl {
+            label="MTL Advanced";
+            style="rounded,filled";
+            fillcolor="#BBDEFB";
+
+            uml2swift [label="UML to\nSwift", fillcolor="#1976D2", fontcolor="white"];
+            codegen [label="Multi-File\nGeneration", fillcolor="#42A5F5"];
+        }
+    }
+
+    // Connections
+    class2rel -> complex [style=dashed, color="#9C27B0"];
+    uml2swift -> codegen [style=dashed, color="#1976D2"];
+
+    // Cross-technology links
+    complex -> uml2swift [label="combined\nworkflows", style=dotted, color="#666666"];
+}

@@ -1,59 +1,111 @@
 #!/bin/bash
-echo "=== AQL Complex Patterns: Recursive Navigation ==="
-echo ""
-echo "Handle hierarchical and recursive model structures."
-echo ""
-echo "Ex 1: eAllContents - recursive containment traversal"
-echo "  library.eAllContents()"
-echo "  Result: All objects recursively contained (books, authors, categories, etc.)"
-echo ""
-echo "  library.eAllContents()->select(e | e.oclIsKindOf(Book))->size()"
-echo "  Result: Count of all books at any depth"
-echo ""
-echo "Ex 2: eContainer - navigate up containment hierarchy"
-echo "  library.books->first().eContainer()"
-echo "  Result: The library containing the book"
-echo ""
-echo "  library.books->first().eContainer().eContainer()"
-echo "  Result: Container of the library (null if root)"
-echo ""
-echo "Ex 3: Recursive function simulation with closure"
-echo "  -- Find all categories and subcategories (if hierarchical)"
-echo "  -- Assume Category has 'subcategories' reference"
-echo "  rootCategory->closure(c | c.subcategories)"
-echo "  Result: Root category and all nested subcategories"
-echo ""
-echo "Ex 4: Path to root"
-echo "  -- Build path from element to root container"
-echo "  let book = library.books->first() in"
-echo "  Sequence{book, book.eContainer(), book.eContainer().eContainer()}"
-echo "    ->select(e | e <> null)"
-echo "  Result: [Book, Library, null] -> [Book, Library]"
-echo ""
-echo "Ex 5: Depth calculation"
-echo "  -- Calculate containment depth (manual iteration)"
-echo "  let element = library.books->first() in"
-echo "  let depth = if element.eContainer() = null then 0"
-echo "              else if element.eContainer().eContainer() = null then 1"
-echo "              else if element.eContainer().eContainer().eContainer() = null then 2"
-echo "              else 3"
-echo "              endif endif endif in"
-echo "  Tuple{element = element, depth = depth}"
-echo "  Result: {element: Book, depth: 1} (assuming Library is root)"
-echo ""
-echo "Ex 6: Find common ancestor"
-echo "  -- Find lowest common ancestor of two elements"
-echo "  let book1 = library.books->first() in"
-echo "  let book2 = library.books->last() in"
-echo "  -- Both have library as direct container, so:"
-echo "  book1.eContainer()  -- Returns library"
-echo "  Result: Library (common ancestor)"
-echo ""
-echo "Ex 7: Recursive type filtering"
-echo "  library.eAllContents()"
-echo "    ->select(e | e.eClass().name.startsWith('Book'))"
-echo "  Result: All objects whose type starts with 'Book' at any depth"
-echo ""
-echo "✅ eAllContents() traverses full containment tree"
-echo "✅ eContainer() navigates up the hierarchy"
-echo "✅ closure() computes transitive relationships"
+# Recursive navigation with eAllContents and eContainer
+# Demonstrates hierarchical traversal through containment trees
+
+# Example 1: eAllContents - Get all contained elements recursively
+# Find all elements nested within an organisation
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "organisation.eAllContents()->size()"
+
+# Output: 45 (total number of all contained elements)
+
+# Example 2: Select specific types from all contents
+# Find all employees in the entire organisation hierarchy
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "organisation.eAllContents()
+    ->select(e | e.oclIsKindOf(Employee))
+    ->size()"
+
+# Output: 20 (all employees at all levels)
+
+# Example 3: Type-cast and collect from recursive traversal
+# Get all employee names throughout the organisation
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "organisation.eAllContents()
+    ->select(e | e.oclIsKindOf(Employee))
+    ->collect(e | e.oclAsType(Employee).name)"
+
+# Output: ["Sarah Mitchell", "David Lee", "Michael Chen", "Emily Rodriguez", ...]
+
+# Example 4: Find nested departments recursively
+# Count all departments including sub-departments
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "organisation.eAllContents()
+    ->select(e | e.oclIsKindOf(Department))
+    ->size()"
+
+# Output: 9 (top-level departments plus all sub-departments)
+
+# Example 5: eContainer - Navigate upward in containment hierarchy
+# Find the containing department of an employee
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "let employee = organisation.departments.employees
+        ->flatten()
+        ->select(e | e.name = 'Michael Chen')
+        ->first()
+    in employee.eContainer().oclAsType(Department).name"
+
+# Output: "Engineering"
+
+# Example 6: Navigate to top-level container
+# Find the organisation containing a deeply nested element
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "let milestone = organisation.projects.milestones
+        ->flatten()
+        ->first()
+    in milestone.eContainer()
+        .eContainer()
+        .oclAsType(Organisation).name"
+
+# Output: "TechCorp International" (navigating from milestone to project to organisation)
+
+# Example 7: Combine eAllContents with filtering
+# Find all high-priority project milestones
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "let highPriorityProjects = organisation.eAllContents()
+        ->select(e | e.oclIsKindOf(Project))
+        ->select(p | p.oclAsType(Project).priority >= 8)
+    in highPriorityProjects
+        ->collect(p | p.oclAsType(Project).milestones)
+        ->flatten()
+        ->size()"
+
+# Output: 4 (milestones from high-priority projects)
+
+# Example 8: Recursive navigation with depth awareness
+# Find all employees in sub-departments (not top-level)
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "organisation.departments.subDepartments
+    ->flatten()
+    .eAllContents()
+    ->select(e | e.oclIsKindOf(Employee))
+    ->size()"
+
+# Output: 6 (employees only in sub-departments)
+
+# Example 9: Complex recursive pattern
+# Find all completed milestones across all projects
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "organisation.eAllContents()
+    ->select(e | e.oclIsKindOf(Milestone))
+    ->collect(m | m.oclAsType(Milestone))
+    ->select(m | m.completed)
+    ->collect(m | m.name)"
+
+# Output: ["Alpha Release", "Beta Testing", ...] (completed milestones)
+
+# Example 10: Hierarchical aggregation
+# Calculate total budget across all organisational levels
+swift-aql evaluate --model enterprise-data.xmi \
+  --expression "let allDepts = organisation.eAllContents()
+        ->select(e | e.oclIsKindOf(Department))
+        ->collect(d | d.oclAsType(Department))
+    in let allProjects = organisation.eAllContents()
+        ->select(e | e.oclIsKindOf(Project))
+        ->collect(p | p.oclAsType(Project))
+    in Tuple{
+        departmentBudgets = allDepts->collect(d | d.budget)->sum(),
+        projectBudgets = allProjects->collect(p | p.budget)->sum()
+    }"
+
+# Output: {departmentBudgets: 9500000.0, projectBudgets: 1650000.0}

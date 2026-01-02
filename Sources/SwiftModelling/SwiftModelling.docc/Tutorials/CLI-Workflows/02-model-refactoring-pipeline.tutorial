@@ -44,7 +44,7 @@
             @Step {
                 Document refactoring goals.
 
-                @Code(name: "refactoring-plan.md", file: workflow-02-step-04-refactoring-plan.md)
+                @Code(name: "refactoring-plan.md", file: workflow-02-step-04-refactoring-plan.txt)
 
                 Create a systematic plan that identifies specific refactoring goals, success criteria, and validation approaches to ensure the refactoring improves model quality.
             }
@@ -78,7 +78,7 @@
             @Step {
                 Create mapping documentation.
 
-                @Code(name: "legacy-to-improved-mapping.md", file: workflow-02-step-07-mapping-docs.md)
+                @Code(name: "legacy-to-improved-mapping.md", file: workflow-02-step-07-mapping-docs.txt)
 
                 Document how legacy concepts map to improved concepts. This guides transformation development and helps stakeholders understand the changes.
             }
@@ -86,7 +86,7 @@
             @Step {
                 Design backwards compatibility strategy.
 
-                @Code(name: "compatibility-strategy.md", file: workflow-02-step-08-compatibility-strategy.md)
+                @Code(name: "compatibility-strategy.md", file: workflow-02-step-08-compatibility-strategy.txt)
 
                 Plan how to maintain compatibility with existing tools and processes during the refactoring transition period.
             }

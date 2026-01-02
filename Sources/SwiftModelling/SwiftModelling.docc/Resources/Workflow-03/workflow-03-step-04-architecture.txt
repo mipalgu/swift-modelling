@@ -1,0 +1,115 @@
+# Integration Architecture
+
+## System Overview
+
+```
++------------------+     +------------------+     +------------------+
+|   Java EMF Tool  |     |    Web Editor    |     |    Swift App     |
+|   (Enterprise)   |     |   (Browser)      |     |   (iOS/macOS)    |
++--------+---------+     +--------+---------+     +--------+---------+
+         |                        |                        |
+         | XMI                    | JSON                   | Swift
+         |                        |                        |
++--------v------------------------v------------------------v---------+
+|                    Integration Gateway                             |
+|  +-------------+  +-------------+  +-------------+  +-------------+ |
+|  | XMI Parser  |  | JSON Parser |  | Validator   |  | Sync Engine | |
+|  +-------------+  +-------------+  +-------------+  +-------------+ |
++--------+------------------------+------------------------+---------+
+         |                        |                        |
+         v                        v                        v
++--------+------------------------+------------------------+---------+
+|                       Canonical Model                              |
+|              (In-memory Ecore representation)                      |
++--------------------------------------------------------------------+
+```
+
+## Component Responsibilities
+
+### XMI Parser
+- Parse XMI 2.0/2.1 documents
+- Resolve cross-file references
+- Validate against Ecore metamodel
+- Generate XMI output with proper namespaces
+
+### JSON Parser
+- Parse/generate JSON documents
+- Map IDs to model references
+- Handle embedded vs referenced objects
+- Support JSON Schema validation
+
+### Validator
+- Enforce metamodel constraints
+- Validate multiplicity bounds
+- Check referential integrity
+- Report validation errors
+
+### Sync Engine
+- Track change timestamps
+- Detect concurrent modifications
+- Apply conflict resolution policies
+- Maintain audit log
+
+## Data Flow Patterns
+
+### Pattern 1: XMI to JSON Export
+```
+1. Java EMF Tool exports XMI
+2. Gateway parses XMI to canonical model
+3. Validator checks model integrity
+4. JSON serialiser flattens references
+5. Web Editor receives JSON
+```
+
+### Pattern 2: JSON to XMI Import
+```
+1. Web Editor sends modified JSON
+2. Gateway parses JSON
+3. Validator checks against metamodel
+4. Sync Engine detects changes
+5. XMI serialiser generates output
+6. Java EMF Tool imports XMI
+```
+
+### Pattern 3: Real-time Synchronisation
+```
+1. Any client makes change
+2. Change event sent to Gateway
+3. Conflict detection runs
+4. If no conflict: broadcast to all clients
+5. If conflict: apply resolution policy
+```
+
+## Synchronisation Strategies
+
+### Strategy A: Last-Write-Wins
+- Simplest approach
+- Based on timestamps
+- May lose concurrent changes
+- Suitable for single-user scenarios
+
+### Strategy B: Merge-on-Conflict
+- Attempts automatic merge
+- Field-level granularity
+- Falls back to manual resolution
+- Better for team collaboration
+
+### Strategy C: Operational Transform
+- Real-time collaboration
+- Transform concurrent operations
+- Preserves all user intent
+- Most complex to implement
+
+## API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/projects` | GET | List all projects |
+| `/api/projects/{id}` | GET | Get project by ID |
+| `/api/projects` | POST | Create new project |
+| `/api/projects/{id}` | PUT | Update project |
+| `/api/sync/status` | GET | Get sync status |
+| `/api/sync/push` | POST | Push local changes |
+| `/api/sync/pull` | GET | Pull remote changes |
+| `/api/export/xmi` | GET | Export as XMI |
+| `/api/export/json` | GET | Export as JSON |

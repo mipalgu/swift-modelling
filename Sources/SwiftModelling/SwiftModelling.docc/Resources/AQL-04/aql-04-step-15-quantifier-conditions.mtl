@@ -1,0 +1,214 @@
+[comment encoding = UTF-8 /]
+[module QuantifierConditions('http://www.example.org/webapp')]
+
+[comment]
+  Quantifier Operations in Conditional Generation
+
+  This template demonstrates using AQL's quantifier
+  operations (exists, forAll) within conditional statements.
+
+  Quantifiers test whether conditions hold across
+  collection elements - essential for validation logic.
+[/comment]
+
+[template main(app : WebApp)]
+[file ('quantifier-conditions.txt', 'overwrite', 'UTF-8')]
+Quantifier Operations in Conditions
+===================================
+
+Application: [app.name/]
+
+[comment ================================================================ /]
+[comment             EXISTS OPERATION                                     /]
+[comment ================================================================ /]
+
+1. Exists - At Least One Element Matches
+----------------------------------------
+[comment]
+  ->exists(condition) returns true if ANY element
+  in the collection satisfies the condition.
+[/comment]
+
+[if (app.pages->exists(p | p.requiresAuth))]
+This application has protected pages requiring authentication.
+[else]
+All pages are publicly accessible.
+[/if]
+
+[if (app.entities->exists(e | e.relationships->notEmpty()))]
+The data model includes entity relationships.
+[/if]
+
+[if (app.stylesheets->exists(s | s.isExternal))]
+External stylesheets (CDN resources) are configured.
+[/if]
+
+[comment ================================================================ /]
+[comment             FORALL OPERATION                                     /]
+[comment ================================================================ /]
+
+2. ForAll - All Elements Match
+------------------------------
+[comment]
+  ->forAll(condition) returns true if ALL elements
+  satisfy the condition (or collection is empty).
+[/comment]
+
+[if (app.entities->forAll(e | e.attributes->exists(a | a.isPrimaryKey)))]
+[OK] All entities have primary keys defined.
+[else]
+[WARNING] Some entities lack primary keys.
+[/if]
+
+[if (app.pages->forAll(p | p.title <> null and p.title.size() > 0))]
+[OK] All pages have titles set.
+[else]
+[WARNING] Some pages are missing titles.
+[/if]
+
+[if (app.entities->forAll(e | e.tableName <> null and e.tableName.size() > 0))]
+[OK] All entities have table names defined.
+[else]
+[WARNING] Some entities lack table name configuration.
+[/if]
+
+[comment ================================================================ /]
+[comment             EXISTS IN LOOPS                                      /]
+[comment ================================================================ /]
+
+3. Exists Within Iteration
+--------------------------
+[comment]
+  Use exists to conditionally include content
+  based on nested collection properties.
+[/comment]
+
+Entity relationship status:
+[for (entity : Entity | app.entities)]
+[entity.name/]:
+[if (entity.relationships->exists(r | r.relationType = RelationType::oneToMany))]
+  - Has one-to-many relationships
+[/if]
+[if (entity.relationships->exists(r | r.relationType = RelationType::manyToMany))]
+  - Has many-to-many relationships
+[/if]
+[if (entity.relationships->exists(r | r.relationType = RelationType::manyToOne))]
+  - Has many-to-one relationships
+[/if]
+[if (not entity.relationships->exists(r | true))]
+  - No relationships defined
+[/if]
+
+[/for]
+
+[comment ================================================================ /]
+[comment             FORALL IN LOOPS                                      /]
+[comment ================================================================ /]
+
+4. ForAll Within Iteration
+--------------------------
+[comment]
+  Use forAll to validate that all nested elements
+  meet certain criteria.
+[/comment]
+
+Entity validation report:
+[for (entity : Entity | app.entities)]
+[entity.name/]:
+[if (entity.attributes->forAll(a | a.name <> null and a.name.size() > 0))]
+  [PASS] All attributes are named
+[else]
+  [FAIL] Some attributes lack names
+[/if]
+[if (entity.attributes->forAll(a | a.dataType <> null))]
+  [PASS] All attributes have data types
+[else]
+  [FAIL] Some attributes lack data types
+[/if]
+[if (entity.attributes->reject(a | a.isPrimaryKey)->forAll(a | a.isNullable or (a.defaultValue <> null and a.defaultValue.size() > 0)))]
+  [PASS] All non-PK attributes are nullable or have defaults
+[else]
+  [INFO] Some non-PK attributes are required without defaults
+[/if]
+
+[/for]
+
+[comment ================================================================ /]
+[comment             COMBINED QUANTIFIERS                                 /]
+[comment ================================================================ /]
+
+5. Combined Quantifier Patterns
+-------------------------------
+[comment]
+  Combine exists and forAll for comprehensive
+  validation and conditional logic.
+[/comment]
+
+Application validation summary:
+
+Schema validation:
+[if (app.entities->forAll(e | e.attributes->exists(a | a.isPrimaryKey)))]
+  [PASS] Every entity has a primary key
+[else]
+  [FAIL] Not all entities have primary keys
+[/if]
+
+Security validation:
+[if (app.pages->exists(p | not p.requiresAuth) and app.pages->exists(p | p.requiresAuth))]
+  [INFO] Mixed access - both public and protected pages
+[elseif (app.pages->forAll(p | p.requiresAuth))]
+  [INFO] Fully protected - all pages require authentication
+[else]
+  [INFO] Fully public - no authentication required
+[/if]
+
+UI completeness:
+[if (app.pages->forAll(p | p.components->notEmpty()))]
+  [PASS] All pages have components
+[else]
+  [WARN] Some pages have no components
+[/if]
+
+[comment ================================================================ /]
+[comment             NESTED QUANTIFIERS                                   /]
+[comment ================================================================ /]
+
+6. Nested Quantifier Expressions
+--------------------------------
+[comment]
+  Quantifiers can be nested for complex validation.
+  Keep nesting shallow for readability.
+[/comment]
+
+Deep validation:
+[if (app.pages->forAll(p | p.components->forAll(c | c.name <> null)))]
+  [PASS] All components on all pages are named
+[else]
+  [FAIL] Some components lack names
+[/if]
+
+[if (app.pages->exists(p | p.components->exists(c | c.oclIsTypeOf(Form))))]
+  [INFO] Application includes data entry forms
+[/if]
+
+Form completeness:
+[for (page : Page | app.pages)]
+[let forms = page.components->select(c | c.oclIsTypeOf(Form))->collect(c | c.oclAsType(Form))]
+[if (forms->notEmpty())]
+[page.name/]:
+[if (forms->forAll(f | f.fields->notEmpty()))]
+    [PASS] All forms have fields
+[else]
+    [WARN] Some forms are empty
+[/if]
+[if (forms->forAll(f | f.boundEntity <> null))]
+    [PASS] All forms are bound to entities
+[else]
+    [INFO] Some forms are not bound to entities
+[/if]
+[/if]
+[/let]
+[/for]
+
+[/file]
+[/template]

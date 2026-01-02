@@ -1,0 +1,348 @@
+-- ATL Transformation: XMI to JSON Format
+-- Converts Project Management XMI models to web-friendly JSON structure
+-- Part of the Cross-Format Integration tutorial
+-- @path PM=/ProjectManagement/ProjectManagement.ecore
+-- @path JSON=/JSON/JsonModel.ecore
+
+module XMI2JSON;
+create OUT: JSON from IN: PM;
+
+-- ===========================================================================
+-- Helper: Format date as ISO 8601 string
+-- ===========================================================================
+helper context OclAny def: formatDate(): String =
+    if self.oclIsUndefined() then
+        ''
+    else
+        self.toString()
+    endif;
+
+-- ===========================================================================
+-- Helper: Convert ProjectStatus enum to string
+-- ===========================================================================
+helper context PM!ProjectStatus def: toJsonString(): String =
+    if self = #PLANNING then 'PLANNING'
+    else if self = #ACTIVE then 'ACTIVE'
+    else if self = #ON_HOLD then 'ON_HOLD'
+    else if self = #COMPLETED then 'COMPLETED'
+    else if self = #CANCELLED then 'CANCELLED'
+    else 'PLANNING'
+    endif endif endif endif endif;
+
+-- ===========================================================================
+-- Helper: Convert TaskPriority enum to string
+-- ===========================================================================
+helper context PM!TaskPriority def: toJsonString(): String =
+    if self = #LOW then 'LOW'
+    else if self = #MEDIUM then 'MEDIUM'
+    else if self = #HIGH then 'HIGH'
+    else if self = #CRITICAL then 'CRITICAL'
+    else 'MEDIUM'
+    endif endif endif endif;
+
+-- ===========================================================================
+-- Helper: Convert TaskStatus enum to string
+-- ===========================================================================
+helper context PM!TaskStatus def: toJsonString(): String =
+    if self = #NOT_STARTED then 'NOT_STARTED'
+    else if self = #IN_PROGRESS then 'IN_PROGRESS'
+    else if self = #BLOCKED then 'BLOCKED'
+    else if self = #IN_REVIEW then 'IN_REVIEW'
+    else if self = #COMPLETED then 'COMPLETED'
+    else 'NOT_STARTED'
+    endif endif endif endif endif;
+
+-- ===========================================================================
+-- Helper: Get ID reference from element
+-- ===========================================================================
+helper context PM!TeamMember def: idRef(): String =
+    if self.oclIsUndefined() then '' else self.id endif;
+
+helper context PM!Department def: idRef(): String =
+    if self.oclIsUndefined() then '' else self.id endif;
+
+helper context PM!Task def: idRef(): String =
+    if self.oclIsUndefined() then '' else self.id endif;
+
+-- ===========================================================================
+-- Rule: Organisation -> JsonObject (root)
+-- ===========================================================================
+rule Organisation2Json {
+    from
+        org: PM!Organisation
+    to
+        json: JSON!JsonObject (
+            properties <- Sequence{
+                nameProp, domainProp, departmentsProp, membersProp, projectsProp
+            }
+        ),
+        nameProp: JSON!JsonProperty (
+            key <- 'name',
+            value <- nameVal
+        ),
+        nameVal: JSON!JsonString (
+            value <- org.name
+        ),
+        domainProp: JSON!JsonProperty (
+            key <- 'domain',
+            value <- domainVal
+        ),
+        domainVal: JSON!JsonString (
+            value <- org.domain
+        ),
+        departmentsProp: JSON!JsonProperty (
+            key <- 'departments',
+            value <- departmentsArr
+        ),
+        departmentsArr: JSON!JsonArray (
+            elements <- org.departments
+        ),
+        membersProp: JSON!JsonProperty (
+            key <- 'members',
+            value <- membersArr
+        ),
+        membersArr: JSON!JsonArray (
+            elements <- org.members
+        ),
+        projectsProp: JSON!JsonProperty (
+            key <- 'projects',
+            value <- projectsArr
+        ),
+        projectsArr: JSON!JsonArray (
+            elements <- org.projects
+        )
+}
+
+-- ===========================================================================
+-- Rule: Department -> JsonObject
+-- Flattens manager reference to ID
+-- ===========================================================================
+rule Department2Json {
+    from
+        dept: PM!Department
+    to
+        json: JSON!JsonObject (
+            properties <- Sequence{idProp, nameProp, codeProp, managerIdProp, memberIdsProp}
+        ),
+        idProp: JSON!JsonProperty (
+            key <- 'id',
+            value <- idVal
+        ),
+        idVal: JSON!JsonString (
+            value <- dept.id
+        ),
+        nameProp: JSON!JsonProperty (
+            key <- 'name',
+            value <- nameVal
+        ),
+        nameVal: JSON!JsonString (
+            value <- dept.name
+        ),
+        codeProp: JSON!JsonProperty (
+            key <- 'code',
+            value <- codeVal
+        ),
+        codeVal: JSON!JsonString (
+            value <- dept.code
+        ),
+        managerIdProp: JSON!JsonProperty (
+            key <- 'managerId',
+            value <- managerIdVal
+        ),
+        managerIdVal: JSON!JsonString (
+            value <- dept.manager.idRef()
+        ),
+        memberIdsProp: JSON!JsonProperty (
+            key <- 'memberIds',
+            value <- memberIdsArr
+        ),
+        memberIdsArr: JSON!JsonArray (
+            elements <- dept.members->collect(m | thisModule.createIdString(m.id))
+        )
+}
+
+-- ===========================================================================
+-- Rule: TeamMember -> JsonObject
+-- ===========================================================================
+rule TeamMember2Json {
+    from
+        member: PM!TeamMember
+    to
+        json: JSON!JsonObject (
+            properties <- Sequence{idProp, nameProp, emailProp, roleProp, deptIdProp}
+        ),
+        idProp: JSON!JsonProperty (
+            key <- 'id',
+            value <- idVal
+        ),
+        idVal: JSON!JsonString (
+            value <- member.id
+        ),
+        nameProp: JSON!JsonProperty (
+            key <- 'name',
+            value <- nameVal
+        ),
+        nameVal: JSON!JsonString (
+            value <- member.name
+        ),
+        emailProp: JSON!JsonProperty (
+            key <- 'email',
+            value <- emailVal
+        ),
+        emailVal: JSON!JsonString (
+            value <- member.email
+        ),
+        roleProp: JSON!JsonProperty (
+            key <- 'role',
+            value <- roleVal
+        ),
+        roleVal: JSON!JsonString (
+            value <- member.role
+        ),
+        deptIdProp: JSON!JsonProperty (
+            key <- 'departmentId',
+            value <- deptIdVal
+        ),
+        deptIdVal: JSON!JsonString (
+            value <- member.department.idRef()
+        )
+}
+
+-- ===========================================================================
+-- Rule: Project -> JsonObject
+-- ===========================================================================
+rule Project2Json {
+    from
+        proj: PM!Project
+    to
+        json: JSON!JsonObject (
+            properties <- Sequence{
+                idProp, nameProp, descProp, statusProp, startDateProp,
+                endDateProp, budgetProp, ownerIdProp, deptIdProp,
+                teamIdsProp, milestonesProp, tasksProp
+            }
+        ),
+        idProp: JSON!JsonProperty (key <- 'id', value <- idVal),
+        idVal: JSON!JsonString (value <- proj.id),
+        nameProp: JSON!JsonProperty (key <- 'name', value <- nameVal),
+        nameVal: JSON!JsonString (value <- proj.name),
+        descProp: JSON!JsonProperty (key <- 'description', value <- descVal),
+        descVal: JSON!JsonString (value <- proj.description),
+        statusProp: JSON!JsonProperty (key <- 'status', value <- statusVal),
+        statusVal: JSON!JsonString (value <- proj.status.toJsonString()),
+        startDateProp: JSON!JsonProperty (key <- 'startDate', value <- startDateVal),
+        startDateVal: JSON!JsonString (value <- proj.startDate.formatDate()),
+        endDateProp: JSON!JsonProperty (key <- 'targetEndDate', value <- endDateVal),
+        endDateVal: JSON!JsonString (value <- proj.targetEndDate.formatDate()),
+        budgetProp: JSON!JsonProperty (key <- 'budget', value <- budgetVal),
+        budgetVal: JSON!JsonNumber (value <- proj.budget),
+        ownerIdProp: JSON!JsonProperty (key <- 'ownerId', value <- ownerIdVal),
+        ownerIdVal: JSON!JsonString (value <- proj.owner.idRef()),
+        deptIdProp: JSON!JsonProperty (key <- 'departmentId', value <- deptIdVal),
+        deptIdVal: JSON!JsonString (value <- proj.department.idRef()),
+        teamIdsProp: JSON!JsonProperty (key <- 'teamMemberIds', value <- teamIdsArr),
+        teamIdsArr: JSON!JsonArray (
+            elements <- proj.teamMembers->collect(m | thisModule.createIdString(m.id))
+        ),
+        milestonesProp: JSON!JsonProperty (key <- 'milestones', value <- milestonesArr),
+        milestonesArr: JSON!JsonArray (elements <- proj.milestones),
+        tasksProp: JSON!JsonProperty (key <- 'tasks', value <- tasksArr),
+        tasksArr: JSON!JsonArray (elements <- proj.tasks)
+}
+
+-- ===========================================================================
+-- Rule: Milestone -> JsonObject
+-- ===========================================================================
+rule Milestone2Json {
+    from
+        ms: PM!Milestone
+    to
+        json: JSON!JsonObject (
+            properties <- Sequence{idProp, nameProp, dueDateProp, completedProp, deliverableIdsProp}
+        ),
+        idProp: JSON!JsonProperty (key <- 'id', value <- idVal),
+        idVal: JSON!JsonString (value <- ms.id),
+        nameProp: JSON!JsonProperty (key <- 'name', value <- nameVal),
+        nameVal: JSON!JsonString (value <- ms.name),
+        dueDateProp: JSON!JsonProperty (key <- 'dueDate', value <- dueDateVal),
+        dueDateVal: JSON!JsonString (value <- ms.dueDate.formatDate()),
+        completedProp: JSON!JsonProperty (key <- 'completed', value <- completedVal),
+        completedVal: JSON!JsonBoolean (value <- ms.completed),
+        deliverableIdsProp: JSON!JsonProperty (key <- 'deliverableIds', value <- deliverableIdsArr),
+        deliverableIdsArr: JSON!JsonArray (
+            elements <- ms.deliverables->collect(t | thisModule.createIdString(t.id))
+        )
+}
+
+-- ===========================================================================
+-- Rule: Task -> JsonObject
+-- ===========================================================================
+rule Task2Json {
+    from
+        task: PM!Task
+    to
+        json: JSON!JsonObject (
+            properties <- Sequence{
+                idProp, titleProp, descProp, priorityProp, statusProp,
+                estHoursProp, actHoursProp, dueDateProp, assigneeIdProp,
+                depIdsProp, commentsProp
+            }
+        ),
+        idProp: JSON!JsonProperty (key <- 'id', value <- idVal),
+        idVal: JSON!JsonString (value <- task.id),
+        titleProp: JSON!JsonProperty (key <- 'title', value <- titleVal),
+        titleVal: JSON!JsonString (value <- task.title),
+        descProp: JSON!JsonProperty (key <- 'description', value <- descVal),
+        descVal: JSON!JsonString (value <- task.description),
+        priorityProp: JSON!JsonProperty (key <- 'priority', value <- priorityVal),
+        priorityVal: JSON!JsonString (value <- task.priority.toJsonString()),
+        statusProp: JSON!JsonProperty (key <- 'status', value <- statusVal),
+        statusVal: JSON!JsonString (value <- task.status.toJsonString()),
+        estHoursProp: JSON!JsonProperty (key <- 'estimatedHours', value <- estHoursVal),
+        estHoursVal: JSON!JsonNumber (value <- task.estimatedHours),
+        actHoursProp: JSON!JsonProperty (key <- 'actualHours', value <- actHoursVal),
+        actHoursVal: JSON!JsonNumber (value <- task.actualHours),
+        dueDateProp: JSON!JsonProperty (key <- 'dueDate', value <- dueDateVal),
+        dueDateVal: JSON!JsonString (value <- task.dueDate.formatDate()),
+        assigneeIdProp: JSON!JsonProperty (key <- 'assigneeId', value <- assigneeIdVal),
+        assigneeIdVal: JSON!JsonString (value <- task.assignee.idRef()),
+        depIdsProp: JSON!JsonProperty (key <- 'dependencyIds', value <- depIdsArr),
+        depIdsArr: JSON!JsonArray (
+            elements <- task.dependencies->collect(t | thisModule.createIdString(t.id))
+        ),
+        commentsProp: JSON!JsonProperty (key <- 'comments', value <- commentsArr),
+        commentsArr: JSON!JsonArray (elements <- task.comments)
+}
+
+-- ===========================================================================
+-- Rule: Comment -> JsonObject
+-- ===========================================================================
+rule Comment2Json {
+    from
+        cmt: PM!Comment
+    to
+        json: JSON!JsonObject (
+            properties <- Sequence{idProp, textProp, timestampProp, authorIdProp}
+        ),
+        idProp: JSON!JsonProperty (key <- 'id', value <- idVal),
+        idVal: JSON!JsonString (value <- cmt.id),
+        textProp: JSON!JsonProperty (key <- 'text', value <- textVal),
+        textVal: JSON!JsonString (value <- cmt.text),
+        timestampProp: JSON!JsonProperty (key <- 'timestamp', value <- timestampVal),
+        timestampVal: JSON!JsonString (value <- cmt.timestamp.formatDate()),
+        authorIdProp: JSON!JsonProperty (key <- 'authorId', value <- authorIdVal),
+        authorIdVal: JSON!JsonString (value <- cmt.author.idRef())
+}
+
+-- ===========================================================================
+-- Called Rule: Create ID string reference
+-- ===========================================================================
+rule createIdString(id: String) {
+    to
+        s: JSON!JsonString (
+            value <- id
+        )
+    do {
+        s;
+    }
+}

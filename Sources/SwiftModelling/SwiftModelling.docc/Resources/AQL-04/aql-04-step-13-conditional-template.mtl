@@ -1,0 +1,133 @@
+[comment encoding = UTF-8 /]
+[module ConditionalTemplate('http://www.example.org/webapp')]
+
+[comment]
+  Conditional Logic with AQL in MTL Templates
+
+  This template demonstrates using AQL boolean expressions
+  within MTL's [if] statements for conditional generation.
+
+  Conditional logic enables templates to generate different
+  output based on model properties and structure.
+[/comment]
+
+[template main(app : WebApp)]
+[file ('conditional-logic.txt', 'overwrite', 'UTF-8')]
+Conditional Logic with AQL Expressions
+======================================
+
+Application: [app.name/]
+
+[comment ================================================================ /]
+[comment             SIMPLE BOOLEAN CONDITIONS                            /]
+[comment ================================================================ /]
+
+1. Simple Boolean Conditions
+----------------------------
+[comment]
+  Use boolean properties directly in if conditions.
+  The condition is true when the property is true.
+[/comment]
+
+Page access levels:
+[for (page : Page | app.pages)]
+- [page.name/]: [if (page.requiresAuth)]Protected[else]Public[/if]
+[/for]
+
+[comment ================================================================ /]
+[comment             COMPARISON CONDITIONS                                /]
+[comment ================================================================ /]
+
+2. Comparison Conditions
+------------------------
+[comment]
+  Use comparison operators: =, <>, <, >, <=, >=
+  for numeric and string comparisons.
+[/comment]
+
+Entity complexity analysis:
+[for (entity : Entity | app.entities)]
+[let attrCount = entity.attributes->size()]
+- [entity.name/]: [attrCount/] attributes - [if (attrCount <= 3)]Simple[elseif (attrCount <= 6)]Medium[else]Complex[/if]
+[/let]
+[/for]
+
+[comment ================================================================ /]
+[comment             STRING CONDITIONS                                    /]
+[comment ================================================================ /]
+
+3. String Conditions
+--------------------
+[comment]
+  Use string operations in conditions:
+  .startsWith(), .endsWith(), .contains(), etc.
+[/comment]
+
+Route categorisation:
+[for (page : Page | app.pages)]
+- [page.route/]: [if (page.route = '/')]Home[elseif (page.route.startsWith('/api'))]API[elseif (page.route.contains('/new'))]Creation[else]Standard[/if]
+[/for]
+
+[comment ================================================================ /]
+[comment             COLLECTION CONDITIONS                                /]
+[comment ================================================================ /]
+
+4. Collection Conditions
+------------------------
+[comment]
+  Use collection operations that return booleans:
+  ->isEmpty(), ->notEmpty(), ->includes(), etc.
+[/comment]
+
+Entity relationship status:
+[for (entity : Entity | app.entities)]
+- [entity.name/]: [if (entity.relationships->isEmpty())]Standalone[else]Has [entity.relationships->size()/] relationship(s)[/if]
+[/for]
+
+Page component status:
+[for (page : Page | app.pages)]
+- [page.name/]: [if (page.components->notEmpty())][page.components->size()/] component(s)[else]Empty page[/if]
+[/for]
+
+[comment ================================================================ /]
+[comment             TYPE CONDITIONS                                      /]
+[comment ================================================================ /]
+
+5. Type Conditions
+------------------
+[comment]
+  Use oclIsTypeOf() and oclIsKindOf() to check
+  element types for type-based conditional output.
+[/comment]
+
+Component classification:
+[for (page : Page | app.pages)]
+[page.name/]:
+[for (comp : Component | page.components)]
+  - [comp.name/]: [if (comp.oclIsTypeOf(Form))]Form[elseif (comp.oclIsTypeOf(DataTable))]Data Table[elseif (comp.oclIsTypeOf(Navigation))]Navigation[else]Component[/if]
+[/for]
+
+[/for]
+
+[comment ================================================================ /]
+[comment             ENUMERATION CONDITIONS                               /]
+[comment ================================================================ /]
+
+6. Enumeration Conditions
+-------------------------
+[comment]
+  Compare enumeration values using = and <>.
+  Reference enum literals with EnumType::literal.
+[/comment]
+
+Attribute type classification:
+[for (entity : Entity | app.entities)]
+[entity.name/]:
+[for (attr : Attribute | entity.attributes)]
+  - [attr.name/]: [if (attr.dataType = DataType::string or attr.dataType = DataType::text)]Text[elseif (attr.dataType = DataType::integer or attr.dataType = DataType::decimal)]Numeric[elseif (attr.dataType = DataType::date or attr.dataType = DataType::datetime)]Temporal[elseif (attr.dataType = DataType::boolean)]Boolean[else]Other[/if]
+[/for]
+
+[/for]
+
+[/file]
+[/template]

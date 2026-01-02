@@ -1,42 +1,37 @@
-#!/bin/bash
-# AQL-01 Step 8: Safe Navigation
+# Safe Navigation - Handling null values gracefully
+# Avoid null pointer errors when navigating
 
-echo "=== AQL Basics: Safe Navigation ==="
-echo ""
-echo "Handle optional references safely to avoid null reference errors:"
-echo ""
-echo "Method 1: Conditional check before accessing"
-echo "  AQL Expression:"
-echo "  if employee.manager <> null then"
-echo "    employee.manager.name"
-echo "  else"
-echo "    'No manager'"
-echo "  endif"
-echo ""
-echo "Method 2: Using oclIsUndefined() check"
-echo "  AQL Expression:"
-echo "  if not employee.manager.oclIsUndefined() then"
-echo "    employee.manager.name"
-echo "  else"
-echo "    'Direct report to CEO'"
-echo "  endif"
-echo ""
-echo "Method 3: Default value pattern"
-echo "  AQL Expression:"
-echo "  employee.manager.name"
-echo "  With proper null handling in the context"
-echo ""
-echo "Example with our Company model:"
-echo "  Since employees might not have all optional fields,"
-echo "  check before accessing:"
-echo ""
-echo "  if employee.middleName <> null then"
-echo "    employee.firstName + ' ' + employee.middleName + ' ' + employee.lastName"
-echo "  else"
-echo "    employee.firstName + ' ' + employee.lastName"
-echo "  endif"
-echo ""
-echo "Key Points:"
-echo "  - Always check optional references before accessing their properties"
-echo "  - Use 'if-then-else-endif' for safe navigation"
-echo "  - Provide sensible default values when references are null"
+# Check for undefined before accessing
+swift-aql evaluate --model company-data.xmi \
+  --expression "let emp = company.departments->first().employees->first()
+    in if emp.supervisor.oclIsUndefined() then 'No supervisor' else emp.supervisor.name endif"
+
+# Output: "No supervisor"
+
+# Use oclIsUndefined() to test for null
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments->first().employees
+    ->select(e | not e.supervisor.oclIsUndefined())
+    ->collect(e | e.name)"
+
+# Output: ["Bob Chen", "Carol Williams", "David Lee"] (employees with supervisors)
+
+# Safe navigation with default value
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments.employees
+    ->collect(e | if e.supervisor.oclIsUndefined() then 'Self-managed' else e.supervisor.name endif)"
+
+# Output: Mix of supervisor names and "Self-managed"
+
+# Handle empty collections
+swift-aql evaluate --model company-data.xmi \
+  --expression "let emptyDept = company.departments->select(d | d.employees->isEmpty())
+    in if emptyDept->isEmpty() then 'All departments have employees' else 'Found empty departments' endif"
+
+# Output: "All departments have employees"
+
+# Safe first/last access
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments->select(d | d.budget > 1000000)->first()"
+
+# Output: null (no department has budget > 1000000)

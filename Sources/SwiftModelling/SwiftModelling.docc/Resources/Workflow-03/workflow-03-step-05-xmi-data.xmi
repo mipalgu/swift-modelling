@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Project Management Model from Java EMF Tool -->
+<!-- Created: 2024-01-15 by Enterprise Architect -->
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:pm="http://www.example.org/projectmanagement/1.0"
+    xsi:schemaLocation="http://www.example.org/projectmanagement/1.0 ProjectManagement.ecore">
+
+  <pm:Organisation name="Acme Software Solutions" domain="acme.com.au">
+    <!-- Departments -->
+    <departments id="DEPT-ENG" name="Engineering" code="ENG">
+      <manager href="#MEMBER-001"/>
+    </departments>
+    <departments id="DEPT-DESIGN" name="Design" code="DES">
+      <manager href="#MEMBER-003"/>
+    </departments>
+    <departments id="DEPT-QA" name="Quality Assurance" code="QA">
+      <manager href="#MEMBER-005"/>
+    </departments>
+
+    <!-- Team Members -->
+    <members id="MEMBER-001" name="Alice Chen" email="alice.chen@acme.com.au" role="Engineering Lead">
+      <department href="#DEPT-ENG"/>
+    </members>
+    <members id="MEMBER-002" name="Bob Williams" email="bob.williams@acme.com.au" role="Senior Developer">
+      <department href="#DEPT-ENG"/>
+    </members>
+    <members id="MEMBER-003" name="Carol Thompson" email="carol.thompson@acme.com.au" role="Design Lead">
+      <department href="#DEPT-DESIGN"/>
+    </members>
+    <members id="MEMBER-004" name="David Kim" email="david.kim@acme.com.au" role="UX Designer">
+      <department href="#DEPT-DESIGN"/>
+    </members>
+    <members id="MEMBER-005" name="Emma Wilson" email="emma.wilson@acme.com.au" role="QA Lead">
+      <department href="#DEPT-QA"/>
+    </members>
+    <members id="MEMBER-006" name="Frank Brown" email="frank.brown@acme.com.au" role="Test Engineer">
+      <department href="#DEPT-QA"/>
+    </members>
+
+    <!-- Projects -->
+    <projects id="PROJ-001" name="Customer Portal Redesign"
+        description="Modernise the customer-facing portal with improved UX and performance"
+        status="ACTIVE" startDate="2024-01-01" targetEndDate="2024-06-30" budget="250000.00">
+      <owner href="#MEMBER-001"/>
+      <department href="#DEPT-ENG"/>
+      <teamMembers href="#MEMBER-001"/>
+      <teamMembers href="#MEMBER-002"/>
+      <teamMembers href="#MEMBER-003"/>
+      <teamMembers href="#MEMBER-004"/>
+
+      <milestones id="MS-001" name="Design Phase Complete" dueDate="2024-02-15" completed="true">
+        <deliverables href="#TASK-001"/>
+        <deliverables href="#TASK-002"/>
+      </milestones>
+      <milestones id="MS-002" name="Backend API Ready" dueDate="2024-04-01" completed="false">
+        <deliverables href="#TASK-003"/>
+        <deliverables href="#TASK-004"/>
+      </milestones>
+      <milestones id="MS-003" name="Beta Release" dueDate="2024-05-15" completed="false">
+        <deliverables href="#TASK-005"/>
+      </milestones>
+
+      <tasks id="TASK-001" title="Create wireframes"
+          description="Design wireframes for all major user flows"
+          priority="HIGH" status="COMPLETED" estimatedHours="40.0" actualHours="45.0" dueDate="2024-01-31">
+        <assignee href="#MEMBER-004"/>
+        <comments id="CMT-001" text="Initial wireframes completed and approved by stakeholders" timestamp="2024-01-28">
+          <author href="#MEMBER-004"/>
+        </comments>
+      </tasks>
+      <tasks id="TASK-002" title="Design system components"
+          description="Create reusable UI component library based on wireframes"
+          priority="HIGH" status="COMPLETED" estimatedHours="60.0" actualHours="55.0" dueDate="2024-02-15">
+        <assignee href="#MEMBER-003"/>
+        <dependencies href="#TASK-001"/>
+        <comments id="CMT-002" text="Component library ready for development handoff" timestamp="2024-02-14">
+          <author href="#MEMBER-003"/>
+        </comments>
+      </tasks>
+      <tasks id="TASK-003" title="Implement authentication API"
+          description="Build OAuth 2.0 authentication endpoints with MFA support"
+          priority="CRITICAL" status="IN_PROGRESS" estimatedHours="80.0" actualHours="35.0" dueDate="2024-03-15">
+        <assignee href="#MEMBER-002"/>
+        <comments id="CMT-003" text="OAuth flow working, starting MFA integration" timestamp="2024-02-28">
+          <author href="#MEMBER-002"/>
+        </comments>
+      </tasks>
+      <tasks id="TASK-004" title="Implement customer data API"
+          description="RESTful API for customer profile and preferences"
+          priority="HIGH" status="NOT_STARTED" estimatedHours="60.0" dueDate="2024-03-30">
+        <assignee href="#MEMBER-002"/>
+        <dependencies href="#TASK-003"/>
+      </tasks>
+      <tasks id="TASK-005" title="Frontend implementation"
+          description="Implement React frontend with design system components"
+          priority="HIGH" status="NOT_STARTED" estimatedHours="120.0" dueDate="2024-05-01">
+        <assignee href="#MEMBER-001"/>
+        <dependencies href="#TASK-002"/>
+        <dependencies href="#TASK-003"/>
+        <dependencies href="#TASK-004"/>
+      </tasks>
+    </projects>
+
+    <projects id="PROJ-002" name="Mobile App Testing Framework"
+        description="Automated testing framework for iOS and Android applications"
+        status="PLANNING" startDate="2024-03-01" targetEndDate="2024-08-31" budget="150000.00">
+      <owner href="#MEMBER-005"/>
+      <department href="#DEPT-QA"/>
+      <teamMembers href="#MEMBER-005"/>
+      <teamMembers href="#MEMBER-006"/>
+
+      <milestones id="MS-004" name="Framework Architecture" dueDate="2024-03-31" completed="false">
+        <deliverables href="#TASK-006"/>
+      </milestones>
+
+      <tasks id="TASK-006" title="Design test framework architecture"
+          description="Define architecture for cross-platform test automation"
+          priority="HIGH" status="NOT_STARTED" estimatedHours="40.0" dueDate="2024-03-15">
+        <assignee href="#MEMBER-005"/>
+      </tasks>
+      <tasks id="TASK-007" title="Evaluate testing tools"
+          description="Compare XCUITest, Espresso, Appium, and Detox"
+          priority="MEDIUM" status="NOT_STARTED" estimatedHours="24.0" dueDate="2024-03-20">
+        <assignee href="#MEMBER-006"/>
+      </tasks>
+    </projects>
+  </pm:Organisation>
+</xmi:XMI>

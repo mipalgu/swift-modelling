@@ -1,42 +1,49 @@
-#!/bin/bash
-# AQL-01 Step 9: Arithmetic Operations
+# Arithmetic Operations - Mathematical calculations
+# Perform calculations on numeric values
 
-echo "=== AQL Basics: Arithmetic Operations ==="
-echo ""
-echo "Perform arithmetic on numeric values:"
-echo ""
-echo "Addition (+):"
-echo "  AQL: employee.age + 1"
-echo "  Example: 32 + 1 = 33 (age next birthday)"
-echo "  AQL: employee.age + 5"
-echo "  Example: 32 + 5 = 37 (age in 5 years)"
-echo ""
-echo "Subtraction (-):"
-echo "  AQL: employee.age - 5"
-echo "  Example: 32 - 5 = 27 (age 5 years ago)"
-echo "  AQL: employee.age - 22"
-echo "  Example: 32 - 22 = 10 (years since age 22)"
-echo ""
-echo "Multiplication (*):"
-echo "  AQL: employee.age * 2"
-echo "  Example: 32 * 2 = 64 (double the age)"
-echo "  AQL: employee.age * 12"
-echo "  Example: 32 * 12 = 384 (age in months)"
-echo ""
-echo "Division (/):"
-echo "  AQL: employee.age / 2"
-echo "  Example: 32 / 2 = 16 (half the age)"
-echo "  AQL: employee.age / 10"
-echo "  Example: 32 / 10 = 3.2 (age in decades)"
-echo ""
-echo "Modulo (mod):"
-echo "  AQL: employee.age mod 10"
-echo "  Example: 32 mod 10 = 2 (last digit)"
-echo "  AQL: employee.age mod 2"
-echo "  Example: 32 mod 2 = 0 (even age)"
-echo ""
-echo "Combined operations (respect precedence):"
-echo "  AQL: (employee.age + 5) * 2"
-echo "  Example: (32 + 5) * 2 = 74"
-echo "  AQL: employee.age * 365 + 180"
-echo "  Example: Age in days plus 6 months"
+# Basic arithmetic
+swift-aql evaluate --model company-data.xmi \
+  --expression "10 + 5"
+
+# Output: 15
+
+swift-aql evaluate --model company-data.xmi \
+  --expression "100 - 35"
+
+# Output: 65
+
+swift-aql evaluate --model company-data.xmi \
+  --expression "12 * 8"
+
+# Output: 96
+
+swift-aql evaluate --model company-data.xmi \
+  --expression "100 / 4"
+
+# Output: 25
+
+# Modulo (remainder)
+swift-aql evaluate --model company-data.xmi \
+  --expression "17.mod(5)"
+
+# Output: 2
+
+# Calculations with model values
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments->first().budget / 12"
+
+# Output: 41666.67 (monthly budget)
+
+# Calculate average salary
+swift-aql evaluate --model company-data.xmi \
+  --expression "let salaries = company.departments.employees.salary
+    in salaries->sum() / salaries->size()"
+
+# Output: 92777.78 (approximate average)
+
+# Percentage calculation
+swift-aql evaluate --model company-data.xmi \
+  --expression "let eng = company.departments->first()
+    in eng.employees.salary->sum() / eng.budget * 100"
+
+# Output: 75.0 (salary as percentage of budget)

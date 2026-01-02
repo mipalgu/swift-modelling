@@ -1,0 +1,195 @@
+@Tutorial(time: 45) {
+    @Intro(title: "Class to Relational Transformation") {
+        Master the classic Class2Relational transformation benchmark, a foundational example in model-driven engineering.
+
+        In this advanced tutorial, you'll implement a complete transformation from UML-like class diagrams to relational database schemas. This demonstrates key ATL concepts including:
+        - Multiple output elements per rule
+        - Attribute type mapping
+        - Primary and foreign key generation
+        - Handling multi-valued attributes
+
+        @Image(source: "atl-transformations.svg", alt: "ATL Transformation Pipeline")
+    }
+
+    @Section(title: "Understanding the Metamodels") {
+        @ContentAndMedia {
+            The Class2Relational transformation maps object-oriented class structures to relational tables. Understanding both metamodels is crucial for designing effective transformation rules.
+
+            The **Class** metamodel represents object-oriented concepts: packages, classes with attributes, data types, and inheritance.
+
+            The **Relational** metamodel represents database concepts: schemas, tables with columns, types, and primary/foreign keys.
+        }
+
+        @Steps {
+            @Step {
+                Examine the Class (source) metamodel.
+
+                @Code(name: "class.ecore", file: class.ecore)
+
+                The metamodel defines Package (container), Class (with attributes), Attribute (typed properties), DataType (primitive types), and Classifier (abstract base). Classes can have superTypes for inheritance.
+            }
+
+            @Step {
+                Examine the Relational (target) metamodel.
+
+                @Code(name: "relational.ecore", file: relational.ecore)
+
+                The metamodel defines Schema (container), Table (with columns), Column (with type reference), and Type. Tables have a key column for primary keys, and columns can reference other tables via keyOf.
+            }
+        }
+    }
+
+    @Section(title: "Writing Helper Functions") {
+        @ContentAndMedia {
+            Helpers encapsulate reusable logic for the transformation. We need helpers for:
+            - Collecting all attributes (including inherited ones)
+            - Determining if a classifier is a data type
+            - Mapping data types to SQL type names
+        }
+
+        @Steps {
+            @Step {
+                Review the complete transformation with all helpers including allAttributes (recursive collection), isDataType (primitive check), and sqlTypeName (SQL type mapping).
+
+                @Code(name: "class2relational.atl", file: class2relational.atl)
+            }
+        }
+    }
+
+    @Section(title: "Core Transformation Rules") {
+        @ContentAndMedia {
+            The transformation requires several rules to handle different mapping scenarios:
+            - Package to Schema (container mapping)
+            - Class to Table (with primary key column)
+            - Single-valued attributes to columns
+            - Multi-valued attributes to separate tables
+            - Class-typed attributes to foreign key columns
+        }
+
+        @Steps {
+            @Step {
+                The transformation defines rules for Package2Schema, DataType2Type, Class2Table (with primary keys), SingleValuedAttribute2Column, MultiValuedAttribute2Table, and ClassAttribute2ForeignKey mappings.
+
+                @Code(name: "class2relational.atl", file: class2relational.atl)
+            }
+        }
+    }
+
+    @Section(title: "Running the Transformation") {
+        @ContentAndMedia {
+            Test the transformation with a sample library management class model. The output should produce appropriate tables with proper key relationships.
+        }
+
+        @Steps {
+            @Step {
+                Create a sample class model.
+
+                @Code(name: "sample-classes.xmi", file: sample-classes.xmi)
+
+                This model represents a library system with Author, Book, Member, and Loan classes. Note the multi-valued 'keywords' and 'borrowedBooks' attributes.
+            }
+
+            @Step {
+                Run the transformation.
+
+                @Code(name: "Terminal", file: atl-advanced-01-run.sh)
+
+                Execute swift-atl with the transformation and input model. The output shows the generated relational schema.
+            }
+
+            @Step {
+                Examine the output relational schema.
+
+                @Code(name: "expected-output.xmi", file: expected-output.xmi)
+
+                Notice how classes became tables with id columns, multi-valued attributes created separate tables (Book_keywords, Member_borrowedBooks), and class references became foreign key columns.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            Why does the Class2Table rule create two target elements (table and key column)?
+
+            @Choice(isCorrect: true) {
+                To ensure every table has a proper primary key column
+
+                @Justification(reaction: "Correct!") {
+                    ATL rules can create multiple output elements. Creating the key column in the same rule ensures the primary key relationship is properly established.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Because ATL requires at least two output elements per rule
+
+                @Justification(reaction: "Not correct!") {
+                    ATL rules can have any number of output elements. The two elements here are a design choice, not a requirement.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                To handle inheritance from abstract classes
+
+                @Justification(reaction: "Not quite!") {
+                    Abstract classes are filtered out by the guard condition. The dual output is for primary key generation.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            How are multi-valued attributes handled differently from single-valued ones?
+
+            @Choice(isCorrect: true) {
+                They create separate tables with foreign keys back to the owner
+
+                @Justification(reaction: "Exactly!") {
+                    Multi-valued attributes require a separate table in relational databases to properly model the one-to-many relationship.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                They become arrays in the column type
+
+                @Justification(reaction: "Incorrect!") {
+                    Standard relational databases don't support array columns. The proper approach is separate tables.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                They are ignored in the transformation
+
+                @Justification(reaction: "Try again!") {
+                    Multi-valued attributes are handled by the MultiValuedAttribute2Table rule.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What is the purpose of the allAttributes helper?
+
+            @Choice(isCorrect: false) {
+                To count the total number of attributes in the model
+
+                @Justification(reaction: "Not quite!") {
+                    The helper returns a collection of attributes, not a count.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                To collect attributes from a class and all its superclasses
+
+                @Justification(reaction: "Correct!") {
+                    This enables proper handling of inheritance by flattening the attribute hierarchy for table column generation.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                To validate that all attributes have valid types
+
+                @Justification(reaction: "Incorrect!") {
+                    Validation is not the purpose here. The helper collects attributes for transformation.
+                }
+            }
+        }
+    }
+}

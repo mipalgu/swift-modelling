@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:enterprise="http://www.example.org/enterprise">
+
+  <enterprise:Organisation name="Acme Technologies" founded="1995" headquarters="Melbourne">
+
+    <!-- Engineering Department with sub-departments -->
+    <departments name="Engineering" code="ENG" budget="2500000.0" location="Melbourne"
+        manager="//@departments.0/@employees.0"
+        collaboratesWith="//@departments.1 //@departments.2">
+
+      <employees name="Sarah Mitchell" employeeId="E001" salary="185000.0" yearsOfService="12"
+          role="Engineering Director" skills="Leadership Strategy Architecture"
+          assignedProjects="//@projects.0 //@projects.1"/>
+
+      <employees name="James Wong" employeeId="E002" salary="145000.0" yearsOfService="8"
+          role="Senior Engineer" skills="Swift Kotlin Architecture"
+          supervisor="//@departments.0/@employees.0"
+          assignedProjects="//@projects.0"
+          mentors="//@departments.0/@employees.0"/>
+
+      <employees name="Emily Chen" employeeId="E003" salary="125000.0" yearsOfService="5"
+          role="Software Engineer" skills="Swift Python Testing"
+          supervisor="//@departments.0/@employees.1"
+          assignedProjects="//@projects.0 //@projects.2"/>
+
+      <employees name="Michael Brown" employeeId="E004" salary="115000.0" yearsOfService="3"
+          role="Junior Engineer" skills="Swift JavaScript"
+          supervisor="//@departments.0/@employees.1"
+          assignedProjects="//@projects.2"
+          mentors="//@departments.0/@employees.1 //@departments.0/@employees.2"/>
+
+      <!-- Platform Team sub-department -->
+      <subDepartments name="Platform Team" code="ENG-PLT" budget="800000.0" location="Melbourne"
+          manager="//@departments.0/@subDepartments.0/@employees.0">
+
+        <employees name="David Lee" employeeId="E005" salary="155000.0" yearsOfService="10"
+            role="Platform Lead" skills="Infrastructure Cloud Kubernetes"
+            assignedProjects="//@projects.1"/>
+
+        <employees name="Anna Kowalski" employeeId="E006" salary="130000.0" yearsOfService="6"
+            role="Platform Engineer" skills="Docker Terraform AWS"
+            supervisor="//@departments.0/@subDepartments.0/@employees.0"
+            assignedProjects="//@projects.1"/>
+
+        <employees name="Tom Nguyen" employeeId="E007" salary="110000.0" yearsOfService="2"
+            role="DevOps Engineer" skills="CI/CD Monitoring"
+            supervisor="//@departments.0/@subDepartments.0/@employees.0"
+            assignedProjects="//@projects.1"
+            mentors="//@departments.0/@subDepartments.0/@employees.1"/>
+      </subDepartments>
+
+      <!-- Mobile Team sub-department -->
+      <subDepartments name="Mobile Team" code="ENG-MOB" budget="600000.0" location="Sydney"
+          manager="//@departments.0/@subDepartments.1/@employees.0">
+
+        <employees name="Rachel Adams" employeeId="E008" salary="150000.0" yearsOfService="9"
+            role="Mobile Lead" skills="iOS Android SwiftUI"
+            assignedProjects="//@projects.0 //@projects.2"/>
+
+        <employees name="Chris Taylor" employeeId="E009" salary="120000.0" yearsOfService="4"
+            role="iOS Developer" skills="Swift SwiftUI UIKit"
+            supervisor="//@departments.0/@subDepartments.1/@employees.0"
+            assignedProjects="//@projects.0"/>
+
+        <employees name="Linda Park" employeeId="E010" salary="118000.0" yearsOfService="3"
+            role="Android Developer" skills="Kotlin Compose"
+            supervisor="//@departments.0/@subDepartments.1/@employees.0"
+            assignedProjects="//@projects.2"
+            mentors="//@departments.0/@subDepartments.1/@employees.0"/>
+      </subDepartments>
+    </departments>
+
+    <!-- Product Department -->
+    <departments name="Product" code="PROD" budget="1200000.0" location="Melbourne"
+        manager="//@departments.1/@employees.0"
+        collaboratesWith="//@departments.0 //@departments.2">
+
+      <employees name="Jessica Moore" employeeId="E011" salary="170000.0" yearsOfService="11"
+          role="Product Director" skills="Strategy Roadmap Analytics"
+          assignedProjects="//@projects.0 //@projects.2 //@projects.3"/>
+
+      <employees name="Daniel Kim" employeeId="E012" salary="135000.0" yearsOfService="7"
+          role="Senior Product Manager" skills="UserResearch Agile"
+          supervisor="//@departments.1/@employees.0"
+          assignedProjects="//@projects.0"/>
+
+      <employees name="Sophie Garcia" employeeId="E013" salary="110000.0" yearsOfService="4"
+          role="Product Manager" skills="Analytics Design"
+          supervisor="//@departments.1/@employees.0"
+          assignedProjects="//@projects.2 //@projects.3"
+          mentors="//@departments.1/@employees.1"/>
+
+      <employees name="Ryan Hughes" employeeId="E014" salary="95000.0" yearsOfService="2"
+          role="Associate Product Manager" skills="Research Documentation"
+          supervisor="//@departments.1/@employees.1"
+          assignedProjects="//@projects.3"
+          mentors="//@departments.1/@employees.1 //@departments.1/@employees.2"/>
+    </departments>
+
+    <!-- Design Department -->
+    <departments name="Design" code="DES" budget="900000.0" location="Sydney"
+        manager="//@departments.2/@employees.0"
+        collaboratesWith="//@departments.0 //@departments.1">
+
+      <employees name="Olivia Martinez" employeeId="E015" salary="160000.0" yearsOfService="10"
+          role="Design Director" skills="Leadership UX BrandStrategy"
+          assignedProjects="//@projects.0 //@projects.2"/>
+
+      <employees name="Nathan Scott" employeeId="E016" salary="125000.0" yearsOfService="6"
+          role="Senior UX Designer" skills="Figma UserResearch Prototyping"
+          supervisor="//@departments.2/@employees.0"
+          assignedProjects="//@projects.0"/>
+
+      <employees name="Mia Thompson" employeeId="E017" salary="105000.0" yearsOfService="3"
+          role="UI Designer" skills="Figma Sketch Illustration"
+          supervisor="//@departments.2/@employees.0"
+          assignedProjects="//@projects.2"
+          mentors="//@departments.2/@employees.1"/>
+
+      <employees name="Alex Rivera" employeeId="E018" salary="90000.0" yearsOfService="1"
+          role="Junior Designer" skills="Figma Basics"
+          supervisor="//@departments.2/@employees.1"
+          assignedProjects="//@projects.2"
+          mentors="//@departments.2/@employees.1 //@departments.2/@employees.2"/>
+    </departments>
+
+    <!-- Operations Department -->
+    <departments name="Operations" code="OPS" budget="700000.0" location="Brisbane"
+        manager="//@departments.3/@employees.0">
+
+      <employees name="William Anderson" employeeId="E019" salary="150000.0" yearsOfService="14"
+          role="Operations Director" skills="ProcessOptimisation SupplyChain"/>
+
+      <employees name="Emma Wilson" employeeId="E020" salary="115000.0" yearsOfService="8"
+          role="Operations Manager" skills="ProjectManagement Logistics"
+          supervisor="//@departments.3/@employees.0"/>
+
+      <employees name="Jack Robinson" employeeId="E021" salary="85000.0" yearsOfService="2"
+          role="Operations Analyst" skills="DataAnalysis Reporting"
+          supervisor="//@departments.3/@employees.1"
+          mentors="//@departments.3/@employees.1"/>
+    </departments>
+
+    <!-- Projects -->
+    <projects name="Customer Portal" code="PRJ-001" budget="450000.0" status="Active"
+        priority="1" startDate="2024-01-15" endDate="2024-09-30"
+        teamMembers="//@departments.0/@employees.0 //@departments.0/@employees.1 //@departments.0/@employees.2 //@departments.0/@subDepartments.1/@employees.0 //@departments.0/@subDepartments.1/@employees.1 //@departments.1/@employees.0 //@departments.1/@employees.1 //@departments.2/@employees.0 //@departments.2/@employees.1"
+        leadDepartment="//@departments.0">
+      <milestones name="Requirements Complete" dueDate="2024-02-28" completed="true"
+          description="All requirements gathered and approved"/>
+      <milestones name="Design Finalised" dueDate="2024-04-15" completed="true"
+          description="UI/UX designs approved by stakeholders"/>
+      <milestones name="Beta Release" dueDate="2024-07-01" completed="false"
+          description="Beta version released for testing"/>
+      <milestones name="Production Launch" dueDate="2024-09-30" completed="false"
+          description="Full production deployment"/>
+    </projects>
+
+    <projects name="Infrastructure Modernisation" code="PRJ-002" budget="320000.0" status="Active"
+        priority="2" startDate="2024-03-01" endDate="2024-12-15"
+        teamMembers="//@departments.0/@employees.0 //@departments.0/@subDepartments.0/@employees.0 //@departments.0/@subDepartments.0/@employees.1 //@departments.0/@subDepartments.0/@employees.2"
+        leadDepartment="//@departments.0/@subDepartments.0"
+        dependencies="//@projects.0">
+      <milestones name="Assessment Complete" dueDate="2024-04-30" completed="true"
+          description="Current infrastructure assessed"/>
+      <milestones name="Migration Plan" dueDate="2024-06-30" completed="true"
+          description="Detailed migration plan approved"/>
+      <milestones name="Cloud Migration" dueDate="2024-10-31" completed="false"
+          description="Services migrated to cloud"/>
+    </projects>
+
+    <projects name="Mobile App Redesign" code="PRJ-003" budget="280000.0" status="Active"
+        priority="1" startDate="2024-02-01" endDate="2024-08-31"
+        teamMembers="//@departments.0/@employees.2 //@departments.0/@employees.3 //@departments.0/@subDepartments.1/@employees.0 //@departments.0/@subDepartments.1/@employees.2 //@departments.1/@employees.0 //@departments.1/@employees.2 //@departments.2/@employees.0 //@departments.2/@employees.2 //@departments.2/@employees.3"
+        leadDepartment="//@departments.0/@subDepartments.1">
+      <milestones name="User Research" dueDate="2024-03-15" completed="true"
+          description="User research and feedback collected"/>
+      <milestones name="Design System" dueDate="2024-05-01" completed="true"
+          description="New design system established"/>
+      <milestones name="App Store Release" dueDate="2024-08-31" completed="false"
+          description="New app version in stores"/>
+    </projects>
+
+    <projects name="Analytics Dashboard" code="PRJ-004" budget="150000.0" status="Planning"
+        priority="3" startDate="2024-06-01" endDate="2024-11-30"
+        teamMembers="//@departments.1/@employees.0 //@departments.1/@employees.2 //@departments.1/@employees.3"
+        leadDepartment="//@departments.1"
+        dependencies="//@projects.0 //@projects.1">
+      <milestones name="Requirements Gathering" dueDate="2024-07-15" completed="false"
+          description="Dashboard requirements defined"/>
+      <milestones name="Prototype" dueDate="2024-09-01" completed="false"
+          description="Interactive prototype ready"/>
+    </projects>
+
+  </enterprise:Organisation>
+</xmi:XMI>

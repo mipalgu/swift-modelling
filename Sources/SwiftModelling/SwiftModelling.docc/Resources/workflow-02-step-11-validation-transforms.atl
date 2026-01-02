@@ -1,0 +1,219 @@
+-- ATL Validation Transformation: Migration Results Validation
+-- Validates data integrity, relationship consistency, and business rules
+-- Part of the Model Refactoring Pipeline tutorial
+-- @path Customer=/Customer/CustomerManagement.ecore
+
+module CustomerMigrationValidation;
+create OUT: Customer refining IN: Customer;
+
+-- ===========================================================================
+-- Validation Helper Functions
+-- ===========================================================================
+
+-- ===========================================================================
+-- Structural Validation: Orphaned References
+-- ===========================================================================
+
+-- Check for customers without organisation
+helper def: customersWithoutOrganisation: Sequence(Customer!Customer) =
+    Customer!Customer.allInstances()
+        ->select(c | c.organisation.oclIsUndefined());
+
+-- Check for contacts without organisation
+helper def: orphanedContacts: Sequence(Customer!Contact) =
+    Customer!Contact.allInstances()
+        ->select(c | c.organisation.oclIsUndefined());
+
+-- Check for customers without primary contact
+helper def: customersWithoutPrimaryContact: Sequence(Customer!Customer) =
+    Customer!Customer.allInstances()
+        ->select(c | c.primaryContact.oclIsUndefined());
+
+-- Check for customers without billing address
+helper def: customersWithoutBillingAddress: Sequence(Customer!Customer) =
+    Customer!Customer.allInstances()
+        ->select(c | c.billingAddress.oclIsUndefined());
+
+-- ===========================================================================
+-- Data Integrity Validation
+-- ===========================================================================
+
+-- Check for duplicate ABNs (should be unique per organisation)
+helper def: duplicateABNs: Set(String) =
+    let allABNs: Sequence(String) = Customer!Organisation.allInstances()
+        ->select(o | o.australianBusinessNumber.size() > 0)
+        ->collect(o | o.australianBusinessNumber.replace(' ', '')) in
+    allABNs->select(abn | allABNs->count(abn) > 1)->asSet();
+
+-- Check for duplicate customer identifiers
+helper def: duplicateCustomerIds: Set(String) =
+    let allIds: Sequence(String) = Customer!Customer.allInstances()
+        ->collect(c | c.identifier) in
+    allIds->select(id | allIds->count(id) > 1)->asSet();
+
+-- Check for duplicate contact emails within organisation
+helper def: duplicateContactEmails: Sequence(Customer!Contact) =
+    Customer!Contact.allInstances()
+        ->select(c |
+            c.organisation.contacts
+                ->select(other | other <> c and other.email = c.email)
+                ->size() > 0
+        );
+
+-- ===========================================================================
+-- Business Rule Validation
+-- ===========================================================================
+
+-- Check for invalid credit limits (negative values)
+helper def: invalidCreditLimits: Sequence(Customer!Customer) =
+    Customer!Customer.allInstances()
+        ->select(c | not c.creditLimit.oclIsUndefined() and c.creditLimit < 0);
+
+-- Check for invalid payment terms (too short or too long)
+helper def: invalidPaymentTerms: Sequence(Customer!Customer) =
+    Customer!Customer.allInstances()
+        ->select(c | c.paymentTermsDays < 0 or c.paymentTermsDays > 365);
+
+-- Check for invalid discount percentages
+helper def: invalidDiscounts: Sequence(Customer!CustomerCategory) =
+    Customer!CustomerCategory.allInstances()
+        ->select(cat | cat.discountPercentage < 0 or cat.discountPercentage > 100);
+
+-- Check for missing required fields in organisation
+helper def: incompleteOrganisations: Sequence(Customer!Organisation) =
+    Customer!Organisation.allInstances()
+        ->select(o |
+            o.name.oclIsUndefined() or o.name.size() = 0 or
+            o.identifier.oclIsUndefined() or o.identifier.size() = 0
+        );
+
+-- ===========================================================================
+-- Address Validation
+-- ===========================================================================
+
+-- Check for invalid Australian postcodes
+helper def: invalidPostcodes: Sequence(Customer!Address) =
+    Customer!Address.allInstances()
+        ->select(a |
+            a.postcode.size() <> 4 or
+            not a.postcode.matches('[0-9]+')
+        );
+
+-- Check for invalid Australian states
+helper def: invalidStates: Sequence(Customer!Address) =
+    let validStates: Set(String) = Set{'NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'NT', 'ACT'} in
+    Customer!Address.allInstances()
+        ->select(a | not validStates->includes(a.state.toUpper()));
+
+-- Check for missing required address fields
+helper def: incompleteAddresses: Sequence(Customer!Address) =
+    Customer!Address.allInstances()
+        ->select(a |
+            a.streetAddress.oclIsUndefined() or a.streetAddress.size() = 0 or
+            a.suburb.oclIsUndefined() or a.suburb.size() = 0 or
+            a.state.oclIsUndefined() or a.state.size() = 0 or
+            a.postcode.oclIsUndefined() or a.postcode.size() = 0
+        );
+
+-- ===========================================================================
+-- Contact Validation
+-- ===========================================================================
+
+-- Check for invalid email format
+helper def: invalidEmails: Sequence(Customer!Contact) =
+    Customer!Contact.allInstances()
+        ->select(c |
+            c.email.size() > 0 and
+            not c.email.matches('[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}')
+        );
+
+-- Check for contacts without name
+helper def: unnamedContacts: Sequence(Customer!Contact) =
+    Customer!Contact.allInstances()
+        ->select(c | c.name.oclIsUndefined() or c.name.size() = 0);
+
+-- ===========================================================================
+-- Cross-Reference Validation
+-- ===========================================================================
+
+-- Check that primary contact belongs to customer's organisation
+helper def: misalignedPrimaryContacts: Sequence(Customer!Customer) =
+    Customer!Customer.allInstances()
+        ->select(c |
+            not c.primaryContact.oclIsUndefined() and
+            not c.organisation.oclIsUndefined() and
+            c.primaryContact.organisation <> c.organisation
+        );
+
+-- Check that category references are valid
+helper def: invalidCategoryReferences: Sequence(Customer!Customer) =
+    Customer!Customer.allInstances()
+        ->select(c |
+            not c.category.oclIsUndefined() and
+            not Customer!CustomerCategory.allInstances()->includes(c.category)
+        );
+
+-- ===========================================================================
+-- Validation Summary Report
+-- ===========================================================================
+
+helper def: validationSummary: String =
+    'Migration Validation Report\n' +
+    '===========================\n\n' +
+
+    '## Structural Validation\n' +
+    '  Customers without organisation: ' + thisModule.customersWithoutOrganisation->size().toString() + '\n' +
+    '  Orphaned contacts: ' + thisModule.orphanedContacts->size().toString() + '\n' +
+    '  Customers without primary contact: ' + thisModule.customersWithoutPrimaryContact->size().toString() + '\n' +
+    '  Customers without billing address: ' + thisModule.customersWithoutBillingAddress->size().toString() + '\n\n' +
+
+    '## Data Integrity\n' +
+    '  Duplicate ABNs: ' + thisModule.duplicateABNs->size().toString() + '\n' +
+    '  Duplicate customer IDs: ' + thisModule.duplicateCustomerIds->size().toString() + '\n' +
+    '  Duplicate contact emails: ' + thisModule.duplicateContactEmails->size().toString() + '\n\n' +
+
+    '## Business Rules\n' +
+    '  Invalid credit limits: ' + thisModule.invalidCreditLimits->size().toString() + '\n' +
+    '  Invalid payment terms: ' + thisModule.invalidPaymentTerms->size().toString() + '\n' +
+    '  Invalid discounts: ' + thisModule.invalidDiscounts->size().toString() + '\n' +
+    '  Incomplete organisations: ' + thisModule.incompleteOrganisations->size().toString() + '\n\n' +
+
+    '## Address Validation\n' +
+    '  Invalid postcodes: ' + thisModule.invalidPostcodes->size().toString() + '\n' +
+    '  Invalid states: ' + thisModule.invalidStates->size().toString() + '\n' +
+    '  Incomplete addresses: ' + thisModule.incompleteAddresses->size().toString() + '\n\n' +
+
+    '## Contact Validation\n' +
+    '  Invalid emails: ' + thisModule.invalidEmails->size().toString() + '\n' +
+    '  Unnamed contacts: ' + thisModule.unnamedContacts->size().toString() + '\n\n' +
+
+    '## Cross-Reference Validation\n' +
+    '  Misaligned primary contacts: ' + thisModule.misalignedPrimaryContacts->size().toString() + '\n' +
+    '  Invalid category references: ' + thisModule.invalidCategoryReferences->size().toString() + '\n\n';
+
+helper def: overallStatus: String =
+    let totalIssues: Integer =
+        thisModule.customersWithoutOrganisation->size() +
+        thisModule.orphanedContacts->size() +
+        thisModule.duplicateABNs->size() +
+        thisModule.duplicateCustomerIds->size() +
+        thisModule.invalidCreditLimits->size() +
+        thisModule.incompleteOrganisations->size() +
+        thisModule.invalidEmails->size() +
+        thisModule.misalignedPrimaryContacts->size() in
+    if totalIssues = 0 then
+        'VALIDATION PASSED - No critical issues found'
+    else
+        'VALIDATION FAILED - ' + totalIssues.toString() + ' critical issues found'
+    endif;
+
+-- ===========================================================================
+-- Entry Point: Run Validation
+-- ===========================================================================
+entrypoint rule RunValidation() {
+    do {
+        thisModule.validationSummary.println();
+        '\n'.println();
+        thisModule.overallStatus.println();
+    }
+}

@@ -1,0 +1,276 @@
+-- ATL Transformation: Legacy Customer to CustomerManagement v2.0
+-- Migrates legacy customer models to improved metamodel structure
+-- Part of the Model Refactoring Pipeline tutorial
+-- Uses Australian English spelling conventions
+-- @path Legacy=/Legacy/LegacyCustomer.ecore
+-- @path Customer=/Customer/CustomerManagement.ecore
+
+module LegacyCustomer2CustomerManagement;
+create OUT: Customer from IN: Legacy;
+
+-- ===========================================================================
+-- Global Variables for deduplication
+-- ===========================================================================
+
+-- Track created organisations by ABN to avoid duplicates
+helper def: organisationsByABN: Map(String, Customer!Organisation) = Map{};
+
+-- Track created contacts by email to avoid duplicates
+helper def: contactsByEmail: Map(String, Customer!Contact) = Map{};
+
+-- Migration timestamp for audit fields
+helper def: migrationTimestamp: OclAny = OclAny.now();
+
+-- ===========================================================================
+-- Helper: Normalise organisation type string to enum
+-- ===========================================================================
+helper def: normaliseOrganisationType(typeStr: String): Customer!OrganisationType =
+    let normalised: String = typeStr.trim().toUpper() in
+    if normalised = 'COMPANY' or normalised = 'PTY LTD' or normalised = 'PRIVATE' then
+        #PRIVATE_COMPANY
+    else if normalised = 'PUBLIC' or normalised = 'LIMITED' then
+        #PUBLIC_COMPANY
+    else if normalised = 'GOVT' or normalised = 'GOVERNMENT' then
+        #GOVERNMENT
+    else if normalised = 'NFP' or normalised = 'NON-PROFIT' or normalised = 'NONPROFIT' then
+        #NON_PROFIT
+    else if normalised = 'PARTNERSHIP' then
+        #PARTNERSHIP
+    else if normalised = 'INDIVIDUAL' or normalised = 'SOLE TRADER' then
+        #SOLE_TRADER
+    else
+        #PRIVATE_COMPANY
+    endif endif endif endif endif endif;
+
+-- ===========================================================================
+-- Helper: Normalise customer status string to enum
+-- ===========================================================================
+helper def: normaliseCustomerStatus(statusStr: String): Customer!CustomerStatus =
+    let normalised: String = statusStr.trim().toUpper() in
+    if normalised = 'NEW' or normalised = 'PROSPECT' or normalised = 'LEAD' then
+        #PROSPECT
+    else if normalised = 'ACTIVE' or normalised = 'CURRENT' then
+        #ACTIVE
+    else if normalised = 'INACTIVE' or normalised = 'DORMANT' then
+        #INACTIVE
+    else if normalised = 'SUSPENDED' or normalised = 'HOLD' or normalised = 'ON HOLD' then
+        #SUSPENDED
+    else if normalised = 'CLOSED' or normalised = 'DELETED' or normalised = 'ARCHIVED' then
+        #CLOSED
+    else
+        #PROSPECT
+    endif endif endif endif endif;
+
+-- ===========================================================================
+-- Helper: Normalise Australian state abbreviations
+-- ===========================================================================
+helper def: normaliseState(stateStr: String): String =
+    let normalised: String = stateStr.trim().toUpper() in
+    if normalised = 'NEW SOUTH WALES' then 'NSW'
+    else if normalised = 'VICTORIA' then 'VIC'
+    else if normalised = 'QUEENSLAND' then 'QLD'
+    else if normalised = 'SOUTH AUSTRALIA' then 'SA'
+    else if normalised = 'WESTERN AUSTRALIA' then 'WA'
+    else if normalised = 'TASMANIA' then 'TAS'
+    else if normalised = 'NORTHERN TERRITORY' then 'NT'
+    else if normalised = 'AUSTRALIAN CAPITAL TERRITORY' then 'ACT'
+    else normalised
+    endif endif endif endif endif endif endif endif;
+
+-- ===========================================================================
+-- Helper: Normalise postcode to 4 digits
+-- ===========================================================================
+helper def: normalisePostcode(postcodeStr: String): String =
+    let trimmed: String = postcodeStr.trim() in
+    if trimmed.size() < 4 then
+        '0'.repeat(4 - trimmed.size()) + trimmed
+    else
+        trimmed
+    endif;
+
+-- ===========================================================================
+-- Helper: Get unique ABNs from legacy customers
+-- ===========================================================================
+helper def: uniqueABNs: Set(String) =
+    Legacy!Customer.allInstances()
+        ->select(c | not c.abn.oclIsUndefined() and c.abn.size() > 0)
+        ->collect(c | c.abn.trim())
+        ->asSet();
+
+-- ===========================================================================
+-- Helper: Get all legacy customers for a given ABN
+-- ===========================================================================
+helper def: customersForABN(abn: String): Sequence(Legacy!Customer) =
+    Legacy!Customer.allInstances()
+        ->select(c | c.abn.trim() = abn);
+
+-- ===========================================================================
+-- Helper: Generate identifier for organisation
+-- ===========================================================================
+helper def: generateOrgIdentifier(abn: String, name: String): String =
+    if abn.size() > 0 then
+        'ORG-' + abn.replace(' ', '')
+    else
+        'ORG-' + name.toUpper().substring(1, 3.min(name.size())) + '-' +
+        OclAny.newGuid().substring(1, 8)
+    endif;
+
+-- ===========================================================================
+-- Rule: CustomerDatabase -> CustomerManagementSystem
+-- Root transformation with all contained elements
+-- ===========================================================================
+rule CustomerDatabase2System {
+    from
+        db: Legacy!CustomerDatabase
+    to
+        sys: Customer!CustomerManagementSystem (
+            name <- db.name,
+            description <- 'Migrated from legacy system on ' + thisModule.migrationTimestamp.toString(),
+            organisations <- thisModule.uniqueABNs
+                ->collect(abn | thisModule.createOrganisation(
+                    thisModule.customersForABN(abn)->first()
+                )),
+            customers <- db.customers,
+            categories <- thisModule.createDefaultCategories()
+        )
+}
+
+-- ===========================================================================
+-- Lazy Rule: Create Organisation from legacy Customer data
+-- Deduplicates by ABN (Australian Business Number)
+-- ===========================================================================
+lazy rule createOrganisation {
+    from
+        c: Legacy!Customer
+    to
+        org: Customer!Organisation (
+            identifier <- thisModule.generateOrgIdentifier(c.abn, c.companyName),
+            name <- c.companyName,
+            description <- 'Organisation for ' + c.companyName,
+            organisationType <- thisModule.normaliseOrganisationType(c.companyType),
+            tradingName <- if c.tradingName.oclIsUndefined() then c.companyName
+                          else c.tradingName endif,
+            australianBusinessNumber <- c.abn.replace(' ', ''),
+            australianCompanyNumber <- if c.acn.oclIsUndefined() then ''
+                                       else c.acn.replace(' ', '') endif,
+            createdAt <- thisModule.migrationTimestamp,
+            modifiedAt <- thisModule.migrationTimestamp,
+            addresses <- Sequence{tradingAddr},
+            contacts <- thisModule.customersForABN(c.abn)
+                ->collect(cust | thisModule.createContact(cust))
+        ),
+        tradingAddr: Customer!Address (
+            addressType <- #TRADING,
+            streetAddress <- c.streetAddress,
+            suburb <- c.city,
+            state <- thisModule.normaliseState(c.state),
+            postcode <- thisModule.normalisePostcode(c.postcode),
+            country <- if c.country.oclIsUndefined() or c.country.size() = 0
+                       then 'Australia'
+                       else c.country endif
+        )
+}
+
+-- ===========================================================================
+-- Lazy Rule: Create Contact from legacy Customer data
+-- ===========================================================================
+lazy rule createContact {
+    from
+        c: Legacy!Customer
+    to
+        contact: Customer!Contact (
+            name <- c.contactName,
+            description <- 'Contact for ' + c.name,
+            contactType <- #PRIMARY,
+            email <- c.contactEmail,
+            phone <- c.contactPhone,
+            mobile <- if c.contactMobile.oclIsUndefined() then '' else c.contactMobile endif,
+            position <- if c.contactPosition.oclIsUndefined() then '' else c.contactPosition endif
+        )
+}
+
+-- ===========================================================================
+-- Rule: Customer -> Customer
+-- Maps legacy customer to new structure with proper references
+-- ===========================================================================
+rule Customer2Customer {
+    from
+        c: Legacy!Customer
+    to
+        cust: Customer!Customer (
+            identifier <- c.id,
+            name <- c.name,
+            description <- 'Customer account',
+            status <- thisModule.normaliseCustomerStatus(c.status),
+            creditLimit <- c.creditLimit,
+            paymentTermsDays <- if c.paymentTerms.oclIsUndefined() then 30
+                               else c.paymentTerms endif,
+            createdAt <- thisModule.migrationTimestamp,
+            modifiedAt <- thisModule.migrationTimestamp,
+            organisation <- thisModule.createOrganisation(
+                Legacy!Customer.allInstances()->any(cust |
+                    cust.abn.trim() = c.abn.trim()
+                )
+            ),
+            primaryContact <- thisModule.createContact(c),
+            billingAddress <- billingAddr,
+            deliveryAddress <- deliveryAddr,
+            notes <- if c.notes.oclIsUndefined() or c.notes.size() = 0
+                    then Sequence{}
+                    else Sequence{custNote}
+                    endif
+        ),
+        billingAddr: Customer!Address (
+            addressType <- #BILLING,
+            streetAddress <- c.streetAddress,
+            suburb <- c.city,
+            state <- thisModule.normaliseState(c.state),
+            postcode <- thisModule.normalisePostcode(c.postcode),
+            country <- if c.country.oclIsUndefined() or c.country.size() = 0
+                       then 'Australia'
+                       else c.country endif
+        ),
+        deliveryAddr: Customer!Address (
+            addressType <- #DELIVERY,
+            streetAddress <- c.streetAddress,
+            suburb <- c.city,
+            state <- thisModule.normaliseState(c.state),
+            postcode <- thisModule.normalisePostcode(c.postcode),
+            country <- if c.country.oclIsUndefined() or c.country.size() = 0
+                       then 'Australia'
+                       else c.country endif
+        ),
+        custNote: Customer!CustomerNote (
+            content <- c.notes,
+            createdAt <- thisModule.migrationTimestamp,
+            createdBy <- 'Migration'
+        )
+}
+
+-- ===========================================================================
+-- Called Rule: Create default customer categories
+-- ===========================================================================
+rule createDefaultCategories() {
+    to
+        standard: Customer!CustomerCategory (
+            name <- 'Standard',
+            code <- 'STD',
+            description <- 'Standard customer category',
+            discountPercentage <- 0
+        ),
+        premium: Customer!CustomerCategory (
+            name <- 'Premium',
+            code <- 'PRM',
+            description <- 'Premium customer with enhanced discounts',
+            discountPercentage <- 10
+        ),
+        enterprise: Customer!CustomerCategory (
+            name <- 'Enterprise',
+            code <- 'ENT',
+            description <- 'Enterprise customer with volume discounts',
+            discountPercentage <- 15
+        )
+    do {
+        Sequence{standard, premium, enterprise};
+    }
+}

@@ -1,0 +1,42 @@
+digraph CompleteMDEWorkflow {
+    bgcolor="white"
+    rankdir=LR
+    node [shape=box, style=rounded, fontname="Arial", fontsize=12]
+    edge [fontname="Arial", fontsize=10]
+    
+    subgraph cluster_define {
+        label="1. Define"
+        style=rounded
+        bgcolor="#e8f4f8"
+        ecore [label="Ecore\nMetamodel" shape=box3d]
+    }
+    
+    subgraph cluster_create {
+        label="2. Create"
+        style=rounded
+        bgcolor="#f8f4e8"
+        xmi [label="XMI\nModels" shape=box3d]
+    }
+    
+    subgraph cluster_transform {
+        label="3. Transform"
+        style=rounded
+        bgcolor="#e8f8f5"
+        atl [label="ATL\nTransforms" shape=note]
+    }
+    
+    subgraph cluster_generate {
+        label="4. Generate"
+        style=rounded
+        bgcolor="#f4e8f8"
+        mtl [label="MTL\nTemplates" shape=note]
+        code [label="Swift\nCode" shape=note fillcolor="#fff8e8" style=filled]
+    }
+    
+    ecore -> xmi [label="instantiate"]
+    xmi -> atl [label="process"]
+    atl -> mtl [label="output"]
+    mtl -> code [label="generate"]
+    
+    legendTitle [label="Complete MDE Pipeline" shape=plaintext fontname="Arial Bold" fontsize=14]
+}

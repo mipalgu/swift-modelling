@@ -1,0 +1,537 @@
+[comment encoding = UTF-8 /]
+[comment]
+  MTL Template: Generate Swift API Client
+  Creates type-safe client library for consuming the REST API
+  Part of the Cross-Format Integration tutorial
+[/comment]
+
+[module GenerateSwiftAPI('http://www.eclipse.org/emf/2002/Ecore')]
+
+[comment Main entry point /]
+[template public generate(pkg : EPackage)]
+[comment Generate API client /]
+[file ('ProjectManagementAPI.swift', false, 'UTF-8')]
+[generateAPIClient(pkg)/]
+[/file]
+
+[comment Generate model protocols /]
+[file ('APIProtocols.swift', false, 'UTF-8')]
+[generateProtocols(pkg)/]
+[/file]
+
+[comment Generate async/await extensions /]
+[file ('APIExtensions.swift', false, 'UTF-8')]
+[generateExtensions(pkg)/]
+[/file]
+[/template]
+
+[comment Generate main API client /]
+[template private generateAPIClient(pkg : EPackage)]
+// ProjectManagementAPI.swift
+// Generated from [pkg.name/].ecore
+// Swift API Client for [pkg.name/] REST API
+
+import Foundation
+
+// MARK: - API Configuration
+
+/// Configuration for the Project Management API client
+public struct APIConfiguration: Sendable {
+    /// Base URL for the API
+    public let baseURL: URL
+
+    /// Authentication token
+    public var authToken: String?
+
+    /// Request timeout interval
+    public let timeoutInterval: TimeInterval
+
+    /// Default configuration for production
+    public static let production = APIConfiguration(
+        baseURL: URL(string: "https://api.acme.com.au/v1")!,
+        timeoutInterval: 30
+    )
+
+    /// Configuration for staging environment
+    public static let staging = APIConfiguration(
+        baseURL: URL(string: "https://api-staging.acme.com.au/v1")!,
+        timeoutInterval: 30
+    )
+
+    public init(baseURL: URL, authToken: String? = nil, timeoutInterval: TimeInterval = 30) {
+        self.baseURL = baseURL
+        self.authToken = authToken
+        self.timeoutInterval = timeoutInterval
+    }
+}
+
+// MARK: - API Errors
+
+/// Errors that can occur during API operations
+public enum APIError: Error, LocalizedError {
+    case invalidURL
+    case networkError(Error)
+    case httpError(statusCode: Int, message: String?)
+    case decodingError(Error)
+    case encodingError(Error)
+    case unauthorised
+    case notFound
+    case conflict(ConflictReport)
+    case serverError(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .invalidURL:
+            return "Invalid URL"
+        case .networkError(let error):
+            return "Network error: \(error.localizedDescription)"
+        case .httpError(let code, let message):
+            return "HTTP error \(code): \(message ?? "Unknown error")"
+        case .decodingError(let error):
+            return "Failed to decode response: \(error.localizedDescription)"
+        case .encodingError(let error):
+            return "Failed to encode request: \(error.localizedDescription)"
+        case .unauthorised:
+            return "Unauthorised - please check your authentication token"
+        case .notFound:
+            return "Resource not found"
+        case .conflict(let report):
+            return "Conflict detected: \(report.conflicts.count) conflicts"
+        case .serverError(let message):
+            return "Server error: \(message)"
+        }
+    }
+}
+
+// MARK: - API Client
+
+/// Main API client for Project Management operations
+@MainActor
+public final class ProjectManagementAPI: ObservableObject {
+    /// Current configuration
+    public let configuration: APIConfiguration
+
+    /// URL session for network requests
+    private let session: URLSession
+
+    /// JSON decoder configured for the API
+    private let decoder: JSONDecoder = {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }()
+
+    /// JSON encoder configured for the API
+    private let encoder: JSONEncoder = {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        return encoder
+    }()
+
+    /// Published sync status for reactive updates
+    @Published public private(set) var syncStatus: SyncStatus?
+
+    /// Initialise the API client
+    public init(configuration: APIConfiguration) {
+        self.configuration = configuration
+
+        let sessionConfig = URLSessionConfiguration.default
+        sessionConfig.timeoutIntervalForRequest = configuration.timeoutInterval
+        self.session = URLSession(configuration: sessionConfig)
+    }
+
+[for (cls : EClass | pkg.eClassifiers->filter(EClass))]
+    // MARK: - [cls.name/] Operations
+
+[generateClassOperations(cls)/]
+[/for]
+
+    // MARK: - Synchronisation Operations
+
+    /// Get current synchronisation status
+    public func getSyncStatus() async throws -> SyncStatus {
+        let status: SyncStatus = try await get(path: "sync/status")
+        await MainActor.run { self.syncStatus = status }
+        return status
+    }
+
+    /// Push local changes to the server
+    public func pushChanges(_ changeSet: ChangeSet) async throws -> PushResult {
+        do {
+            return try await post(path: "sync/push", body: changeSet)
+        } catch APIError.httpError(409, _) {
+            // Handle conflict response
+            let conflictReport: ConflictReport = try await get(path: "sync/conflicts")
+            throw APIError.conflict(conflictReport)
+        }
+    }
+
+    /// Pull remote changes since last sync
+    public func pullChanges(since: Date? = nil) async throws -> ChangeSet {
+        var queryItems: [URLQueryItem] = []
+        if let since = since {
+            let formatter = ISO8601DateFormatter()
+            queryItems.append(URLQueryItem(name: "since", value: formatter.string(from: since)))
+        }
+        return try await get(path: "sync/pull", queryItems: queryItems)
+    }
+
+    // MARK: - Export Operations
+
+    /// Export model as XMI
+    public func exportXMI() async throws -> String {
+        try await getString(path: "export/xmi")
+    }
+
+    /// Export model as JSON
+    public func exportJSON() async throws -> Organisation {
+        try await get(path: "export/json")
+    }
+
+    // MARK: - Network Helpers
+
+    /// Perform GET request
+    private func get<T: Decodable>(path: String, queryItems: [URLQueryItem] = []) async throws -> T {
+        let request = try buildRequest(path: path, method: "GET", queryItems: queryItems)
+        return try await perform(request)
+    }
+
+    /// Perform GET request returning string
+    private func getString(path: String) async throws -> String {
+        let request = try buildRequest(path: path, method: "GET")
+        let (data, response) = try await session.data(for: request)
+        try validateResponse(response)
+        guard let string = String(data: data, encoding: .utf8) else {
+            throw APIError.decodingError(NSError(domain: "APIError", code: 0))
+        }
+        return string
+    }
+
+    /// Perform POST request
+    private func post<T: Decodable, B: Encodable>(path: String, body: B) async throws -> T {
+        var request = try buildRequest(path: path, method: "POST")
+        request.httpBody = try encoder.encode(body)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        return try await perform(request)
+    }
+
+    /// Perform PUT request
+    private func put<T: Decodable, B: Encodable>(path: String, body: B) async throws -> T {
+        var request = try buildRequest(path: path, method: "PUT")
+        request.httpBody = try encoder.encode(body)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        return try await perform(request)
+    }
+
+    /// Perform DELETE request
+    private func delete(path: String) async throws {
+        let request = try buildRequest(path: path, method: "DELETE")
+        let (_, response) = try await session.data(for: request)
+        try validateResponse(response)
+    }
+
+    /// Build URL request
+    private func buildRequest(path: String, method: String, queryItems: [URLQueryItem] = []) throws -> URLRequest {
+        var components = URLComponents(url: configuration.baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: true)
+        if !queryItems.isEmpty {
+            components?.queryItems = queryItems
+        }
+        guard let url = components?.url else {
+            throw APIError.invalidURL
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        if let token = configuration.authToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorisation")
+        }
+        return request
+    }
+
+    /// Perform request and decode response
+    private func perform<T: Decodable>(_ request: URLRequest) async throws -> T {
+        do {
+            let (data, response) = try await session.data(for: request)
+            try validateResponse(response)
+            return try decoder.decode(T.self, from: data)
+        } catch let error as APIError {
+            throw error
+        } catch let error as DecodingError {
+            throw APIError.decodingError(error)
+        } catch {
+            throw APIError.networkError(error)
+        }
+    }
+
+    /// Validate HTTP response
+    private func validateResponse(_ response: URLResponse) throws {
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.networkError(NSError(domain: "APIError", code: 0))
+        }
+        switch httpResponse.statusCode {
+        case 200...299:
+            return
+        case 401:
+            throw APIError.unauthorised
+        case 404:
+            throw APIError.notFound
+        case 409:
+            throw APIError.httpError(statusCode: 409, message: "Conflict")
+        case 500...599:
+            throw APIError.serverError("Internal server error")
+        default:
+            throw APIError.httpError(statusCode: httpResponse.statusCode, message: nil)
+        }
+    }
+}
+[/template]
+
+[comment Generate operations for a class /]
+[template private generateClassOperations(cls : EClass)]
+    /// List all [cls.name.toLower()/]s
+    public func list[cls.name/]s(limit: Int = 20, offset: Int = 0) async throws -> PagedResult<[cls.name/]> {
+        let queryItems = [
+            URLQueryItem(name: "limit", value: String(limit)),
+            URLQueryItem(name: "offset", value: String(offset))
+        ]
+        return try await get(path: "[cls.name.toLower()/]s", queryItems: queryItems)
+    }
+
+    /// Get [cls.name.toLower()/] by ID
+    public func get[cls.name/](id: String) async throws -> [cls.name/] {
+        try await get(path: "[cls.name.toLower()/]s/\(id)")
+    }
+
+    /// Create new [cls.name.toLower()/]
+    public func create[cls.name/](_ input: [cls.name/]Input) async throws -> [cls.name/] {
+        try await post(path: "[cls.name.toLower()/]s", body: input)
+    }
+
+    /// Update [cls.name.toLower()/]
+    public func update[cls.name/](id: String, _ input: [cls.name/]Input) async throws -> [cls.name/] {
+        try await put(path: "[cls.name.toLower()/]s/\(id)", body: input)
+    }
+
+    /// Delete [cls.name.toLower()/]
+    public func delete[cls.name/](id: String) async throws {
+        try await delete(path: "[cls.name.toLower()/]s/\(id)")
+    }
+
+[/template]
+
+[comment Generate protocols /]
+[template private generateProtocols(pkg : EPackage)]
+// APIProtocols.swift
+// Generated from [pkg.name/].ecore
+// Protocols for [pkg.name/] API models
+
+import Foundation
+
+// MARK: - Identifiable Protocol
+
+/// Protocol for models with unique identifiers
+public protocol APIIdentifiable {
+    var id: String { get }
+}
+
+// MARK: - Syncable Protocol
+
+/// Protocol for models that support synchronisation
+public protocol Syncable: APIIdentifiable {
+    var lastModified: Date? { get }
+    var version: Int { get }
+}
+
+// MARK: - Input Protocol
+
+/// Protocol for input DTOs used in create/update operations
+public protocol APIInput: Encodable {
+    associatedtype Model: APIIdentifiable
+}
+
+// MARK: - Paged Result
+
+/// Wrapper for paginated results
+public struct PagedResult<T: Decodable>: Decodable {
+    public let items: [T]
+    public let total: Int
+
+    public var hasMore: Bool {
+        items.count < total
+    }
+}
+
+// MARK: - Sync Types
+
+/// Synchronisation status
+public struct SyncStatus: Decodable {
+    public let lastSync: Date?
+    public let pendingChanges: Int
+    public let conflicts: Int
+    public let status: SyncState
+}
+
+/// Synchronisation state
+public enum SyncState: String, Decodable {
+    case synced = "SYNCED"
+    case pending = "PENDING"
+    case conflict = "CONFLICT"
+}
+
+/// Set of changes for synchronisation
+public struct ChangeSet: Codable {
+    public let timestamp: Date
+    public let source: String
+    public let changes: [Change]
+
+    public init(timestamp: Date, source: String, changes: [Change]) {
+        self.timestamp = timestamp
+        self.source = source
+        self.changes = changes
+    }
+}
+
+/// Individual change record
+public struct Change: Codable {
+    public let id: String
+    public let type: ChangeType
+    public let elementType: String
+    public let elementId: String
+    public let properties: [String: String]
+
+    public init(id: String, type: ChangeType, elementType: String, elementId: String, properties: [String: String]) {
+        self.id = id
+        self.type = type
+        self.elementType = elementType
+        self.elementId = elementId
+        self.properties = properties
+    }
+}
+
+/// Type of change
+public enum ChangeType: String, Codable {
+    case add = "ADD"
+    case update = "UPDATE"
+    case delete = "DELETE"
+}
+
+/// Result of pushing changes
+public struct PushResult: Decodable {
+    public let success: Bool
+    public let changesApplied: Int
+    public let newVersion: String
+}
+
+/// Report of conflicts during sync
+public struct ConflictReport: Decodable {
+    public let conflicts: [Conflict]
+}
+
+/// Individual conflict
+public struct Conflict: Decodable {
+    public let elementId: String
+    public let elementType: String
+    public let localChange: Change
+    public let remoteChange: Change
+}
+[/template]
+
+[comment Generate extensions /]
+[template private generateExtensions(pkg : EPackage)]
+// APIExtensions.swift
+// Generated from [pkg.name/].ecore
+// Convenience extensions for [pkg.name/] API
+
+import Foundation
+
+// MARK: - Combine Support
+
+#if canImport(Combine)
+import Combine
+
+extension ProjectManagementAPI {
+[for (cls : EClass | pkg.eClassifiers->filter(EClass))]
+    /// Publisher for listing [cls.name.toLower()/]s
+    public func list[cls.name/]sPublisher(limit: Int = 20, offset: Int = 0) -> AnyPublisher<PagedResult<[cls.name/]>, APIError> {
+        Future { promise in
+            Task {
+                do {
+                    let result = try await self.list[cls.name/]s(limit: limit, offset: offset)
+                    promise(.success(result))
+                } catch let error as APIError {
+                    promise(.failure(error))
+                } catch {
+                    promise(.failure(.networkError(error)))
+                }
+            }
+        }
+        .eraseToAnyPublisher()
+    }
+
+[/for]
+}
+#endif
+
+// MARK: - SwiftUI Support
+
+#if canImport(SwiftUI)
+import SwiftUI
+
+/// Environment key for API client
+private struct APIClientKey: EnvironmentKey {
+    static let defaultValue: ProjectManagementAPI? = nil
+}
+
+extension EnvironmentValues {
+    /// The Project Management API client
+    public var projectManagementAPI: ProjectManagementAPI? {
+        get { self[APIClientKey.self] }
+        set { self[APIClientKey.self] = newValue }
+    }
+}
+
+extension View {
+    /// Inject the API client into the environment
+    public func projectManagementAPI(_ api: ProjectManagementAPI) -> some View {
+        environment(\.projectManagementAPI, api)
+    }
+}
+#endif
+
+// MARK: - Convenience Initialisers
+
+extension ProjectManagementAPI {
+    /// Create client with authentication token
+    public convenience init(token: String, environment: APIConfiguration = .production) {
+        var config = environment
+        config = APIConfiguration(
+            baseURL: config.baseURL,
+            authToken: token,
+            timeoutInterval: config.timeoutInterval
+        )
+        self.init(configuration: config)
+    }
+}
+
+// MARK: - Batch Operations
+
+extension ProjectManagementAPI {
+    /// Fetch multiple resources in parallel
+    public func fetchAll<T: Decodable>(
+        _ requests: [() async throws -> T]
+    ) async throws -> [T] {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            for request in requests {
+                group.addTask {
+                    try await request()
+                }
+            }
+
+            var results: [T] = []
+            for try await result in group {
+                results.append(result)
+            }
+            return results
+        }
+    }
+}
+[/template]

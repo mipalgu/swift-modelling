@@ -1,0 +1,188 @@
+[comment encoding = UTF-8 /]
+[module LetTemplate('http://www.example.org/webapp')]
+
+[comment]
+  Let Bindings in MTL Templates
+
+  This template demonstrates using MTL's [let] construct
+  to bind complex AQL expressions to named variables.
+
+  Let bindings improve readability, avoid repeated
+  computation, and make templates more maintainable.
+[/comment]
+
+[template main(app : WebApp)]
+[file ('let-bindings.txt', 'overwrite', 'UTF-8')]
+Let Bindings in MTL Templates
+=============================
+
+Application: [app.name/]
+
+[comment ================================================================ /]
+[comment             BASIC LET BINDINGS                                   /]
+[comment ================================================================ /]
+
+1. Basic Let Bindings
+---------------------
+[comment]
+  [let varName = expression]
+    ... use varName ...
+  [/let]
+
+  The variable is only in scope within the let block.
+[/comment]
+
+[let pageCount = app.pages->size()]
+[let entityCount = app.entities->size()]
+[let stylesheetCount = app.stylesheets->size()]
+Application statistics:
+- Pages: [pageCount/]
+- Entities: [entityCount/]
+- Stylesheets: [stylesheetCount/]
+- Total elements: [pageCount + entityCount + stylesheetCount/]
+[/let]
+[/let]
+[/let]
+
+[comment ================================================================ /]
+[comment             LET FOR FILTERED COLLECTIONS                         /]
+[comment ================================================================ /]
+
+2. Let for Filtered Collections
+-------------------------------
+[comment]
+  Bind filtered collections to avoid repeating
+  the filter expression multiple times.
+[/comment]
+
+[let protectedPages = app.pages->select(p | p.requiresAuth)]
+[let publicPages = app.pages->reject(p | p.requiresAuth)]
+Access configuration:
+- Protected pages: [protectedPages->size()/]
+[for (page : Page | protectedPages)]
+    - [page.name/] ([page.route/])
+[/for]
+- Public pages: [publicPages->size()/]
+[for (page : Page | publicPages)]
+    - [page.name/] ([page.route/])
+[/for]
+[/let]
+[/let]
+
+[comment ================================================================ /]
+[comment             NESTED LET BINDINGS                                  /]
+[comment ================================================================ /]
+
+3. Nested Let Bindings
+----------------------
+[comment]
+  Let bindings can be nested. Inner bindings can
+  reference outer bindings.
+[/comment]
+
+[for (entity : Entity | app.entities)]
+[let allAttrs = entity.attributes]
+[let pkAttrs = allAttrs->select(a | a.isPrimaryKey)]
+[let nonPkAttrs = allAttrs->reject(a | a.isPrimaryKey)]
+[let requiredAttrs = nonPkAttrs->select(a | not a.isNullable)]
+[let optionalAttrs = nonPkAttrs->select(a | a.isNullable)]
+
+[entity.name/] breakdown:
+  Total: [allAttrs->size()/]
+  Primary key(s): [pkAttrs->size()/]
+  Required: [requiredAttrs->size()/]
+  Optional: [optionalAttrs->size()/]
+[/let]
+[/let]
+[/let]
+[/let]
+[/let]
+[/for]
+
+[comment ================================================================ /]
+[comment             LET FOR COMPUTED VALUES                              /]
+[comment ================================================================ /]
+
+4. Let for Computed Values
+--------------------------
+[comment]
+  Use let for computed strings, formatted values,
+  or any expression result to be reused.
+[/comment]
+
+[for (page : Page | app.pages)]
+[let componentCount = page.components->size()]
+[let hasNav = page.components->exists(c | c.oclIsTypeOf(Navigation))]
+[let hasForms = page.components->exists(c | c.oclIsTypeOf(Form))]
+[let hasTables = page.components->exists(c | c.oclIsTypeOf(DataTable))]
+[let features = if hasNav then 'Nav ' else '' endif + if hasForms then 'Forms ' else '' endif + if hasTables then 'Tables' else '' endif]
+
+[page.name/]:
+  Components: [componentCount/]
+  Features: [if (features.size() > 0)][features/][else]None[/if]
+[/let]
+[/let]
+[/let]
+[/let]
+[/let]
+[/for]
+
+[comment ================================================================ /]
+[comment             LET FOR COMPLEX NAVIGATION                           /]
+[comment ================================================================ /]
+
+5. Let for Complex Navigation
+-----------------------------
+[comment]
+  Bind intermediate navigation results for clarity
+  when dealing with long navigation chains.
+[/comment]
+
+[for (page : Page | app.pages)]
+[let forms = page.components->select(c | c.oclIsTypeOf(Form))->collect(c | c.oclAsType(Form))]
+[let boundForms = forms->select(f | f.boundEntity <> null)]
+[let unboundForms = forms->reject(f | f.boundEntity <> null)]
+[if (forms->notEmpty())]
+[page.name/] form analysis:
+  Total forms: [forms->size()/]
+  Bound to entities: [boundForms->size()/]
+  Unbound: [unboundForms->size()/]
+[for (form : Form | boundForms)]
+  - [form.name/] -> [form.boundEntity.name/] ([form.fields->size()/] fields)
+[/for]
+[/if]
+[/let]
+[/let]
+[/let]
+[/for]
+
+[comment ================================================================ /]
+[comment             LET WITH AGGREGATIONS                                /]
+[comment ================================================================ /]
+
+6. Let with Aggregations
+------------------------
+[comment]
+  Bind aggregated values for statistics and summaries.
+[/comment]
+
+[let totalAttrs = app.entities->collect(e | e.attributes->size())->sum()]
+[let totalRels = app.entities->collect(e | e.relationships->size())->sum()]
+[let avgAttrs = totalAttrs / app.entities->size()]
+[let maxAttrs = app.entities->collect(e | e.attributes->size())->max()]
+[let minAttrs = app.entities->collect(e | e.attributes->size())->min()]
+
+Data model statistics:
+- Total attributes: [totalAttrs/]
+- Total relationships: [totalRels/]
+- Average attributes per entity: [avgAttrs/]
+- Largest entity: [maxAttrs/] attributes
+- Smallest entity: [minAttrs/] attributes
+[/let]
+[/let]
+[/let]
+[/let]
+[/let]
+
+[/file]
+[/template]

@@ -1,0 +1,41 @@
+digraph AQLCollectionOps {
+    bgcolor="white"
+    rankdir=TB
+    node [shape=box, style=rounded, fontname="Arial", fontsize=12]
+    edge [fontname="Arial", fontsize=10]
+    
+    collection [label="Collection" shape=box3d fillcolor="#e8f4f8" style=filled]
+    
+    subgraph cluster_filtering {
+        label="Filtering"
+        style=rounded
+        bgcolor="#f8f4e8"
+        select [label="select()" shape=box]
+        reject [label="reject()" shape=box]
+    }
+    
+    subgraph cluster_testing {
+        label="Testing"
+        style=rounded
+        bgcolor="#e8f8f5"
+        exists [label="exists()" shape=box]
+        forall [label="forAll()" shape=box]
+    }
+    
+    subgraph cluster_transform {
+        label="Transformation"
+        style=rounded
+        bgcolor="#f4e8f8"
+        collect [label="collect()" shape=box]
+        flatten [label="flatten()" shape=box]
+    }
+    
+    collection -> select
+    collection -> reject
+    collection -> exists
+    collection -> forall
+    collection -> collect
+    collection -> flatten
+    
+    legendTitle [label="AQL Collection Operations" shape=plaintext fontname="Arial Bold" fontsize=14]
+}

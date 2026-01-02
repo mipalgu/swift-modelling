@@ -1,0 +1,142 @@
+-- ATL Transformation: Orders v2.0 to Legacy Orders
+-- Provides backward compatibility for systems still using legacy format
+-- Part of the Model Refactoring Pipeline tutorial
+-- @path Orders=/Orders/Orders.ecore
+-- @path Legacy=/Legacy/LegacyOrders.ecore
+
+module Orders2LegacyOrders;
+create OUT: Legacy from IN: Orders;
+
+-- ===========================================================================
+-- Helper: Format address as string
+-- ===========================================================================
+helper context Orders!Address def: asString: String =
+    self.streetAddress + ', ' +
+    self.suburb + ' ' + self.state + ' ' + self.postcode + ', ' +
+    self.country;
+
+-- ===========================================================================
+-- Helper: Convert OrderStatus enum to string
+-- ===========================================================================
+helper context Orders!Order def: statusString: String =
+    if self.status = #PENDING then 'PENDING'
+    else if self.status = #CONFIRMED then 'CONFIRMED'
+    else if self.status = #PROCESSING then 'PROCESSING'
+    else if self.status = #SHIPPED then 'SHIPPED'
+    else if self.status = #DELIVERED then 'DELIVERED'
+    else if self.status = #CANCELLED then 'CANCELLED'
+    else 'PENDING'
+    endif endif endif endif endif endif;
+
+-- ===========================================================================
+-- Helper: Convert PaymentMethod enum to string
+-- ===========================================================================
+helper context Orders!Payment def: methodString: String =
+    if self.method = #CREDIT_CARD then 'CREDIT_CARD'
+    else if self.method = #DEBIT_CARD then 'DEBIT_CARD'
+    else if self.method = #BANK_TRANSFER then 'BANK_TRANSFER'
+    else if self.method = #PAYPAL then 'PAYPAL'
+    else if self.method = #INVOICE then 'INVOICE'
+    else 'CREDIT_CARD'
+    endif endif endif endif endif;
+
+-- ===========================================================================
+-- Helper: Calculate order total from items
+-- ===========================================================================
+helper context Orders!Order def: calculatedTotal: Real =
+    self.items->collect(i | i.quantity * i.unitPriceAtOrder)->sum();
+
+-- ===========================================================================
+-- Helper: Format category path from hierarchy
+-- ===========================================================================
+helper context Orders!Category def: fullPath: String =
+    if self.parent.oclIsUndefined() then
+        self.name
+    else
+        self.parent.fullPath + '/' + self.name
+    endif;
+
+-- ===========================================================================
+-- Rule: Store -> Store
+-- ===========================================================================
+rule Store2Store {
+    from
+        s: Orders!Store
+    to
+        t: Legacy!Store (
+            name <- s.name,
+            orders <- Orders!Order.allInstances(),
+            products <- s.products
+        )
+}
+
+-- ===========================================================================
+-- Rule: Order -> Order
+-- Denormalises customer and address data back into order
+-- ===========================================================================
+rule Order2Order {
+    from
+        o: Orders!Order
+    to
+        t: Legacy!Order (
+            orderId <- o.orderId,
+            orderDate <- o.orderDate.toString(),
+            status <- o.statusString,
+            -- Denormalise customer data
+            customerName <- o.customer.name,
+            customerEmail <- o.customer.email,
+            customerPhone <- o.customer.phone,
+            -- Flatten addresses back to strings
+            shippingAddress <- o.shippingAddress.asString,
+            billingAddress <- o.billingAddress.asString,
+            -- Calculate and store totals
+            totalAmount <- o.calculatedTotal,
+            taxAmount <- o.calculatedTotal * 0.1,
+            -- Flatten payment info
+            paymentMethod <- if o.payment.oclIsUndefined() then ''
+                            else o.payment.methodString endif,
+            cardLastFour <- '',
+            items <- o.items
+        )
+}
+
+-- ===========================================================================
+-- Rule: OrderItem -> OrderItem
+-- Denormalises product data back into order item
+-- ===========================================================================
+rule OrderItem2OrderItem {
+    from
+        i: Orders!OrderItem
+    to
+        t: Legacy!OrderItem (
+            productCode <- i.product.code,
+            productName <- i.product.name,
+            qty <- i.quantity,
+            unitPrice <- i.unitPriceAtOrder,
+            lineTotal <- i.quantity * i.unitPriceAtOrder
+        )
+}
+
+-- ===========================================================================
+-- Rule: Product -> Product
+-- Merges inventory data back into product
+-- ===========================================================================
+rule Product2Product {
+    from
+        p: Orders!Product
+    to
+        t: Legacy!Product (
+            code <- p.code,
+            name <- p.name,
+            desc <- p.description,
+            price <- p.price,
+            category <- if p.category.oclIsUndefined() then ''
+                        else p.category.fullPath endif,
+            stockQty <- if p.inventory.oclIsUndefined() then 0
+                       else p.inventory.stockQuantity endif,
+            reorderLevel <- if p.inventory.oclIsUndefined() then 0
+                           else p.inventory.reorderLevel endif,
+            warehouseLocation <- if p.inventory.oclIsUndefined() then ''
+                                else p.inventory.location endif
+        )
+}

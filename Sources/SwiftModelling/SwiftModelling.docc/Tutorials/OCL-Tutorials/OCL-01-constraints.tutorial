@@ -1,0 +1,217 @@
+@Tutorial(time: 40) {
+    @Intro(title: "OCL Constraints and Validation") {
+        Learn to define and validate OCL constraints on Ecore models.
+
+        The Object Constraint Language (OCL) allows you to specify invariants, derivation rules, and pre/post conditions that models must satisfy. In this tutorial, you'll:
+        - Define invariant constraints on model elements
+        - Use collection operations for validation
+        - Create derived attributes with OCL expressions
+        - Validate models against constraints
+
+        @Image(source: "ecore-metamodeling.svg", alt: "Ecore with OCL Constraints")
+    }
+
+    @Section(title: "Understanding OCL Constraints") {
+        @ContentAndMedia {
+            OCL constraints specify rules that model instances must follow. They're expressed as boolean expressions that evaluate to true for valid models.
+
+            Types of OCL constraints:
+            - **Invariants**: Conditions that must always be true
+            - **Derivation rules**: How to compute derived attributes
+            - **Pre/post conditions**: Method contracts (input/output)
+
+            Common OCL operations:
+            - **forAll**: All elements satisfy condition
+            - **exists**: At least one element satisfies condition
+            - **select/reject**: Filter collections
+            - **isUnique**: All values are distinct
+            - **size**: Collection element count
+        }
+
+        @Steps {
+            @Step {
+                Examine the Bank Account metamodel with OCL constraints ensuring unique account numbers, valid emails, adult customers, positive balances, and proper account formats.
+
+                @Code(name: "bank-account.ecore", file: bank-account.ecore)
+            }
+        }
+    }
+
+    @Section(title: "Constraint Categories") {
+        @ContentAndMedia {
+            Let's examine the different types of constraints in detail. Each serves a specific validation purpose.
+        }
+
+        @Steps {
+            @Step {
+                **Uniqueness constraints** ensure no duplicate identifiers.
+
+                @Code(name: "bank-account.ecore", file: bank-account.ecore)
+
+                The `uniqueAccountNumbers` constraint uses `isUnique()` to verify all account numbers are distinct across the bank. Similarly, `uniqueCustomerIds` ensures customer IDs don't repeat.
+            }
+
+            @Step {
+                **Format validation** checks string patterns.
+
+                @Code(name: "bank-account.ecore", file: bank-account.ecore)
+
+                The `validEmail` constraint checks that email addresses contain an '@' symbol. The `validAccountNumber` constraint verifies account numbers are exactly 10 digits.
+            }
+
+            @Step {
+                **Business rules** encode domain logic.
+
+                @Code(name: "bank-account.ecore", file: bank-account.ecore)
+
+                The `adultCustomer` constraint requires customers to be at least 18 years old. The `sufficientMinimumBalance` constraint ensures savings accounts maintain their minimum balance.
+            }
+
+            @Step {
+                **Value constraints** validate numeric ranges.
+
+                @Code(name: "bank-account.ecore", file: bank-account.ecore)
+
+                The `positiveBalance` constraint on accounts and `positiveAmount` on transactions ensure financial values are never negative.
+            }
+        }
+    }
+
+    @Section(title: "Valid Model Instance") {
+        @ContentAndMedia {
+            A valid model instance satisfies all OCL constraints. Let's examine a properly structured bank with customers and accounts.
+        }
+
+        @Steps {
+            @Step {
+                Review a valid bank model instance that passes all constraints including unique identifiers, valid emails, adult customers, and proper balances.
+
+                @Code(name: "valid-instance.xmi", file: valid-instance.xmi)
+            }
+        }
+    }
+
+    @Section(title: "Invalid Model Instance") {
+        @ContentAndMedia {
+            Understanding constraint violations helps in designing robust models. Let's examine a model with intentional violations.
+        }
+
+        @Steps {
+            @Step {
+                Review an invalid bank model instance with intentional violations including duplicate IDs, invalid emails, underage customers, negative balances, and malformed account numbers.
+
+                @Code(name: "invalid-instance.xmi", file: invalid-instance.xmi)
+            }
+        }
+    }
+
+    @Section(title: "Running Validation") {
+        @ContentAndMedia {
+            Use swift-ecore to validate models against their metamodel constraints. The validator reports which constraints are violated and where.
+        }
+
+        @Steps {
+            @Step {
+                Validate the valid instance.
+
+                @Code(name: "Terminal", file: ocl-01-validate-valid.sh)
+
+                The validator confirms the model satisfies all constraints.
+            }
+
+            @Step {
+                Validate the invalid instance.
+
+                @Code(name: "Terminal", file: ocl-01-validate-invalid.sh)
+
+                The validator reports each constraint violation with the affected element and constraint name.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What does the OCL expression `accounts->isUnique(a | a.accountNumber)` check?
+
+            @Choice(isCorrect: true) {
+                That all account numbers are different from each other
+
+                @Justification(reaction: "Correct!") {
+                    The `isUnique` operation verifies that the expression evaluates to a distinct value for each element in the collection.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                That at least one account has a unique number
+
+                @Justification(reaction: "Not quite!") {
+                    That would be `exists`. The `isUnique` operation checks ALL elements have distinct values.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                That account numbers are formatted correctly
+
+                @Justification(reaction: "Incorrect!") {
+                    Format validation would use string operations like `size()`. This checks uniqueness.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            How would you express "all customers must have positive account balances"?
+
+            @Choice(isCorrect: false) {
+                customers->exists(c | c.accounts->forAll(a | a.balance > 0))
+
+                @Justification(reaction: "Not quite!") {
+                    This only requires ONE customer to have all positive balances. We need ALL customers.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                customers->forAll(c | c.accounts->forAll(a | a.balance > 0))
+
+                @Justification(reaction: "Correct!") {
+                    This requires that for ALL customers, ALL their accounts have positive balances.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                customers.accounts->select(a | a.balance > 0)->notEmpty()
+
+                @Justification(reaction: "Incorrect!") {
+                    This only checks if there's at least one positive balance, not that all are positive.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            When is a constraint considered satisfied?
+
+            @Choice(isCorrect: true) {
+                When its OCL expression evaluates to true
+
+                @Justification(reaction: "Correct!") {
+                    OCL constraints are boolean expressions. A constraint is satisfied when it evaluates to true for the model.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                When no exception is thrown during evaluation
+
+                @Justification(reaction: "Not quite!") {
+                    Even if evaluation succeeds, the constraint fails if the result is false.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                When the model can be serialised to XMI
+
+                @Justification(reaction: "Incorrect!") {
+                    XMI serialisation doesn't validate OCL constraints. Explicit validation is required.
+                }
+            }
+        }
+    }
+}

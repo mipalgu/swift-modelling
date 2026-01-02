@@ -1,0 +1,41 @@
+digraph LegacyModelAnalysis {
+    bgcolor="white"
+    rankdir=TB
+    node [shape=box, style=rounded, fontname="Arial", fontsize=12]
+    edge [fontname="Arial", fontsize=10]
+    
+    subgraph cluster_legacy {
+        label="Legacy System"
+        style=rounded
+        bgcolor="#f8f4e8"
+        
+        legacy [label="Legacy\nModels" shape=box3d]
+    }
+    
+    subgraph cluster_analysis {
+        label="Analysis Pipeline"
+        style=rounded
+        bgcolor="#e8f4f8"
+        
+        validate [label="Validate\nStructure" shape=ellipse]
+        analyse [label="Analyse\nPatterns" shape=ellipse]
+        report [label="Generate\nReport" shape=ellipse]
+    }
+    
+    subgraph cluster_output {
+        label="Outputs"
+        style=rounded
+        bgcolor="#e8f8f5"
+        
+        issues [label="Issues\nLog" shape=note]
+        metrics [label="Quality\nMetrics" shape=note]
+        migration [label="Migration\nPlan" shape=note]
+    }
+    
+    legacy -> validate -> analyse -> report
+    report -> issues
+    report -> metrics
+    report -> migration
+    
+    legendTitle [label="Legacy Model Analysis" shape=plaintext fontname="Arial Bold" fontsize=14]
+}

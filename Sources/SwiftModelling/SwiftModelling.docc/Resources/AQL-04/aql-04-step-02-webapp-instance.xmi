@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:webapp="http://www.example.org/webapp">
+
+  <webapp:WebApp name="TaskManager" baseUrl="https://tasks.example.com" version="1.0.0">
+
+    <!-- Data Entities -->
+    <entities name="User" tableName="users">
+      <attributes name="id" dataType="integer" isPrimaryKey="true" isNullable="false"/>
+      <attributes name="email" dataType="string" isNullable="false" maxLength="255"/>
+      <attributes name="username" dataType="string" isNullable="false" maxLength="50"/>
+      <attributes name="passwordHash" dataType="string" isNullable="false"/>
+      <attributes name="createdAt" dataType="datetime" isNullable="false"/>
+      <attributes name="isActive" dataType="boolean" defaultValue="true"/>
+      <relationships name="tasks" relationType="oneToMany" targetEntity="//@entities.1"/>
+      <relationships name="projects" relationType="manyToMany" targetEntity="//@entities.2"/>
+    </entities>
+
+    <entities name="Task" tableName="tasks">
+      <attributes name="id" dataType="integer" isPrimaryKey="true" isNullable="false"/>
+      <attributes name="title" dataType="string" isNullable="false" maxLength="200"/>
+      <attributes name="description" dataType="text" isNullable="true"/>
+      <attributes name="priority" dataType="integer" defaultValue="1"/>
+      <attributes name="dueDate" dataType="date" isNullable="true"/>
+      <attributes name="isCompleted" dataType="boolean" defaultValue="false"/>
+      <attributes name="createdAt" dataType="datetime" isNullable="false"/>
+      <relationships name="assignee" relationType="manyToOne" targetEntity="//@entities.0"/>
+      <relationships name="project" relationType="manyToOne" targetEntity="//@entities.2"/>
+      <relationships name="comments" relationType="oneToMany" targetEntity="//@entities.3"/>
+    </entities>
+
+    <entities name="Project" tableName="projects">
+      <attributes name="id" dataType="integer" isPrimaryKey="true" isNullable="false"/>
+      <attributes name="name" dataType="string" isNullable="false" maxLength="100"/>
+      <attributes name="description" dataType="text" isNullable="true"/>
+      <attributes name="startDate" dataType="date" isNullable="true"/>
+      <attributes name="endDate" dataType="date" isNullable="true"/>
+      <attributes name="budget" dataType="decimal" isNullable="true"/>
+      <relationships name="tasks" relationType="oneToMany" targetEntity="//@entities.1"/>
+      <relationships name="members" relationType="manyToMany" targetEntity="//@entities.0"/>
+    </entities>
+
+    <entities name="Comment" tableName="comments">
+      <attributes name="id" dataType="integer" isPrimaryKey="true" isNullable="false"/>
+      <attributes name="content" dataType="text" isNullable="false"/>
+      <attributes name="createdAt" dataType="datetime" isNullable="false"/>
+      <relationships name="author" relationType="manyToOne" targetEntity="//@entities.0"/>
+      <relationships name="task" relationType="manyToOne" targetEntity="//@entities.1"/>
+    </entities>
+
+    <!-- Stylesheets -->
+    <stylesheets name="Bootstrap" path="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" isExternal="true"/>
+    <stylesheets name="Custom Styles" path="/css/app.css" isExternal="false"/>
+    <stylesheets name="Font Awesome" path="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" isExternal="true"/>
+
+    <!-- Pages -->
+    <pages name="Dashboard" route="/" title="Dashboard - TaskManager" requiresAuth="true"
+        linkedPages="//@pages.1 //@pages.2 //@pages.3 //@pages.4">
+
+      <!-- Main Navigation -->
+      <components xsi:type="webapp:Navigation" name="MainNav" cssClass="navbar navbar-expand-lg" navType="horizontal">
+        <items label="Dashboard" icon="fa-home" isActive="true" targetPage="//@pages.0"/>
+        <items label="Tasks" icon="fa-tasks" targetPage="//@pages.1"/>
+        <items label="Projects" icon="fa-folder" targetPage="//@pages.2">
+          <subItems label="All Projects" targetPage="//@pages.2"/>
+          <subItems label="New Project" targetPage="//@pages.3"/>
+        </items>
+        <items label="Profile" icon="fa-user" targetPage="//@pages.4"/>
+      </components>
+
+      <!-- Recent Tasks Table -->
+      <components xsi:type="webapp:DataTable" name="RecentTasks" cssClass="table table-striped"
+          isPaginated="true" pageSize="5" dataSource="//@entities.1">
+        <columns name="title" header="Task" isSortable="true" width="40%" boundAttribute="//@entities.1/@attributes.1"/>
+        <columns name="priority" header="Priority" isSortable="true" width="15%" boundAttribute="//@entities.1/@attributes.3"/>
+        <columns name="dueDate" header="Due Date" isSortable="true" width="20%" boundAttribute="//@entities.1/@attributes.4"/>
+        <columns name="isCompleted" header="Status" isSortable="false" width="15%" boundAttribute="//@entities.1/@attributes.5"/>
+      </components>
+    </pages>
+
+    <pages name="TaskList" route="/tasks" title="Tasks - TaskManager" requiresAuth="true"
+        linkedPages="//@pages.0 //@pages.2">
+
+      <!-- Tasks Navigation (reuse pattern) -->
+      <components xsi:type="webapp:Navigation" name="TaskNav" cssClass="navbar" navType="horizontal">
+        <items label="All Tasks" isActive="true" targetPage="//@pages.1"/>
+        <items label="My Tasks" targetPage="//@pages.1"/>
+        <items label="Completed" targetPage="//@pages.1"/>
+      </components>
+
+      <!-- Full Tasks Table -->
+      <components xsi:type="webapp:DataTable" name="AllTasks" cssClass="table table-hover"
+          isPaginated="true" pageSize="20" dataSource="//@entities.1">
+        <columns name="id" header="#" isSortable="true" width="5%" boundAttribute="//@entities.1/@attributes.0"/>
+        <columns name="title" header="Title" isSortable="true" width="35%" boundAttribute="//@entities.1/@attributes.1"/>
+        <columns name="description" header="Description" isSortable="false" width="30%" boundAttribute="//@entities.1/@attributes.2"/>
+        <columns name="priority" header="Priority" isSortable="true" width="10%" boundAttribute="//@entities.1/@attributes.3"/>
+        <columns name="dueDate" header="Due" isSortable="true" width="10%" boundAttribute="//@entities.1/@attributes.4"/>
+        <columns name="isCompleted" header="Done" isSortable="true" width="10%" boundAttribute="//@entities.1/@attributes.5"/>
+      </components>
+
+      <!-- New Task Form -->
+      <components xsi:type="webapp:Form" name="NewTaskForm" cssClass="card p-4"
+          action="/api/tasks" method="POST" boundEntity="//@entities.1">
+        <fields name="title" label="Task Title" fieldType="text" isRequired="true"
+            placeholder="Enter task title" boundAttribute="//@entities.1/@attributes.1"/>
+        <fields name="description" label="Description" fieldType="textarea" isRequired="false"
+            placeholder="Describe the task..." boundAttribute="//@entities.1/@attributes.2"/>
+        <fields name="priority" label="Priority" fieldType="select" isRequired="true"
+            boundAttribute="//@entities.1/@attributes.3"/>
+        <fields name="dueDate" label="Due Date" fieldType="date" isRequired="false"
+            boundAttribute="//@entities.1/@attributes.4"/>
+      </components>
+    </pages>
+
+    <pages name="Projects" route="/projects" title="Projects - TaskManager" requiresAuth="true"
+        linkedPages="//@pages.0 //@pages.1 //@pages.3">
+
+      <!-- Projects Table -->
+      <components xsi:type="webapp:DataTable" name="ProjectsTable" cssClass="table table-bordered"
+          isPaginated="true" pageSize="10" dataSource="//@entities.2">
+        <columns name="name" header="Project Name" isSortable="true" width="30%" boundAttribute="//@entities.2/@attributes.1"/>
+        <columns name="description" header="Description" isSortable="false" width="40%" boundAttribute="//@entities.2/@attributes.2"/>
+        <columns name="startDate" header="Start" isSortable="true" width="15%" boundAttribute="//@entities.2/@attributes.3"/>
+        <columns name="endDate" header="End" isSortable="true" width="15%" boundAttribute="//@entities.2/@attributes.4"/>
+      </components>
+    </pages>
+
+    <pages name="NewProject" route="/projects/new" title="New Project - TaskManager" requiresAuth="true"
+        linkedPages="//@pages.2">
+
+      <!-- New Project Form -->
+      <components xsi:type="webapp:Form" name="ProjectForm" cssClass="card shadow p-4"
+          action="/api/projects" method="POST" boundEntity="//@entities.2">
+        <fields name="name" label="Project Name" fieldType="text" isRequired="true"
+            placeholder="Enter project name" validationPattern="^[A-Za-z0-9 ]{3,100}$"
+            boundAttribute="//@entities.2/@attributes.1"/>
+        <fields name="description" label="Description" fieldType="textarea" isRequired="false"
+            placeholder="Describe the project..." boundAttribute="//@entities.2/@attributes.2"/>
+        <fields name="startDate" label="Start Date" fieldType="date" isRequired="true"
+            boundAttribute="//@entities.2/@attributes.3"/>
+        <fields name="endDate" label="End Date" fieldType="date" isRequired="false"
+            boundAttribute="//@entities.2/@attributes.4"/>
+        <fields name="budget" label="Budget" fieldType="number" isRequired="false"
+            placeholder="0.00" boundAttribute="//@entities.2/@attributes.5"/>
+      </components>
+    </pages>
+
+    <pages name="Profile" route="/profile" title="Profile - TaskManager" requiresAuth="true"
+        linkedPages="//@pages.0">
+
+      <!-- Profile Form -->
+      <components xsi:type="webapp:Form" name="ProfileForm" cssClass="container mt-4"
+          action="/api/users/profile" method="POST" boundEntity="//@entities.0">
+        <fields name="email" label="Email Address" fieldType="email" isRequired="true"
+            validationPattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+            boundAttribute="//@entities.0/@attributes.1"/>
+        <fields name="username" label="Username" fieldType="text" isRequired="true"
+            placeholder="Your username" boundAttribute="//@entities.0/@attributes.2"/>
+        <fields name="currentPassword" label="Current Password" fieldType="password" isRequired="false"
+            placeholder="Enter current password"/>
+        <fields name="newPassword" label="New Password" fieldType="password" isRequired="false"
+            placeholder="Enter new password"/>
+      </components>
+    </pages>
+
+    <pages name="Login" route="/login" title="Login - TaskManager" requiresAuth="false"
+        linkedPages="//@pages.6">
+
+      <!-- Login Form -->
+      <components xsi:type="webapp:Form" name="LoginForm" cssClass="card shadow-lg mx-auto"
+          action="/api/auth/login" method="POST" boundEntity="//@entities.0">
+        <fields name="email" label="Email" fieldType="email" isRequired="true"
+            placeholder="your@email.com" boundAttribute="//@entities.0/@attributes.1"/>
+        <fields name="password" label="Password" fieldType="password" isRequired="true"
+            placeholder="Enter your password"/>
+        <fields name="remember" label="Remember me" fieldType="checkbox" isRequired="false"/>
+      </components>
+    </pages>
+
+    <pages name="Register" route="/register" title="Register - TaskManager" requiresAuth="false"
+        linkedPages="//@pages.5">
+
+      <!-- Registration Form -->
+      <components xsi:type="webapp:Form" name="RegisterForm" cssClass="card shadow-lg mx-auto"
+          action="/api/auth/register" method="POST" boundEntity="//@entities.0">
+        <fields name="username" label="Username" fieldType="text" isRequired="true"
+            placeholder="Choose a username" validationPattern="^[a-zA-Z0-9_]{3,20}$"
+            boundAttribute="//@entities.0/@attributes.2"/>
+        <fields name="email" label="Email" fieldType="email" isRequired="true"
+            placeholder="your@email.com" validationPattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+            boundAttribute="//@entities.0/@attributes.1"/>
+        <fields name="password" label="Password" fieldType="password" isRequired="true"
+            placeholder="Create a password"/>
+        <fields name="confirmPassword" label="Confirm Password" fieldType="password" isRequired="true"
+            placeholder="Confirm your password"/>
+        <fields name="terms" label="I accept the terms and conditions" fieldType="checkbox" isRequired="true"/>
+      </components>
+    </pages>
+
+  </webapp:WebApp>
+</xmi:XMI>

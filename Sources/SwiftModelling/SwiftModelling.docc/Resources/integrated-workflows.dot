@@ -1,0 +1,28 @@
+digraph IntegratedWorkflows {
+    bgcolor="white"
+    rankdir=TB
+    node [shape=box, style=rounded, fontname="Arial", fontsize=12]
+    edge [fontname="Arial", fontsize=10]
+    
+    subgraph cluster_workflow {
+        label="Complete MDE Workflow"
+        style=rounded
+        bgcolor="#e8f4f8"
+        
+        metamodel [label="Ecore\nMetamodel" shape=box3d fillcolor="#f8f4e8" style=filled]
+        source [label="Source\nModel" shape=box3d fillcolor="#e8f8f5" style=filled]
+        atl [label="ATL\nTransformation" shape=note fillcolor="#f4e8f8" style=filled]
+        target [label="Target\nModel" shape=box3d fillcolor="#e8f8f5" style=filled]
+        mtl [label="MTL\nTemplate" shape=note fillcolor="#f4e8f8" style=filled]
+        code [label="Generated\nCode" shape=note fillcolor="#fff8e8" style=filled]
+    }
+    
+    metamodel -> source [label="conforms to"]
+    metamodel -> target [label="conforms to" style=dashed]
+    source -> atl [label="input"]
+    atl -> target [label="output"]
+    target -> mtl [label="input"]
+    mtl -> code [label="output"]
+    
+    legendTitle [label="Integrated MDE Workflow" shape=plaintext fontname="Arial Bold" fontsize=14]
+}

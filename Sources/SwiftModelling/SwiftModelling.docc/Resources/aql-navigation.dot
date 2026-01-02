@@ -1,0 +1,33 @@
+digraph AQLNavigation {
+    bgcolor="white"
+    rankdir=TB
+    node [shape=box, style=rounded, fontname="Arial", fontsize=12]
+    edge [fontname="Arial", fontsize=10]
+    
+    subgraph cluster_nav {
+        label="Model Navigation"
+        style=rounded
+        bgcolor="#e8f4f8"
+        
+        root [label="Root Element" shape=box]
+        ref1 [label="Reference\n(single)" shape=box]
+        ref2 [label="Reference\n(collection)" shape=box]
+        attr [label="Attribute\n(value)" shape=ellipse fillcolor="#f8f4e8" style=filled]
+    }
+    
+    subgraph cluster_syntax {
+        label="Navigation Syntax"
+        style=rounded
+        bgcolor="#f8f4e8"
+        
+        dot [label="object.property" shape=note]
+        arrow [label="collection->operation()" shape=note]
+    }
+    
+    root -> ref1 [label=".singleRef"]
+    root -> ref2 [label=".multiRef"]
+    ref1 -> attr [label=".attribute"]
+    ref2 -> attr [label="->collect(e | e.attr)"]
+    
+    legendTitle [label="AQL Navigation" shape=plaintext fontname="Arial Bold" fontsize=14]
+}

@@ -1,36 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<university:University xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
-    xmlns:university="http://www.example.org/university" name="State University">
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:university="http://www.example.org/university">
 
-  <!-- Students with varied grades for filtering examples -->
-  <students name="John Doe" studentId="S001" grade="85" age="20"/>
-  <students name="Jane Smith" studentId="S002" grade="92" age="21"/>
-  <students name="Bob Johnson" studentId="S003" grade="78" age="19"/>
-  <students name="Alice Williams" studentId="S004" grade="88" age="22"/>
-  <students name="Charlie Brown" studentId="S005" grade="95" age="20"/>
-  <students name="Diana Prince" studentId="S006" grade="82" age="21"/>
-  <students name="Eve Anderson" studentId="S007" grade="76" age="19"/>
-  <students name="Frank Miller" studentId="S008" grade="90" age="23"/>
-  <students name="Grace Lee" studentId="S009" grade="87" age="20"/>
-  <students name="Henry Wilson" studentId="S010" grade="65" age="18"/>
-  <students name="Ivy Chen" studentId="S011" grade="94" age="22"/>
-  <students name="Jack Taylor" studentId="S012" grade="72" age="19"/>
+  <university:University name="Swift University">
+    <!-- Computer Science Department -->
+    <departments name="Computer Science" code="CS">
+      <professors name="Dr Alice Chen" specialisation="Algorithms" yearsExperience="15" teaches="//@courses.0 //@courses.1"/>
+      <professors name="Dr Bob Wilson" specialisation="Machine Learning" yearsExperience="8" teaches="//@courses.2 //@courses.3"/>
+      <professors name="Dr Carol Martinez" specialisation="Systems" yearsExperience="12" teaches="//@courses.4"/>
+    </departments>
 
-  <!-- Courses with different credit hours -->
-  <courses title="Data Structures" credits="4" department="Computer Science"/>
-  <courses title="Algorithms" credits="4" department="Computer Science"/>
-  <courses title="Calculus I" credits="4" department="Mathematics"/>
-  <courses title="Calculus II" credits="4" department="Mathematics"/>
-  <courses title="Introduction to Physics" credits="3" department="Physics"/>
-  <courses title="Quantum Mechanics" credits="4" department="Physics"/>
-  <courses title="Organic Chemistry" credits="3" department="Chemistry"/>
-  <courses title="English Literature" credits="3" department="Humanities"/>
+    <!-- Mathematics Department -->
+    <departments name="Mathematics" code="MATH">
+      <professors name="Dr David Lee" specialisation="Pure Mathematics" yearsExperience="20" teaches="//@courses.5 //@courses.6"/>
+      <professors name="Dr Emma Brown" specialisation="Applied Mathematics" yearsExperience="6" teaches="//@courses.7"/>
+    </departments>
 
-  <!-- Professors with different specialisations -->
-  <professors name="Dr. Alan Turing" specialisation="Computer Science" tenure="true" age="45"/>
-  <professors name="Dr. Ada Lovelace" specialisation="Mathematics" tenure="true" age="42"/>
-  <professors name="Dr. Marie Curie" specialisation="Physics" tenure="true" age="50"/>
-  <professors name="Dr. Richard Feynman" specialisation="Physics" tenure="false" age="38"/>
-  <professors name="Dr. Dorothy Hodgkin" specialisation="Chemistry" tenure="true" age="48"/>
+    <!-- Physics Department -->
+    <departments name="Physics" code="PHYS">
+      <professors name="Dr Frank Taylor" specialisation="Quantum Physics" yearsExperience="18" teaches="//@courses.8"/>
+      <professors name="Dr Grace Kim" specialisation="Astrophysics" yearsExperience="10" teaches="//@courses.9"/>
+    </departments>
 
-</university:University>
+    <!-- Students with varying grades and years -->
+    <students name="Alex Johnson" studentId="S001" grade="92.5" year="3" enrolledIn="//@courses.0 //@courses.2" major="//@departments.0"/>
+    <students name="Beth Smith" studentId="S002" grade="78.0" year="2" enrolledIn="//@courses.1 //@courses.5" major="//@departments.0"/>
+    <students name="Chris Davis" studentId="S003" grade="88.5" year="4" enrolledIn="//@courses.3 //@courses.4" major="//@departments.0"/>
+    <students name="Diana Ross" studentId="S004" grade="95.0" year="1" enrolledIn="//@courses.5 //@courses.7" major="//@departments.1"/>
+    <students name="Edward White" studentId="S005" grade="65.0" year="2" enrolledIn="//@courses.0 //@courses.8" major="//@departments.2"/>
+    <students name="Fiona Green" studentId="S006" grade="82.0" year="3" enrolledIn="//@courses.2 //@courses.9" major="//@departments.0"/>
+    <students name="George Black" studentId="S007" grade="71.5" year="1" enrolledIn="//@courses.1 //@courses.6" major="//@departments.1"/>
+    <students name="Hannah Moore" studentId="S008" grade="89.0" year="4" enrolledIn="//@courses.4 //@courses.8" major="//@departments.2"/>
+    <students name="Ian Clark" studentId="S009" grade="58.0" year="2" enrolledIn="//@courses.0" major="//@departments.0"/>
+    <students name="Julia Adams" studentId="S010" grade="96.5" year="3" enrolledIn="//@courses.3 //@courses.5 //@courses.9" major="//@departments.0"/>
+
+    <!-- Courses with varying credits and levels -->
+    <courses name="Data Structures" code="CS101" credits="4" level="100"/>
+    <courses name="Algorithms" code="CS201" credits="4" level="200" prerequisites="//@courses.0"/>
+    <courses name="Machine Learning" code="CS301" credits="3" level="300" prerequisites="//@courses.1"/>
+    <courses name="Deep Learning" code="CS401" credits="3" level="400" prerequisites="//@courses.2"/>
+    <courses name="Operating Systems" code="CS302" credits="4" level="300" prerequisites="//@courses.0"/>
+    <courses name="Calculus I" code="MATH101" credits="4" level="100"/>
+    <courses name="Linear Algebra" code="MATH201" credits="3" level="200" prerequisites="//@courses.5"/>
+    <courses name="Differential Equations" code="MATH301" credits="3" level="300" prerequisites="//@courses.5 //@courses.6"/>
+    <courses name="Quantum Mechanics" code="PHYS301" credits="4" level="300" prerequisites="//@courses.5"/>
+    <courses name="Astrophysics" code="PHYS401" credits="3" level="400" prerequisites="//@courses.8"/>
+  </university:University>
+</xmi:XMI>

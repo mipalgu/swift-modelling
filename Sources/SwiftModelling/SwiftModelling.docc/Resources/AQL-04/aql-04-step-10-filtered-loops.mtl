@@ -1,0 +1,181 @@
+[comment encoding = UTF-8 /]
+[module FilteredLoops('http://www.example.org/webapp')]
+
+[comment]
+  Filtered Collection Iteration in MTL
+
+  This template demonstrates filtering collections
+  within for loop expressions using AQL's select
+  and reject operations.
+
+  Filtering before iteration generates code only
+  for elements that meet specific criteria.
+[/comment]
+
+[template main(app : WebApp)]
+[file ('filtered-loops.txt', 'overwrite', 'UTF-8')]
+Filtered Collection Iteration
+=============================
+
+Application: [app.name/]
+
+[comment ================================================================ /]
+[comment             SELECT IN FOR LOOPS                                  /]
+[comment ================================================================ /]
+
+1. Select in For Loops
+----------------------
+[comment]
+  Use ->select(condition) to filter collections
+  before iterating over them.
+[/comment]
+
+Protected pages only:
+[for (page : Page | app.pages->select(p | p.requiresAuth))]
+- [page.name/] ([page.route/]) - requires authentication
+[/for]
+
+Public pages only:
+[for (page : Page | app.pages->select(p | not p.requiresAuth))]
+- [page.name/] ([page.route/]) - public access
+[/for]
+
+[comment ================================================================ /]
+[comment             REJECT IN FOR LOOPS                                  /]
+[comment ================================================================ /]
+
+2. Reject in For Loops
+----------------------
+[comment]
+  Use ->reject(condition) to exclude elements
+  that match the condition.
+[/comment]
+
+Non-primary-key attributes per entity:
+[for (entity : Entity | app.entities)]
+[entity.name/]:
+[for (attr : Attribute | entity.attributes->reject(a | a.isPrimaryKey))]
+  - [attr.name/]: [attr.dataType/]
+[/for]
+
+[/for]
+
+[comment ================================================================ /]
+[comment             MULTIPLE CONDITIONS                                  /]
+[comment ================================================================ /]
+
+3. Multiple Filter Conditions
+-----------------------------
+[comment]
+  Combine multiple conditions with 'and' / 'or'
+  for sophisticated filtering.
+[/comment]
+
+Required string attributes:
+[for (entity : Entity | app.entities)]
+[let reqStrings = entity.attributes->select(a | a.dataType = DataType::string and not a.isNullable)]
+[if (reqStrings->notEmpty())]
+[entity.name/]:
+[for (attr : Attribute | reqStrings)]
+  - [attr.name/] (required string, max: [if (attr.maxLength > 0)][attr.maxLength/][else]unlimited[/if])
+[/for]
+[/if]
+[/let]
+[/for]
+
+[comment ================================================================ /]
+[comment             FILTERING BY TYPE                                    /]
+[comment ================================================================ /]
+
+4. Filtering by Type
+--------------------
+[comment]
+  Use oclIsTypeOf() and oclIsKindOf() to filter
+  collections by element type.
+[/comment]
+
+Forms in the application:
+[for (page : Page | app.pages)]
+[let forms = page.components->select(c | c.oclIsTypeOf(Form))]
+[if (forms->notEmpty())]
+[page.name/]:
+[for (comp : Component | forms)]
+  - [comp.name/] (action: [comp.oclAsType(Form).action/])
+[/for]
+[/if]
+[/let]
+[/for]
+
+DataTables in the application:
+[for (page : Page | app.pages)]
+[let tables = page.components->select(c | c.oclIsTypeOf(DataTable))]
+[if (tables->notEmpty())]
+[page.name/]:
+[for (comp : Component | tables)]
+  - [comp.name/] (rows: [comp.oclAsType(DataTable).pageSize/])
+[/for]
+[/if]
+[/let]
+[/for]
+
+[comment ================================================================ /]
+[comment             CHAINED FILTERING                                    /]
+[comment ================================================================ /]
+
+5. Chained Filtering
+--------------------
+[comment]
+  Chain multiple select/reject operations for
+  multi-step filtering.
+[/comment]
+
+Non-PK, non-nullable attributes with max length set:
+[for (entity : Entity | app.entities)]
+[let filtered = entity.attributes
+    ->reject(a | a.isPrimaryKey)
+    ->select(a | not a.isNullable)
+    ->select(a | a.maxLength > 0)]
+[if (filtered->notEmpty())]
+[entity.name/]:
+[for (attr : Attribute | filtered)]
+  - [attr.name/] (max: [attr.maxLength/])
+[/for]
+[/if]
+[/let]
+[/for]
+
+[comment ================================================================ /]
+[comment             STRING-BASED FILTERING                               /]
+[comment ================================================================ /]
+
+6. String-Based Filtering
+-------------------------
+[comment]
+  Use string operations in filter conditions
+  for name-based or pattern matching.
+[/comment]
+
+Attributes containing 'Date' in name:
+[for (entity : Entity | app.entities)]
+[let dateAttrs = entity.attributes->select(a | a.name.contains('Date') or a.name.contains('date'))]
+[if (dateAttrs->notEmpty())]
+[entity.name/]:
+[for (attr : Attribute | dateAttrs)]
+  - [attr.name/]: [attr.dataType/]
+[/for]
+[/if]
+[/let]
+[/for]
+
+External stylesheets:
+[for (style : Stylesheet | app.stylesheets->select(s | s.isExternal))]
+- [style.name/]: [style.path/]
+[/for]
+
+Internal stylesheets:
+[for (style : Stylesheet | app.stylesheets->select(s | not s.isExternal))]
+- [style.name/]: [style.path/]
+[/for]
+
+[/file]
+[/template]

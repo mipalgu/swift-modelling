@@ -1,0 +1,118 @@
+[comment encoding = UTF-8 /]
+[module PropertyAccess('http://www.example.org/webapp')]
+
+[comment]
+  Property Access with AQL Expressions
+
+  This template demonstrates accessing object properties
+  using AQL's dot notation within MTL templates.
+
+  Property access is the most fundamental AQL operation -
+  every template relies on it for extracting model data.
+[/comment]
+
+[template main(app : WebApp)]
+[file ('property-access.txt', 'overwrite', 'UTF-8')]
+Property Access with AQL Expressions
+====================================
+
+[comment ================================================================ /]
+[comment             SIMPLE SCALAR PROPERTIES                             /]
+[comment ================================================================ /]
+
+1. Simple Scalar Properties
+---------------------------
+[comment]
+  Access string, integer, and boolean properties directly.
+  The expression [object.property/] extracts the value.
+[/comment]
+
+Application name: [app.name/]
+Application version: [app.version/]
+Base URL: [app.baseUrl/]
+
+[for (entity : Entity | app.entities)]
+Entity: [entity.name/]
+  Table name: [entity.tableName/]
+[/for]
+
+[comment ================================================================ /]
+[comment             BOOLEAN PROPERTIES                                   /]
+[comment ================================================================ /]
+
+2. Boolean Properties
+---------------------
+[comment]
+  Boolean properties return true or false.
+  They can be used directly in conditionals.
+[/comment]
+
+Page authentication requirements:
+[for (page : Page | app.pages)]
+  [page.name/]: [page.requiresAuth/]
+[/for]
+
+Attribute nullability:
+[for (entity : Entity | app.entities)]
+[entity.name/]:
+[for (attr : Attribute | entity.attributes)]
+    [attr.name/] - nullable: [attr.isNullable/], primary key: [attr.isPrimaryKey/]
+[/for]
+[/for]
+
+[comment ================================================================ /]
+[comment             ENUMERATION PROPERTIES                               /]
+[comment ================================================================ /]
+
+3. Enumeration Properties
+-------------------------
+[comment]
+  Enum properties return the enumeration literal name.
+  Access them the same way as other properties.
+[/comment]
+
+Attribute data types:
+[for (entity : Entity | app.entities)]
+[entity.name/]:
+[for (attr : Attribute | entity.attributes)]
+    [attr.name/]: [attr.dataType/]
+[/for]
+[/for]
+
+Relationship types:
+[for (entity : Entity | app.entities)]
+[if (entity.relationships->notEmpty())]
+[entity.name/]:
+[for (rel : Relationship | entity.relationships)]
+    [rel.name/]: [rel.relationType/]
+[/for]
+[/if]
+[/for]
+
+[comment ================================================================ /]
+[comment             OPTIONAL PROPERTIES                                  /]
+[comment ================================================================ /]
+
+4. Optional Properties
+----------------------
+[comment]
+  Some properties may be null/empty. AQL returns null
+  for unset properties. Check before using where needed.
+[/comment]
+
+Stylesheets:
+[for (style : Stylesheet | app.stylesheets)]
+  [style.name/]: [style.path/] (external: [style.isExternal/])
+[/for]
+
+Attributes with default values:
+[for (entity : Entity | app.entities)]
+[for (attr : Attribute | entity.attributes)]
+[if (attr.defaultValue <> null and attr.defaultValue.size() > 0)]
+  [entity.name/].[attr.name/] default: [attr.defaultValue/]
+[/if]
+[/for]
+[/for]
+
+[/file]
+[/template]

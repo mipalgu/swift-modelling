@@ -1,0 +1,220 @@
+# Backwards Compatibility Strategy
+
+## Overview
+
+This document outlines the strategy for maintaining backwards compatibility during the transition from the legacy Customer metamodel (v1.0) to the improved CustomerManagement metamodel (v2.0). The goal is to enable gradual migration while minimising disruption to existing tools and processes.
+
+## Compatibility Period
+
+### Timeline
+
+| Phase | Duration | Activities |
+|-------|----------|------------|
+| Preparation | 2 weeks | Deploy compatibility layer, notify stakeholders |
+| Dual Support | 3 months | Support both formats simultaneously |
+| Migration | 1 month | Migrate remaining systems, deprecation warnings |
+| Legacy Sunset | 2 weeks | Final legacy format retirement |
+
+### Exit Criteria
+
+- All client systems migrated to v2.0
+- No legacy format requests for 14 consecutive days
+- Stakeholder sign-off on legacy retirement
+
+## Compatibility Layer Design
+
+### Bidirectional Transformations
+
+Two ATL transformations provide format conversion:
+
+1. **LegacyToImproved.atl**: Converts v1.0 to v2.0 format
+2. **ImprovedToLegacy.atl**: Converts v2.0 back to v1.0 format
+
+```
+┌─────────────────┐     ┌─────────────────┐
+│  Legacy v1.0    │────▶│  Improved v2.0  │
+│  Customer.xmi   │     │  Customer.xmi   │
+└─────────────────┘     └─────────────────┘
+        ▲                       │
+        │                       │
+        └───────────────────────┘
+         ImprovedToLegacy.atl
+```
+
+### API Compatibility
+
+The swift-ecore CLI provides transparent format handling:
+
+```bash
+# Read legacy format, output improved format
+swift-ecore convert legacy-data.xmi \
+    --from-metamodel LegacyCustomer.ecore \
+    --to-metamodel ImprovedCustomer.ecore \
+    --transformation LegacyToImproved.atl \
+    --output improved-data.xmi
+
+# Read improved format, output legacy format
+swift-ecore convert improved-data.xmi \
+    --from-metamodel ImprovedCustomer.ecore \
+    --to-metamodel LegacyCustomer.ecore \
+    --transformation ImprovedToLegacy.atl \
+    --output legacy-data.xmi
+```
+
+## Information Preservation
+
+### Forward Migration (Legacy to Improved)
+
+All legacy data is preserved. Additional fields in v2.0 receive default values:
+
+| New Field | Default Value | Rationale |
+|-----------|---------------|-----------|
+| `Contact.contactType` | `PRIMARY` | Legacy had single contact |
+| `Contact.mobile` | `null` | Not available in legacy |
+| `Contact.position` | `null` | Not available in legacy |
+| `Address.addressType` | `TRADING` | Most common use case |
+| `CustomerNote.createdBy` | `"Migration"` | Audit trail |
+| `CustomerNote.createdAt` | Migration timestamp | Audit trail |
+
+### Backward Migration (Improved to Legacy)
+
+Some information loss is unavoidable when converting to the simpler legacy format:
+
+| Lost Information | Mitigation |
+|------------------|------------|
+| Multiple contacts | Export primary contact only |
+| Multiple addresses | Export first address only |
+| Address types | Discarded (not in legacy) |
+| Contact types | Discarded (not in legacy) |
+| Organisation sharing | Denormalise into each customer |
+| Note metadata | Concatenate into notes string |
+
+### Lossless Round-Trip Guarantee
+
+For data originating in legacy format:
+1. Convert to improved format
+2. Convert back to legacy format
+3. Result matches original (byte-for-byte where possible)
+
+This guarantee does NOT apply to:
+- Data created natively in v2.0 format
+- Manually edited v2.0 data
+
+## Deprecation Warnings
+
+### CLI Warnings
+
+When legacy format is detected:
+
+```
+[DEPRECATION] Legacy Customer format (v1.0) detected.
+              This format will be retired on 2024-06-30.
+              Please migrate to CustomerManagement format (v2.0).
+              Run: swift-ecore migrate --help for migration options.
+```
+
+### Log Messages
+
+All legacy format operations are logged:
+
+```json
+{
+  "timestamp": "2024-03-15T10:30:00Z",
+  "level": "WARN",
+  "message": "Legacy format operation",
+  "format": "LegacyCustomer/1.0",
+  "operation": "read",
+  "source": "client-system-a",
+  "file": "customers-march.xmi"
+}
+```
+
+## Client System Migration
+
+### Migration Checklist
+
+For each client system:
+
+- [ ] Identify all integration points
+- [ ] Assess impact of schema changes
+- [ ] Update data access code
+- [ ] Update validation rules
+- [ ] Test with sample v2.0 data
+- [ ] Migrate production data
+- [ ] Switch to v2.0 format
+- [ ] Remove legacy dependencies
+
+### Support Resources
+
+| Resource | Location |
+|----------|----------|
+| Migration guide | `/docs/migration-v1-to-v2.md` |
+| Sample transformations | `/examples/transforms/` |
+| Test data sets | `/test-data/migration/` |
+| Support channel | #customer-model-migration |
+
+## Rollback Procedures
+
+### Quick Rollback
+
+If critical issues are discovered:
+
+```bash
+# Restore legacy metamodel
+swift-ecore rollback --to-version 1.0 \
+    --environment production \
+    --backup-id backup_20240315_1000
+
+# Convert all v2.0 data back to v1.0
+swift-ecore batch-convert \
+    --source-dir /data/customers/v2/ \
+    --target-dir /data/customers/v1/ \
+    --transformation ImprovedToLegacy.atl
+```
+
+### Rollback Triggers
+
+Automatic rollback if:
+- Error rate exceeds 5% of operations
+- Data corruption detected
+- Critical business process failure
+- Stakeholder emergency request
+
+## Monitoring
+
+### Compatibility Metrics
+
+Track during dual-support period:
+
+| Metric | Alert Threshold |
+|--------|-----------------|
+| Legacy format requests | > 100/day after month 2 |
+| Conversion errors | > 1% of operations |
+| Round-trip mismatches | Any occurrence |
+| Legacy API calls | Track trend (should decline) |
+
+### Dashboard
+
+Monitor migration progress:
+- Systems migrated vs remaining
+- Data volume by format
+- Error rates by system
+- Conversion performance
+
+## Communication Plan
+
+### Stakeholder Notifications
+
+| Milestone | Notification | Audience |
+|-----------|--------------|----------|
+| T-3 months | Announcement | All stakeholders |
+| T-1 month | Reminder | Active legacy users |
+| T-2 weeks | Final warning | Remaining legacy users |
+| T-day | Sunset notice | All stakeholders |
+
+### Documentation Updates
+
+- API documentation updated for v2.0
+- Migration guide published
+- FAQ for common issues
+- Training materials available

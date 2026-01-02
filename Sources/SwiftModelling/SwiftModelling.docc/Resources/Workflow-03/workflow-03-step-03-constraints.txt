@@ -1,0 +1,113 @@
+# Format-Specific Constraints
+
+## XMI (XML Metadata Interchange)
+
+### Strengths
+- Full metamodel information preserved
+- Rich reference semantics (containment, opposites)
+- Standardised by OMG (Object Management Group)
+- Supports cross-file references via hrefs
+
+### Constraints
+- Verbose XML syntax increases file size
+- Requires XMI namespace declarations
+- Reference resolution depends on resource sets
+- Not directly consumable by web browsers
+
+### Example Reference Handling
+```xml
+<!-- Containment reference -->
+<tasks xsi:type="pm:Task" id="TASK-001">
+  <assignee href="#MEMBER-001"/>
+</tasks>
+
+<!-- Cross-file reference -->
+<owner href="team.xmi#//@members.0"/>
+```
+
+---
+
+## JSON (JavaScript Object Notation)
+
+### Strengths
+- Native to web browsers and JavaScript
+- Compact representation
+- Easy to parse and generate
+- Well-supported by REST APIs
+
+### Constraints
+- No built-in type information
+- Flat reference model (IDs only)
+- No containment semantics
+- Circular references require special handling
+
+### Example Reference Handling
+```json
+{
+  "id": "TASK-001",
+  "title": "Implement feature",
+  "assigneeId": "MEMBER-001"
+}
+```
+
+---
+
+## Swift (Native Structures)
+
+### Strengths
+- Full type safety with compiler checks
+- Optional handling for nullable values
+- Value types vs reference types
+- Protocol-based abstraction
+
+### Constraints
+- No direct serialisation format
+- Requires Codable conformance for JSON
+- Reference cycles need weak/unowned
+- Metamodel changes require recompilation
+
+### Example Type Definition
+```swift
+struct Task: Identifiable, Codable {
+    let id: String
+    var title: String
+    var assigneeId: String?
+    var status: TaskStatus
+}
+```
+
+---
+
+## Translation Matrix
+
+| Feature | XMI | JSON | Swift |
+|---------|-----|------|-------|
+| Type Information | Full | None | Compile-time |
+| Containment | Native | Manual | Manual |
+| Opposites | Native | Manual | Manual |
+| Null Handling | xsi:nil | null | Optional |
+| Collections | Ordered | Array | Array/Set |
+| Dates | ISO 8601 | ISO 8601 | Date |
+| Enums | Literal names | Strings | Swift enum |
+
+---
+
+## Integration Considerations
+
+### XMI -> JSON
+1. Flatten containment hierarchy to ID references
+2. Include type discriminator for polymorphism
+3. Convert XMI references to simple IDs
+4. Serialise dates as ISO 8601 strings
+
+### JSON -> XMI
+1. Reconstruct containment from type information
+2. Resolve ID references to XMI hrefs
+3. Validate against metamodel constraints
+4. Handle missing optional values
+
+### JSON -> Swift
+1. Map JSON types to Swift types
+2. Generate Codable conformance
+3. Handle optional vs required fields
+4. Create custom date decoders if needed

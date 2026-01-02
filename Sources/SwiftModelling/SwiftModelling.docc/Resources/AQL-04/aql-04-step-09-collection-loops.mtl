@@ -1,0 +1,161 @@
+[comment encoding = UTF-8 /]
+[module CollectionLoops('http://www.example.org/webapp')]
+
+[comment]
+  Collection Iteration with AQL in MTL
+
+  This template demonstrates using AQL collections within
+  MTL's [for] loops for iterative code generation.
+
+  The for loop iterates over AQL collection expressions,
+  generating output for each element.
+[/comment]
+
+[template main(app : WebApp)]
+[file ('collection-loops.txt', 'overwrite', 'UTF-8')]
+Collection Iteration with AQL
+=============================
+
+Application: [app.name/]
+
+[comment ================================================================ /]
+[comment             BASIC FOR LOOP                                       /]
+[comment ================================================================ /]
+
+1. Basic For Loop
+-----------------
+[comment]
+  [for (var : Type | collection)]
+  Iterates over each element in the collection.
+  The variable 'var' represents the current element.
+[/comment]
+
+All pages:
+[for (page : Page | app.pages)]
+- [page.name/]
+[/for]
+
+All entities:
+[for (entity : Entity | app.entities)]
+- [entity.name/]
+[/for]
+
+[comment ================================================================ /]
+[comment             NESTED FOR LOOPS                                     /]
+[comment ================================================================ /]
+
+2. Nested For Loops
+-------------------
+[comment]
+  Nest for loops to iterate through hierarchical data.
+  Inner loops can access outer loop variables.
+[/comment]
+
+Entity attribute listing:
+[for (entity : Entity | app.entities)]
+[entity.name/]:
+[for (attr : Attribute | entity.attributes)]
+  - [attr.name/]: [attr.dataType/]
+[/for]
+
+[/for]
+
+Page component listing:
+[for (page : Page | app.pages)]
+[page.name/]:
+[for (comp : Component | page.components)]
+  - [comp.name/]
+[/for]
+
+[/for]
+
+[comment ================================================================ /]
+[comment             FOR LOOPS WITH SEPARATORS                            /]
+[comment ================================================================ /]
+
+3. For Loops with Separators
+----------------------------
+[comment]
+  Use [separator] to add content between elements
+  (but not after the last element).
+[/comment]
+
+Entity names (comma-separated): [for (entity : Entity | app.entities) separator(', ')][entity.name/][/for]
+
+Page routes (pipe-separated): [for (page : Page | app.pages) separator(' | ')][page.route/][/for]
+
+Attribute types: [for (attr : Attribute | app.entities->first().attributes) separator(', ')][attr.name/]:[attr.dataType/][/for]
+
+[comment ================================================================ /]
+[comment             FOR LOOPS WITH INDEX                                 /]
+[comment ================================================================ /]
+
+4. For Loops with Index
+-----------------------
+[comment]
+  Use i() to get the current iteration index (1-based).
+  Useful for numbering or conditional logic.
+[/comment]
+
+Numbered page list:
+[for (page : Page | app.pages)]
+[i/]. [page.name/] ([page.route/])
+[/for]
+
+Numbered entity list:
+[for (entity : Entity | app.entities)]
+[i/]. [entity.name/]
+[/for]
+
+[comment ================================================================ /]
+[comment             FOR LOOPS WITH BEFORE/AFTER                          /]
+[comment ================================================================ /]
+
+5. For Loops with Before/After
+------------------------------
+[comment]
+  [before] executes once before the loop if collection is non-empty.
+  [after] executes once after the loop if collection is non-empty.
+[/comment]
+
+[for (entity : Entity | app.entities)]
+[before]
+=== Entity List Start ===
+[/before]
+* [entity.name/]
+[after]
+=== Entity List End ===
+[/after]
+[/for]
+
+[comment ================================================================ /]
+[comment             DEEPLY NESTED LOOPS                                  /]
+[comment ================================================================ /]
+
+6. Deeply Nested Loops
+----------------------
+[comment]
+  Navigate through multiple levels of containment
+  using nested for loops.
+[/comment]
+
+Complete form field analysis:
+[for (page : Page | app.pages)]
+[for (comp : Component | page.components->select(c | c.oclIsTypeOf(Form)))]
+[let form = comp.oclAsType(Form)]
+[page.name/] > [form.name/]:
+[for (field : Field | form.fields)]
+  [i/]. [field.name/] ([field.fieldType/])
+[if (field.isRequired)]
+     * Required
+[/if]
+[if (field.placeholder <> null and field.placeholder.size() > 0)]
+     * Placeholder: "[field.placeholder/]"
+[/if]
+[/for]
+[/let]
+[/for]
+[/for]
+
+[/file]
+[/template]

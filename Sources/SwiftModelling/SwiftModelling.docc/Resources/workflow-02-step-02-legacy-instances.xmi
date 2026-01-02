@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Legacy Order/Product Model Instances -->
+<!-- Sample data demonstrating issues in the legacy metamodel -->
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns="http://www.example.org/legacy/orders/1.0">
+  <Store name="Acme Electronics">
+    <!-- Products with mixed inventory data -->
+    <products code="LAPTOP-001" name="ProBook 15" desc="15-inch professional laptop"
+        price="1299.99" category="Electronics/Computers" stockQty="45"
+        reorderLevel="10" warehouseLocation="A-12-3"/>
+    <products code="LAPTOP-002" name="UltraBook Air" desc="Lightweight ultraportable laptop"
+        price="999.99" category="Electronics/Computers" stockQty="30"
+        reorderLevel="8" warehouseLocation="A-12-4"/>
+    <products code="PHONE-001" name="SmartPhone X" desc="Latest smartphone model"
+        price="899.00" category="Electronics/Mobile" stockQty="120"
+        reorderLevel="25" warehouseLocation="B-05-1"/>
+    <products code="CABLE-001" name="USB-C Cable" desc="2m USB-C charging cable"
+        price="19.99" category="Accessories/Cables" stockQty="500"
+        reorderLevel="100" warehouseLocation="C-01-1"/>
+    <products code="CASE-001" name="Laptop Sleeve 15" desc="Protective sleeve for 15-inch laptops"
+        price="49.99" category="Accessories/Cases" stockQty="80"
+        reorderLevel="20" warehouseLocation="C-02-1"/>
+
+    <!-- Order with denormalised customer data and string-based status -->
+    <orders orderId="ORD-2024-001" orderDate="2024-01-15"
+        status="SHIPPED"
+        customerName="John Smith" customerEmail="john.smith@example.com" customerPhone="+61 2 9876 5432"
+        shippingAddress="123 Main St, Sydney NSW 2000, Australia"
+        billingAddress="123 Main St, Sydney NSW 2000, Australia"
+        totalAmount="1369.98" taxAmount="136.99"
+        paymentMethod="CREDIT_CARD" cardLastFour="4532">
+      <items productCode="LAPTOP-001" productName="ProBook 15" qty="1" unitPrice="1299.99" lineTotal="1299.99"/>
+      <items productCode="CABLE-001" productName="USB-C Cable" qty="2" unitPrice="19.99" lineTotal="39.98"/>
+      <items productCode="CASE-001" productName="Laptop Sleeve 15" qty="1" unitPrice="49.99" lineTotal="49.99"/>
+    </orders>
+
+    <orders orderId="ORD-2024-002" orderDate="2024-01-16"
+        status="PENDING"
+        customerName="Sarah Johnson" customerEmail="s.johnson@company.com.au" customerPhone="+61 3 1234 5678"
+        shippingAddress="456 Business Park, Melbourne VIC 3000, Australia"
+        billingAddress="PO Box 789, Melbourne VIC 3001, Australia"
+        totalAmount="1898.00" taxAmount="189.80"
+        paymentMethod="INVOICE" cardLastFour="">
+      <items productCode="PHONE-001" productName="SmartPhone X" qty="2" unitPrice="899.00" lineTotal="1798.00"/>
+      <items productCode="CABLE-001" productName="USB-C Cable" qty="5" unitPrice="19.99" lineTotal="99.95"/>
+    </orders>
+
+    <orders orderId="ORD-2024-003" orderDate="2024-01-17"
+        status="DELIVERED"
+        customerName="Tech Solutions Pty Ltd" customerEmail="orders@techsolutions.com.au" customerPhone="+61 7 9999 8888"
+        shippingAddress="789 Tech Drive, Brisbane QLD 4000, Australia"
+        billingAddress="789 Tech Drive, Brisbane QLD 4000, Australia"
+        totalAmount="10999.90" taxAmount="1099.99"
+        paymentMethod="BANK_TRANSFER" cardLastFour="">
+      <items productCode="LAPTOP-002" productName="UltraBook Air" qty="10" unitPrice="999.99" lineTotal="9999.90"/>
+      <items productCode="CABLE-001" productName="USB-C Cable" qty="50" unitPrice="19.99" lineTotal="999.50"/>
+    </orders>
+
+    <!-- Order demonstrating data quality issues -->
+    <orders orderId="ORD-2024-004" orderDate="2024-01-18"
+        status="pending"
+        customerName="Jane Doe" customerEmail="jane.doe@email.com" customerPhone="0412345678"
+        shippingAddress="Unit 5/22 George St, Perth WA 6000"
+        billingAddress="Unit 5/22 George St, Perth WA 6000"
+        totalAmount="949.98" taxAmount="94.99"
+        paymentMethod="paypal" cardLastFour="">
+      <items productCode="PHONE-001" productName="SmartPhone X" qty="1" unitPrice="899.00" lineTotal="899.00"/>
+      <items productCode="CABLE-001" productName="USB-C Cable" qty="3" unitPrice="19.99" lineTotal="59.97"/>
+    </orders>
+  </Store>
+</xmi:XMI>

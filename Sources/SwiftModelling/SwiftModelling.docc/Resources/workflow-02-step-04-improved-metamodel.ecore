@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Improved Product/Order Metamodel (Version 2.0) -->
+<!-- Refactored to address design issues from legacy version -->
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="Orders" nsURI="http://www.example.org/orders/2.0" nsPrefix="orders">
+
+  <!-- Proper enumeration for order status -->
+  <eClassifiers xsi:type="ecore:EEnum" name="OrderStatus">
+    <eLiterals name="PENDING" value="0"/>
+    <eLiterals name="CONFIRMED" value="1"/>
+    <eLiterals name="PROCESSING" value="2"/>
+    <eLiterals name="SHIPPED" value="3"/>
+    <eLiterals name="DELIVERED" value="4"/>
+    <eLiterals name="CANCELLED" value="5"/>
+  </eClassifiers>
+
+  <!-- Payment method enumeration -->
+  <eClassifiers xsi:type="ecore:EEnum" name="PaymentMethod">
+    <eLiterals name="CREDIT_CARD" value="0"/>
+    <eLiterals name="DEBIT_CARD" value="1"/>
+    <eLiterals name="BANK_TRANSFER" value="2"/>
+    <eLiterals name="PAYPAL" value="3"/>
+    <eLiterals name="INVOICE" value="4"/>
+  </eClassifiers>
+
+  <!-- Abstract base for named entities -->
+  <eClassifiers xsi:type="ecore:EClass" name="NamedElement" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+
+  <!-- Structured address class -->
+  <eClassifiers xsi:type="ecore:EClass" name="Address">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="streetAddress" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="suburb" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="state" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="postcode" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="country" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"
+        defaultValueLiteral="Australia"/>
+  </eClassifiers>
+
+  <!-- Customer extracted from Order -->
+  <eClassifiers xsi:type="ecore:EClass" name="Customer" eSuperTypes="#//NamedElement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="email" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="phone" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="addresses" upperBound="-1"
+        eType="#//Address" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="orders" upperBound="-1"
+        eType="#//Order" eOpposite="#//Order/customer"/>
+  </eClassifiers>
+
+  <!-- Category as proper class -->
+  <eClassifiers xsi:type="ecore:EClass" name="Category" eSuperTypes="#//NamedElement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="code" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="parent" eType="#//Category"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="products" upperBound="-1"
+        eType="#//Product" eOpposite="#//Product/category"/>
+  </eClassifiers>
+
+  <!-- Focused Order class with proper references -->
+  <eClassifiers xsi:type="ecore:EClass" name="Order">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="orderId" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="orderDate" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDate"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="status" lowerBound="1"
+        eType="#//OrderStatus" defaultValueLiteral="PENDING"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="customer" lowerBound="1"
+        eType="#//Customer" eOpposite="#//Customer/orders"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="shippingAddress" lowerBound="1"
+        eType="#//Address"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="billingAddress" lowerBound="1"
+        eType="#//Address"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="items" lowerBound="1" upperBound="-1"
+        eType="#//OrderItem" containment="true" eOpposite="#//OrderItem/order"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="payment" eType="#//Payment" containment="true"/>
+  </eClassifiers>
+
+  <!-- Separate Payment entity -->
+  <eClassifiers xsi:type="ecore:EClass" name="Payment">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="method" lowerBound="1" eType="#//PaymentMethod"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="transactionId" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="amount" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigDecimal"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="paidAt" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDate"/>
+  </eClassifiers>
+
+  <!-- OrderItem with proper Product reference -->
+  <eClassifiers xsi:type="ecore:EClass" name="OrderItem">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="order" lowerBound="1"
+        eType="#//Order" eOpposite="#//Order/items"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="product" lowerBound="1" eType="#//Product"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="quantity" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt" defaultValueLiteral="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="unitPriceAtOrder" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigDecimal"/>
+  </eClassifiers>
+
+  <!-- Focused Product class (inventory separated) -->
+  <eClassifiers xsi:type="ecore:EClass" name="Product" eSuperTypes="#//NamedElement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="code" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="price" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigDecimal"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="category" eType="#//Category" eOpposite="#//Category/products"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="inventory" eType="#//InventoryItem" eOpposite="#//InventoryItem/product"/>
+  </eClassifiers>
+
+  <!-- Separated inventory concerns -->
+  <eClassifiers xsi:type="ecore:EClass" name="InventoryItem">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="product" lowerBound="1"
+        eType="#//Product" eOpposite="#//Product/inventory"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="stockQuantity" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt" defaultValueLiteral="0"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="reorderLevel" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"
+        defaultValueLiteral="10"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="warehouse" eType="#//Warehouse" eOpposite="#//Warehouse/items"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="location" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+
+  <!-- Warehouse for inventory management -->
+  <eClassifiers xsi:type="ecore:EClass" name="Warehouse" eSuperTypes="#//NamedElement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="code" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="address" eType="#//Address" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="items" upperBound="-1"
+        eType="#//InventoryItem" eOpposite="#//InventoryItem/warehouse"/>
+  </eClassifiers>
+
+  <!-- Root container with organised structure -->
+  <eClassifiers xsi:type="ecore:EClass" name="Store" eSuperTypes="#//NamedElement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="customers" upperBound="-1"
+        eType="#//Customer" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="categories" upperBound="-1"
+        eType="#//Category" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="products" upperBound="-1"
+        eType="#//Product" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="warehouses" upperBound="-1"
+        eType="#//Warehouse" containment="true"/>
+  </eClassifiers>
+</ecore:EPackage>

@@ -1,0 +1,22 @@
+digraph FormatEcosystem {
+    bgcolor="white"
+    rankdir=TB
+    node [shape=box, style=rounded, fontname="Arial", fontsize=12]
+    edge [fontname="Arial", fontsize=10]
+    
+    center [label="Ecore\nMetamodel" shape=box3d fillcolor="#e8f4f8" style=filled]
+    
+    xmi [label="XMI" shape=box fillcolor="#f8f4e8" style=filled]
+    json [label="JSON" shape=box fillcolor="#e8f8f5" style=filled]
+    swift [label="Swift Code" shape=note fillcolor="#f4e8f8" style=filled]
+    validate [label="Validation" shape=ellipse fillcolor="#fff8e8" style=filled]
+    
+    center -> xmi [label="serialize"]
+    center -> json [label="serialize"]
+    center -> swift [label="generate"]
+    center -> validate [label="check"]
+    xmi -> center [label="parse"]
+    json -> center [label="parse"]
+    
+    legendTitle [label="Format Ecosystem" shape=plaintext fontname="Arial Bold" fontsize=14]
+}

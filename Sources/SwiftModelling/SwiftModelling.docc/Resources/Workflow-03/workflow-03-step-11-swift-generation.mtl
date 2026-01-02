@@ -1,0 +1,313 @@
+[comment encoding = UTF-8 /]
+[comment]
+  MTL Template: Generate Swift Models from Ecore Metamodel
+  Creates type-safe Swift structures with Codable conformance
+  Part of the Cross-Format Integration tutorial
+[/comment]
+
+[module GenerateSwiftModels('http://www.eclipse.org/emf/2002/Ecore')]
+
+[comment Main entry point /]
+[template public generate(pkg : EPackage)]
+[comment Generate all enum types /]
+[for (enum : EEnum | pkg.eClassifiers->filter(EEnum))]
+[file (enum.name.concat('.swift'), false, 'UTF-8')]
+[generateEnum(enum)/]
+[/file]
+[/for]
+
+[comment Generate all class types /]
+[for (cls : EClass | pkg.eClassifiers->filter(EClass))]
+[file (cls.name.concat('.swift'), false, 'UTF-8')]
+[generateClass(cls)/]
+[/file]
+[/for]
+
+[comment Generate main models file /]
+[file ('ProjectManagementModels.swift', false, 'UTF-8')]
+[generateModelsFile(pkg)/]
+[/file]
+[/template]
+
+[comment Generate Swift enum from EEnum /]
+[template private generateEnum(enum : EEnum)]
+// [enum.name/].swift
+// Generated from ProjectManagement.ecore
+// Do not edit manually - changes will be overwritten
+
+import Foundation
+
+/// [enum.name/] enumeration
+/// Maps to XMI enum and JSON string values
+public enum [enum.name/]: String, Codable, CaseIterable, Sendable {
+[for (literal : EEnumLiteral | enum.eLiterals)]
+    case [literal.name.toLowerFirst()/] = "[literal.name/]"
+[/for]
+
+    /// Human-readable display name
+    public var displayName: String {
+        switch self {
+[for (literal : EEnumLiteral | enum.eLiterals)]
+        case .[literal.name.toLowerFirst()/]:
+            return "[literal.name.replace('_', ' ').toLowerFirst().toUpperFirst()/]"
+[/for]
+        }
+    }
+}
+[/template]
+
+[comment Generate Swift struct from EClass /]
+[template private generateClass(cls : EClass)]
+// [cls.name/].swift
+// Generated from ProjectManagement.ecore
+// Do not edit manually - changes will be overwritten
+
+import Foundation
+
+/// [cls.name/] model
+/// Represents [cls.name.toLowerFirst()/] data from XMI/JSON sources
+public struct [cls.name/]: Identifiable, Codable, Equatable, Sendable {
+[comment Generate properties /]
+[for (attr : EAttribute | cls.eAllAttributes)]
+    [generateAttribute(attr)/]
+[/for]
+[for (ref : EReference | cls.eAllReferences->select(r | not r.containment))]
+    [generateReference(ref)/]
+[/for]
+[for (ref : EReference | cls.eAllReferences->select(r | r.containment))]
+    [generateContainment(ref)/]
+[/for]
+
+    // MARK: - Coding Keys
+
+    private enum CodingKeys: String, CodingKey {
+[for (attr : EAttribute | cls.eAllAttributes)]
+        case [attr.name.toLowerCamel()/][if (attr.name <> attr.name.toLowerCamel())] = "[attr.name/]"[/if]
+[/for]
+[for (ref : EReference | cls.eAllReferences->select(r | not r.containment))]
+        case [ref.name.toLowerCamel()/]Id[if (ref.upperBound <> 1)]s[/if] = "[ref.name/]Id[if (ref.upperBound <> 1)]s[/if]"
+[/for]
+[for (ref : EReference | cls.eAllReferences->select(r | r.containment))]
+        case [ref.name.toLowerCamel()/]
+[/for]
+    }
+
+    // MARK: - Initialiser
+
+    public init(
+[for (attr : EAttribute | cls.eAllAttributes) separator(',\n')]
+        [attr.name.toLowerCamel()/]: [attr.swiftType()/][if (not attr.required)] = [attr.swiftDefault()/][/if][/for][if (cls.eAllReferences->notEmpty())],[/if]
+[for (ref : EReference | cls.eAllReferences) separator(',\n')]
+        [ref.name.toLowerCamel()/][if (not ref.containment)]Id[if (ref.upperBound <> 1)]s[/if][/if]: [ref.swiftType()/][if (not ref.required)] = [ref.swiftDefault()/][/if][/for]
+    ) {
+[for (attr : EAttribute | cls.eAllAttributes)]
+        self.[attr.name.toLowerCamel()/] = [attr.name.toLowerCamel()/]
+[/for]
+[for (ref : EReference | cls.eAllReferences)]
+        self.[ref.name.toLowerCamel()/][if (not ref.containment)]Id[if (ref.upperBound <> 1)]s[/if][/if] = [ref.name.toLowerCamel()/][if (not ref.containment)]Id[if (ref.upperBound <> 1)]s[/if][/if]
+[/for]
+    }
+}
+
+[if (cls.name = 'Organisation')]
+// MARK: - Convenience Extensions
+
+extension [cls.name/] {
+    /// Find a member by ID
+    public func member(withId id: String) -> TeamMember? {
+        members.first { $0.id == id }
+    }
+
+    /// Find a department by ID
+    public func department(withId id: String) -> Department? {
+        departments.first { $0.id == id }
+    }
+
+    /// Find a project by ID
+    public func project(withId id: String) -> Project? {
+        projects.first { $0.id == id }
+    }
+}
+[/if]
+[/template]
+
+[comment Generate attribute property /]
+[template private generateAttribute(attr : EAttribute)]
+    /// [attr.name.toUpperFirst()/] attribute
+    public [if (attr.changeable)]var[else]let[/if] [attr.name.toLowerCamel()/]: [attr.swiftType()/]
+[/template]
+
+[comment Generate reference property (as ID) /]
+[template private generateReference(ref : EReference)]
+    /// Reference to [ref.eType.name/] by ID
+    public [if (ref.changeable)]var[else]let[/if] [ref.name.toLowerCamel()/]Id[if (ref.upperBound <> 1)]s[/if]: [ref.swiftIdType()/]
+[/template]
+
+[comment Generate containment property /]
+[template private generateContainment(ref : EReference)]
+    /// Contained [ref.eType.name/] elements
+    public [if (ref.changeable)]var[else]let[/if] [ref.name.toLowerCamel()/]: [ref.swiftType()/]
+[/template]
+
+[comment Map Ecore type to Swift type /]
+[query private swiftType(attr : EAttribute) : String =
+    if attr.eType.name = 'EString' then
+        if attr.required then 'String' else 'String?' endif
+    else if attr.eType.name = 'EInt' then
+        if attr.required then 'Int' else 'Int?' endif
+    else if attr.eType.name = 'EDouble' then
+        if attr.required then 'Double' else 'Double?' endif
+    else if attr.eType.name = 'EBoolean' then
+        if attr.required then 'Bool' else 'Bool?' endif
+    else if attr.eType.name = 'EDate' then
+        if attr.required then 'Date' else 'Date?' endif
+    else if attr.eType.oclIsKindOf(EEnum) then
+        if attr.required then attr.eType.name else attr.eType.name + '?' endif
+    else
+        'Any'
+    endif endif endif endif endif endif
+/]
+
+[comment Map reference to Swift type /]
+[query private swiftType(ref : EReference) : String =
+    if ref.upperBound = 1 then
+        if ref.required then ref.eType.name else ref.eType.name + '?' endif
+    else
+        '[' + ref.eType.name + ']'
+    endif
+/]
+
+[comment Map reference to Swift ID type /]
+[query private swiftIdType(ref : EReference) : String =
+    if ref.upperBound = 1 then
+        if ref.required then 'String' else 'String?' endif
+    else
+        '[String]'
+    endif
+/]
+
+[comment Get default value for attribute /]
+[query private swiftDefault(attr : EAttribute) : String =
+    if attr.eType.name = 'EString' then 'nil'
+    else if attr.eType.name = 'EInt' then 'nil'
+    else if attr.eType.name = 'EDouble' then 'nil'
+    else if attr.eType.name = 'EBoolean' then 'false'
+    else if attr.eType.name = 'EDate' then 'nil'
+    else 'nil'
+    endif endif endif endif endif
+/]
+
+[comment Get default value for reference /]
+[query private swiftDefault(ref : EReference) : String =
+    if ref.upperBound = 1 then 'nil'
+    else '[]'
+    endif
+/]
+
+[comment Check if attribute is required /]
+[query private required(attr : EAttribute) : Boolean =
+    attr.lowerBound > 0
+/]
+
+[comment Check if reference is required /]
+[query private required(ref : EReference) : Boolean =
+    ref.lowerBound > 0
+/]
+
+[comment Convert to lowerCamelCase /]
+[query private toLowerCamel(s : String) : String =
+    s.substring(1, 1).toLower() + s.substring(2)
+/]
+
+[comment Generate combined models file /]
+[template private generateModelsFile(pkg : EPackage)]
+// ProjectManagementModels.swift
+// Generated from ProjectManagement.ecore
+// Unified import file for all Project Management models
+
+import Foundation
+
+// MARK: - Type Aliases
+
+/// Identifier type used across all models
+public typealias ModelID = String
+
+// MARK: - Date Formatting
+
+extension DateFormatter {
+    /// ISO 8601 formatter for JSON serialisation
+    static let iso8601: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.calendar = Calendar(identifier: .iso8601)
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+
+    /// ISO 8601 formatter with time for timestamps
+    static let iso8601WithTime: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
+        formatter.calendar = Calendar(identifier: .iso8601)
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+}
+
+// MARK: - JSON Decoder Configuration
+
+extension JSONDecoder {
+    /// Configured decoder for Project Management JSON
+    static let projectManagement: JSONDecoder = {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .formatted(.iso8601)
+        return decoder
+    }()
+}
+
+// MARK: - JSON Encoder Configuration
+
+extension JSONEncoder {
+    /// Configured encoder for Project Management JSON
+    static let projectManagement: JSONEncoder = {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .formatted(.iso8601)
+        encoder.outputFormatting = ['.prettyPrinted', .sortedKeys]
+        return encoder
+    }()
+}
+
+// MARK: - Model Loading
+
+/// Errors that can occur during model loading
+public enum ModelLoadingError: Error, LocalizedError {
+    case fileNotFound(String)
+    case invalidFormat(String)
+    case decodingFailed(Error)
+
+    public var errorDescription: String? {
+        switch self {
+        case .fileNotFound(let path):
+            return "Model file not found: \(path)"
+        case .invalidFormat(let message):
+            return "Invalid model format: \(message)"
+        case .decodingFailed(let error):
+            return "Failed to decode model: \(error.localizedDescription)"
+        }
+    }
+}
+
+/// Load organisation from JSON file
+public func loadOrganisation(from url: URL) throws -> Organisation {
+    let data = try Data(contentsOf: url)
+    return try JSONDecoder.projectManagement.decode(Organisation.self, from: data)
+}
+
+/// Save organisation to JSON file
+public func saveOrganisation(_ organisation: Organisation, to url: URL) throws {
+    let data = try JSONEncoder.projectManagement.encode(organisation)
+    try data.write(to: url)
+}
+[/template]

@@ -1,0 +1,239 @@
+-- ATL Transformation: Legacy Orders to Orders v2.0
+-- Migrates legacy Product/Order models to improved metamodel
+-- Part of the Model Refactoring Pipeline tutorial
+-- @path Legacy=/Legacy/LegacyOrders.ecore
+-- @path Orders=/Orders/Orders.ecore
+
+module LegacyOrders2Orders;
+create OUT: Orders from IN: Legacy;
+
+-- ===========================================================================
+-- Global Variables for deduplication
+-- ===========================================================================
+
+-- Track created customers by email to avoid duplicates
+helper def: customersByEmail: Map(String, Orders!Customer) = Map{};
+
+-- Track created categories by path to avoid duplicates
+helper def: categoriesByPath: Map(String, Orders!Category) = Map{};
+
+-- ===========================================================================
+-- Helper: Parse address string into components
+-- Format: "123 Main St, Sydney NSW 2000, Australia"
+-- ===========================================================================
+helper def: parseAddress(addressStr: String): TupleType(
+    street: String, suburb: String, state: String, postcode: String, country: String
+) =
+    let parts: Sequence(String) = addressStr.split(',')->collect(p | p.trim()) in
+    if parts->size() >= 3 then
+        let cityStatePost: Sequence(String) = parts->at(2).split(' ')->collect(p | p.trim()) in
+        Tuple{
+            street = parts->at(1),
+            suburb = cityStatePost->first(),
+            state = if cityStatePost->size() > 1 then cityStatePost->at(2) else '' endif,
+            postcode = if cityStatePost->size() > 2 then cityStatePost->at(3) else '' endif,
+            country = if parts->size() > 3 then parts->at(4) else 'Australia' endif
+        }
+    else
+        Tuple{street = addressStr, suburb = '', state = '', postcode = '', country = 'Australia'}
+    endif;
+
+-- ===========================================================================
+-- Helper: Normalise order status to enum value
+-- ===========================================================================
+helper context Legacy!Order def: normalisedStatus: Orders!OrderStatus =
+    let status: String = self.status.toUpper() in
+    if status = 'PENDING' then #PENDING
+    else if status = 'CONFIRMED' then #CONFIRMED
+    else if status = 'PROCESSING' then #PROCESSING
+    else if status = 'SHIPPED' then #SHIPPED
+    else if status = 'DELIVERED' then #DELIVERED
+    else if status = 'CANCELLED' then #CANCELLED
+    else #PENDING
+    endif endif endif endif endif endif;
+
+-- ===========================================================================
+-- Helper: Normalise payment method to enum value
+-- ===========================================================================
+helper context Legacy!Order def: normalisedPaymentMethod: Orders!PaymentMethod =
+    let method: String = self.paymentMethod.toUpper().replace('_', '') in
+    if method = 'CREDITCARD' then #CREDIT_CARD
+    else if method = 'DEBITCARD' then #DEBIT_CARD
+    else if method = 'BANKTRANSFER' then #BANK_TRANSFER
+    else if method = 'PAYPAL' then #PAYPAL
+    else if method = 'INVOICE' then #INVOICE
+    else #CREDIT_CARD
+    endif endif endif endif endif;
+
+-- ===========================================================================
+-- Helper: Get all unique customer emails from orders
+-- ===========================================================================
+helper def: uniqueCustomerEmails: Set(String) =
+    Legacy!Order.allInstances()->collect(o | o.customerEmail)->asSet();
+
+-- ===========================================================================
+-- Helper: Get all unique category paths from products
+-- ===========================================================================
+helper def: uniqueCategoryPaths: Set(String) =
+    Legacy!Product.allInstances()->collect(p | p.category)->asSet();
+
+-- ===========================================================================
+-- Helper: Find product by code
+-- ===========================================================================
+helper context Legacy!OrderItem def: findProduct: Legacy!Product =
+    Legacy!Product.allInstances()->any(p | p.code = self.productCode);
+
+-- ===========================================================================
+-- Rule: Store -> Store
+-- Root transformation with all contained elements
+-- ===========================================================================
+rule Store2Store {
+    from
+        s: Legacy!Store
+    to
+        t: Orders!Store (
+            name <- s.name,
+            customers <- Legacy!Order.allInstances()
+                ->collect(o | o.customerEmail)->asSet()
+                ->collect(email | thisModule.createCustomer(
+                    Legacy!Order.allInstances()->any(o | o.customerEmail = email)
+                )),
+            categories <- thisModule.uniqueCategoryPaths
+                ->collect(path | thisModule.createCategory(path)),
+            products <- s.products,
+            warehouses <- thisModule.createDefaultWarehouse()
+        )
+}
+
+-- ===========================================================================
+-- Lazy Rule: Create Customer from Order data
+-- Deduplicates by email address
+-- ===========================================================================
+lazy rule createCustomer {
+    from
+        o: Legacy!Order
+    to
+        c: Orders!Customer (
+            name <- o.customerName,
+            email <- o.customerEmail,
+            phone <- o.customerPhone,
+            addresses <- Sequence{shippingAddr, billingAddr}->asSet(),
+            orders <- Legacy!Order.allInstances()
+                ->select(ord | ord.customerEmail = o.customerEmail)
+        ),
+        shippingAddr: Orders!Address (
+            streetAddress <- thisModule.parseAddress(o.shippingAddress).street,
+            suburb <- thisModule.parseAddress(o.shippingAddress).suburb,
+            state <- thisModule.parseAddress(o.shippingAddress).state,
+            postcode <- thisModule.parseAddress(o.shippingAddress).postcode,
+            country <- thisModule.parseAddress(o.shippingAddress).country
+        ),
+        billingAddr: Orders!Address (
+            streetAddress <- thisModule.parseAddress(o.billingAddress).street,
+            suburb <- thisModule.parseAddress(o.billingAddress).suburb,
+            state <- thisModule.parseAddress(o.billingAddress).state,
+            postcode <- thisModule.parseAddress(o.billingAddress).postcode,
+            country <- thisModule.parseAddress(o.billingAddress).country
+        )
+}
+
+-- ===========================================================================
+-- Lazy Rule: Create Category hierarchy from path string
+-- Path format: "Electronics/Computers"
+-- ===========================================================================
+lazy rule createCategory {
+    from
+        path: String
+    to
+        c: Orders!Category (
+            name <- path.split('/')->last(),
+            code <- path.replace('/', '-').toLower()
+        )
+}
+
+-- ===========================================================================
+-- Rule: Order -> Order
+-- Maps legacy order to new structure with proper references
+-- ===========================================================================
+rule Order2Order {
+    from
+        o: Legacy!Order
+    to
+        t: Orders!Order (
+            orderId <- o.orderId,
+            orderDate <- o.orderDate.toDate(),
+            status <- o.normalisedStatus,
+            customer <- thisModule.createCustomer(
+                Legacy!Order.allInstances()->any(ord | ord.customerEmail = o.customerEmail)
+            ),
+            shippingAddress <- thisModule.resolveTemp(
+                thisModule.createCustomer(
+                    Legacy!Order.allInstances()->any(ord | ord.customerEmail = o.customerEmail)
+                ), 'shippingAddr'
+            ),
+            billingAddress <- thisModule.resolveTemp(
+                thisModule.createCustomer(
+                    Legacy!Order.allInstances()->any(ord | ord.customerEmail = o.customerEmail)
+                ), 'billingAddr'
+            ),
+            items <- o.items,
+            payment <- pay
+        ),
+        pay: Orders!Payment (
+            method <- o.normalisedPaymentMethod,
+            amount <- o.totalAmount
+        )
+}
+
+-- ===========================================================================
+-- Rule: OrderItem -> OrderItem
+-- Links to Product instead of using string codes
+-- ===========================================================================
+rule OrderItem2OrderItem {
+    from
+        i: Legacy!OrderItem
+    to
+        t: Orders!OrderItem (
+            product <- i.findProduct,
+            quantity <- i.qty,
+            unitPriceAtOrder <- i.unitPrice
+        )
+}
+
+-- ===========================================================================
+-- Rule: Product -> Product with InventoryItem
+-- Separates product and inventory concerns
+-- ===========================================================================
+rule Product2Product {
+    from
+        p: Legacy!Product
+    to
+        t: Orders!Product (
+            name <- p.name,
+            code <- p.code,
+            description <- p.desc,
+            price <- p.price,
+            category <- thisModule.createCategory(p.category),
+            inventory <- inv
+        ),
+        inv: Orders!InventoryItem (
+            product <- t,
+            stockQuantity <- p.stockQty,
+            reorderLevel <- p.reorderLevel,
+            location <- p.warehouseLocation
+        )
+}
+
+-- ===========================================================================
+-- Called Rule: Create default warehouse
+-- ===========================================================================
+rule createDefaultWarehouse() {
+    to
+        w: Orders!Warehouse (
+            name <- 'Main Warehouse',
+            code <- 'WH-MAIN'
+        )
+    do {
+        w;
+    }
+}

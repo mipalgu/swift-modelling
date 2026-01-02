@@ -24,12 +24,7 @@
             }
 
             @Step {
-                Understand the `href` syntax.
-
-                In XMI, cross-resource references use the `href` attribute.
-                `href="targetFile.xmi#//TargetElementID"`
-
-                The part before `#` is the URI of the target resource. The part after `#` is the fragment identifier (ID or path) of the element within that resource.
+                Understand the `href` syntax used in XMI for cross-resource references: `href="targetFile.xmi#//TargetElementID"` where the part before `#` is the target resource URI and the part after is the fragment identifier.
             }
         }
     }

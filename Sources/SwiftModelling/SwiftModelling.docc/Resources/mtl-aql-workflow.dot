@@ -1,0 +1,26 @@
+digraph MTLAQLWorkflow {
+    bgcolor="white"
+    rankdir=LR
+    node [shape=box, style=rounded, fontname="Arial", fontsize=12]
+    edge [fontname="Arial", fontsize=10]
+    
+    model [label="Model\nInstance" shape=box3d fillcolor="#e8f4f8" style=filled]
+    
+    subgraph cluster_mtl {
+        label="MTL Template"
+        style=rounded
+        bgcolor="#f8f4e8"
+        
+        template [label="[template...]" shape=note]
+        aql [label="AQL Queries" shape=ellipse fillcolor="#e8f8f5" style=filled]
+    }
+    
+    output [label="Generated\nOutput" shape=note fillcolor="#f4e8f8" style=filled]
+    
+    model -> template [label="input"]
+    template -> aql [label="navigate" style=dashed]
+    aql -> template [style=dashed]
+    template -> output [label="generate"]
+    
+    legendTitle [label="MTL + AQL Workflow" shape=plaintext fontname="Arial Bold" fontsize=14]
+}

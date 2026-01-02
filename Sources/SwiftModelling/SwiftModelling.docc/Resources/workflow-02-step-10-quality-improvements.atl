@@ -1,0 +1,257 @@
+-- ATL Transformation: Data Quality Improvements
+-- Enhances migrated CustomerManagement data with quality improvements
+-- Standardises formats, fills missing values, resolves inconsistencies
+-- Part of the Model Refactoring Pipeline tutorial
+-- @path Customer=/Customer/CustomerManagement.ecore
+
+module CustomerQualityImprovements;
+create OUT: Customer refining IN: Customer;
+
+-- ===========================================================================
+-- Data Quality Improvement Rules
+-- Uses refining mode to update elements in place
+-- ===========================================================================
+
+-- ===========================================================================
+-- Helper: Standardise Australian phone number format
+-- Converts various formats to +61 X XXXX XXXX
+-- ===========================================================================
+helper def: standardisePhoneNumber(phone: String): String =
+    let cleaned: String = phone.replace(' ', '').replace('-', '').replace('(', '').replace(')', '') in
+    if cleaned.startsWith('+61') then
+        cleaned
+    else if cleaned.startsWith('0') then
+        '+61 ' + cleaned.substring(2, 2) + ' ' +
+        cleaned.substring(3, 6) + ' ' +
+        cleaned.substring(7, 10)
+    else if cleaned.startsWith('61') then
+        '+' + cleaned.substring(1, 2) + ' ' +
+        cleaned.substring(3, 3) + ' ' +
+        cleaned.substring(4, 7) + ' ' +
+        cleaned.substring(8, 11)
+    else
+        phone
+    endif endif endif;
+
+-- ===========================================================================
+-- Helper: Validate and format ABN (11 digits with spaces)
+-- ===========================================================================
+helper def: formatABN(abn: String): String =
+    let cleaned: String = abn.replace(' ', '') in
+    if cleaned.size() = 11 and cleaned.matches('[0-9]+') then
+        cleaned.substring(1, 2) + ' ' +
+        cleaned.substring(3, 5) + ' ' +
+        cleaned.substring(6, 8) + ' ' +
+        cleaned.substring(9, 11)
+    else
+        abn
+    endif;
+
+-- ===========================================================================
+-- Helper: Validate and format ACN (9 digits with spaces)
+-- ===========================================================================
+helper def: formatACN(acn: String): String =
+    let cleaned: String = acn.replace(' ', '') in
+    if cleaned.size() = 9 and cleaned.matches('[0-9]+') then
+        cleaned.substring(1, 3) + ' ' +
+        cleaned.substring(4, 6) + ' ' +
+        cleaned.substring(7, 9)
+    else
+        acn
+    endif;
+
+-- ===========================================================================
+-- Helper: Title case a name string
+-- ===========================================================================
+helper def: titleCase(str: String): String =
+    str.split(' ')
+        ->collect(word |
+            if word.size() > 0 then
+                word.substring(1, 1).toUpper() +
+                if word.size() > 1 then word.substring(2, word.size()).toLower()
+                else '' endif
+            else
+                ''
+            endif
+        )
+        ->iterate(word; acc: String = '' |
+            if acc.size() = 0 then word
+            else acc + ' ' + word
+            endif
+        );
+
+-- ===========================================================================
+-- Helper: Standardise email to lowercase
+-- ===========================================================================
+helper def: standardiseEmail(email: String): String =
+    email.trim().toLower();
+
+-- ===========================================================================
+-- Helper: Validate Australian postcode (4 digits)
+-- ===========================================================================
+helper def: isValidPostcode(postcode: String): Boolean =
+    postcode.size() = 4 and postcode.matches('[0-9]+');
+
+-- ===========================================================================
+-- Helper: Standardise state abbreviation
+-- ===========================================================================
+helper def: standardiseState(state: String): String =
+    let upper: String = state.trim().toUpper() in
+    if Sequence{'NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'NT', 'ACT'}->includes(upper) then
+        upper
+    else if upper = 'NEW SOUTH WALES' then 'NSW'
+    else if upper = 'VICTORIA' then 'VIC'
+    else if upper = 'QUEENSLAND' then 'QLD'
+    else if upper = 'SOUTH AUSTRALIA' then 'SA'
+    else if upper = 'WESTERN AUSTRALIA' then 'WA'
+    else if upper = 'TASMANIA' then 'TAS'
+    else if upper = 'NORTHERN TERRITORY' then 'NT'
+    else if upper = 'AUSTRALIAN CAPITAL TERRITORY' then 'ACT'
+    else state
+    endif endif endif endif endif endif endif endif endif;
+
+-- ===========================================================================
+-- Rule: Improve Contact data quality
+-- ===========================================================================
+rule ImproveContact {
+    from
+        c: Customer!Contact (
+            c.email.size() > 0 or c.phone.size() > 0
+        )
+    to
+        c: Customer!Contact (
+            name <- thisModule.titleCase(c.name),
+            email <- thisModule.standardiseEmail(c.email),
+            phone <- if c.phone.size() > 0 then
+                        thisModule.standardisePhoneNumber(c.phone)
+                     else c.phone endif,
+            mobile <- if c.mobile.size() > 0 then
+                         thisModule.standardisePhoneNumber(c.mobile)
+                      else c.mobile endif,
+            position <- thisModule.titleCase(c.position)
+        )
+}
+
+-- ===========================================================================
+-- Rule: Improve Organisation data quality
+-- ===========================================================================
+rule ImproveOrganisation {
+    from
+        o: Customer!Organisation
+    to
+        o: Customer!Organisation (
+            australianBusinessNumber <- if o.australianBusinessNumber.size() > 0 then
+                                            thisModule.formatABN(o.australianBusinessNumber)
+                                         else o.australianBusinessNumber endif,
+            australianCompanyNumber <- if o.australianCompanyNumber.size() > 0 then
+                                          thisModule.formatACN(o.australianCompanyNumber)
+                                       else o.australianCompanyNumber endif
+        )
+}
+
+-- ===========================================================================
+-- Rule: Improve Address data quality
+-- ===========================================================================
+rule ImproveAddress {
+    from
+        a: Customer!Address
+    to
+        a: Customer!Address (
+            streetAddress <- thisModule.titleCase(a.streetAddress),
+            suburb <- thisModule.titleCase(a.suburb),
+            state <- thisModule.standardiseState(a.state),
+            postcode <- if not thisModule.isValidPostcode(a.postcode) then
+                           a.postcode.padStart(4, '0')
+                        else a.postcode endif,
+            country <- if a.country.size() = 0 or a.country.toUpper() = 'AU' then
+                          'Australia'
+                       else a.country endif
+        )
+}
+
+-- ===========================================================================
+-- Rule: Standardise Customer data
+-- ===========================================================================
+rule ImproveCustomer {
+    from
+        c: Customer!Customer
+    to
+        c: Customer!Customer (
+            name <- thisModule.titleCase(c.name),
+            -- Ensure payment terms has valid value
+            paymentTermsDays <- if c.paymentTermsDays <= 0 then 30
+                               else c.paymentTermsDays endif,
+            -- Ensure credit limit is non-negative
+            creditLimit <- if c.creditLimit < 0 then 0
+                          else c.creditLimit endif
+        )
+}
+
+-- ===========================================================================
+-- Rule: Standardise CustomerCategory codes
+-- ===========================================================================
+rule ImproveCategory {
+    from
+        cat: Customer!CustomerCategory
+    to
+        cat: Customer!CustomerCategory (
+            code <- cat.code.toUpper(),
+            name <- thisModule.titleCase(cat.name),
+            -- Ensure discount is within valid range
+            discountPercentage <- if cat.discountPercentage < 0 then 0
+                                 else if cat.discountPercentage > 100 then 100
+                                 else cat.discountPercentage
+                                 endif endif
+        )
+}
+
+-- ===========================================================================
+-- Rule: Add audit timestamps where missing
+-- ===========================================================================
+rule AddAuditTimestamps {
+    from
+        e: Customer!IdentifiableElement (
+            e.createdAt.oclIsUndefined()
+        )
+    to
+        e: Customer!IdentifiableElement (
+            createdAt <- OclAny.now(),
+            modifiedAt <- OclAny.now()
+        )
+}
+
+-- ===========================================================================
+-- Validation Queries (for reporting)
+-- ===========================================================================
+
+-- Count contacts with invalid phone numbers
+helper def: invalidPhoneContacts: Sequence(Customer!Contact) =
+    Customer!Contact.allInstances()
+        ->select(c | c.phone.size() > 0 and not c.phone.startsWith('+61'));
+
+-- Count organisations with invalid ABN
+helper def: invalidABNOrganisations: Sequence(Customer!Organisation) =
+    Customer!Organisation.allInstances()
+        ->select(o | o.australianBusinessNumber.size() > 0 and
+                    o.australianBusinessNumber.replace(' ', '').size() <> 11);
+
+-- Count addresses with invalid postcode
+helper def: invalidPostcodeAddresses: Sequence(Customer!Address) =
+    Customer!Address.allInstances()
+        ->select(a | not thisModule.isValidPostcode(a.postcode));
+
+-- Generate quality improvement report
+helper def: qualityReport: String =
+    'Data Quality Improvement Report\n' +
+    '================================\n\n' +
+    'Corrections Applied:\n' +
+    '  Phone numbers standardised: ' +
+        Customer!Contact.allInstances()->select(c | c.phone.startsWith('+61'))->size().toString() + '\n' +
+    '  ABNs formatted: ' +
+        Customer!Organisation.allInstances()->size().toString() + '\n' +
+    '  Addresses improved: ' +
+        Customer!Address.allInstances()->size().toString() + '\n' +
+    '\nRemaining Issues:\n' +
+    '  Invalid phone numbers: ' + thisModule.invalidPhoneContacts->size().toString() + '\n' +
+    '  Invalid ABNs: ' + thisModule.invalidABNOrganisations->size().toString() + '\n' +
+    '  Invalid postcodes: ' + thisModule.invalidPostcodeAddresses->size().toString() + '\n';

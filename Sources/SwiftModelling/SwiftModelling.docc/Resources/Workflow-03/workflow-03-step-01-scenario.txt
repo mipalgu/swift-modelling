@@ -1,0 +1,47 @@
+# Cross-Format Integration Scenario
+
+## Overview
+
+This tutorial demonstrates integrating models across three different platforms:
+
+1. **Java EMF Tool** - Enterprise design tool using XMI format
+2. **Web Editor** - Browser-based model editor using JSON format
+3. **Swift Application** - Native iOS/macOS app using Swift structs
+
+## Business Context
+
+Acme Organisation uses different tools for project management:
+
+- **Enterprise Architects** use a Java EMF-based tool for project planning
+- **Team Members** use a web-based interface for task updates
+- **Mobile Users** access projects through a native Swift app
+
+## Integration Requirements
+
+| Source | Format | Direction | Consumer |
+|--------|--------|-----------|----------|
+| Java EMF Tool | XMI | Export | Web Editor, Swift App |
+| Web Editor | JSON | Import/Export | Java EMF Tool, Swift App |
+| Swift App | Swift | Import | Local storage |
+
+## Key Challenges
+
+1. **Format Translation** - XMI references vs JSON IDs vs Swift optionals
+2. **Schema Evolution** - Different tools may have different versions
+3. **Conflict Resolution** - Concurrent edits from multiple sources
+4. **Type Safety** - Preserving type information across formats
+
+## Success Criteria
+
+- [ ] Bidirectional XMI <-> JSON conversion
+- [ ] Type-safe Swift code generation
+- [ ] Automated synchronisation pipeline
+- [ ] Conflict detection and resolution
+- [ ] Complete audit trail of changes
+
+## Tools Used
+
+- `swift-ecore` - Metamodel operations
+- `swift-atl` - Model transformations
+- `swift-mtl` - Code generation
+- `swift-sync` - Synchronisation management

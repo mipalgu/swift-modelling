@@ -1,0 +1,218 @@
+[comment encoding = UTF-8 /]
+[module CrossReferences('http://www.example.org/webapp')]
+
+[comment]
+  Cross-Reference Resolution in MTL Templates
+
+  This template demonstrates using AQL to navigate
+  cross-model references and generate code that maintains
+  referential integrity across generated artefacts.
+
+  Cross-references link model elements that are not
+  in a containment relationship, requiring careful
+  navigation and resolution.
+[/comment]
+
+[template main(app : WebApp)]
+[file ('cross-references.txt', 'overwrite', 'UTF-8')]
+Cross-Reference Resolution with AQL
+===================================
+
+Application: [app.name/]
+
+[comment ================================================================ /]
+[comment             NAVIGATING CROSS-REFERENCES                          /]
+[comment ================================================================ /]
+
+1. Navigating Cross-References
+------------------------------
+[comment]
+  Cross-references connect related elements.
+  Navigate them like containment references.
+[/comment]
+
+Entity relationships (cross-references to other entities):
+[for (entity : Entity | app.entities)]
+[entity.name/]:
+[if (entity.relationships->notEmpty())]
+[for (rel : Relationship | entity.relationships)]
+  - [rel.name/] -> [rel.targetEntity.name/] ([rel.relationType/])
+[/for]
+[else]
+  (no relationships)
+[/if]
+
+[/for]
+
+[comment ================================================================ /]
+[comment             PAGE LINK REFERENCES                                 /]
+[comment ================================================================ /]
+
+2. Page Link References
+-----------------------
+[comment]
+  Pages can link to other pages, creating a navigation
+  graph. Follow these references to understand flow.
+[/comment]
+
+Page navigation graph:
+[for (page : Page | app.pages)]
+[page.name/] -> [if (page.linkedPages->notEmpty())][page.linkedPages->collect(p | p.name)->sep(', ')/][else](no outbound links)[/if]
+[/for]
+
+Incoming links analysis:
+[for (page : Page | app.pages)]
+[let incomingLinks = app.pages->select(p | p.linkedPages->includes(page))]
+[page.name/] <- [if (incomingLinks->notEmpty())][incomingLinks->collect(p | p.name)->sep(', ')/][else](no incoming links)[/if]
+[/let]
+[/for]
+
+[comment ================================================================ /]
+[comment             FORM-ENTITY BINDINGS                                 /]
+[comment ================================================================ /]
+
+3. Form-Entity Bindings
+-----------------------
+[comment]
+  Forms can be bound to entities, creating cross-references
+  between UI components and data models.
+[/comment]
+
+Form-entity binding map:
+[for (page : Page | app.pages)]
+[for (comp : Component | page.components->select(c | c.oclIsTypeOf(Form)))]
+[let form = comp.oclAsType(Form)]
+[page.name/]/[form.name/]:
+[if (form.boundEntity <> null)]
+  Bound to: [form.boundEntity.name/]
+  Entity attributes: [form.boundEntity.attributes->collect(a | a.name)->sep(', ')/]
+  Form fields: [form.fields->collect(f | f.name)->sep(', ')/]
+[else]
+  Not bound to any entity
+[/if]
+[/let]
+[/for]
+[/for]
+
+[comment ================================================================ /]
+[comment             FIELD-ATTRIBUTE BINDINGS                             /]
+[comment ================================================================ /]
+
+4. Field-Attribute Bindings
+---------------------------
+[comment]
+  Form fields can be bound to entity attributes,
+  connecting UI input to data storage.
+[/comment]
+
+Field-attribute mapping:
+[for (page : Page | app.pages)]
+[for (comp : Component | page.components->select(c | c.oclIsTypeOf(Form)))]
+[let form = comp.oclAsType(Form)]
+[if (form.fields->exists(f | f.boundAttribute <> null))]
+[page.name/]/[form.name/] field bindings:
+[for (field : Field | form.fields)]
+[if (field.boundAttribute <> null)]
+  [field.name/] ([field.fieldType/]) -> [field.boundAttribute.name/] ([field.boundAttribute.dataType/])
+[else]
+  [field.name/] ([field.fieldType/]) -> (unbound)
+[/if]
+[/for]
+
+[/if]
+[/let]
+[/for]
+[/for]
+
+[comment ================================================================ /]
+[comment             TABLE-ENTITY BINDINGS                                /]
+[comment ================================================================ /]
+
+5. DataTable-Entity Bindings
+----------------------------
+[comment]
+  DataTables bind to entities as data sources,
+  and columns bind to attributes.
+[/comment]
+
+DataTable data source mappings:
+[for (page : Page | app.pages)]
+[for (comp : Component | page.components->select(c | c.oclIsTypeOf(DataTable)))]
+[let table = comp.oclAsType(DataTable)]
+[page.name/]/[table.name/]:
+[if (table.dataSource <> null)]
+  Data source: [table.dataSource.name/]
+  Columns:
+[for (col : Column | table.columns)]
+    [col.header/] -> [if (col.boundAttribute <> null)][col.boundAttribute.name/][else](unbound)[/if]
+[/for]
+[else]
+  No data source configured
+[/if]
+[/let]
+[/for]
+[/for]
+
+[comment ================================================================ /]
+[comment             NAVIGATION TARGET REFERENCES                         /]
+[comment ================================================================ /]
+
+6. Navigation Target References
+-------------------------------
+[comment]
+  Navigation items reference target pages,
+  building the application's navigation structure.
+[/comment]
+
+Navigation structure:
+[for (page : Page | app.pages)]
+[for (comp : Component | page.components->select(c | c.oclIsTypeOf(Navigation)))]
+[let nav = comp.oclAsType(Navigation)]
+[page.name/]/[nav.name/] ([nav.navType/]):
+[for (item : NavItem | nav.items)]
+  [item.label/] -> [if (item.targetPage <> null)][item.targetPage.name/] ([item.targetPage.route/])[else](no target)[/if]
+[for (subItem : NavItem | item.subItems)]
+    [subItem.label/] -> [if (subItem.targetPage <> null)][subItem.targetPage.name/][else](no target)[/if]
+[/for]
+[/for]
+[/let]
+[/for]
+[/for]
+
+[comment ================================================================ /]
+[comment             REFERENTIAL INTEGRITY CHECK                          /]
+[comment ================================================================ /]
+
+7. Referential Integrity Validation
+-----------------------------------
+[comment]
+  Validate that all cross-references point to
+  valid targets within the model.
+[/comment]
+
+Reference validation:
+
+Entity relationship targets:
+[for (entity : Entity | app.entities)]
+[for (rel : Relationship | entity.relationships)]
+[if (app.entities->includes(rel.targetEntity))]
+[OK] [entity.name/].[rel.name/] -> [rel.targetEntity.name/]
+[else]
+[ERROR] [entity.name/].[rel.name/] -> invalid target
+[/if]
+[/for]
+[/for]
+
+Page link targets:
+[for (page : Page | app.pages)]
+[for (linked : Page | page.linkedPages)]
+[if (app.pages->includes(linked))]
+[OK] [page.name/] -> [linked.name/]
+[else]
+[ERROR] [page.name/] -> invalid page reference
+[/if]
+[/for]
+[/for]
+
+[/file]
+[/template]

@@ -1,0 +1,35 @@
+digraph ModelRefactoringPipeline {
+    bgcolor="white"
+    rankdir=LR
+    node [shape=box, style=rounded, fontname="Arial", fontsize=12]
+    edge [fontname="Arial", fontsize=10]
+    
+    subgraph cluster_input {
+        label="Input"
+        style=rounded
+        bgcolor="#f8f4e8"
+        legacy [label="Legacy\nModel" shape=box3d]
+    }
+    
+    subgraph cluster_refactor {
+        label="Refactoring Steps"
+        style=rounded
+        bgcolor="#e8f4f8"
+        
+        analyse [label="1. Analyse" shape=ellipse]
+        plan [label="2. Plan" shape=ellipse]
+        transform [label="3. Transform" shape=ellipse]
+        validate [label="4. Validate" shape=ellipse]
+    }
+    
+    subgraph cluster_output {
+        label="Output"
+        style=rounded
+        bgcolor="#e8f8f5"
+        improved [label="Improved\nModel" shape=box3d]
+    }
+    
+    legacy -> analyse -> plan -> transform -> validate -> improved
+    
+    legendTitle [label="Model Refactoring Pipeline" shape=plaintext fontname="Arial Bold" fontsize=14]
+}

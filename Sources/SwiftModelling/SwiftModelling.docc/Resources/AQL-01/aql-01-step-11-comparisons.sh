@@ -1,58 +1,46 @@
-#!/bin/bash
-# AQL-01 Step 11: Comparison Operations
+# Comparison Operations - Testing relationships between values
+# Use comparisons for filtering and conditions
 
-echo "=== AQL Basics: Comparison Operations ==="
-echo ""
-echo "All comparison operations return boolean values (true or false)"
-echo ""
-echo "Equality (=):"
-echo "  AQL: employee.department = 'Engineering'"
-echo "  Example: 'Engineering' = 'Engineering'"
-echo "  Result: true"
-echo ""
-echo "  AQL: employee.age = 32"
-echo "  Example: 32 = 32"
-echo "  Result: true"
-echo ""
-echo "Inequality (<>):"
-echo "  AQL: employee.department <> 'Sales'"
-echo "  Example: 'Engineering' <> 'Sales'"
-echo "  Result: true"
-echo ""
-echo "  AQL: employee.age <> 30"
-echo "  Example: 32 <> 30"
-echo "  Result: true"
-echo ""
-echo "Greater than (>):"
-echo "  AQL: employee.age > 30"
-echo "  Example: 32 > 30"
-echo "  Result: true"
-echo ""
-echo "  AQL: employee.age > 35"
-echo "  Example: 32 > 35"
-echo "  Result: false"
-echo ""
-echo "Less than (<):"
-echo "  AQL: employee.age < 40"
-echo "  Example: 32 < 40"
-echo "  Result: true"
-echo ""
-echo "Greater than or equal (>=):"
-echo "  AQL: employee.age >= 32"
-echo "  Example: 32 >= 32"
-echo "  Result: true"
-echo ""
-echo "Less than or equal (<=):"
-echo "  AQL: employee.age <= 32"
-echo "  Example: 32 <= 32"
-echo "  Result: true"
-echo ""
-echo "String comparisons:"
-echo "  AQL: employee.name < 'Bob'"
-echo "  Example: 'Alice Johnson' < 'Bob'"
-echo "  Result: true (alphabetical order)"
-echo ""
-echo "Comparisons are typically used in:"
-echo "  - Filter operations: ->select(e | e.age > 30)"
-echo "  - Conditional expressions: if employee.age >= 65 then 'Retirement age' else 'Working age' endif"
-echo "  - Boolean logic: employee.age > 30 and employee.department = 'Engineering'"
+# Equality
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.name = 'Acme Corp'"
+
+# Output: true
+
+# Inequality
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.founded <> 2000"
+
+# Output: true
+
+# Less than / Greater than
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments.employees->select(e | e.salary > 100000)->collect(e | e.name)"
+
+# Output: ["Alice Smith", "Emma Davis", "Henry Brown"]
+
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments.employees->select(e | e.age < 30)->collect(e | e.name)"
+
+# Output: ["Bob Chen", "David Lee", "Grace Kim"]
+
+# Less than or equal / Greater than or equal
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments->select(d | d.budget >= 300000)->collect(d | d.name)"
+
+# Output: ["Engineering", "Marketing"]
+
+# Boolean operators: and, or, not
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments.employees
+    ->select(e | e.salary > 80000 and e.age < 35)
+    ->collect(e | e.name)"
+
+# Output: ["Bob Chen", "Ivy Chen"]
+
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments.employees
+    ->select(e | e.salary > 110000 or e.age > 40)
+    ->collect(e | e.name)"
+
+# Output: ["Alice Smith", "Henry Brown", "Emma Davis"]

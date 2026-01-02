@@ -1,0 +1,152 @@
+[comment encoding = UTF-8 /]
+[module CollectTemplate('http://www.example.org/webapp')]
+
+[comment]
+  Collection Transformation with Collect in MTL
+
+  This template demonstrates using AQL's collect operation
+  to transform collections before iteration or output.
+
+  Collect maps each element to a new value using an
+  expression, similar to map() in functional programming.
+[/comment]
+
+[template main(app : WebApp)]
+[file ('collect-transform.txt', 'overwrite', 'UTF-8')]
+Collection Transformation with Collect
+======================================
+
+Application: [app.name/]
+
+[comment ================================================================ /]
+[comment             BASIC COLLECT                                        /]
+[comment ================================================================ /]
+
+1. Basic Collect - Extract Properties
+-------------------------------------
+[comment]
+  Use ->collect(expr) to extract a single property
+  from each element, creating a collection of values.
+[/comment]
+
+All page names: [app.pages->collect(p | p.name)->sep(', ')/]
+
+All page routes: [app.pages->collect(p | p.route)->sep(', ')/]
+
+All entity table names: [app.entities->collect(e | e.tableName)->sep(', ')/]
+
+[comment ================================================================ /]
+[comment             COLLECT WITH TRANSFORMATION                          /]
+[comment ================================================================ /]
+
+2. Collect with Transformation
+------------------------------
+[comment]
+  Apply transformations within collect expressions
+  to modify the extracted values.
+[/comment]
+
+Entity names (uppercase): [app.entities->collect(e | e.name.toUpperCase())->sep(', ')/]
+
+Page routes (with base URL): [app.pages->collect(p | app.baseUrl + p.route)->sep('\n')/]
+
+[comment ================================================================ /]
+[comment             COLLECT AND ITERATE                                  /]
+[comment ================================================================ /]
+
+3. Collect Then Iterate
+-----------------------
+[comment]
+  Collect values first, then iterate over the
+  resulting collection.
+[/comment]
+
+All attribute names across entities:
+[let allAttrNames = app.entities->collect(e | e.attributes)->flatten()->collect(a | a.name)]
+[for (name : String | allAttrNames->asSet())]
+- [name/]
+[/for]
+[/let]
+
+[comment ================================================================ /]
+[comment             NESTED COLLECT WITH FLATTEN                          /]
+[comment ================================================================ /]
+
+4. Nested Collect with Flatten
+------------------------------
+[comment]
+  When collecting collections, use flatten to
+  merge nested collections into a single level.
+[/comment]
+
+All attributes (flattened from entities):
+[for (attr : Attribute | app.entities->collect(e | e.attributes)->flatten())]
+- [attr.name/] ([attr.dataType/])
+[/for]
+
+All form fields (flattened from pages/forms):
+[let allFields = app.pages
+    ->collect(p | p.components->select(c | c.oclIsTypeOf(Form)))
+    ->flatten()
+    ->collect(c | c.oclAsType(Form).fields)
+    ->flatten()]
+[for (field : Field | allFields)]
+- [field.name/] ([field.fieldType/])
+[/for]
+[/let]
+
+[comment ================================================================ /]
+[comment             COLLECT FOR STATISTICS                               /]
+[comment ================================================================ /]
+
+5. Collect for Statistics
+-------------------------
+[comment]
+  Use collect to extract numeric values for
+  statistical operations like sum, min, max.
+[/comment]
+
+Statistics:
+- Total pages: [app.pages->size()/]
+- Total entities: [app.entities->size()/]
+- Total attributes: [app.entities->collect(e | e.attributes->size())->sum()/]
+- Total relationships: [app.entities->collect(e | e.relationships->size())->sum()/]
+- Average attributes per entity: [app.entities->collect(e | e.attributes->size())->sum() / app.entities->size()/]
+
+DataTable page sizes:
+[let pageSizes = app.pages
+    ->collect(p | p.components->select(c | c.oclIsTypeOf(DataTable)))
+    ->flatten()
+    ->collect(c | c.oclAsType(DataTable).pageSize)]
+- Configured tables: [pageSizes->size()/]
+[if (pageSizes->notEmpty())]
+- Total rows visible: [pageSizes->sum()/]
+- Smallest page size: [pageSizes->min()/]
+- Largest page size: [pageSizes->max()/]
+[/if]
+[/let]
+
+[comment ================================================================ /]
+[comment             COLLECT WITH CONDITIONAL                             /]
+[comment ================================================================ /]
+
+6. Collect with Conditional Expression
+--------------------------------------
+[comment]
+  Use if-then-else within collect to conditionally
+  transform elements.
+[/comment]
+
+Attribute nullability labels:
+[for (entity : Entity | app.entities)]
+[entity.name/]:
+[let labels = entity.attributes->collect(a |
+    a.name + ': ' + if a.isNullable then 'optional' else 'required' endif)]
+[for (label : String | labels)]
+  [label/]
+[/for]
+[/let]
+[/for]
+
+[/file]
+[/template]

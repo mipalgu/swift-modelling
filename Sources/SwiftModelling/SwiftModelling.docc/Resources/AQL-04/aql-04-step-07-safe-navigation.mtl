@@ -1,0 +1,185 @@
+[comment encoding = UTF-8 /]
+[module SafeNavigation('http://www.example.org/webapp')]
+
+[comment]
+  Safe Navigation in MTL Templates
+
+  This template demonstrates handling optional references
+  and nullable values gracefully using AQL conditionals.
+
+  Safe navigation prevents generation errors when model
+  elements may be missing or unset.
+[/comment]
+
+[template main(app : WebApp)]
+[file ('safe-navigation.txt', 'overwrite', 'UTF-8')]
+Safe Navigation with AQL Expressions
+====================================
+
+Application: [app.name/]
+
+[comment ================================================================ /]
+[comment             NULL CHECKING BEFORE ACCESS                          /]
+[comment ================================================================ /]
+
+1. Null Checking Before Access
+------------------------------
+[comment]
+  Use [if (reference <> null)] to check before
+  accessing properties of optional references.
+[/comment]
+
+Form bindings (with null checks):
+[for (page : Page | app.pages)]
+[for (comp : Component | page.components->select(c | c.oclIsTypeOf(Form)))]
+[let form = comp.oclAsType(Form)]
+[page.name/]/[form.name/]:
+[if (form.boundEntity <> null)]
+  Bound to entity: [form.boundEntity.name/]
+  Entity table: [form.boundEntity.tableName/]
+[else]
+  Not bound to any entity
+[/if]
+[/let]
+[/for]
+[/for]
+
+[comment ================================================================ /]
+[comment             SAFE STRING ACCESS                                   /]
+[comment ================================================================ /]
+
+2. Safe String Access
+---------------------
+[comment]
+  Check both for null and empty strings when
+  handling optional string properties.
+[/comment]
+
+Attribute details:
+[for (entity : Entity | app.entities)]
+[entity.name/]:
+[for (attr : Attribute | entity.attributes)]
+  [attr.name/]:
+[if (attr.defaultValue <> null and attr.defaultValue.size() > 0)]
+    Default: [attr.defaultValue/]
+[else]
+    Default: (none)
+[/if]
+[if (attr.maxLength > 0)]
+    Max length: [attr.maxLength/]
+[else]
+    Max length: unlimited
+[/if]
+[/for]
+
+[/for]
+
+[comment ================================================================ /]
+[comment             CONDITIONAL NAVIGATION                               /]
+[comment ================================================================ /]
+
+3. Conditional Navigation
+-------------------------
+[comment]
+  Only navigate through references when they exist.
+  Prevents errors from accessing properties on null.
+[/comment]
+
+DataTable data sources:
+[for (page : Page | app.pages)]
+[for (comp : Component | page.components->select(c | c.oclIsTypeOf(DataTable)))]
+[let table = comp.oclAsType(DataTable)]
+[page.name/]/[table.name/]:
+[if (table.dataSource <> null)]
+  Source entity: [table.dataSource.name/]
+  Available attributes:
+[for (attr : Attribute | table.dataSource.attributes)]
+    - [attr.name/]
+[/for]
+[else]
+  No data source configured
+[/if]
+[/let]
+[/for]
+[/for]
+
+[comment ================================================================ /]
+[comment             DEFAULT VALUES WITH CONDITIONALS                     /]
+[comment ================================================================ /]
+
+4. Default Values with Conditionals
+-----------------------------------
+[comment]
+  Provide default values when properties are unset.
+  Use if-else to supply sensible defaults.
+[/comment]
+
+Page information:
+[for (page : Page | app.pages)]
+[page.name/]:
+  Title: [if (page.title <> null and page.title.size() > 0)][page.title/][else][page.name/] - [app.name/][/if]
+  Route: [page.route/]
+  Auth: [if (page.requiresAuth)]Required[else]Public[/if]
+
+[/for]
+
+[comment ================================================================ /]
+[comment             SAFE COLLECTION ACCESS                               /]
+[comment ================================================================ /]
+
+5. Safe Collection Access
+-------------------------
+[comment]
+  Check collection size before accessing elements
+  at specific indices to avoid out-of-bounds errors.
+[/comment]
+
+First page details:
+[if (app.pages->notEmpty())]
+[let firstPage = app.pages->first()]
+  Name: [firstPage.name/]
+  Route: [firstPage.route/]
+[if (firstPage.linkedPages->notEmpty())]
+  First linked page: [firstPage.linkedPages->first().name/]
+[else]
+  No linked pages
+[/if]
+[/let]
+[else]
+  No pages defined
+[/if]
+
+[comment ================================================================ /]
+[comment             NESTED SAFE NAVIGATION                               /]
+[comment ================================================================ /]
+
+6. Nested Safe Navigation
+-------------------------
+[comment]
+  When navigating multiple levels, check at each
+  level to ensure the path is valid.
+[/comment]
+
+Field-to-attribute bindings:
+[for (page : Page | app.pages)]
+[for (comp : Component | page.components->select(c | c.oclIsTypeOf(Form)))]
+[let form = comp.oclAsType(Form)]
+[page.name/]/[form.name/] fields:
+[for (field : Field | form.fields)]
+  [field.name/]:
+[if (field.boundAttribute <> null)]
+    Bound to: [field.boundAttribute.name/]
+    Type: [field.boundAttribute.dataType/]
+[if (field.boundAttribute.maxLength > 0)]
+    Max length: [field.boundAttribute.maxLength/]
+[/if]
+[else]
+    Not bound to an attribute
+[/if]
+[/for]
+[/let]
+[/for]
+[/for]
+
+[/file]
+[/template]

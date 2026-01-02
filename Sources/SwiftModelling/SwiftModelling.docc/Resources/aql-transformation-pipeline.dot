@@ -1,0 +1,19 @@
+digraph AQLTransformationPipeline {
+    bgcolor="white"
+    rankdir=LR
+    node [shape=box, style=rounded, fontname="Arial", fontsize=12]
+    edge [fontname="Arial", fontsize=10]
+    
+    input [label="Input\nCollection" shape=box3d fillcolor="#e8f4f8" style=filled]
+    
+    step1 [label="->select(...)" shape=note fillcolor="#f8f4e8" style=filled]
+    step2 [label="->collect(...)" shape=note fillcolor="#f8f4e8" style=filled]
+    step3 [label="->flatten()" shape=note fillcolor="#f8f4e8" style=filled]
+    step4 [label="->unique()" shape=note fillcolor="#f8f4e8" style=filled]
+    
+    output [label="Result\nCollection" shape=box3d fillcolor="#e8f8f5" style=filled]
+    
+    input -> step1 -> step2 -> step3 -> step4 -> output
+    
+    legendTitle [label="AQL Transformation Pipeline" shape=plaintext fontname="Arial Bold" fontsize=14]
+}

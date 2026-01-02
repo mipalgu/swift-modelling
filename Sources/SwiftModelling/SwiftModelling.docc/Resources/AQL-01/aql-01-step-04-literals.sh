@@ -1,25 +1,38 @@
-#!/bin/bash
-# AQL-01 Step 4: Literal Values
+# Literals - Using constant values in expressions
+# AQL supports various literal types
 
-echo "=== AQL Basics: Literal Values ==="
-echo ""
-echo "String literals (enclosed in single quotes):"
-echo "  'Hello World'     - String literal"
-echo "  'TechCorp'        - Another string"
-echo "  'Engineering'     - Department name"
-echo ""
-echo "Numeric literals:"
-echo "  42                - Integer literal"
-echo "  3.14              - Real number literal"
-echo "  -5                - Negative integer"
-echo "  0.5               - Fractional number"
-echo ""
-echo "Boolean literals:"
-echo "  true              - Boolean true"
-echo "  false             - Boolean false"
-echo ""
-echo "Using literals in expressions:"
-echo "  employee.age + 1              - Add integer literal"
-echo "  employee.name + ' Smith'      - Concatenate string literal"
-echo "  employee.age > 30             - Compare with integer literal"
-echo "  employee.department = 'Sales' - Compare with string literal"
+# String literals
+swift-aql evaluate --model company-data.xmi \
+  --expression "'Hello, World!'"
+
+# Output: "Hello, World!"
+
+# Integer literals
+swift-aql evaluate --model company-data.xmi \
+  --expression "42"
+
+# Output: 42
+
+# Real (floating point) literals
+swift-aql evaluate --model company-data.xmi \
+  --expression "3.14159"
+
+# Output: 3.14159
+
+# Boolean literals
+swift-aql evaluate --model company-data.xmi \
+  --expression "true"
+
+# Output: true
+
+# Null literal
+swift-aql evaluate --model company-data.xmi \
+  --expression "null"
+
+# Output: null
+
+# Comparing with literals
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.founded = 1995"
+
+# Output: true

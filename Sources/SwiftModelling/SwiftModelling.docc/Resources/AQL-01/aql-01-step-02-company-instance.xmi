@@ -1,10 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<company:Company xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
-    xmlns:company="http://www.example.org/company" name="TechCorp">
-  <employees name="Alice Johnson" age="32" department="Engineering"/>
-  <employees name="Bob Smith" age="45" department="Sales"/>
-  <employees name="Carol Williams" age="28" department="Engineering"/>
-  <employees name="David Brown" age="38" department="Marketing"/>
-  <employees name="Eve Davis" age="29" department="HR"/>
-  <employees name="Frank Miller" age="51" department="Engineering"/>
-</company:Company>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:company="http://www.example.org/company">
+
+  <company:Company name="Acme Corp" founded="1995">
+    <departments name="Engineering" budget="500000.0" manager="//@departments.0/@employees.0">
+      <employees name="Alice Smith" salary="120000.0" age="35" title="Engineering Director" department="Engineering"/>
+      <employees name="Bob Chen" salary="95000.0" age="28" title="Senior Developer" department="Engineering" supervisor="//@departments.0/@employees.0"/>
+      <employees name="Carol Williams" salary="85000.0" age="32" title="Developer" department="Engineering" supervisor="//@departments.0/@employees.1"/>
+      <employees name="David Lee" salary="75000.0" age="25" title="Junior Developer" department="Engineering" supervisor="//@departments.0/@employees.1"/>
+    </departments>
+    <departments name="Marketing" budget="300000.0" manager="//@departments.1/@employees.0">
+      <employees name="Emma Davis" salary="110000.0" age="40" title="Marketing Director" department="Marketing"/>
+      <employees name="Frank Miller" salary="80000.0" age="30" title="Marketing Manager" department="Marketing" supervisor="//@departments.1/@employees.0"/>
+      <employees name="Grace Kim" salary="65000.0" age="26" title="Marketing Specialist" department="Marketing" supervisor="//@departments.1/@employees.1"/>
+    </departments>
+    <departments name="Finance" budget="200000.0" manager="//@departments.2/@employees.0">
+      <employees name="Henry Brown" salary="115000.0" age="45" title="Finance Director" department="Finance"/>
+      <employees name="Ivy Chen" salary="90000.0" age="33" title="Senior Accountant" department="Finance" supervisor="//@departments.2/@employees.0"/>
+    </departments>
+  </company:Company>
+</xmi:XMI>

@@ -1,53 +1,105 @@
-#!/bin/bash
-echo "=== AQL Advanced: Tuple Construction ==="
-echo ""
-echo "Tuples combine multiple values into structured records."
-echo ""
-echo "Ex 1: Simple tuple"
-echo "  Tuple{title='Book Title', pages=350}"
-echo "  Result: {title: 'Book Title', pages: 350}"
-echo ""
-echo "Ex 2: Tuple from model element"
-echo "  library.books->collect(b | Tuple{"
-echo "    title = b.title,"
-echo "    author = b.authors->first().name,"
-echo "    rating = b.rating"
-echo "  })"
-echo "  Result: [{title: '1984', author: 'Orwell', rating: 4.8}, ...]"
-echo ""
-echo "Ex 3: Nested tuples"
-echo "  library.authors->collect(a | Tuple{"
-echo "    author = a.name,"
-echo "    stats = Tuple{"
-echo "      bookCount = a.books->size(),"
-echo "      avgPages = a.books->collect(b | b.pages)->sum() / a.books->size(),"
-echo "      totalRating = a.books->collect(b | b.rating)->sum()"
-echo "    }"
-echo "  })"
-echo "  Result: Nested structure with author statistics"
-echo ""
-echo "Ex 4: Tuple with computed fields"
-echo "  library.books->collect(b | Tuple{"
-echo "    title = b.title,"
-echo "    pages = b.pages,"
-echo "    readingTime = (b.pages / 250.0) * 60,  -- minutes at 250 wpm"
-echo "    quality = if b.rating >= 4.5 then 'Excellent'"
-echo "              else if b.rating >= 4.0 then 'Good'"
-echo "              else 'Average'"
-echo "              endif endif"
-echo "  })"
-echo "  Result: Books with derived reading time and quality rating"
-echo ""
-echo "Ex 5: Aggregation tuple"
-echo "  let allBooks = library.books in"
-echo "  Tuple{"
-echo "    totalBooks = allBooks->size(),"
-echo "    totalPages = allBooks->collect(b | b.pages)->sum(),"
-echo "    avgRating = allBooks->collect(b | b.rating)->sum() / allBooks->size(),"
-echo "    categories = library.categories->collect(c | c.name)->asSet()"
-echo "  }"
-echo "  Result: Library summary statistics"
-echo ""
-echo "✅ Tuples create ad-hoc data structures without metamodel changes"
-echo "✅ Essential for reporting and data transformation"
-echo "✅ Support nested and computed fields"
+# Tuple Construction - Creating Structured Data Projections
+# Tuples allow you to create ad-hoc record structures with named fields
+
+# Basic tuple construction with literal values
+swift-aql evaluate --model webapp-data.xmi \
+  --expression "Tuple{title='Book Title', pages=350}"
+
+# Output: Tuple{title='Book Title', pages=350}
+
+# Collect with tuples for data reshaping (conceptual example)
+# books->collect(b | Tuple{title=b.title, author=b.author.name, rating=b.rating})
+# This pattern creates a collection of tuples, projecting specific fields
+
+# Tuple construction from model data
+swift-aql evaluate --model webapp-data.xmi \
+  --expression "Tuple{
+    appName = webapp.name,
+    pageCount = webapp.pages->size(),
+    entityCount = webapp.entities->size()
+  }"
+
+# Output: Tuple{appName='TaskManager', pageCount=7, entityCount=4}
+
+# Using tuples in collect operations for data projection
+swift-aql evaluate --model webapp-data.xmi \
+  --expression "webapp.pages->collect(p | Tuple{
+    name = p.name,
+    route = p.route,
+    componentCount = p.components->size(),
+    requiresAuth = p.requiresAuth
+  })"
+
+# Output: [
+#   Tuple{name='Dashboard', route='/', componentCount=3, requiresAuth=false},
+#   Tuple{name='TaskList', route='/tasks', componentCount=2, requiresAuth=true},
+#   ...
+# ]
+
+# Nested tuple construction
+swift-aql evaluate --model webapp-data.xmi \
+  --expression "webapp.entities->collect(e | Tuple{
+    entity = Tuple{name=e.name, tableName=e.tableName},
+    stats = Tuple{
+      attributeCount = e.attributes->size(),
+      relationshipCount = e.relationships->size()
+    }
+  })"
+
+# Output: [
+#   Tuple{entity=Tuple{name='Task', tableName='tasks'}, stats=Tuple{attributeCount=7, relationshipCount=2}},
+#   ...
+# ]
+
+# Tuples for data reshaping and reporting
+swift-aql evaluate --model webapp-data.xmi \
+  --expression "let pages = webapp.pages in
+    Tuple{
+      totalPages = pages->size(),
+      publicPages = pages->select(p | not p.requiresAuth)->size(),
+      protectedPages = pages->select(p | p.requiresAuth)->size(),
+      averageComponents = pages->collect(p | p.components->size())->sum() / pages->size()
+    }"
+
+# Output: Tuple{totalPages=7, publicPages=3, protectedPages=4, averageComponents=2.5}
+
+# Tuples with complex expressions
+swift-aql evaluate --model webapp-data.xmi \
+  --expression "webapp.entities->collect(e | Tuple{
+    name = e.name,
+    primaryKey = e.attributes->select(a | a.isPrimaryKey)->first().name,
+    requiredFields = e.attributes->select(a | not a.isNullable)->collect(a | a.name),
+    hasRelationships = e.relationships->notEmpty()
+  })"
+
+# Output: [
+#   Tuple{name='Task', primaryKey='id', requiredFields=['id', 'title', 'status'], hasRelationships=true},
+#   ...
+# ]
+
+# Tuple field access with dot notation
+swift-aql evaluate --model webapp-data.xmi \
+  --expression "let summary = Tuple{name=webapp.name, version=webapp.version} in
+    summary.name + ' v' + summary.version"
+
+# Output: 'TaskManager v1.0.0'
+
+# Tuples for creating custom view models
+swift-aql evaluate --model webapp-data.xmi \
+  --expression "webapp.pages->select(p | p.components->notEmpty())->collect(p |
+    Tuple{
+      pageInfo = p.name + ' (' + p.route + ')',
+      forms = p.components->select(c | c.oclIsKindOf(Form))->size(),
+      tables = p.components->select(c | c.oclIsKindOf(DataTable))->size(),
+      navigation = p.components->select(c | c.oclIsKindOf(Navigation))->size()
+    }
+  )"
+
+# Output: [
+#   Tuple{pageInfo='Dashboard (/)', forms=0, tables=2, navigation=1},
+#   Tuple{pageInfo='TaskList (/tasks)', forms=1, tables=1, navigation=0},
+#   ...
+# ]
+
+# Tuples are immutable once created
+# Fields can be accessed but not modified

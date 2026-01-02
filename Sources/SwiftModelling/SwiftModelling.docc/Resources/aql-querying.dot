@@ -1,0 +1,34 @@
+digraph AQLQuerying {
+    bgcolor="white"
+    rankdir=TB
+    node [shape=box, style=rounded, fontname="Arial", fontsize=12]
+    edge [fontname="Arial", fontsize=10]
+    
+    subgraph cluster_input {
+        label="Input"
+        style=rounded
+        bgcolor="#e8f4f8"
+        model [label="Model Instance" shape=box3d]
+    }
+    
+    subgraph cluster_query {
+        label="AQL Query Engine"
+        style=rounded
+        bgcolor="#f8f4e8"
+        
+        nav [label="Navigation" shape=box]
+        filter [label="Filtering" shape=box]
+        transform [label="Transformation" shape=box]
+    }
+    
+    subgraph cluster_output {
+        label="Output"
+        style=rounded
+        bgcolor="#e8f8f5"
+        results [label="Query Results" shape=ellipse]
+    }
+    
+    model -> nav -> filter -> transform -> results
+    
+    legendTitle [label="AQL Query Pipeline" shape=plaintext fontname="Arial Bold" fontsize=14]
+}

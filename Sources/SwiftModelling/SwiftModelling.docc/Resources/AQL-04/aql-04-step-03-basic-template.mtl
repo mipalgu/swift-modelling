@@ -1,0 +1,56 @@
+[comment encoding = UTF-8 /]
+[module BasicTemplate('http://www.example.org/webapp')]
+
+[comment]
+  Basic MTL Template with AQL Expressions
+
+  This template demonstrates how AQL expressions are embedded
+  within MTL templates for model-to-text transformations.
+
+  Key concept: AQL provides the query language for navigating
+  and filtering model elements, whilst MTL provides the template
+  structure for generating text output.
+[/comment]
+
+[comment ================================================================ /]
+[comment                     SIMPLE NAVIGATION                           /]
+[comment ================================================================ /]
+
+[template main(app : WebApp)]
+[comment]
+  AQL navigation expressions access model properties directly.
+  The expression 'app.name' navigates to the name attribute.
+[/comment]
+[file ('README.md', 'overwrite', 'UTF-8')]
+# [app.name/]
+
+Version: [app.version/]
+Base URL: [app.baseUrl/]
+
+## Overview
+
+This web application contains:
+- [app.pages->size()/] pages
+- [app.entities->size()/] data entities
+- [app.stylesheets->size()/] stylesheets
+
+[comment]
+  AQL's ->size() operation counts collection elements.
+  This is one of the most common collection operations.
+[/comment]
+
+## Pages
+
+[for (page : Page | app.pages)]
+- **[page.name/]**: `[page.route/]`
+[/for]
+
+## Entities
+
+[for (entity : Entity | app.entities)]
+- [entity.name/] (table: [entity.tableName/])
+[/for]
+
+Generated with swift-mtl
+[/file]
+[/template]

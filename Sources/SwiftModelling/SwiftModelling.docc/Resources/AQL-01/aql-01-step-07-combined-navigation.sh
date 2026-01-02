@@ -1,28 +1,32 @@
-#!/bin/bash
-# AQL-01 Step 7: Combined Navigation
+# Combined Navigation - Mixing single and multi-valued references
+# Chain different navigation types together
 
-echo "=== AQL Basics: Combined Navigation ==="
-echo ""
-echo "Chain multiple navigation steps together to access deeply nested properties:"
-echo ""
-echo "Example 1: Multi-step property access"
-echo "  AQL Expression: company.employees.department"
-echo "  Step 1: company → Get the company object"
-echo "  Step 2: .employees → Navigate to all employees (collection)"
-echo "  Step 3: .department → Get department from each employee (collection of strings)"
-echo ""
-echo "Example 2: If we had Projects with Teams with Members"
-echo "  AQL Expression: company.projects.teams.members.name"
-echo "  Navigates: company → projects → teams → members → name"
-echo "  Returns: All member names across all teams in all projects"
-echo ""
-echo "Example 3: Combining with other operations"
-echo "  AQL Expression: company.employees.age"
-echo "  Then use with operations: company.employees.age->sum()"
-echo "  Returns: Total sum of all employee ages"
-echo ""
-echo "Key Points:"
-echo "  - Navigation is left-to-right"
-echo "  - Each step operates on the result of the previous step"
-echo "  - Collections propagate through navigation chains"
-echo "  - Can combine navigation with operators (shown in later steps)"
+# From company to all employee salaries
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments.employees.salary"
+
+# Output: [120000.0, 95000.0, 85000.0, 75000.0, 110000.0, 80000.0, 65000.0, 115000.0, 90000.0]
+
+# From department to manager's title
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments->collect(d | d.manager.title)"
+
+# Output: ["Engineering Director", "Marketing Director", "Finance Director"]
+
+# Complex path: all supervisors' names
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments.employees->select(e | e.supervisor <> null).supervisor.name"
+
+# Output: Names of all supervisors (with duplicates)
+
+# Navigate and aggregate
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments.budget->sum()"
+
+# Output: 1000000.0 (total of all department budgets)
+
+# Navigate to specific element
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments->at(2).employees->first().name"
+
+# Output: "Henry Brown"

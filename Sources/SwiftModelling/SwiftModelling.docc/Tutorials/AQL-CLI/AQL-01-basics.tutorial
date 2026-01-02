@@ -20,7 +20,7 @@
             @Step {
                 Create a simple metamodel for testing AQL queries.
 
-                @Code(name: "Company.ecore", file: aql-01-step-01-metamodel.ecore)
+                @Code(name: "Company.ecore", file: aql-01-step-01-company-metamodel.ecore)
 
                 This metamodel defines a Company with Employees. Each Employee has a name, age, and department. We'll use this to explore AQL navigation.
             }
@@ -28,7 +28,7 @@
             @Step {
                 Create a model instance to query.
 
-                @Code(name: "company-instance.xmi", file: aql-01-step-02-instance.xmi)
+                @Code(name: "company-instance.xmi", file: aql-01-step-02-company-instance.xmi)
 
                 This model instance contains a company with several employees in different departments. We'll query this data using AQL expressions.
             }

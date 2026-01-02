@@ -1,0 +1,318 @@
+{
+  "name": "Acme Software Solutions",
+  "domain": "acme.com.au",
+  "departments": [
+    {
+      "id": "DEPT-ENG",
+      "name": "Engineering",
+      "code": "ENG",
+      "managerId": "MEMBER-001",
+      "memberIds": ["MEMBER-001", "MEMBER-002"]
+    },
+    {
+      "id": "DEPT-DESIGN",
+      "name": "Design",
+      "code": "DES",
+      "managerId": "MEMBER-003",
+      "memberIds": ["MEMBER-003", "MEMBER-004"]
+    },
+    {
+      "id": "DEPT-QA",
+      "name": "Quality Assurance",
+      "code": "QA",
+      "managerId": "MEMBER-005",
+      "memberIds": ["MEMBER-005", "MEMBER-006"]
+    }
+  ],
+  "members": [
+    {
+      "id": "MEMBER-001",
+      "name": "Alice Chen",
+      "email": "alice.chen@acme.com.au",
+      "role": "Engineering Lead",
+      "departmentId": "DEPT-ENG"
+    },
+    {
+      "id": "MEMBER-002",
+      "name": "Bob Williams",
+      "email": "bob.williams@acme.com.au",
+      "role": "Senior Developer",
+      "departmentId": "DEPT-ENG"
+    },
+    {
+      "id": "MEMBER-003",
+      "name": "Carol Thompson",
+      "email": "carol.thompson@acme.com.au",
+      "role": "Design Lead",
+      "departmentId": "DEPT-DESIGN"
+    },
+    {
+      "id": "MEMBER-004",
+      "name": "David Kim",
+      "email": "david.kim@acme.com.au",
+      "role": "UX Designer",
+      "departmentId": "DEPT-DESIGN"
+    },
+    {
+      "id": "MEMBER-005",
+      "name": "Emma Wilson",
+      "email": "emma.wilson@acme.com.au",
+      "role": "QA Lead",
+      "departmentId": "DEPT-QA"
+    },
+    {
+      "id": "MEMBER-006",
+      "name": "Frank Brown",
+      "email": "frank.brown@acme.com.au",
+      "role": "Test Engineer",
+      "departmentId": "DEPT-QA"
+    },
+    {
+      "id": "MEMBER-007",
+      "name": "Grace Lee",
+      "email": "grace.lee@acme.com.au",
+      "role": "Junior Developer",
+      "departmentId": "DEPT-ENG"
+    }
+  ],
+  "projects": [
+    {
+      "id": "PROJ-001",
+      "name": "Customer Portal Redesign",
+      "description": "Modernise the customer-facing portal with improved UX and performance",
+      "status": "ACTIVE",
+      "startDate": "2024-01-01",
+      "targetEndDate": "2024-06-30",
+      "budget": 250000.00,
+      "ownerId": "MEMBER-001",
+      "departmentId": "DEPT-ENG",
+      "teamMemberIds": ["MEMBER-001", "MEMBER-002", "MEMBER-003", "MEMBER-004", "MEMBER-007"],
+      "milestones": [
+        {
+          "id": "MS-001",
+          "name": "Design Phase Complete",
+          "dueDate": "2024-02-15",
+          "completed": true,
+          "deliverableIds": ["TASK-001", "TASK-002"]
+        },
+        {
+          "id": "MS-002",
+          "name": "Backend API Ready",
+          "dueDate": "2024-04-01",
+          "completed": false,
+          "deliverableIds": ["TASK-003", "TASK-004"]
+        },
+        {
+          "id": "MS-003",
+          "name": "Beta Release",
+          "dueDate": "2024-05-15",
+          "completed": false,
+          "deliverableIds": ["TASK-005"]
+        }
+      ],
+      "tasks": [
+        {
+          "id": "TASK-001",
+          "title": "Create wireframes",
+          "description": "Design wireframes for all major user flows",
+          "priority": "HIGH",
+          "status": "COMPLETED",
+          "estimatedHours": 40.0,
+          "actualHours": 45.0,
+          "dueDate": "2024-01-31",
+          "assigneeId": "MEMBER-004",
+          "dependencyIds": [],
+          "comments": [
+            {
+              "id": "CMT-001",
+              "text": "Initial wireframes completed and approved by stakeholders",
+              "timestamp": "2024-01-28T14:30:00Z",
+              "authorId": "MEMBER-004"
+            }
+          ]
+        },
+        {
+          "id": "TASK-002",
+          "title": "Design system components",
+          "description": "Create reusable UI component library based on wireframes",
+          "priority": "HIGH",
+          "status": "COMPLETED",
+          "estimatedHours": 60.0,
+          "actualHours": 55.0,
+          "dueDate": "2024-02-15",
+          "assigneeId": "MEMBER-003",
+          "dependencyIds": ["TASK-001"],
+          "comments": [
+            {
+              "id": "CMT-002",
+              "text": "Component library ready for development handoff",
+              "timestamp": "2024-02-14T16:45:00Z",
+              "authorId": "MEMBER-003"
+            }
+          ]
+        },
+        {
+          "id": "TASK-003",
+          "title": "Implement authentication API",
+          "description": "Build OAuth 2.0 authentication endpoints with MFA support",
+          "priority": "CRITICAL",
+          "status": "COMPLETED",
+          "estimatedHours": 80.0,
+          "actualHours": 75.0,
+          "dueDate": "2024-03-15",
+          "assigneeId": "MEMBER-002",
+          "dependencyIds": [],
+          "comments": [
+            {
+              "id": "CMT-003",
+              "text": "OAuth flow working, starting MFA integration",
+              "timestamp": "2024-02-28T10:00:00Z",
+              "authorId": "MEMBER-002"
+            },
+            {
+              "id": "CMT-004",
+              "text": "MFA integration complete. Ready for review.",
+              "timestamp": "2024-03-10T15:20:00Z",
+              "authorId": "MEMBER-002"
+            }
+          ]
+        },
+        {
+          "id": "TASK-004",
+          "title": "Implement customer data API",
+          "description": "RESTful API for customer profile and preferences",
+          "priority": "HIGH",
+          "status": "IN_PROGRESS",
+          "estimatedHours": 60.0,
+          "actualHours": 25.0,
+          "dueDate": "2024-03-30",
+          "assigneeId": "MEMBER-002",
+          "dependencyIds": ["TASK-003"],
+          "comments": [
+            {
+              "id": "CMT-005",
+              "text": "Started implementation. Profile endpoints 50% complete.",
+              "timestamp": "2024-03-12T09:15:00Z",
+              "authorId": "MEMBER-002"
+            }
+          ]
+        },
+        {
+          "id": "TASK-005",
+          "title": "Frontend implementation",
+          "description": "Implement React frontend with design system components",
+          "priority": "HIGH",
+          "status": "IN_PROGRESS",
+          "estimatedHours": 120.0,
+          "actualHours": 40.0,
+          "dueDate": "2024-05-01",
+          "assigneeId": "MEMBER-001",
+          "dependencyIds": ["TASK-002", "TASK-003", "TASK-004"],
+          "comments": [
+            {
+              "id": "CMT-006",
+              "text": "Started early work on UI shell and routing",
+              "timestamp": "2024-03-05T11:30:00Z",
+              "authorId": "MEMBER-001"
+            }
+          ]
+        },
+        {
+          "id": "TASK-008",
+          "title": "Setup CI/CD pipeline",
+          "description": "Configure GitHub Actions for automated testing and deployment",
+          "priority": "MEDIUM",
+          "status": "NOT_STARTED",
+          "estimatedHours": 16.0,
+          "dueDate": "2024-03-20",
+          "assigneeId": "MEMBER-007",
+          "dependencyIds": [],
+          "comments": []
+        }
+      ]
+    },
+    {
+      "id": "PROJ-002",
+      "name": "Mobile App Testing Framework",
+      "description": "Automated testing framework for iOS and Android applications",
+      "status": "ACTIVE",
+      "startDate": "2024-03-01",
+      "targetEndDate": "2024-08-31",
+      "budget": 150000.00,
+      "ownerId": "MEMBER-005",
+      "departmentId": "DEPT-QA",
+      "teamMemberIds": ["MEMBER-005", "MEMBER-006"],
+      "milestones": [
+        {
+          "id": "MS-004",
+          "name": "Framework Architecture",
+          "dueDate": "2024-03-31",
+          "completed": true,
+          "deliverableIds": ["TASK-006"]
+        },
+        {
+          "id": "MS-005",
+          "name": "Core Framework Implementation",
+          "dueDate": "2024-05-31",
+          "completed": false,
+          "deliverableIds": ["TASK-009"]
+        }
+      ],
+      "tasks": [
+        {
+          "id": "TASK-006",
+          "title": "Design test framework architecture",
+          "description": "Define architecture for cross-platform test automation",
+          "priority": "HIGH",
+          "status": "COMPLETED",
+          "estimatedHours": 40.0,
+          "actualHours": 38.0,
+          "dueDate": "2024-03-15",
+          "assigneeId": "MEMBER-005",
+          "dependencyIds": [],
+          "comments": [
+            {
+              "id": "CMT-007",
+              "text": "Architecture document approved. Using XCUITest and Espresso with shared test specifications.",
+              "timestamp": "2024-03-14T13:00:00Z",
+              "authorId": "MEMBER-005"
+            }
+          ]
+        },
+        {
+          "id": "TASK-007",
+          "title": "Evaluate testing tools",
+          "description": "Compare XCUITest, Espresso, Appium, and Detox",
+          "priority": "MEDIUM",
+          "status": "COMPLETED",
+          "estimatedHours": 24.0,
+          "actualHours": 20.0,
+          "dueDate": "2024-03-20",
+          "assigneeId": "MEMBER-006",
+          "dependencyIds": [],
+          "comments": [
+            {
+              "id": "CMT-008",
+              "text": "Evaluation complete. Recommendation: native tools (XCUITest/Espresso) for reliability.",
+              "timestamp": "2024-03-18T16:30:00Z",
+              "authorId": "MEMBER-006"
+            }
+          ]
+        },
+        {
+          "id": "TASK-009",
+          "title": "Implement core test runner",
+          "description": "Build the cross-platform test runner with reporting capabilities",
+          "priority": "HIGH",
+          "status": "IN_PROGRESS",
+          "estimatedHours": 80.0,
+          "actualHours": 15.0,
+          "dueDate": "2024-05-15",
+          "assigneeId": "MEMBER-005",
+          "dependencyIds": ["TASK-006", "TASK-007"],
+          "comments": []
+        }
+      ]
+    }
+  ]
+}

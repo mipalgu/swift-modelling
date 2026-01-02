@@ -1,28 +1,32 @@
-#!/bin/bash
-# AQL-01 Step 6: Multi-valued Navigation
+# Multi-valued Navigation - Traversing collection references
+# Navigate from one object to multiple related objects
 
-echo "=== AQL Basics: Multi-valued Navigation ==="
-echo ""
-echo "Navigate through collections (multi-valued references):"
-echo ""
-echo "Example 1: Get all employees"
-echo "  AQL Expression: company.employees"
-echo "  Returns: Collection of all Employee objects"
-echo "  Result: [Alice Johnson, Bob Smith, Carol Williams, ...]"
-echo ""
-echo "Example 2: Get all employee names"
-echo "  AQL Expression: company.employees.name"
-echo "  Returns: Collection of all employee names (Strings)"
-echo "  Result: ['Alice Johnson', 'Bob Smith', 'Carol Williams', ...]"
-echo ""
-echo "Example 3: Get all employee ages"
-echo "  AQL Expression: company.employees.age"
-echo "  Returns: Collection of integers"
-echo "  Result: [32, 45, 28, 38, 29, 51]"
-echo ""
-echo "Example 4: Get all departments"
-echo "  AQL Expression: company.employees.department"
-echo "  Returns: Collection of department names (may include duplicates)"
-echo "  Result: ['Engineering', 'Sales', 'Engineering', 'Marketing', 'HR', 'Engineering']"
-echo ""
-echo "Key Point: When navigating from a collection, the result is also a collection"
+# Get all departments (multi-valued containment)
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments"
+
+# Output: [Department(Engineering), Department(Marketing), Department(Finance)]
+
+# Get all employees in first department
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments->first().employees"
+
+# Output: [Employee(Alice Smith), Employee(Bob Chen), Employee(Carol Williams), Employee(David Lee)]
+
+# Get department names
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments.name"
+
+# Output: ["Engineering", "Marketing", "Finance"]
+
+# Get all employee names across all departments
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments.employees.name"
+
+# Output: ["Alice Smith", "Bob Chen", "Carol Williams", ..., "Ivy Chen"]
+
+# Count elements in collection
+swift-aql evaluate --model company-data.xmi \
+  --expression "company.departments->size()"
+
+# Output: 3

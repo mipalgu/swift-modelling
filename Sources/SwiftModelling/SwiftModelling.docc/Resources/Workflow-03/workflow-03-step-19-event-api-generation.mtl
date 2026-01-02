@@ -1,0 +1,764 @@
+[comment encoding = UTF-8 /]
+[comment]
+  MTL Template: Generate Event-Driven API
+  Creates WebSocket and Server-Sent Events support for real-time sync
+  Part of the Cross-Format Integration tutorial
+[/comment]
+
+[module GenerateEventAPI('http://www.eclipse.org/emf/2002/Ecore')]
+
+[comment Main entry point /]
+[template public generate(pkg : EPackage)]
+[comment Generate event types /]
+[file ('Events.swift', false, 'UTF-8')]
+[generateEventTypes(pkg)/]
+[/file]
+
+[comment Generate WebSocket client /]
+[file ('WebSocketClient.swift', false, 'UTF-8')]
+[generateWebSocketClient(pkg)/]
+[/file]
+
+[comment Generate real-time sync manager /]
+[file ('RealTimeSyncManager.swift', false, 'UTF-8')]
+[generateSyncManager(pkg)/]
+[/file]
+[/template]
+
+[comment Generate event types /]
+[template private generateEventTypes(pkg : EPackage)]
+// Events.swift
+// Generated from [pkg.name/].ecore
+// Event types for real-time synchronisation
+
+import Foundation
+
+// MARK: - Event Protocol
+
+/// Protocol for all synchronisation events
+public protocol SyncEvent: Codable, Sendable {
+    /// Unique event identifier
+    var eventId: String { get }
+
+    /// Timestamp when event was created
+    var timestamp: Date { get }
+
+    /// Source that generated the event
+    var source: String { get }
+
+    /// Type identifier for the event
+    static var eventType: String { get }
+}
+
+// MARK: - Event Types
+
+/// Event indicating a model element was created
+public struct ElementCreatedEvent: SyncEvent {
+    public static let eventType = "element.created"
+
+    public let eventId: String
+    public let timestamp: Date
+    public let source: String
+    public let elementType: String
+    public let elementId: String
+    public let containerId: String?
+    public let properties: [String: String]
+
+    public init(
+        eventId: String = UUID().uuidString,
+        timestamp: Date = Date(),
+        source: String,
+        elementType: String,
+        elementId: String,
+        containerId: String? = nil,
+        properties: [String: String]
+    ) {
+        self.eventId = eventId
+        self.timestamp = timestamp
+        self.source = source
+        self.elementType = elementType
+        self.elementId = elementId
+        self.containerId = containerId
+        self.properties = properties
+    }
+}
+
+/// Event indicating a model element was updated
+public struct ElementUpdatedEvent: SyncEvent {
+    public static let eventType = "element.updated"
+
+    public let eventId: String
+    public let timestamp: Date
+    public let source: String
+    public let elementType: String
+    public let elementId: String
+    public let changedProperties: [PropertyChange]
+
+    public init(
+        eventId: String = UUID().uuidString,
+        timestamp: Date = Date(),
+        source: String,
+        elementType: String,
+        elementId: String,
+        changedProperties: [PropertyChange]
+    ) {
+        self.eventId = eventId
+        self.timestamp = timestamp
+        self.source = source
+        self.elementType = elementType
+        self.elementId = elementId
+        self.changedProperties = changedProperties
+    }
+}
+
+/// Event indicating a model element was deleted
+public struct ElementDeletedEvent: SyncEvent {
+    public static let eventType = "element.deleted"
+
+    public let eventId: String
+    public let timestamp: Date
+    public let source: String
+    public let elementType: String
+    public let elementId: String
+
+    public init(
+        eventId: String = UUID().uuidString,
+        timestamp: Date = Date(),
+        source: String,
+        elementType: String,
+        elementId: String
+    ) {
+        self.eventId = eventId
+        self.timestamp = timestamp
+        self.source = source
+        self.elementType = elementType
+        self.elementId = elementId
+    }
+}
+
+/// Event indicating a conflict was detected
+public struct ConflictDetectedEvent: SyncEvent {
+    public static let eventType = "sync.conflict"
+
+    public let eventId: String
+    public let timestamp: Date
+    public let source: String
+    public let elementId: String
+    public let elementType: String
+    public let conflictingSource: String
+    public let requiresResolution: Bool
+
+    public init(
+        eventId: String = UUID().uuidString,
+        timestamp: Date = Date(),
+        source: String,
+        elementId: String,
+        elementType: String,
+        conflictingSource: String,
+        requiresResolution: Bool
+    ) {
+        self.eventId = eventId
+        self.timestamp = timestamp
+        self.source = source
+        self.elementId = elementId
+        self.elementType = elementType
+        self.conflictingSource = conflictingSource
+        self.requiresResolution = requiresResolution
+    }
+}
+
+/// Event indicating synchronisation completed
+public struct SyncCompletedEvent: SyncEvent {
+    public static let eventType = "sync.completed"
+
+    public let eventId: String
+    public let timestamp: Date
+    public let source: String
+    public let changesApplied: Int
+    public let newVersion: String
+
+    public init(
+        eventId: String = UUID().uuidString,
+        timestamp: Date = Date(),
+        source: String,
+        changesApplied: Int,
+        newVersion: String
+    ) {
+        self.eventId = eventId
+        self.timestamp = timestamp
+        self.source = source
+        self.changesApplied = changesApplied
+        self.newVersion = newVersion
+    }
+}
+
+// MARK: - Property Change
+
+/// Represents a change to a single property
+public struct PropertyChange: Codable, Sendable {
+    public let propertyName: String
+    public let oldValue: String?
+    public let newValue: String
+
+    public init(propertyName: String, oldValue: String?, newValue: String) {
+        self.propertyName = propertyName
+        self.oldValue = oldValue
+        self.newValue = newValue
+    }
+}
+
+// MARK: - Event Envelope
+
+/// Wrapper for events with type information
+public struct EventEnvelope: Codable, Sendable {
+    public let type: String
+    public let payload: Data
+
+    public init<E: SyncEvent>(_ event: E) throws {
+        self.type = E.eventType
+        self.payload = try JSONEncoder().encode(event)
+    }
+
+    public func decode<E: SyncEvent>(_ eventType: E.Type) throws -> E {
+        try JSONDecoder().decode(E.self, from: payload)
+    }
+}
+
+// MARK: - Event Type Registry
+
+[for (cls : EClass | pkg.eClassifiers->filter(EClass))]
+/// Event for [cls.name/] creation
+public typealias [cls.name/]CreatedEvent = ElementCreatedEvent
+
+/// Event for [cls.name/] update
+public typealias [cls.name/]UpdatedEvent = ElementUpdatedEvent
+
+/// Event for [cls.name/] deletion
+public typealias [cls.name/]DeletedEvent = ElementDeletedEvent
+
+[/for]
+[/template]
+
+[comment Generate WebSocket client /]
+[template private generateWebSocketClient(pkg : EPackage)]
+// WebSocketClient.swift
+// Generated from [pkg.name/].ecore
+// WebSocket client for real-time event streaming
+
+import Foundation
+
+// MARK: - WebSocket Configuration
+
+/// Configuration for WebSocket connection
+public struct WebSocketConfiguration: Sendable {
+    public let url: URL
+    public let authToken: String?
+    public let reconnectDelay: TimeInterval
+    public let maxReconnectAttempts: Int
+
+    public static let production = WebSocketConfiguration(
+        url: URL(string: "wss://api.acme.com.au/v1/events")!,
+        authToken: nil,
+        reconnectDelay: 1.0,
+        maxReconnectAttempts: 5
+    )
+
+    public init(
+        url: URL,
+        authToken: String? = nil,
+        reconnectDelay: TimeInterval = 1.0,
+        maxReconnectAttempts: Int = 5
+    ) {
+        self.url = url
+        self.authToken = authToken
+        self.reconnectDelay = reconnectDelay
+        self.maxReconnectAttempts = maxReconnectAttempts
+    }
+}
+
+// MARK: - Connection State
+
+/// State of the WebSocket connection
+public enum ConnectionState: Sendable {
+    case disconnected
+    case connecting
+    case connected
+    case reconnecting(attempt: Int)
+    case failed(Error)
+}
+
+// MARK: - WebSocket Client
+
+/// Client for receiving real-time sync events
+@MainActor
+public final class SyncWebSocketClient: ObservableObject {
+    /// Current connection state
+    @Published public private(set) var connectionState: ConnectionState = .disconnected
+
+    /// Configuration
+    private let configuration: WebSocketConfiguration
+
+    /// WebSocket task
+    private var webSocketTask: URLSessionWebSocketTask?
+
+    /// URL session
+    private let session: URLSession
+
+    /// Event handlers
+    private var eventHandlers: [String: [(Data) -> Void]] = ['['/]:['/]]
+
+    /// Reconnect attempt counter
+    private var reconnectAttempts = 0
+
+    /// Initialise with configuration
+    public init(configuration: WebSocketConfiguration) {
+        self.configuration = configuration
+        self.session = URLSession(configuration: .default)
+    }
+
+    // MARK: - Connection Management
+
+    /// Connect to the WebSocket server
+    public func connect() async {
+        guard case .disconnected = connectionState else { return }
+
+        connectionState = .connecting
+
+        var request = URLRequest(url: configuration.url)
+        if let token = configuration.authToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorisation")
+        }
+
+        webSocketTask = session.webSocketTask(with: request)
+        webSocketTask?.resume()
+
+        connectionState = .connected
+        reconnectAttempts = 0
+
+        await receiveMessages()
+    }
+
+    /// Disconnect from the WebSocket server
+    public func disconnect() {
+        webSocketTask?.cancel(with: .normalClosure, reason: nil)
+        webSocketTask = nil
+        connectionState = .disconnected
+    }
+
+    /// Receive messages in a loop
+    private func receiveMessages() async {
+        guard let task = webSocketTask else { return }
+
+        do {
+            while case .connected = connectionState {
+                let message = try await task.receive()
+
+                switch message {
+                case .string(let text):
+                    if let data = text.data(using: .utf8) {
+                        handleMessage(data)
+                    }
+                case .data(let data):
+                    handleMessage(data)
+                @unknown default:
+                    break
+                }
+            }
+        } catch {
+            handleConnectionError(error)
+        }
+    }
+
+    /// Handle incoming message
+    private func handleMessage(_ data: Data) {
+        do {
+            let envelope = try JSONDecoder().decode(EventEnvelope.self, from: data)
+            if let handlers = eventHandlers['['/]envelope.type[']'/] {
+                for handler in handlers {
+                    handler(envelope.payload)
+                }
+            }
+        } catch {
+            print("Failed to decode event: \(error)")
+        }
+    }
+
+    /// Handle connection error
+    private func handleConnectionError(_ error: Error) {
+        if reconnectAttempts < configuration.maxReconnectAttempts {
+            reconnectAttempts += 1
+            connectionState = .reconnecting(attempt: reconnectAttempts)
+
+            Task {
+                try? await Task.sleep(nanoseconds: UInt64(configuration.reconnectDelay * 1_000_000_000))
+                await connect()
+            }
+        } else {
+            connectionState = .failed(error)
+        }
+    }
+
+    // MARK: - Event Subscription
+
+    /// Subscribe to events of a specific type
+    public func subscribe<E: SyncEvent>(
+        to eventType: E.Type,
+        handler: @escaping (E) -> Void
+    ) {
+        let typeKey = E.eventType
+        let wrapper: (Data) -> Void = { data in
+            do {
+                let event = try JSONDecoder().decode(E.self, from: data)
+                handler(event)
+            } catch {
+                print("Failed to decode event of type \(typeKey): \(error)")
+            }
+        }
+
+        if eventHandlers['['/]typeKey[']'/] == nil {
+            eventHandlers['['/]typeKey[']'/] = ['['/][']'/]
+        }
+        eventHandlers['['/]typeKey[']'/]?.append(wrapper)
+    }
+
+    /// Subscribe to all element events for a specific type
+    public func subscribeToElementEvents(
+        elementType: String,
+        onCreate: ((ElementCreatedEvent) -> Void)? = nil,
+        onUpdate: ((ElementUpdatedEvent) -> Void)? = nil,
+        onDelete: ((ElementDeletedEvent) -> Void)? = nil
+    ) {
+        if let onCreate = onCreate {
+            subscribe(to: ElementCreatedEvent.self) { event in
+                if event.elementType == elementType {
+                    onCreate(event)
+                }
+            }
+        }
+        if let onUpdate = onUpdate {
+            subscribe(to: ElementUpdatedEvent.self) { event in
+                if event.elementType == elementType {
+                    onUpdate(event)
+                }
+            }
+        }
+        if let onDelete = onDelete {
+            subscribe(to: ElementDeletedEvent.self) { event in
+                if event.elementType == elementType {
+                    onDelete(event)
+                }
+            }
+        }
+    }
+
+    // MARK: - Event Publishing
+
+    /// Send an event to the server
+    public func send<E: SyncEvent>(_ event: E) async throws {
+        guard let task = webSocketTask else {
+            throw APIError.networkError(NSError(domain: "WebSocket", code: -1))
+        }
+
+        let envelope = try EventEnvelope(event)
+        let data = try JSONEncoder().encode(envelope)
+        let message = URLSessionWebSocketTask.Message.data(data)
+
+        try await task.send(message)
+    }
+}
+[/template]
+
+[comment Generate sync manager /]
+[template private generateSyncManager(pkg : EPackage)]
+// RealTimeSyncManager.swift
+// Generated from [pkg.name/].ecore
+// Manager for real-time model synchronisation
+
+import Foundation
+import Combine
+
+// MARK: - Sync Manager
+
+/// Manages real-time synchronisation between local and remote models
+@MainActor
+public final class RealTimeSyncManager: ObservableObject {
+    /// The API client for REST operations
+    private let apiClient: ProjectManagementAPI
+
+    /// The WebSocket client for real-time events
+    private let webSocketClient: SyncWebSocketClient
+
+    /// Local change buffer
+    @Published public private(set) var pendingChanges: [Change] = ['['/][']'/]
+
+    /// Conflict queue
+    @Published public private(set) var unresolvedConflicts: [Conflict] = ['['/][']'/]
+
+    /// Sync status
+    @Published public private(set) var isSyncing = false
+
+    /// Source identifier for this client
+    public let sourceId: String
+
+    /// Combine subscriptions
+    private var cancellables = Set<AnyCancellable>()
+
+    /// Initialise sync manager
+    public init(
+        apiClient: ProjectManagementAPI,
+        webSocketClient: SyncWebSocketClient,
+        sourceId: String = "swift-\(UUID().uuidString.prefix(8))"
+    ) {
+        self.apiClient = apiClient
+        self.webSocketClient = webSocketClient
+        self.sourceId = sourceId
+
+        setupEventHandlers()
+    }
+
+    // MARK: - Setup
+
+    /// Configure event handlers
+    private func setupEventHandlers() {
+        // Handle incoming create events
+        webSocketClient.subscribe(to: ElementCreatedEvent.self) { ['['/]weak self[']'/] event in
+            guard let self = self, event.source != self.sourceId else { return }
+            Task { @MainActor in
+                await self.handleRemoteCreate(event)
+            }
+        }
+
+        // Handle incoming update events
+        webSocketClient.subscribe(to: ElementUpdatedEvent.self) { ['['/]weak self[']'/] event in
+            guard let self = self, event.source != self.sourceId else { return }
+            Task { @MainActor in
+                await self.handleRemoteUpdate(event)
+            }
+        }
+
+        // Handle incoming delete events
+        webSocketClient.subscribe(to: ElementDeletedEvent.self) { ['['/]weak self[']'/] event in
+            guard let self = self, event.source != self.sourceId else { return }
+            Task { @MainActor in
+                await self.handleRemoteDelete(event)
+            }
+        }
+
+        // Handle conflict events
+        webSocketClient.subscribe(to: ConflictDetectedEvent.self) { ['['/]weak self[']'/] event in
+            guard let self = self else { return }
+            Task { @MainActor in
+                await self.handleConflict(event)
+            }
+        }
+    }
+
+    // MARK: - Connection
+
+    /// Start real-time synchronisation
+    public func start() async {
+        await webSocketClient.connect()
+
+        // Pull any changes since last sync
+        do {
+            let changeSet = try await apiClient.pullChanges()
+            await applyRemoteChanges(changeSet)
+        } catch {
+            print("Failed to pull initial changes: \(error)")
+        }
+    }
+
+    /// Stop real-time synchronisation
+    public func stop() {
+        webSocketClient.disconnect()
+    }
+
+    // MARK: - Local Changes
+
+    /// Record a local element creation
+    public func recordCreate(elementType: String, elementId: String, properties: [String: String]) {
+        let change = Change(
+            id: UUID().uuidString,
+            type: .add,
+            elementType: elementType,
+            elementId: elementId,
+            properties: properties
+        )
+        pendingChanges.append(change)
+
+        // Broadcast to other clients
+        let event = ElementCreatedEvent(
+            source: sourceId,
+            elementType: elementType,
+            elementId: elementId,
+            properties: properties
+        )
+        Task {
+            try? await webSocketClient.send(event)
+        }
+    }
+
+    /// Record a local element update
+    public func recordUpdate(elementType: String, elementId: String, changes: [PropertyChange]) {
+        var properties: [String: String] = [:]
+        for change in changes {
+            properties['['/]change.propertyName[']'/] = change.newValue
+        }
+
+        let change = Change(
+            id: UUID().uuidString,
+            type: .update,
+            elementType: elementType,
+            elementId: elementId,
+            properties: properties
+        )
+        pendingChanges.append(change)
+
+        // Broadcast to other clients
+        let event = ElementUpdatedEvent(
+            source: sourceId,
+            elementType: elementType,
+            elementId: elementId,
+            changedProperties: changes
+        )
+        Task {
+            try? await webSocketClient.send(event)
+        }
+    }
+
+    /// Record a local element deletion
+    public func recordDelete(elementType: String, elementId: String) {
+        let change = Change(
+            id: UUID().uuidString,
+            type: .delete,
+            elementType: elementType,
+            elementId: elementId,
+            properties: [:]
+        )
+        pendingChanges.append(change)
+
+        // Broadcast to other clients
+        let event = ElementDeletedEvent(
+            source: sourceId,
+            elementType: elementType,
+            elementId: elementId
+        )
+        Task {
+            try? await webSocketClient.send(event)
+        }
+    }
+
+    // MARK: - Sync Operations
+
+    /// Push pending changes to server
+    public func pushChanges() async throws {
+        guard !pendingChanges.isEmpty else { return }
+
+        isSyncing = true
+        defer { isSyncing = false }
+
+        let changeSet = ChangeSet(
+            timestamp: Date(),
+            source: sourceId,
+            changes: pendingChanges
+        )
+
+        do {
+            let result = try await apiClient.pushChanges(changeSet)
+            if result.success {
+                pendingChanges.removeAll()
+            }
+        } catch APIError.conflict(let report) {
+            unresolvedConflicts.append(contentsOf: report.conflicts)
+            throw APIError.conflict(report)
+        }
+    }
+
+    // MARK: - Remote Event Handlers
+
+    private func handleRemoteCreate(_ event: ElementCreatedEvent) async {
+        // Notify observers about remote creation
+        NotificationCenter.default.post(
+            name: .remoteElementCreated,
+            object: nil,
+            userInfo: ["event": event]
+        )
+    }
+
+    private func handleRemoteUpdate(_ event: ElementUpdatedEvent) async {
+        // Check for conflicts with pending changes
+        let conflicts = pendingChanges.filter { change in
+            change.elementId == event.elementId && change.type == .update
+        }
+
+        if !conflicts.isEmpty {
+            // Local change conflicts with remote
+            let conflictEvent = ConflictDetectedEvent(
+                source: sourceId,
+                elementId: event.elementId,
+                elementType: event.elementType,
+                conflictingSource: event.source,
+                requiresResolution: true
+            )
+            await handleConflict(conflictEvent)
+        } else {
+            // No conflict, notify observers
+            NotificationCenter.default.post(
+                name: .remoteElementUpdated,
+                object: nil,
+                userInfo: ["event": event]
+            )
+        }
+    }
+
+    private func handleRemoteDelete(_ event: ElementDeletedEvent) async {
+        // Remove from pending changes if we have updates for this element
+        pendingChanges.removeAll { $0.elementId == event.elementId }
+
+        NotificationCenter.default.post(
+            name: .remoteElementDeleted,
+            object: nil,
+            userInfo: ["event": event]
+        )
+    }
+
+    private func handleConflict(_ event: ConflictDetectedEvent) async {
+        // Add to unresolved conflicts
+        // In a real app, this would trigger UI for conflict resolution
+        print("Conflict detected for \(event.elementType) [\(event.elementId)]")
+    }
+
+    private func applyRemoteChanges(_ changeSet: ChangeSet) async {
+        for change in changeSet.changes {
+            switch change.type {
+            case .add:
+                NotificationCenter.default.post(
+                    name: .remoteElementCreated,
+                    object: nil,
+                    userInfo: ["change": change]
+                )
+            case .update:
+                NotificationCenter.default.post(
+                    name: .remoteElementUpdated,
+                    object: nil,
+                    userInfo: ["change": change]
+                )
+            case .delete:
+                NotificationCenter.default.post(
+                    name: .remoteElementDeleted,
+                    object: nil,
+                    userInfo: ["change": change]
+                )
+            }
+        }
+    }
+}
+
+// MARK: - Notification Names
+
+extension Notification.Name {
+    static let remoteElementCreated = Notification.Name("remoteElementCreated")
+    static let remoteElementUpdated = Notification.Name("remoteElementUpdated")
+    static let remoteElementDeleted = Notification.Name("remoteElementDeleted")
+}
+[/template]
