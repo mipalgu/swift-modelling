@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<library:Library xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:library="http://www.example.org/library" name="City Library - Full Collection">
+
+  <!-- Authors - Expanded collection -->
+  <authors name="George Orwell" nationality="British"/>
+  <authors name="Jane Austen" nationality="British"/>
+  <authors name="Mark Twain" nationality="American"/>
+  <authors name="J.K. Rowling" nationality="British"/>
+  <authors name="Isaac Asimov" nationality="American"/>
+  <authors name="Agatha Christie" nationality="British"/>
+  <authors name="Ernest Hemingway" nationality="American"/>
+  <authors name="F. Scott Fitzgerald" nationality="American"/>
+  <authors name="Charles Dickens" nationality="British"/>
+  <authors name="Leo Tolstoy" nationality="Russian"/>
+  <authors name="Fyodor Dostoevsky" nationality="Russian"/>
+  <authors name="Gabriel García Márquez" nationality="Colombian"/>
+
+  <!-- Books - Full collection with varied properties for collection operations -->
+  <books title="1984" isbn="978-0451524935" pages="328" available="true" rating="4.7"/>
+  <books title="Animal Farm" isbn="978-0451526342" pages="141" available="true" rating="4.6"/>
+  <books title="Pride and Prejudice" isbn="978-0141439518" pages="432" available="false" rating="4.8"/>
+  <books title="Emma" isbn="978-0141439587" pages="474" available="true" rating="4.5"/>
+  <books title="Sense and Sensibility" isbn="978-0141439662" pages="409" available="true" rating="4.6"/>
+  <books title="Mansfield Park" isbn="978-0141439808" pages="560" available="false" rating="4.3"/>
+  <books title="The Adventures of Tom Sawyer" isbn="978-0486400778" pages="272" available="true" rating="4.3"/>
+  <books title="The Adventures of Huckleberry Finn" isbn="978-0486280615" pages="366" available="false" rating="4.4"/>
+  <books title="Harry Potter and the Philosopher's Stone" isbn="978-0747532699" pages="223" available="true" rating="4.9"/>
+  <books title="Harry Potter and the Chamber of Secrets" isbn="978-0747538493" pages="251" available="true" rating="4.8"/>
+  <books title="Harry Potter and the Prisoner of Azkaban" isbn="978-0747542155" pages="317" available="true" rating="4.9"/>
+  <books title="Foundation" isbn="978-0553293357" pages="255" available="true" rating="4.5"/>
+  <books title="I, Robot" isbn="978-0553382563" pages="224" available="true" rating="4.3"/>
+  <books title="The Gods Themselves" isbn="978-0553288100" pages="288" available="false" rating="4.2"/>
+  <books title="Murder on the Orient Express" isbn="978-0062693662" pages="256" available="false" rating="4.6"/>
+  <books title="And Then There Were None" isbn="978-0062073488" pages="272" available="true" rating="4.7"/>
+  <books title="The Murder of Roger Ackroyd" isbn="978-0062073563" pages="312" available="true" rating="4.5"/>
+  <books title="Death on the Nile" isbn="978-0062073556" pages="326" available="true" rating="4.4"/>
+  <books title="The Old Man and the Sea" isbn="978-0684801223" pages="127" available="true" rating="4.1"/>
+  <books title="For Whom the Bell Tolls" isbn="978-0684803357" pages="471" available="true" rating="4.3"/>
+  <books title="The Great Gatsby" isbn="978-0743273565" pages="180" available="true" rating="4.4"/>
+  <books title="A Tale of Two Cities" isbn="978-0141439600" pages="448" available="true" rating="4.3"/>
+  <books title="Great Expectations" isbn="978-0141439563" pages="544" available="false" rating="4.2"/>
+  <books title="War and Peace" isbn="978-0143039990" pages="1296" available="true" rating="4.5"/>
+  <books title="Anna Karenina" isbn="978-0143035008" pages="864" available="true" rating="4.6"/>
+  <books title="Crime and Punishment" isbn="978-0143058144" pages="671" available="true" rating="4.5"/>
+  <books title="The Brothers Karamazov" isbn="978-0374528379" pages="796" available="false" rating="4.7"/>
+  <books title="One Hundred Years of Solitude" isbn="978-0060883287" pages="417" available="true" rating="4.6"/>
+  <books title="Love in the Time of Cholera" isbn="978-0307389732" pages="368" available="true" rating="4.5"/>
+
+  <!-- Categories - Comprehensive classification -->
+  <categories name="Classic Literature"/>
+  <categories name="Political Fiction"/>
+  <categories name="Fantasy"/>
+  <categories name="Science Fiction"/>
+  <categories name="Mystery"/>
+  <categories name="American Literature"/>
+  <categories name="British Literature"/>
+  <categories name="Russian Literature"/>
+  <categories name="Latin American Literature"/>
+
+</library:Library>

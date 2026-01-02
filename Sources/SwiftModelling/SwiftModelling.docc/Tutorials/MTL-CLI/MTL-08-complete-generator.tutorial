@@ -57,7 +57,7 @@
                 Helper templates run faster
 
                 @Justification {
-                    Incorrect. Performance is not the reason. Helper templates improve code organization and reuse, not execution speed.
+                    Incorrect. Performance is not the reason. Helper templates improve code organisation and reuse, not execution speed.
                 }
             }
 

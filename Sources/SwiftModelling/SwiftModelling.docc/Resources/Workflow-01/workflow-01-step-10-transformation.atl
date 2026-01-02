@@ -1,0 +1,107 @@
+-- @path Shop=/Workflow-01/workflow-01-step-01-metamodel.ecore
+-- @path Reporting=/Workflow-01/workflow-01-step-09-reporting-metamodel.ecore
+
+module Shop2Reporting;
+create OUT : Reporting from IN : Shop;
+
+-- Main transformation: Shop to SalesReport
+rule Shop2SalesReport {
+    from
+        s : Shop!Shop
+    to
+        report : Reporting!SalesReport (
+            reportId <- 'REPORT-' + thisModule.getCurrentTimestamp(),
+            generatedDate <- thisModule.getCurrentDate(),
+            totalRevenue <- s.customers->collect(c | c.orders)->flatten()
+                ->collect(o | o.items)->flatten()
+                ->collect(i | i.quantity * i.product.price)->sum(),
+            totalOrders <- s.customers->collect(c | c.orders)->flatten()->size(),
+            categoryMetrics <- s.categories,
+            customerMetrics <- s.customers,
+            productMetrics <- s.products
+        )
+}
+
+-- Transform Category to CategoryMetric
+rule Category2CategoryMetric {
+    from
+        c : Shop!Category
+    to
+        metric : Reporting!CategoryMetric (
+            categoryName <- c.name,
+            productCount <- c.products->size(),
+            totalSales <- thisModule.calculateCategorySales(c),
+            avgProductPrice <- if c.products->size() > 0 then
+                c.products->collect(p | p.price)->sum() / c.products->size()
+            else
+                0.0
+            endif
+        )
+}
+
+-- Transform Customer to CustomerMetric
+rule Customer2CustomerMetric {
+    from
+        c : Shop!Customer
+    to
+        metric : Reporting!CustomerMetric (
+            customerId <- c.customerId,
+            customerName <- c.name,
+            orderCount <- c.orders->size(),
+            totalSpent <- c.orders->collect(o | o.items)->flatten()
+                ->collect(i | i.quantity * i.product.price)->sum(),
+            avgOrderValue <- if c.orders->size() > 0 then
+                c.orders->collect(o | o.items)->flatten()
+                    ->collect(i | i.quantity * i.product.price)->sum() / c.orders->size()
+            else
+                0.0
+            endif
+        )
+}
+
+-- Transform Product to ProductMetric
+rule Product2ProductMetric {
+    from
+        p : Shop!Product
+    to
+        metric : Reporting!ProductMetric (
+            productId <- p.productId,
+            productName <- p.name,
+            unitsSold <- thisModule.calculateUnitsSold(p),
+            revenue <- thisModule.calculateProductRevenue(p),
+            averageRating <- if p.reviews->size() > 0 then
+                p.reviews->collect(r | r.rating)->sum() / p.reviews->size()
+            else
+                0.0
+            endif
+        )
+}
+
+-- Helper: Calculate total sales for a category
+helper def: calculateCategorySales(cat : Shop!Category) : Real =
+    Shop!OrderItem.allInstances()
+        ->select(i | i.product.category = cat)
+        ->collect(i | i.quantity * i.product.price)
+        ->sum();
+
+-- Helper: Calculate units sold for a product
+helper def: calculateUnitsSold(prod : Shop!Product) : Integer =
+    Shop!OrderItem.allInstances()
+        ->select(i | i.product = prod)
+        ->collect(i | i.quantity)
+        ->sum();
+
+-- Helper: Calculate revenue for a product
+helper def: calculateProductRevenue(prod : Shop!Product) : Real =
+    Shop!OrderItem.allInstances()
+        ->select(i | i.product = prod)
+        ->collect(i | i.quantity * i.product.price)
+        ->sum();
+
+-- Helper: Get current timestamp
+helper def: getCurrentTimestamp() : String =
+    '2024-01-15T10:30:00Z';
+
+-- Helper: Get current date
+helper def: getCurrentDate() : String =
+    '2024-01-15';

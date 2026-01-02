@@ -1,0 +1,115 @@
+-- @path BlogV1=/Workflow-03/workflow-03-step-01-original-metamodel.ecore
+-- @path BlogV2=/Workflow-03/workflow-03-step-02-evolved-metamodel.ecore
+
+module BlogV1toV2;
+create OUT : BlogV2 from IN : BlogV1;
+
+-- Main rule: Migrate Blog from v1 to v2
+rule Blog2Blog {
+    from
+        b1 : BlogV1!Blog
+    to
+        b2 : BlogV2!Blog (
+            title <- b1.title,
+            url <- b1.url,
+            description <- thisModule.deriveDescription(b1),
+            language <- 'en',  -- Default language for v2
+            posts <- b1.posts,
+            authors <- b1.authors,
+            categories <- thisModule.createDefaultCategories()
+        )
+}
+
+-- Migrate Post from v1 to v2 with new attributes
+rule Post2Post {
+    from
+        p1 : BlogV1!Post
+    to
+        p2 : BlogV2!Post (
+            title <- p1.title,
+            content <- p1.content,
+            publishDate <- p1.publishDate,
+            published <- true,  -- Assume all existing posts are published
+            slug <- thisModule.generateSlug(p1.title),
+            viewCount <- 0,  -- Initialize to zero
+            author <- p1.author,
+            category <- thisModule.inferCategory(p1),
+            comments <- p1.comments,
+            tags <- thisModule.extractTags(p1)
+        )
+}
+
+-- Migrate Author from v1 to v2 with new fields
+rule Author2Author {
+    from
+        a1 : BlogV1!Author
+    to
+        a2 : BlogV2!Author (
+            name <- a1.name,
+            email <- a1.email,
+            bio <- 'Author bio not yet provided.',  -- Default bio
+            avatarUrl <- thisModule.generateGravatarUrl(a1.email)
+        )
+}
+
+-- Migrate Comment from v1 to v2 with new fields
+rule Comment2Comment {
+    from
+        c1 : BlogV1!Comment
+    to
+        c2 : BlogV2!Comment (
+            authorName <- c1.authorName,
+            authorEmail <- '',  -- v1 didn't have email, default to empty
+            text <- c1.text,
+            timestamp <- c1.timestamp,
+            approved <- true  -- Assume all existing comments are approved
+        )
+}
+
+-- Helper: Derive blog description from title
+helper def: deriveDescription(blog : BlogV1!Blog) : String =
+    'Welcome to ' + blog.title + ' - a collection of insightful articles.';
+
+-- Helper: Generate URL-friendly slug from title
+helper def: generateSlug(title : String) : String =
+    title.toLower().replaceAll(' ', '-').replaceAll('[^a-z0-9-]', '');
+
+-- Helper: Generate Gravatar URL from email
+helper def: generateGravatarUrl(email : String) : String =
+    'https://www.gravatar.com/avatar/' + thisModule.md5Hash(email);
+
+-- Helper: Mock MD5 hash (in real implementation, would use actual MD5)
+helper def: md5Hash(input : String) : String =
+    'abc123def456';  -- Placeholder
+
+-- Helper: Infer category from post title keywords
+helper def: inferCategory(post : BlogV1!Post) : BlogV2!Category =
+    if post.title.contains('Tech') or post.title.contains('Code') then
+        thisModule.getOrCreateCategory('Technology')
+    else if post.title.contains('Design') or post.title.contains('Art') then
+        thisModule.getOrCreateCategory('Design')
+    else
+        thisModule.getOrCreateCategory('General')
+    endif endif;
+
+-- Helper: Extract tags from post content (simplified)
+helper def: extractTags(post : BlogV1!Post) : Sequence(BlogV2!Tag) =
+    Sequence{};  -- Simplified: would extract hashtags or keywords
+
+-- Helper: Create default categories for migrated blog
+helper def: createDefaultCategories() : Sequence(BlogV2!Category) =
+    Sequence{
+        thisModule.createCategory('Technology', 'Tech articles and tutorials'),
+        thisModule.createCategory('Design', 'Design and UX articles'),
+        thisModule.createCategory('General', 'General blog posts')
+    };
+
+-- Helper: Create a category
+helper def: createCategory(name : String, desc : String) : BlogV2!Category =
+    BlogV2!Category.newInstance().oclAsType(BlogV2!Category);
+
+-- Helper: Get or create category by name
+helper def: getOrCreateCategory(name : String) : BlogV2!Category =
+    BlogV2!Category.allInstances()
+        ->select(c | c.name = name)
+        ->first();

@@ -17,7 +17,7 @@ import Foundation
 struct AnalyzeCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "analyze",
-        abstract: "Analyze ATL transformation files",
+        abstract: "Analyse ATL transformation files",
         discussion: """
             Provides comprehensive analysis of ATL transformation files including
             complexity metrics, rule analysis, helper function analysis, and
@@ -30,7 +30,7 @@ struct AnalyzeCommand: AsyncParsableCommand {
             """
     )
 
-    @Argument(help: "ATL source files to analyze")
+    @Argument(help: "ATL source files to analyse")
     var atlFiles: [String] = []
 
     @Option(name: .long, help: "Analysis metrics to compute (complexity,rules,helpers,patterns)")
@@ -335,4 +335,4 @@ struct AnalyzeCommand: AsyncParsableCommand {
 ///
 /// The compile command processes ATL source files and produces compiled transformation
 /// modules that can be executed efficiently by the ATL virtual machine. Compilation
-/// includes syntax analysis, type checking, and optimization for performance.
+/// includes syntax analysis, type checking, and optimisation for performance.

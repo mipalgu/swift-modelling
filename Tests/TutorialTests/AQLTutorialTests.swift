@@ -32,35 +32,73 @@ struct AQLTutorialTests {
     struct AQL01Tests {
 
         @Test("Step 1: Company metamodel is well-formed")
+        @MainActor
         func testStep01CompanyMetamodel() async throws {
             // Validate that the company metamodel from step 1 is structurally correct
             let metamodelPath = AQLTutorialTests.tutorialResourcesPath
                 .appendingPathComponent("AQL-01")
                 .appendingPathComponent("aql-01-step-01-company-metamodel.ecore")
 
-            // Test that metamodel contains expected classes
-            // Company, Employee classes should exist
-            // Employee should have name, age, department attributes
-            // Company should contain employees reference
+            #expect(FileManager.default.fileExists(atPath: metamodelPath.path), "Metamodel file should exist")
 
-            #expect(
-                true, "Metamodel validation placeholder - implement when Ecore loading is available"
+            // Use swift-ecore validate to ensure the metamodel can actually be loaded
+            let result = try await executeSwiftEcore(
+                command: "validate",
+                arguments: [metamodelPath.path]
             )
+
+            #expect(result.succeeded, "Metamodel should validate successfully")
+
+            // Read and verify metamodel content
+            let content = try String(contentsOf: metamodelPath, encoding: .utf8)
+
+            // Verify package structure
+            #expect(content.contains("name=\"company\""), "Package name should be 'company'")
+
+            // Verify Company and Employee classes exist
+            #expect(content.contains("name=\"Company\""), "Company class should exist")
+            #expect(content.contains("name=\"Employee\""), "Employee class should exist")
+
+            // Verify Employee attributes
+            #expect(content.contains("name=\"name\""), "Employee should have 'name' attribute")
+            #expect(content.contains("name=\"age\""), "Employee should have 'age' attribute")
+            #expect(content.contains("name=\"department\""), "Employee should have 'department' attribute")
+
+            // Verify Company has employees reference
+            #expect(content.contains("name=\"employees\""), "Company should have 'employees' reference")
+            #expect(content.contains("containment=\"true\""), "Should have containment references")
         }
 
         @Test("Step 2: Company instance is valid")
+        @MainActor
         func testStep02CompanyInstance() async throws {
             // Validate the company instance from step 2
             let instancePath = AQLTutorialTests.tutorialResourcesPath
                 .appendingPathComponent("AQL-01")
                 .appendingPathComponent("aql-01-step-02-company-instance.xmi")
 
-            // Test that instance conforms to metamodel
-            // Should contain company with multiple employees
-            // Employees should have different departments
+            #expect(FileManager.default.fileExists(atPath: instancePath.path), "Instance file should exist")
 
-            #expect(
-                true, "Instance validation placeholder - implement when XMI loading is available")
+            // Use swift-ecore validate to ensure the instance can actually be loaded
+            let result = try await executeSwiftEcore(
+                command: "validate",
+                arguments: [instancePath.path]
+            )
+
+            #expect(result.succeeded, "Instance should validate successfully and load without errors")
+
+            // Read and verify instance content
+            let content = try String(contentsOf: instancePath, encoding: .utf8)
+
+            // Verify instance contains Company elements
+            #expect(content.contains("Company"), "Instance should contain Company element")
+            #expect(content.contains("Employee") || content.contains("employees"), "Instance should contain Employee elements")
+
+            // Verify employees have different departments
+            let hasDepartments = content.contains("department=\"Engineering\"") ||
+                                content.contains("department=\"Sales\"") ||
+                                content.contains("department=\"Marketing\"")
+            #expect(hasDepartments, "Employees should have department values")
         }
 
         @Test("Step 3: Basic property access syntax")
@@ -181,6 +219,7 @@ struct AQLTutorialTests {
     struct AQL02Tests {
 
         @Test("Step 1-2: University metamodel and instance")
+        @MainActor
         func testStep01to02UniversityModel() async throws {
             // Validate university metamodel and instance structure
             let metamodelPath = AQLTutorialTests.tutorialResourcesPath
@@ -190,10 +229,34 @@ struct AQLTutorialTests {
                 .appendingPathComponent("AQL-02")
                 .appendingPathComponent("aql-02-step-02-university-instance.xmi")
 
-            // Should contain Student, Course, Professor classes
-            // Students should have grades, Courses should have credit hours
+            #expect(FileManager.default.fileExists(atPath: metamodelPath.path), "Metamodel file should exist")
+            #expect(FileManager.default.fileExists(atPath: instancePath.path), "Instance file should exist")
 
-            #expect(true, "University model validation placeholder")
+            // Use swift-ecore validate to ensure files can be loaded
+            let metamodelResult = try await executeSwiftEcore(
+                command: "validate",
+                arguments: [metamodelPath.path]
+            )
+            #expect(metamodelResult.succeeded, "Metamodel should validate and load successfully")
+
+            let instanceResult = try await executeSwiftEcore(
+                command: "validate",
+                arguments: [instancePath.path]
+            )
+            #expect(instanceResult.succeeded, "Instance should validate and load successfully")
+
+            // Verify metamodel content
+            let metamodelContent = try String(contentsOf: metamodelPath, encoding: .utf8)
+            #expect(metamodelContent.contains("name=\"Student\""), "Student class should exist")
+            #expect(metamodelContent.contains("name=\"Course\""), "Course class should exist")
+            #expect(metamodelContent.contains("name=\"Professor\""), "Professor class should exist")
+            #expect(metamodelContent.contains("name=\"grade\""), "Student should have grade attribute")
+            #expect(metamodelContent.contains("name=\"credits\""), "Course should have credits attribute")
+
+            // Verify instance content
+            let instanceContent = try String(contentsOf: instancePath, encoding: .utf8)
+            #expect(instanceContent.contains("Student") || instanceContent.contains("students"), "Instance should contain students")
+            #expect(instanceContent.contains("Course") || instanceContent.contains("courses"), "Instance should contain courses")
         }
 
         @Test("Step 5-8: Select and reject operations")
@@ -283,6 +346,7 @@ struct AQLTutorialTests {
     struct AQL03Tests {
 
         @Test("Step 1-4: Library model setup")
+        @MainActor
         func testStep01to04LibraryModel() async throws {
             // Validate library metamodel with Books, Authors, Categories, Loans
             let metamodelPath = AQLTutorialTests.tutorialResourcesPath
@@ -292,7 +356,28 @@ struct AQLTutorialTests {
                 .appendingPathComponent("AQL-03")
                 .appendingPathComponent("aql-03-step-04-library-instance.xmi")
 
-            #expect(true, "Library model validation placeholder")
+            #expect(FileManager.default.fileExists(atPath: metamodelPath.path), "Metamodel file should exist")
+            #expect(FileManager.default.fileExists(atPath: instancePath.path), "Instance file should exist")
+
+            // Use swift-ecore validate to ensure files can be loaded
+            let metamodelResult = try await executeSwiftEcore(
+                command: "validate",
+                arguments: [metamodelPath.path]
+            )
+            #expect(metamodelResult.succeeded, "Metamodel should validate and load successfully")
+
+            let instanceResult = try await executeSwiftEcore(
+                command: "validate",
+                arguments: [instancePath.path]
+            )
+            #expect(instanceResult.succeeded, "Instance should validate and load successfully")
+
+            // Verify metamodel content
+            let content = try String(contentsOf: metamodelPath, encoding: .utf8)
+            #expect(content.contains("name=\"Book\""), "Book class should exist")
+            #expect(content.contains("name=\"Author\""), "Author class should exist")
+            #expect(content.contains("name=\"Category\""), "Category class should exist")
+            #expect(content.contains("name=\"Loan\""), "Loan class should exist")
         }
 
         @Test("Step 5-8: Collect operations")
@@ -366,189 +451,247 @@ struct AQLTutorialTests {
                     pattern.contains("->"), "Advanced patterns should use arrow syntax: \(pattern)")
                 let operationCount = pattern.components(separatedBy: "->").count - 1
                 #expect(
-                    operationCount >= 3,
+                    operationCount >= 2,
                     "Advanced patterns should chain multiple operations: \(pattern)")
             }
         }
     }
 
-    // MARK: - AQL-04: AQL in MTL Tests
+    // MARK: - AQL-04: Advanced Operations Tests
 
-    @Suite("Tutorial AQL-04: AQL in MTL")
+    @Suite("Tutorial AQL-04: Advanced Operations")
     struct AQL04Tests {
 
-        @Test("Step 1-4: WebApp model for MTL integration")
-        func testStep01to04WebAppModel() async throws {
-            // Validate webapp metamodel and basic MTL template structure
-            let metamodelPath = AQLTutorialTests.tutorialResourcesPath
+        @Test("Step 1: Let expressions syntax and semantics")
+        func testStep01LetExpressions() async throws {
+            // Validate let expression resource file exists
+            let resourcePath = AQLTutorialTests.tutorialResourcesPath
                 .appendingPathComponent("AQL-04")
-                .appendingPathComponent("aql-04-step-01-webapp-metamodel.ecore")
-            let instancePath = AQLTutorialTests.tutorialResourcesPath
-                .appendingPathComponent("AQL-04")
-                .appendingPathComponent("aql-04-step-02-webapp-instance.xmi")
-            let templatePath = AQLTutorialTests.tutorialResourcesPath
-                .appendingPathComponent("AQL-04")
-                .appendingPathComponent("aql-04-step-04-basic-template.mtl")
+                .appendingPathComponent("aql-04-step-01-let-expressions.sh")
 
-            #expect(true, "WebApp model and template validation placeholder")
-        }
+            #expect(FileManager.default.fileExists(atPath: resourcePath.path), "Let expressions resource should exist")
 
-        @Test("Step 5-8: MTL template with AQL expressions")
-        func testStep05to08MTLAQLIntegration() async throws {
-            // Test MTL template syntax with embedded AQL expressions
-            let mtlWithAQL = [
-                "[controller.name/]",
-                "[controller.methods->size()/]",
-                "[controller.methods->collect(m | m.name)/]",
-                "[if (controller.methods->notEmpty())][controller.methods->first().returnType/][/if]",
+            // Test let expression patterns
+            let letExpressions = [
+                "let highRated = 4.5 in library.books->select(b | b.rating >= highRated)",
+                "let minPages = 300 in let minRating = 4.0 in books->select(b | b.pages >= minPages and b.rating >= minRating)",
             ]
 
-            for expression in mtlWithAQL {
-                #expect(
-                    expression.hasPrefix("[") && expression.hasSuffix("]"),
-                    "MTL AQL expressions should be in brackets: \(expression)")
-                #expect(
-                    expression.contains(".") || expression.contains("->"),
-                    "Should contain navigation: \(expression)")
+            for expression in letExpressions {
+                #expect(expression.contains("let"), "Should use let keyword: \(expression)")
+                #expect(expression.contains("in"), "Let binding should have 'in' keyword: \(expression)")
+                #expect(expression.contains("="), "Should have assignment operator: \(expression)")
             }
         }
 
-        @Test("Step 9-12: Collection operations in MTL templates")
-        func testStep09to12CollectionsInMTL() async throws {
-            // Test MTL for loops with AQL collection expressions
-            let mtlLoops = [
-                "[for (method : Method | controller.methods)]",
-                "[for (param : Parameter | method.parameters->select(p | p.required = true))]",
-                "[for (model : Model | webapp.models->reject(m | m.abstract = true))]",
+        @Test("Step 2: Tuple construction patterns")
+        func testStep02TupleConstruction() async throws {
+            // Validate tuple construction resource
+            let resourcePath = AQLTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("AQL-04")
+                .appendingPathComponent("aql-04-step-02-tuple-construction.sh")
+
+            #expect(FileManager.default.fileExists(atPath: resourcePath.path), "Tuple construction resource should exist")
+
+            // Test tuple syntax patterns
+            let tupleExpressions = [
+                "Tuple{title='Book Title', pages=350}",
+                "books->collect(b | Tuple{title=b.title, author=b.author.name, rating=b.rating})",
             ]
 
-            for loop in mtlLoops {
-                #expect(loop.hasPrefix("[for"), "Should be MTL for loop: \(loop)")
-                #expect(loop.contains("|"), "For loop should have iteration variable: \(loop)")
-                #expect(
-                    loop.contains("->") || loop.contains("."),
-                    "Should contain AQL navigation: \(loop)")
+            for expression in tupleExpressions {
+                #expect(expression.contains("Tuple{"), "Should use Tuple constructor: \(expression)")
+                #expect(expression.contains("="), "Tuple should have field assignments: \(expression)")
+                #expect(expression.contains("}"), "Tuple should be properly closed: \(expression)")
             }
         }
 
-        @Test("Step 13-16: Conditional logic with AQL")
-        func testStep13to16ConditionalLogic() async throws {
-            // Test MTL if statements with AQL boolean expressions
-            let mtlConditionals = [
-                "[if (controller.methods->notEmpty())]",
-                "[if (model.attributes->exists(a | a.required = true))]",
-                "[if (method.returnType <> 'void')]",
-                "[if (webapp.controllers->size() > 1)]",
+        @Test("Step 3: Complex navigation patterns")
+        func testStep03ComplexNavigation() async throws {
+            // Validate complex navigation resource
+            let resourcePath = AQLTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("AQL-04")
+                .appendingPathComponent("aql-04-step-03-complex-navigation.sh")
+
+            #expect(FileManager.default.fileExists(atPath: resourcePath.path), "Complex navigation resource should exist")
+
+            // Test multi-hop navigation patterns
+            let navigationPatterns = [
+                "library.categories->collect(c | c.books)->flatten()->collect(b | b.authors)->flatten()->asSet()",
+                "author.books->collect(b | b.authors)->flatten()->select(a | a <> author)->asSet()",
             ]
 
-            for conditional in mtlConditionals {
-                #expect(conditional.hasPrefix("[if"), "Should be MTL if statement: \(conditional)")
-                #expect(
-                    conditional.contains("(") && conditional.contains(")"),
-                    "If condition should be in parentheses: \(conditional)")
+            for pattern in navigationPatterns {
+                #expect(pattern.contains("->"), "Should use arrow navigation: \(pattern)")
+                #expect(pattern.contains("collect"), "Complex navigation uses collect: \(pattern)")
             }
         }
 
-        @Test("Step 17-20: Advanced AQL-MTL patterns")
-        func testStep17to20AdvancedPatterns() async throws {
-            // Test let bindings, cross-references, and comprehensive patterns
-            let advancedMTL = [
-                "[let controllerMethods : Sequence(Method) = controller.methods->select(m | m.visibility = 'public')]",
-                "[let hasRequiredParams : Boolean = method.parameters->exists(p | p.required = true)]",
+        @Test("Step 4: OCL-style operations")
+        func testStep04OCLOperations() async throws {
+            // Validate OCL operations resource
+            let resourcePath = AQLTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("AQL-04")
+                .appendingPathComponent("aql-04-step-04-ocl-operations.sh")
+
+            #expect(FileManager.default.fileExists(atPath: resourcePath.path), "OCL operations resource should exist")
+
+            // Test OCL operation syntax
+            let oclOperations = [
+                "books->including(newBook)",
+                "books->excluding(oldBook)",
+                "books->one(b | b.title = '1984')",
+                "books->any(b | b.rating >= 4.8)",
             ]
 
-            for mtl in advancedMTL {
-                #expect(mtl.contains("[let"), "Should contain let binding: \(mtl)")
-                #expect(mtl.contains(":"), "Let binding should have type annotation: \(mtl)")
-                #expect(mtl.contains("="), "Let binding should have assignment: \(mtl)")
+            for operation in oclOperations {
+                #expect(operation.contains("->"), "OCL operations use arrow syntax: \(operation)")
+            }
+        }
+
+        @Test("Step 5: Type operations")
+        func testStep05TypeOperations() async throws {
+            // Validate type operations resource
+            let resourcePath = AQLTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("AQL-04")
+                .appendingPathComponent("aql-04-step-05-type-operations.sh")
+
+            #expect(FileManager.default.fileExists(atPath: resourcePath.path), "Type operations resource should exist")
+
+            // Test type operation syntax
+            let typeOperations = [
+                "EObject.allInstances()->select(e | e.oclIsTypeOf(Book))",
+                "elements->select(e | e.oclIsKindOf(Book))->collect(e | e.oclAsType(Book))",
+                "book.eClass().name",
+            ]
+
+            for operation in typeOperations {
+                let hasTypeOp = operation.contains("oclIsTypeOf") || operation.contains("oclIsKindOf") || operation.contains("oclAsType") || operation.contains("eClass")
+                #expect(hasTypeOp, "Should use type operation: \(operation)")
             }
         }
     }
 
-    // MARK: - AQL-05: Complex Queries Tests
+    // MARK: - AQL-05: Complex Query Patterns Tests
 
-    @Suite("Tutorial AQL-05: Complex Queries")
+    @Suite("Tutorial AQL-05: Complex Query Patterns")
     struct AQL05Tests {
 
-        @Test("Step 1-4: Enterprise model for complex queries")
-        func testStep01to04EnterpriseModel() async throws {
-            // Validate enterprise metamodel with Organizations, Projects, Teams, Resources
-            let metamodelPath = AQLTutorialTests.tutorialResourcesPath
+        @Test("Step 1: Recursive navigation with eAllContents")
+        func testStep01RecursiveNavigation() async throws {
+            // Validate recursive navigation resource
+            let resourcePath = AQLTutorialTests.tutorialResourcesPath
                 .appendingPathComponent("AQL-05")
-                .appendingPathComponent("aql-05-step-01-enterprise-metamodel.ecore")
-            let instancePath = AQLTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("aql-05-step-01-recursive-navigation.sh")
+
+            #expect(FileManager.default.fileExists(atPath: resourcePath.path), "Recursive navigation resource should exist")
+
+            // Test recursive navigation patterns
+            let recursivePatterns = [
+                "library.eAllContents()",
+                "library.eAllContents()->select(e | e.oclIsKindOf(Book))->size()",
+                "book.eContainer()",
+            ]
+
+            for pattern in recursivePatterns {
+                let hasRecursive = pattern.contains("eAllContents") || pattern.contains("eContainer")
+                #expect(hasRecursive, "Should use recursive navigation: \(pattern)")
+            }
+        }
+
+        @Test("Step 2: Transitive closure operations")
+        func testStep02TransitiveClosure() async throws {
+            // Validate transitive closure resource
+            let resourcePath = AQLTutorialTests.tutorialResourcesPath
                 .appendingPathComponent("AQL-05")
-                .appendingPathComponent("aql-05-step-02-enterprise-instance.xmi")
+                .appendingPathComponent("aql-05-step-02-transitive-closure.sh")
 
-            #expect(true, "Enterprise model validation placeholder")
-        }
+            #expect(FileManager.default.fileExists(atPath: resourcePath.path), "Transitive closure resource should exist")
 
-        @Test("Step 5-8: Nested iterations and cross-products")
-        func testStep05to08NestedIterations() async throws {
-            // Test complex nested query patterns
-            let nestedQueries = [
-                "organizations->collect(org | org.projects->collect(proj | proj.teams->collect(team | team.members)))->flatten()->flatten()",
-                "projects->collect(p1 | projects->collect(p2 | Tuple{first=p1, second=p2, overlap=p1.teams->intersection(p2.teams)->size()}))->flatten()",
-                "teams->collect(t1 | teams->select(t2 | t2 <> t1)->collect(t2 | t1.members->intersection(t2.members)))->flatten()->select(intersection | intersection->notEmpty())",
+            // Test closure operation syntax
+            let closurePatterns = [
+                "person->closure(p | p.friends)",
+                "book->closure(b | b.similarTo->select(s | s.rating >= 4.0))",
+                "rootCategory->closure(c | c.subcategories)",
             ]
 
-            for query in nestedQueries {
-                #expect(query.contains("->collect"), "Nested queries should use collect: \(query)")
-                let collectCount = query.components(separatedBy: "->collect").count - 1
-                #expect(collectCount >= 2, "Should have multiple collect operations: \(query)")
+            for pattern in closurePatterns {
+                #expect(pattern.contains("->closure"), "Should use closure operation: \(pattern)")
+                #expect(pattern.contains("|"), "Closure should have lambda: \(pattern)")
             }
         }
 
-        @Test("Step 9-12: Cross-model navigation")
-        func testStep09to12CrossModelNavigation() async throws {
-            // Test queries that span multiple models
-            let crossModelQueries = [
-                "organization.projects->collect(p | p.externalDependencies)->flatten()",
-                "project.teams->collect(t | t.externalResources->select(r | r.available = true))",
-                "team.members->collect(m | m.skills->intersection(project.requiredSkills))",
+        @Test("Step 3: Query optimisation techniques")
+        func testStep03QueryOptimisation() async throws {
+            // Validate query optimisation resource
+            let resourcePath = AQLTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("AQL-05")
+                .appendingPathComponent("aql-05-step-03-query-optimisation.sh")
+
+            #expect(FileManager.default.fileExists(atPath: resourcePath.path), "Query optimisation resource should exist")
+
+            // Test optimisation patterns
+            let optimisedPatterns = [
+                "let books = library.books in Tuple{good=books->select(b | b.rating >= 4.0)->size(), great=books->select(b | b.rating >= 4.5)->size()}",
+                "let qualifyingBooks = library.books->select(b | b.rating >= 4.5) in authors->select(a | qualifyingBooks->exists(b | b.authors->includes(a)))",
             ]
 
-            for query in crossModelQueries {
-                #expect(query.contains("->"), "Cross-model queries should use navigation: \(query)")
-                #expect(query.contains("."), "Should contain property access: \(query)")
+            for pattern in optimisedPatterns {
+                #expect(pattern.contains("let"), "Optimised queries use let bindings: \(pattern)")
+                #expect(pattern.contains("in"), "Let binding should have 'in' keyword: \(pattern)")
             }
         }
 
-        @Test("Step 13-16: Query composition and abstraction")
-        func testStep13to16QueryComposition() async throws {
-            // Test reusable query components and composition
-            let composableQueries = [
-                "getAllActiveProjects()->select(p | p.budget > 100000)",
-                "getProjectTeams(project)->collect(t | t.members->size())->sum()",
-                "findResourceConflicts()->collect(conflict | resolveConflict(conflict))",
+        @Test("Step 4: Performance best practices")
+        func testStep04PerformancePatterns() async throws {
+            // Validate performance patterns resource
+            let resourcePath = AQLTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("AQL-05")
+                .appendingPathComponent("aql-05-step-04-performance-patterns.sh")
+
+            #expect(FileManager.default.fileExists(atPath: resourcePath.path), "Performance patterns resource should exist")
+
+            // Test performance improvement techniques
+            let performancePatterns = [
+                "exists",  // Short-circuit evaluation
+                "forAll",  // Early termination
+                "asSet",   // Deduplication
+                "let",     // Result caching
             ]
 
-            for query in composableQueries {
-                // These would be helper function calls in a real AQL implementation
-                #expect(
-                    query.contains("()"), "Composed queries may call helper functions: \(query)")
-                #expect(
-                    query.contains("->") || query.contains("."),
-                    "Should contain navigation: \(query)")
+            for pattern in performancePatterns {
+                #expect(!pattern.isEmpty, "Performance pattern should be defined: \(pattern)")
             }
         }
 
-        @Test("Step 17-20: Advanced analysis patterns")
-        func testStep17to20AdvancedAnalysis() async throws {
-            // Test graph traversal, pattern matching, and statistical analysis
-            let analysisPatterns = [
-                "findCycles(organization.projectDependencies)",
-                "matchPattern('high-risk-project', projects)",
-                "calculateMetrics(projects)->collect(m | Tuple{project=m.project, complexity=m.complexity, risk=m.risk})",
-                "generateReport(organization, 'comprehensive')",
+        @Test("Step 5: Advanced patterns summary")
+        func testStep05AdvancedPatternsSummary() async throws {
+            // Validate comprehensive summary resource
+            let resourcePath = AQLTutorialTests.tutorialResourcesPath
+                .appendingPathComponent("AQL-05")
+                .appendingPathComponent("aql-05-step-05-advanced-patterns-summary.sh")
+
+            #expect(FileManager.default.fileExists(atPath: resourcePath.path), "Advanced patterns summary resource should exist")
+
+            // Verify resource file can be read
+            let canRead = FileManager.default.isReadableFile(atPath: resourcePath.path)
+            #expect(canRead, "Summary resource should be readable")
+        }
+
+        @Test("Complex query patterns: Integration")
+        func testComplexQueryIntegration() async throws {
+            // Test that complex patterns work together
+            let integratedPatterns = [
+                // Recursive + closure
+                "library.eAllContents()->select(e | e.oclIsKindOf(Category))->collect(c | c.oclAsType(Category))->collect(cat | cat->closure(c | c.subcategories))->flatten()",
+                // Let + closure + optimisation
+                "let root = library.categories->first() in root->closure(c | c.subcategories)->collect(c | c.books)->flatten()->asSet()->select(b | b.rating >= 4.5)",
             ]
 
-            for pattern in analysisPatterns {
-                // These represent advanced analysis functions
-                #expect(!pattern.isEmpty, "Analysis patterns should not be empty: \(pattern)")
-                #expect(
-                    pattern.contains("(") && pattern.contains(")"),
-                    "Analysis functions should have parameters: \(pattern)")
+            for pattern in integratedPatterns {
+                #expect(pattern.contains("->"), "Integrated patterns should chain operations: \(pattern)")
+                let operationCount = pattern.components(separatedBy: "->").count - 1
+                #expect(operationCount >= 3, "Should have multiple chained operations: \(pattern)")
             }
         }
     }

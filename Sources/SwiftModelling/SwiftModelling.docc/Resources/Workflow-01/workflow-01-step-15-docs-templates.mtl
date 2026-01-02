@@ -1,0 +1,143 @@
+[comment encoding = UTF-8 /]
+[module generateDocs('http://www.example.org/reporting')]
+
+[template public generateMarkdownDocs(report : SalesReport)]
+[comment @main/]
+[file ('SalesReportDocumentation.md', false, 'UTF-8')]
+# Sales Report Documentation
+
+**Report ID**: `[report.reportId/]`
+**Generated**: [report.generatedDate/]
+
+---
+
+## Executive Summary
+
+| Metric | Value |
+|--------|-------|
+| **Total Revenue** | $[formatCurrency(report.totalRevenue)/] |
+| **Total Orders** | [report.totalOrders/] |
+| **Average Order Value** | $[formatCurrency(report.totalRevenue / report.totalOrders)/] |
+
+---
+
+## Category Performance
+
+Analysis of sales performance across product categories.
+
+[for (metric : CategoryMetric | report.categoryMetrics)]
+### [metric.categoryName/]
+
+- **Products**: [metric.productCount/] items
+- **Total Sales**: $[formatCurrency(metric.totalSales)/]
+- **Average Product Price**: $[formatCurrency(metric.avgProductPrice)/]
+- **Market Share**: [formatPercentage(metric.totalSales / report.totalRevenue)/]%
+
+[/for]
+
+---
+
+## Customer Analytics
+
+Customer spending patterns and segmentation.
+
+[for (metric : CustomerMetric | report.customerMetrics)]
+### [metric.customerName/] (`[metric.customerId/]`)
+
+- **Orders Placed**: [metric.orderCount/]
+- **Total Spent**: $[formatCurrency(metric.totalSpent)/]
+- **Average Order Value**: $[formatCurrency(metric.avgOrderValue)/]
+- **Customer Segment**: [getCustomerSegment(metric.totalSpent)/]
+
+[/for]
+
+---
+
+## Product Performance
+
+Top-performing products and sales metrics.
+
+[for (metric : ProductMetric | report.productMetrics)]
+### [metric.productName/] (`[metric.productId/]`)
+
+| Metric | Value |
+|--------|-------|
+| **Units Sold** | [metric.unitsSold/] |
+| **Revenue** | $[formatCurrency(metric.revenue)/] |
+| **Average Rating** | [formatRating(metric.averageRating)/] ⭐ |
+| **Revenue per Unit** | $[formatCurrency(metric.revenue / metric.unitsSold)/] |
+
+[/for]
+
+---
+
+## Insights & Recommendations
+
+### Top Performers
+
+1. **Best Category**: [getTopCategory(report)/]
+2. **Top Customer**: [getTopCustomer(report)/]
+3. **Best Product**: [getTopProduct(report)/]
+
+### Recommendations
+
+- **High-Value Customers**: Focus retention efforts on customers in the Platinum segment (>$5000 spent)
+- **Category Growth**: Invest in expanding the top-performing category
+- **Product Mix**: Monitor low-performing products for potential discontinuation
+- **Pricing Strategy**: Analyse average order value trends for pricing optimisation
+
+---
+
+## Methodology
+
+This report was generated using Model-Driven Engineering (MDE) techniques:
+
+1. **Source Data**: E-commerce transactional data (Shop metamodel)
+2. **Transformation**: ATL (Atlas Transformation Language) for data aggregation
+3. **Analysis**: AQL (Acceleo Query Language) for metric calculation
+4. **Generation**: MTL (Model-to-Text Language) for documentation output
+
+### Data Quality
+
+- All monetary values are in USD
+- Ratings are on a 5-point scale
+- Order dates range from [getEarliestDate()/] to [getLatestDate()/]
+- Dataset includes [report.customerMetrics->size()/] customers and [report.productMetrics->size()/] products
+
+---
+
+*Generated on [getCurrentTimestamp()/] using Swift Modelling Framework*
+[/file]
+[/template]
+
+[query public formatCurrency(amount : Real) : String =
+    invoke('java.lang.String', 'format(java.lang.String,java.lang.Object[])', Sequence{'%.2f', Sequence{amount}})/]
+
+[query public formatPercentage(ratio : Real) : String =
+    invoke('java.lang.String', 'format(java.lang.String,java.lang.Object[])', Sequence{'%.1f', Sequence{ratio * 100}})/]
+
+[query public formatRating(rating : Real) : String =
+    invoke('java.lang.String', 'format(java.lang.String,java.lang.Object[])', Sequence{'%.1f', Sequence{rating}})/]
+
+[query public getCustomerSegment(totalSpent : Real) : String =
+    if totalSpent < 500 then 'Bronze'
+    else if totalSpent < 2000 then 'Silver'
+    else if totalSpent < 5000 then 'Gold'
+    else 'Platinum'
+    endif endif endif/]
+
+[query public getTopCategory(report : SalesReport) : String =
+    report.categoryMetrics->sortedBy(totalSales)->last().categoryName/]
+
+[query public getTopCustomer(report : SalesReport) : String =
+    report.customerMetrics->sortedBy(totalSpent)->last().customerName/]
+
+[query public getTopProduct(report : SalesReport) : String =
+    report.productMetrics->sortedBy(revenue)->last().productName/]
+
+[query public getEarliestDate() : String = '2024-01-01'/]
+
+[query public getLatestDate() : String = '2024-01-15'/]
+
+[query public getCurrentTimestamp() : String =
+    invoke('java.time.LocalDateTime', 'now()', Sequence{}).toString()/]

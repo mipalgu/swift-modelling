@@ -137,9 +137,9 @@
 
     @Section(title: "Code Generation with MTL") {
         @ContentAndMedia {
-            MTL templates generate code artifacts from transformed models. We'll create templates that generate Swift classes, JSON APIs, and documentation from our reporting model.
+            MTL templates generate code artefacts from transformed models. We'll create templates that generate Swift classes, JSON APIs, and documentation from our reporting model.
 
-            This demonstrates how MTL can produce multiple types of artifacts from a single model source, maximising the value of model-driven development.
+            This demonstrates how MTL can produce multiple types of artefacts from a single model source, maximising the value of model-driven development.
         }
 
         @Steps {
@@ -179,7 +179,7 @@
 
     @Section(title: "Integration and Validation") {
         @ContentAndMedia {
-            The final workflow step integrates all generated artifacts and validates the complete system. This ensures that the MDE workflow produces working, high-quality results.
+            The final workflow step integrates all generated artefacts and validates the complete system. This ensures that the MDE workflow produces working, high-quality results.
 
             Integration testing validates that generated code works correctly and that the entire workflow chain maintains consistency and quality.
         }

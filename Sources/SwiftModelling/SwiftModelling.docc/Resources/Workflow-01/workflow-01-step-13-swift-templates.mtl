@@ -1,0 +1,131 @@
+[comment encoding = UTF-8 /]
+[module generate('http://www.example.org/reporting')]
+
+[template public generateSwiftAPI(report : SalesReport)]
+[comment @main/]
+[file ('SalesReportAPI.swift', false, 'UTF-8')]
+// Generated from Reporting metamodel
+// Generation date: [getNow()/]
+
+import Foundation
+
+// MARK: - Sales Report API
+
+struct SalesReportAPI {
+    let reportId: String
+    let generatedDate: String
+    let totalRevenue: Double
+    let totalOrders: Int
+    let categoryMetrics: [CategoryMetricAPI]
+    let customerMetrics: [CustomerMetricAPI]
+    let productMetrics: [ProductMetricAPI]
+
+    // MARK: - Computed Properties
+
+    var averageOrderValue: Double {
+        guard totalOrders > 0 else { return 0.0 }
+        return totalRevenue / Double(totalOrders)
+    }
+
+    var topCategory: CategoryMetricAPI? {
+        categoryMetrics.max(by: { $0.totalSales < $1.totalSales })
+    }
+
+    var topCustomer: CustomerMetricAPI? {
+        customerMetrics.max(by: { $0.totalSpent < $1.totalSpent })
+    }
+
+    var topProduct: ProductMetricAPI? {
+        productMetrics.max(by: { $0.revenue < $1.revenue })
+    }
+
+    // MARK: - Summary Methods
+
+    func generateSummary() -> String {
+        """
+        Sales Report Summary
+        ====================
+        Report ID: \(reportId)
+        Generated: \(generatedDate)
+
+        Overview:
+        - Total Revenue: $\(String(format: "%.2f", totalRevenue))
+        - Total Orders: \(totalOrders)
+        - Average Order Value: $\(String(format: "%.2f", averageOrderValue))
+
+        Top Performers:
+        - Category: \(topCategory?.categoryName ?? "N/A") ($\(String(format: "%.2f", topCategory?.totalSales ?? 0)))
+        - Customer: \(topCustomer?.customerName ?? "N/A") ($\(String(format: "%.2f", topCustomer?.totalSpent ?? 0)))
+        - Product: \(topProduct?.productName ?? "N/A") ($\(String(format: "%.2f", topProduct?.revenue ?? 0)))
+        """
+    }
+}
+
+// MARK: - Category Metric API
+
+struct CategoryMetricAPI: Codable {
+    let categoryName: String
+    let productCount: Int
+    let totalSales: Double
+    let avgProductPrice: Double
+
+    var marketShare: Double {
+        // Calculate against a total (would be injected in real implementation)
+        return totalSales
+    }
+}
+
+// MARK: - Customer Metric API
+
+struct CustomerMetricAPI: Codable {
+    let customerId: String
+    let customerName: String
+    let orderCount: Int
+    let totalSpent: Double
+    let avgOrderValue: Double
+
+    var customerSegment: String {
+        switch totalSpent {
+        case 0..<500: return "Bronze"
+        case 500..<2000: return "Silver"
+        case 2000..<5000: return "Gold"
+        default: return "Platinum"
+        }
+    }
+}
+
+// MARK: - Product Metric API
+
+struct ProductMetricAPI: Codable {
+    let productId: String
+    let productName: String
+    let unitsSold: Int
+    let revenue: Double
+    let averageRating: Double
+
+    var performanceRating: String {
+        if unitsSold >= 10 && averageRating >= 4.5 {
+            return "Excellent"
+        } else if unitsSold >= 5 && averageRating >= 4.0 {
+            return "Good"
+        } else if unitsSold >= 2 {
+            return "Fair"
+        } else {
+            return "Needs Improvement"
+        }
+    }
+}
+
+// MARK: - Example Usage
+
+extension SalesReportAPI {
+    static func loadFromXMI(path: String) throws -> SalesReportAPI {
+        // In real implementation, would deserialize from XMI
+        // For now, returns example data
+        fatalError("Implement XMI deserialization")
+    }
+}
+[/file]
+[/template]
+
+[query public getNow() : String = invoke('java.time.LocalDateTime', 'now()', Sequence{})/]

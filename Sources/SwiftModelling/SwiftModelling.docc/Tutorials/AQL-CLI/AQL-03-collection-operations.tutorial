@@ -210,11 +210,11 @@
             }
 
             @Step {
-                Optimize collection operations.
+                Optimise collection operations.
 
-                @Code(name: "Terminal", file: aql-03-step-20-optimization.sh)
+                @Code(name: "Terminal", file: aql-03-step-20-optimisation.sh)
 
-                Apply optimization techniques to improve query performance: minimize navigation, combine operations efficiently, and avoid redundant calculations.
+                Apply optimisation techniques to improve query performance: minimise navigation, combine operations efficiently, and avoid redundant calculations.
             }
         }
     }

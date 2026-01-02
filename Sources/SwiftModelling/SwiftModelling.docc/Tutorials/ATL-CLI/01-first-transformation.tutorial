@@ -15,7 +15,7 @@
         @ContentAndMedia {
             Before writing the transformation, you need to understand the source and target metamodels.
 
-            The **Families** metamodel organizes people into family units with members having specific roles (father, mother, son, daughter).
+            The **Families** metamodel organises people into family units with members having specific roles (father, mother, son, daughter).
 
             The **Persons** metamodel represents individuals as independent entities with full names and gender (Male or Female).
         }

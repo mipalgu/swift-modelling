@@ -22,7 +22,7 @@
 
                 @Code(name: "Enterprise.ecore", file: aql-05-step-01-enterprise-metamodel.ecore)
 
-                This comprehensive metamodel represents an enterprise system with Organizations, Projects, Teams, and Resources. The complex relationships provide rich opportunities for sophisticated queries.
+                This comprehensive metamodel represents an enterprise system with Organisations, Projects, Teams, and Resources. The complex relationships provide rich opportunities for sophisticated queries.
             }
 
             @Step {
@@ -30,7 +30,7 @@
 
                 @Code(name: "enterprise-data.xmi", file: aql-05-step-02-enterprise-instance.xmi)
 
-                This model contains multiple organizations with overlapping projects, shared resources, and complex team structures. Perfect for demonstrating advanced query patterns.
+                This model contains multiple organisations with overlapping projects, shared resources, and complex team structures. Perfect for demonstrating advanced query patterns.
             }
 
             @Step {
@@ -84,11 +84,11 @@
             }
 
             @Step {
-                Optimize nested queries for performance.
+                Optimise nested queries for performance.
 
-                @Code(name: "Terminal", file: aql-05-step-08-optimized-nested.sh)
+                @Code(name: "Terminal", file: aql-05-step-08-optimised-nested.sh)
 
-                Use efficient query patterns to minimize computation in nested iterations. Order operations to filter early and reduce unnecessary processing.
+                Use efficient query patterns to minimise computation in nested iterations. Order operations to filter early and reduce unnecessary processing.
             }
         }
     }

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecommerce:Shop xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:ecommerce="http://www.example.org/ecommerce" name="TechStore">
+
+  <!-- Categories -->
+  <categories name="Laptops" description="Portable computers for work and entertainment"/>
+  <categories name="Smartphones" description="Mobile devices and accessories"/>
+  <categories name="Accessories" description="Tech accessories and peripherals"/>
+  <categories name="Audio" description="Headphones, speakers, and audio equipment"/>
+
+  <!-- Products -->
+  <products name="MacBook Pro 16-inch" sku="MBP-16-001" price="2499.00"
+            description="High-performance laptop with M3 Pro chip" stock="15"/>
+  <products name="MacBook Air 13-inch" sku="MBA-13-001" price="1299.00"
+            description="Lightweight laptop with M3 chip" stock="25"/>
+  <products name="iPhone 15 Pro" sku="IP15P-001" price="999.00"
+            description="Latest iPhone with titanium design" stock="40"/>
+  <products name="iPhone 15" sku="IP15-001" price="799.00"
+            description="Standard iPhone 15 model" stock="50"/>
+  <products name="AirPods Pro 2nd Gen" sku="APP2-001" price="249.00"
+            description="Wireless earbuds with active noise cancellation" stock="60"/>
+  <products name="Magic Keyboard" sku="MK-001" price="99.00"
+            description="Wireless keyboard for Mac" stock="35"/>
+  <products name="Magic Mouse" sku="MM-001" price="79.00"
+            description="Wireless mouse for Mac" stock="45"/>
+  <products name="USB-C Cable 2m" sku="USBC-2M-001" price="19.00"
+            description="USB-C charging cable" stock="100"/>
+  <products name="HomePod mini" sku="HPM-001" price="99.00"
+            description="Compact smart speaker" stock="30"/>
+  <products name="Apple Watch Series 9" sku="AWS9-001" price="399.00"
+            description="Latest Apple Watch with new S9 chip" stock="20"/>
+
+  <!-- Customers -->
+  <customers name="Alice Johnson" email="alice.johnson@example.com"/>
+  <customers name="Bob Smith" email="bob.smith@example.com"/>
+  <customers name="Carol Williams" email="carol.williams@example.com"/>
+  <customers name="David Brown" email="david.brown@example.com"/>
+  <customers name="Eve Davis" email="eve.davis@example.com"/>
+  <customers name="Frank Miller" email="frank.miller@example.com"/>
+  <customers name="Grace Lee" email="grace.lee@example.com"/>
+
+  <!-- Orders -->
+  <orders orderNumber="ORD-2024-001" date="2024-01-15" totalAmount="2998.00">
+    <items quantity="1" unitPrice="2499.00"/>
+    <items quantity="1" unitPrice="499.00"/>
+  </orders>
+
+  <orders orderNumber="ORD-2024-002" date="2024-01-16" totalAmount="1048.00">
+    <items quantity="1" unitPrice="999.00"/>
+    <items quantity="1" unitPrice="49.00"/>
+  </orders>
+
+  <orders orderNumber="ORD-2024-003" date="2024-01-17" totalAmount="1547.00">
+    <items quantity="1" unitPrice="1299.00"/>
+    <items quantity="1" unitPrice="249.00"/>
+  </orders>
+
+  <orders orderNumber="ORD-2024-004" date="2024-01-18" totalAmount="897.00">
+    <items quantity="1" unitPrice="799.00"/>
+    <items quantity="1" unitPrice="99.00"/>
+  </orders>
+
+  <orders orderNumber="ORD-2024-005" date="2024-01-19" totalAmount="1697.00">
+    <items quantity="2" unitPrice="799.00"/>
+    <items quantity="1" unitPrice="99.00"/>
+  </orders>
+
+  <orders orderNumber="ORD-2024-006" date="2024-01-20" totalAmount="347.00">
+    <items quantity="1" unitPrice="249.00"/>
+    <items quantity="1" unitPrice="99.00"/>
+  </orders>
+
+  <orders orderNumber="ORD-2024-007" date="2024-01-21" totalAmount="2697.00">
+    <items quantity="1" unitPrice="2499.00"/>
+    <items quantity="2" unitPrice="99.00"/>
+  </orders>
+
+  <orders orderNumber="ORD-2024-008" date="2024-01-22" totalAmount="1446.00">
+    <items quantity="1" unitPrice="1299.00"/>
+    <items quantity="1" unitPrice="99.00"/>
+    <items quantity="1" unitPrice="49.00"/>
+  </orders>
+
+  <orders orderNumber="ORD-2024-009" date="2024-01-23" totalAmount="498.00">
+    <items quantity="2" unitPrice="249.00"/>
+  </orders>
+
+  <orders orderNumber="ORD-2024-010" date="2024-01-24" totalAmount="1397.00">
+    <items quantity="1" unitPrice="999.00"/>
+    <items quantity="1" unitPrice="399.00"/>
+  </orders>
+
+</ecommerce:Shop>

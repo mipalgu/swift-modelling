@@ -56,7 +56,7 @@ Master model-to-model transformations with the Atlas Transformation Language.
    - <doc:OCL-Expressions-Deep-Dive>
    - <doc:Debugging-Transformations>
    - <doc:Complex-Model-Transformations>
-   - <doc:Performance-Optimization>
+   - <doc:Performance-Optimisation>
 }
 
 ### MTL Code Generation

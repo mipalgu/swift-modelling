@@ -19,9 +19,9 @@ struct CompileCommand: AsyncParsableCommand {
         commandName: "compile",
         abstract: "Compile ATL transformation files",
         discussion: """
-            Compiles ATL transformation source files into optimized executable modules.
+            Compiles ATL transformation source files into optimised executable modules.
             The compilation process includes syntax parsing, semantic analysis, type
-            checking, and optimization for efficient transformation execution.
+            checking, and optimisation for efficient transformation execution.
 
             Example:
                 swift-atl compile Families2Persons.atl --output families2persons.atlc
@@ -53,8 +53,8 @@ struct CompileCommand: AsyncParsableCommand {
     ///
     /// Applies optimisation passes to the transformation code to improve
     /// runtime performance of the compiled module.
-    @Flag(name: .long, help: "Optimize transformation code")
-    var optimize: Bool = false
+    @Flag(name: .long, help: "Optimise transformation code")
+    var optimise: Bool = false
 
     /// Executes the compile command.
     ///
@@ -65,7 +65,7 @@ struct CompileCommand: AsyncParsableCommand {
     func run() async throws {
         if verbose {
             print("Compiling ATL transformation: \(atlFile)")
-            print("Optimization: \(optimize ? "enabled" : "disabled")")
+            print("Optimisation: \(optimise ? "enabled" : "disabled")")
         }
 
         // Determine output file name
@@ -91,7 +91,7 @@ struct CompileCommand: AsyncParsableCommand {
                 print("Helpers: \(module.helpers.count)")
             }
 
-            // TODO: Implement actual compilation to bytecode/optimized format
+            // TODO: Implement actual compilation to bytecode/optimised format
             // For now, just serialize the parsed module
             if verbose {
                 print("Compilation completed successfully")

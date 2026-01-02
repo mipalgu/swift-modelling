@@ -72,7 +72,7 @@
 
                 @Code(name: "project-schema.json", file: workflow-03-step-06-json-schema.json)
 
-                This JSON schema defines a web-friendly representation of project data that's optimized for REST APIs and JavaScript consumption while preserving essential model information.
+                This JSON schema defines a web-friendly representation of project data that's optimised for REST APIs and JavaScript consumption while preserving essential model information.
             }
 
             @Step {
@@ -260,10 +260,10 @@
             }
 
             @Choice(isCorrect: true) {
-                JSON is optimized for web consumption while XMI preserves full metamodel information
+                JSON is optimised for web consumption while XMI preserves full metamodel information
 
                 @Justification(reaction: "Perfect!") {
-                    JSON representations are typically flattened and optimized for web APIs, while XMI preserves the full metamodel structure and references.
+                    JSON representations are typically flattened and optimised for web APIs, while XMI preserves the full metamodel structure and references.
                 }
             }
 

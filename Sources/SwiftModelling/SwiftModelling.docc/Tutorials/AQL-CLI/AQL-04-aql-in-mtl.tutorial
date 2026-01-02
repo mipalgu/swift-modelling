@@ -88,7 +88,7 @@
 
                 @Code(name: "Terminal", file: aql-04-step-08-navigation-output.sh)
 
-                Run templates with navigation expressions to see how model relationships drive code structure. The generated code reflects the model's organization.
+                Run templates with navigation expressions to see how model relationships drive code structure. The generated code reflects the model's organisation.
             }
         }
     }
@@ -130,7 +130,7 @@
 
                 @Code(name: "Terminal", file: aql-04-step-12-collection-output.sh)
 
-                Run templates with collection operations to see how AQL queries shape the generated code structure. Collections drive code organization.
+                Run templates with collection operations to see how AQL queries shape the generated code structure. Collections drive code organisation.
             }
         }
     }
@@ -206,7 +206,7 @@
 
                 @Code(name: "CrossReferences.mtl", file: aql-04-step-19-cross-references.mtl)
 
-                Use AQL to navigate cross-model references and generate code that maintains referential integrity across generated artifacts.
+                Use AQL to navigate cross-model references and generate code that maintains referential integrity across generated artefacts.
             }
 
             @Step {
@@ -235,7 +235,7 @@
                 They are written as separate query files and imported
 
                 @Justification(reaction: "Not quite!") {
-                    While you can organize queries in separate templates, AQL expressions are typically embedded directly within MTL templates using square bracket notation.
+                    While you can organise queries in separate templates, AQL expressions are typically embedded directly within MTL templates using square bracket notation.
                 }
             }
 

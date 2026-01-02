@@ -1,0 +1,194 @@
+[comment encoding = UTF-8 /]
+[module generateJSON('http://www.example.org/reporting')]
+
+[template public generateJSONSchema(report : SalesReport)]
+[comment @main/]
+[file ('sales-report-schema.json', false, 'UTF-8')]
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Sales Report",
+  "description": "E-commerce sales analytics report schema",
+  "type": "object",
+  "properties": {
+    "reportId": {
+      "type": "string",
+      "description": "Unique report identifier",
+      "pattern": "^REPORT-[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "generatedDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Report generation date"
+    },
+    "totalRevenue": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Total revenue across all orders"
+    },
+    "totalOrders": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total number of orders"
+    },
+    "categoryMetrics": {
+      "type": "array",
+      "description": "Sales metrics by category",
+      "items": {
+        "$ref": "#/definitions/CategoryMetric"
+      }
+    },
+    "customerMetrics": {
+      "type": "array",
+      "description": "Customer spending metrics",
+      "items": {
+        "$ref": "#/definitions/CustomerMetric"
+      }
+    },
+    "productMetrics": {
+      "type": "array",
+      "description": "Product performance metrics",
+      "items": {
+        "$ref": "#/definitions/ProductMetric"
+      }
+    }
+  },
+  "required": [
+    "reportId",
+    "generatedDate",
+    "totalRevenue",
+    "totalOrders",
+    "categoryMetrics",
+    "customerMetrics",
+    "productMetrics"
+  ],
+  "definitions": {
+    "CategoryMetric": {
+      "type": "object",
+      "properties": {
+        "categoryName": {
+          "type": "string",
+          "description": "Category name"
+        },
+        "productCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of products in category"
+        },
+        "totalSales": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total sales for category"
+        },
+        "avgProductPrice": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Average product price in category"
+        }
+      },
+      "required": ["categoryName", "productCount", "totalSales", "avgProductPrice"]
+    },
+    "CustomerMetric": {
+      "type": "object",
+      "properties": {
+        "customerId": {
+          "type": "string",
+          "pattern": "^C[0-9]{3}$",
+          "description": "Customer identifier"
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Customer full name"
+        },
+        "orderCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of orders placed"
+        },
+        "totalSpent": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total amount spent"
+        },
+        "avgOrderValue": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Average order value"
+        }
+      },
+      "required": ["customerId", "customerName", "orderCount", "totalSpent", "avgOrderValue"]
+    },
+    "ProductMetric": {
+      "type": "object",
+      "properties": {
+        "productId": {
+          "type": "string",
+          "pattern": "^P[0-9]{3}$",
+          "description": "Product identifier"
+        },
+        "productName": {
+          "type": "string",
+          "description": "Product name"
+        },
+        "unitsSold": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total units sold"
+        },
+        "revenue": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total revenue from product"
+        },
+        "averageRating": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5,
+          "description": "Average customer rating"
+        }
+      },
+      "required": ["productId", "productName", "unitsSold", "revenue", "averageRating"]
+    }
+  }
+}
+[/file]
+[/template]
+
+[template public generateJSONInstance(report : SalesReport)]
+[file ('sales-report-instance.json', false, 'UTF-8')]
+{
+  "reportId": "[report.reportId/]",
+  "generatedDate": "[report.generatedDate/]",
+  "totalRevenue": [report.totalRevenue/],
+  "totalOrders": [report.totalOrders/],
+  "categoryMetrics": [
+[for (metric : CategoryMetric | report.categoryMetrics) separator(',\n')]
+    {
+      "categoryName": "[metric.categoryName/]",
+      "productCount": [metric.productCount/],
+      "totalSales": [metric.totalSales/],
+      "avgProductPrice": [metric.avgProductPrice/]
+    }[/for]
+  ],
+  "customerMetrics": [
+[for (metric : CustomerMetric | report.customerMetrics) separator(',\n')]
+    {
+      "customerId": "[metric.customerId/]",
+      "customerName": "[metric.customerName/]",
+      "orderCount": [metric.orderCount/],
+      "totalSpent": [metric.totalSpent/],
+      "avgOrderValue": [metric.avgOrderValue/]
+    }[/for]
+  ],
+  "productMetrics": [
+[for (metric : ProductMetric | report.productMetrics) separator(',\n')]
+    {
+      "productId": "[metric.productId/]",
+      "productName": "[metric.productName/]",
+      "unitsSold": [metric.unitsSold/],
+      "revenue": [metric.revenue/],
+      "averageRating": [metric.averageRating/]
+    }[/for]
+  ]
+}
+[/file]
+[/template]

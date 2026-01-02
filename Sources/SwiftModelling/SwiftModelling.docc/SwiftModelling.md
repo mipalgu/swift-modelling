@@ -39,5 +39,5 @@ SwiftModelling provides a comprehensive suite of CLI tools for Model-Driven Engi
 ### Advanced Topics
 
 - <doc:Cross-Platform-Development>
-- <doc:Performance-Optimization>
+- <doc:Performance-Optimisation>
 - <doc:Integration-Patterns>

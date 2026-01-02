@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<org:Department xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:org="http://www.example.org/organization" name="Shared Services">
+<org:Department xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:org="http://www.example.org/organisation" name="Shared Services">
   <relatedDepartments name="IT"/>
   <relatedDepartments name="HR"/>
   <relatedDepartments name="Finance"/>

@@ -22,7 +22,7 @@ struct ParseCommand: AsyncParsableCommand {
         discussion: """
             Parses MTL templates and displays their internal structure including
             templates, queries, macros, and other module elements. Useful for
-            understanding template organization and debugging template issues.
+            understanding template organisation and debugging template issues.
 
             Examples:
                 # Basic parsing

@@ -53,7 +53,7 @@ struct TransformCommand: AsyncParsableCommand {
                   --source families.xmi \\
                   --source departments.xmi \\
                   --target persons.xmi \\
-                  --target organizations.xmi
+                  --target organisations.xmi
             """
     )
 

@@ -56,7 +56,7 @@ struct SubprocessResult: Sendable {
 
 // MARK: - Executable Path Resolution
 
-/// Returns the scratch directory path for build artifacts.
+/// Returns the scratch directory path for build artefacts.
 ///
 /// The path can be overridden using the `SWIFT_MTL_SCRATCH_PATH` environment variable.
 /// Defaults to `/tmp/build-swift-mtl` if not set.
@@ -94,7 +94,7 @@ func swiftMTLExecutablePath() throws -> String {
     // Strategy 2: Detect from test bundle location
     var bundleURL = Bundle.module.bundleURL
 
-    // In Xcode, Bundle.module.bundleURL may point to Contents/Resources inside the .xctest bundle
+    // In Xcode, Bundle.module.bundleURL may point to Contents/Resources inside the bundle
     // We need to navigate up to the Products/Debug directory
     if bundleURL.pathComponents.contains("Contents") && bundleURL.pathComponents.contains("Resources") {
         // Navigate up from .xctest/Contents/Resources to the directory containing .xctest

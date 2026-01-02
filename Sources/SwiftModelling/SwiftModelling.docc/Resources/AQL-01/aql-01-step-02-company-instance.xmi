@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<company:Company xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:company="http://www.example.org/company" name="TechCorp">
+  <employees name="Alice Johnson" age="32" department="Engineering"/>
+  <employees name="Bob Smith" age="45" department="Sales"/>
+  <employees name="Carol Williams" age="28" department="Engineering"/>
+  <employees name="David Brown" age="38" department="Marketing"/>
+  <employees name="Eve Davis" age="29" department="HR"/>
+  <employees name="Frank Miller" age="51" department="Engineering"/>
+</company:Company>

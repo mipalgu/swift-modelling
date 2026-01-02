@@ -18,7 +18,7 @@
             @Step {
                 Create a metamodel that supports cross-referencing.
 
-                @Code(name: "Organization.ecore", file: ecore-07-step-01-organization.ecore)
+                @Code(name: "Organisation.ecore", file: ecore-07-step-01-organisation.ecore)
 
                 This metamodel defines `Department` and `Employee` classes. A Department contains Employees, but can also refer to related Departments (potentially in other files).
             }

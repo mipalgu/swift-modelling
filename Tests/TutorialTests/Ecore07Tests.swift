@@ -19,14 +19,14 @@ struct Ecore07Tests {
 
     // MARK: - Section 1: Understanding Resources and Proxies
 
-    @Test("Step 1.1: Validate Organization metamodel")
+    @Test("Step 1.1: Validate Organisation metamodel")
     func testStep01ValidateMetamodel() async throws {
-        let metamodelPath = tutorialCodePath.appendingPathComponent("ecore-07-step-01-organization.ecore")
+        let metamodelPath = tutorialCodePath.appendingPathComponent("ecore-07-step-01-organisation.ecore")
 
         #expect(FileManager.default.fileExists(atPath: metamodelPath.path))
 
         let content = try String(contentsOf: metamodelPath, encoding: .utf8)
-        #expect(content.contains("name=\"Organization\""))
+        #expect(content.contains("name=\"Organisation\""))
         #expect(content.contains("name=\"Department\""))
         #expect(content.contains("name=\"relatedDepartments\""))
     }

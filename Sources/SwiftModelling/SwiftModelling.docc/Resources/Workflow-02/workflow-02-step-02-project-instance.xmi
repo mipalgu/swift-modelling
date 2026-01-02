@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project:Project xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:project="http://www.example.org/project"
+    name="Website Redesign" budget="50000.0" startDate="2024-01-15" endDate="2024-04-15">
+
+  <members name="Alice Chen" role="Project Manager" maxHoursPerWeek="40"/>
+  <members name="Bob Martinez" role="Senior Developer" maxHoursPerWeek="35"/>
+  <members name="Carol Williams" role="Junior Developer" maxHoursPerWeek="40"/>
+  <members name="David Kim" role="Designer" maxHoursPerWeek="30"/>
+
+  <!-- Task 1: Requirements Gathering -->
+  <tasks title="Requirements Gathering"
+      estimatedHours="40" actualHours="45"
+      priority="CRITICAL" status="COMPLETED"
+      assignedTo="//@members.0"/>
+
+  <!-- Task 2: UI/UX Design -->
+  <tasks title="UI/UX Design"
+      estimatedHours="80" actualHours="90"
+      priority="HIGH" status="COMPLETED"
+      assignedTo="//@members.3"
+      dependencies="//@tasks.0"/>
+
+  <!-- Task 3: Frontend Development -->
+  <tasks title="Frontend Development"
+      estimatedHours="120" actualHours="95"
+      priority="HIGH" status="IN_PROGRESS"
+      assignedTo="//@members.1"
+      dependencies="//@tasks.1"/>
+
+  <!-- Task 4: Backend API Development -->
+  <tasks title="Backend API Development"
+      estimatedHours="100" actualHours="85"
+      priority="HIGH" status="IN_PROGRESS"
+      assignedTo="//@members.1"
+      dependencies="//@tasks.1"/>
+
+  <!-- Task 5: Database Migration -->
+  <tasks title="Database Migration"
+      estimatedHours="40" actualHours="0"
+      priority="MEDIUM" status="NOT_STARTED"
+      assignedTo="//@members.2"
+      dependencies="//@tasks.3"/>
+
+  <!-- Task 6: Integration Testing -->
+  <tasks title="Integration Testing"
+      estimatedHours="60" actualHours="0"
+      priority="HIGH" status="NOT_STARTED"
+      assignedTo="//@members.2"
+      dependencies="//@tasks.2 //@tasks.3"/>
+
+  <!-- Task 7: Performance Optimisation (over-allocated task) -->
+  <tasks title="Performance Optimisation"
+      estimatedHours="50" actualHours="0"
+      priority="MEDIUM" status="NOT_STARTED"
+      assignedTo="//@members.1"
+      dependencies="//@tasks.5"/>
+
+  <!-- Task 8: Documentation (no assignee - validation issue) -->
+  <tasks title="Documentation"
+      estimatedHours="30" actualHours="0"
+      priority="LOW" status="NOT_STARTED"
+      dependencies="//@tasks.5"/>
+
+  <!-- Task 9: Deployment (circular dependency issue) -->
+  <tasks title="Deployment"
+      estimatedHours="20" actualHours="0"
+      priority="CRITICAL" status="BLOCKED"
+      assignedTo="//@members.0"
+      dependencies="//@tasks.6 //@tasks.8"/>
+
+  <!-- Task 10: User Training -->
+  <tasks title="User Training"
+      estimatedHours="40" actualHours="0"
+      priority="LOW" status="NOT_STARTED"
+      assignedTo="//@members.0"
+      dependencies="//@tasks.8"/>
+
+</project:Project>

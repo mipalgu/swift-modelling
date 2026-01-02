@@ -19,7 +19,7 @@ import ArgumentParser
 /// - **parse**: Parse and validate ATL transformation files
 /// - **validate**: Validate ATL transformation syntax and semantics
 /// - **test**: Test ATL transformation files with sample data
-/// - **analyze**: Analyze ATL transformation files for complexity and metrics
+/// - **analyze**: Analyse ATL transformation files for complexity and metrics
 /// - **compile**: Compile ATL transformation files to executable modules
 /// - **transform**: Execute model transformations using compiled ATL modules
 /// - **generate**: Generate code from models using ATL-based code generators

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<university:University xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:university="http://www.example.org/university" name="State University">
+
+  <!-- Students with varied grades for filtering examples -->
+  <students name="John Doe" studentId="S001" grade="85" age="20"/>
+  <students name="Jane Smith" studentId="S002" grade="92" age="21"/>
+  <students name="Bob Johnson" studentId="S003" grade="78" age="19"/>
+  <students name="Alice Williams" studentId="S004" grade="88" age="22"/>
+  <students name="Charlie Brown" studentId="S005" grade="95" age="20"/>
+  <students name="Diana Prince" studentId="S006" grade="82" age="21"/>
+  <students name="Eve Anderson" studentId="S007" grade="76" age="19"/>
+  <students name="Frank Miller" studentId="S008" grade="90" age="23"/>
+  <students name="Grace Lee" studentId="S009" grade="87" age="20"/>
+  <students name="Henry Wilson" studentId="S010" grade="65" age="18"/>
+  <students name="Ivy Chen" studentId="S011" grade="94" age="22"/>
+  <students name="Jack Taylor" studentId="S012" grade="72" age="19"/>
+
+  <!-- Courses with different credit hours -->
+  <courses title="Data Structures" credits="4" department="Computer Science"/>
+  <courses title="Algorithms" credits="4" department="Computer Science"/>
+  <courses title="Calculus I" credits="4" department="Mathematics"/>
+  <courses title="Calculus II" credits="4" department="Mathematics"/>
+  <courses title="Introduction to Physics" credits="3" department="Physics"/>
+  <courses title="Quantum Mechanics" credits="4" department="Physics"/>
+  <courses title="Organic Chemistry" credits="3" department="Chemistry"/>
+  <courses title="English Literature" credits="3" department="Humanities"/>
+
+  <!-- Professors with different specialisations -->
+  <professors name="Dr. Alan Turing" specialisation="Computer Science" tenure="true" age="45"/>
+  <professors name="Dr. Ada Lovelace" specialisation="Mathematics" tenure="true" age="42"/>
+  <professors name="Dr. Marie Curie" specialisation="Physics" tenure="true" age="50"/>
+  <professors name="Dr. Richard Feynman" specialisation="Physics" tenure="false" age="38"/>
+  <professors name="Dr. Dorothy Hodgkin" specialisation="Chemistry" tenure="true" age="48"/>
+
+</university:University>

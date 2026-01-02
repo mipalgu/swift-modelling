@@ -1,0 +1,60 @@
+#!/bin/bash
+# AQL-02 Step 11: Exists with Complex Conditions
+
+echo "=== AQL Filtering: Exists with Complex Conditions ==="
+echo ""
+echo "Combine exists with complex boolean logic for sophisticated queries."
+echo ""
+
+echo "Example 1: Compound AND condition"
+echo "  AQL: university.professors->exists(p | p.specialisation = 'Physics' and p.tenure = true)"
+echo "  Question: Is there a tenured Physics professor?"
+echo "  Returns: true"
+echo "  Match: Dr. Marie Curie (Physics, tenured)"
+echo ""
+
+echo "Example 2: Compound OR condition"
+echo "  AQL: university.students->exists(s | s.grade > 95 or s.age < 19)"
+echo "  Question: Any students with exceptional grade OR very young?"
+echo "  Returns: true"
+echo "  Matches: Bob Johnson (19... no wait, 19 is not < 19)"
+echo "           Henry Wilson (18), Eve Anderson (19... no),"
+echo "           Jack Taylor (19... no)"
+echo "  Correct match: Henry Wilson (18 years old)"
+echo ""
+
+echo "Example 3: Nested boolean logic"
+echo "  AQL: university.courses->exists(c | (c.department = 'Physics' or c.department = 'Chemistry') and c.credits = 4)"
+echo "  Question: Any 4-credit science courses?"
+echo "  Returns: true"
+echo "  Match: Quantum Mechanics (Physics, 4 credits)"
+echo ""
+
+echo "Example 4: Multiple properties with ranges"
+echo "  AQL: university.students->exists(s | s.age >= 20 and s.age <= 21 and s.grade >= 90)"
+echo "  Question: Any 20-21 year olds with A grades?"
+echo "  Returns: true"
+echo "  Matches: Charlie Brown (20, 95)"
+echo ""
+
+echo "Example 5: String operations in condition"
+echo "  AQL: university.professors->exists(p | p.name.startsWith('Dr.') and p.age < 45)"
+echo "  Question: Any young doctors?"
+echo "  Returns: true"
+echo "  Matches: Dr. Ada Lovelace (42), Dr. Richard Feynman (38)"
+echo ""
+
+echo "Example 6: Negation in complex condition"
+echo "  AQL: university.courses->exists(c | c.department <> 'Computer Science' and c.credits <> 3)"
+echo "  Question: Any non-CS, non-3-credit courses?"
+echo "  Returns: true"
+echo "  Matches: Calculus I, Calculus II, Quantum Mechanics (all 4 credits, non-CS)"
+echo ""
+
+echo "Building complex conditions:"
+echo "  - Use parentheses to group conditions clearly"
+echo "  - AND has higher precedence than OR"
+echo "  - (A or B) and C ≠ A or (B and C)"
+echo ""
+
+echo "✅ Complex conditions enable precise existence checks"
