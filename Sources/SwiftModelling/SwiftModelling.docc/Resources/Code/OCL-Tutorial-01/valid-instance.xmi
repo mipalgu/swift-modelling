@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:bank="http://www.example.org/bank">
+  <!--
+    Valid Bank Instance
+    This model satisfies all OCL constraints:
+    - Unique account numbers and customer IDs
+    - Valid email addresses (contain @)
+    - Adult customers (age >= 18)
+    - Positive account balances
+    - 10-digit account numbers
+    - Savings accounts maintain minimum balance
+    - Positive transaction amounts
+  -->
+  <bank:Bank name="First National Bank" swiftCode="FNBAUS33">
+    <!-- Customer 1: John Smith, adult with valid email -->
+    <customers customerId="CUST001" name="John Smith" email="john.smith@email.com" age="35">
+      <accounts accountNumber="1234567890" accountType="SAVINGS" balance="5000.00" minimumBalance="100.00" isActive="true">
+        <transactions transactionId="TXN001" transactionType="DEPOSIT" amount="1000.00" description="Initial deposit" timestamp="2025-01-01T10:00:00"/>
+        <transactions transactionId="TXN002" transactionType="DEPOSIT" amount="4000.00" description="Salary credit" timestamp="2025-01-15T09:30:00"/>
+      </accounts>
+    </customers>
+
+    <!-- Customer 2: Jane Doe, adult with valid email -->
+    <customers customerId="CUST002" name="Jane Doe" email="jane.doe@company.org" age="28">
+      <accounts accountNumber="0987654321" accountType="CURRENT" balance="12500.00" minimumBalance="0.00" isActive="true">
+        <transactions transactionId="TXN003" transactionType="DEPOSIT" amount="15000.00" description="Business payment" timestamp="2025-01-02T14:00:00"/>
+        <transactions transactionId="TXN004" transactionType="WITHDRAWAL" amount="2500.00" description="Office supplies" timestamp="2025-01-10T11:45:00"/>
+      </accounts>
+      <accounts accountNumber="1122334455" accountType="FIXED_DEPOSIT" balance="50000.00" minimumBalance="0.00" isActive="true">
+        <transactions transactionId="TXN005" transactionType="DEPOSIT" amount="50000.00" description="Fixed deposit" timestamp="2025-01-05T16:00:00"/>
+      </accounts>
+    </customers>
+
+    <!-- Customer 3: Bob Wilson, exactly 18 (minimum adult age) -->
+    <customers customerId="CUST003" name="Bob Wilson" email="bob.wilson@university.edu" age="18">
+      <accounts accountNumber="5566778899" accountType="SAVINGS" balance="500.00" minimumBalance="100.00" isActive="true">
+        <transactions transactionId="TXN006" transactionType="DEPOSIT" amount="500.00" description="Birthday gift" timestamp="2025-01-03T12:00:00"/>
+      </accounts>
+    </customers>
+  </bank:Bank>
+</xmi:XMI>

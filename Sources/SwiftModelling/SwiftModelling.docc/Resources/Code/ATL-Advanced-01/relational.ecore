@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="Relational" nsURI="http://www.example.org/relational" nsPrefix="relational">
+  <!-- Named: Base class for all named elements -->
+  <eClassifiers xsi:type="ecore:EClass" name="Named" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <!-- Schema: Database schema containing tables and types -->
+  <eClassifiers xsi:type="ecore:EClass" name="Schema" eSuperTypes="#//Named">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tables" upperBound="-1"
+        eType="#//Table" containment="true" eOpposite="#//Table/schema"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="types" upperBound="-1"
+        eType="#//Type" containment="true"/>
+  </eClassifiers>
+  <!-- Table: Database table with columns and keys -->
+  <eClassifiers xsi:type="ecore:EClass" name="Table" eSuperTypes="#//Named">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="schema" eType="#//Schema"
+        eOpposite="#//Schema/tables"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="columns" upperBound="-1"
+        eType="#//Column" containment="true" eOpposite="#//Column/owner"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="key" upperBound="-1"
+        eType="#//Column"/>
+  </eClassifiers>
+  <!-- Column: Table column with type reference -->
+  <eClassifiers xsi:type="ecore:EClass" name="Column" eSuperTypes="#//Named">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="owner" eType="#//Table"
+        eOpposite="#//Table/columns"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="keyOf" eType="#//Table"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="type" lowerBound="1" eType="#//Type"/>
+  </eClassifiers>
+  <!-- Type: SQL data type (INTEGER, VARCHAR, etc.) -->
+  <eClassifiers xsi:type="ecore:EClass" name="Type" eSuperTypes="#//Named"/>
+</ecore:EPackage>

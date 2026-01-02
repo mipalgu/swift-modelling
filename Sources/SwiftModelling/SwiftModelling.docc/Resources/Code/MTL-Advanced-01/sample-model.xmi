@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:uml="http://www.example.org/uml">
+  <!-- Sample UML Model: Task Management Application -->
+  <uml:Package name="TaskManager">
+    <!-- Primitive Types -->
+    <classifiers xsi:type="uml:PrimitiveType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="String"/>
+    <classifiers xsi:type="uml:PrimitiveType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Int"/>
+    <classifiers xsi:type="uml:PrimitiveType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Bool"/>
+    <classifiers xsi:type="uml:PrimitiveType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Date"/>
+
+    <!-- Identifiable Protocol -->
+    <classifiers xsi:type="uml:Protocol" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Identifiable"
+        documentation="A type with a unique identifier">
+      <properties name="id" isReadOnly="true" type="//@classifiers.0"/>
+    </classifiers>
+
+    <!-- Priority Enumeration -->
+    <classifiers xsi:type="uml:Enumeration" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Priority"
+        documentation="Task priority levels" rawType="//@classifiers.1">
+      <literals name="low" rawValue="0"/>
+      <literals name="medium" rawValue="1"/>
+      <literals name="high" rawValue="2"/>
+      <literals name="critical" rawValue="3"/>
+    </classifiers>
+
+    <!-- Status Enumeration -->
+    <classifiers xsi:type="uml:Enumeration" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Status"
+        documentation="Task status values">
+      <literals name="pending"/>
+      <literals name="inProgress"/>
+      <literals name="completed"/>
+      <literals name="cancelled"/>
+    </classifiers>
+
+    <!-- Task Class (struct) -->
+    <classifiers xsi:type="uml:Class" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Task"
+        documentation="Represents a task in the system" isStruct="true">
+      <protocols>//@classifiers.4</protocols>
+      <properties name="id" isReadOnly="true" type="//@classifiers.0"/>
+      <properties name="title" type="//@classifiers.0"/>
+      <properties name="description" isOptional="true" type="//@classifiers.0"/>
+      <properties name="priority" type="//@classifiers.5" defaultValue=".medium"/>
+      <properties name="status" type="//@classifiers.6" defaultValue=".pending"/>
+      <properties name="dueDate" isOptional="true" type="//@classifiers.3"/>
+      <properties name="tags" isCollection="true" type="//@classifiers.0"/>
+      <operations name="isOverdue" returnType="//@classifiers.2">
+        <parameters name="currentDate" type="//@classifiers.3"/>
+      </operations>
+      <operations name="markComplete">
+      </operations>
+    </classifiers>
+
+    <!-- Project Class -->
+    <classifiers xsi:type="uml:Class" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Project"
+        documentation="A project containing multiple tasks">
+      <protocols>//@classifiers.4</protocols>
+      <properties name="id" isReadOnly="true" type="//@classifiers.0"/>
+      <properties name="name" type="//@classifiers.0"/>
+      <properties name="tasks" isCollection="true" type="//@classifiers.7"/>
+      <properties name="isActive" type="//@classifiers.2" defaultValue="true"/>
+      <operations name="addTask">
+        <parameters name="task" type="//@classifiers.7"/>
+      </operations>
+      <operations name="removeTask">
+        <parameters name="taskId" type="//@classifiers.0"/>
+      </operations>
+      <operations name="tasksWithPriority" returnType="//@classifiers.7" isCollection="true">
+        <parameters name="priority" type="//@classifiers.5"/>
+      </operations>
+      <operations name="fetchRemoteTasks" isAsync="true" throws="true"/>
+    </classifiers>
+
+    <!-- TaskRepository Protocol -->
+    <classifiers xsi:type="uml:Protocol" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="TaskRepository"
+        documentation="Protocol for task persistence">
+      <operations name="save" throws="true">
+        <parameters name="task" type="//@classifiers.7"/>
+      </operations>
+      <operations name="findById" returnType="//@classifiers.7" isOptional="true">
+        <parameters name="id" type="//@classifiers.0"/>
+      </operations>
+      <operations name="findAll" returnType="//@classifiers.7" isCollection="true"/>
+      <operations name="delete" throws="true">
+        <parameters name="id" type="//@classifiers.0"/>
+      </operations>
+    </classifiers>
+  </uml:Package>
+</xmi:XMI>

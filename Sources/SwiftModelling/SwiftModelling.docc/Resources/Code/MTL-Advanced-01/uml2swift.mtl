@@ -1,0 +1,182 @@
+[comment encoding = UTF-8 /]
+[module UML2Swift('http://www.example.org/uml')]
+
+[comment]
+  UML to Swift Code Generator
+  Generates Swift source code from UML class diagrams
+[/comment]
+
+[comment ================================================================ /]
+[comment                      MAIN ENTRY POINT                           /]
+[comment ================================================================ /]
+
+[template main(pkg : Package)]
+[comment Generate one file per classifier /]
+[for (cls : Class | pkg.classifiers->filter(Class))]
+[generateClassFile(cls)/]
+[/for]
+[for (proto : Protocol | pkg.classifiers->filter(Protocol))]
+[generateProtocolFile(proto)/]
+[/for]
+[for (enum : Enumeration | pkg.classifiers->filter(Enumeration))]
+[generateEnumFile(enum)/]
+[/for]
+[/template]
+
+[comment ================================================================ /]
+[comment                      CLASS GENERATION                           /]
+[comment ================================================================ /]
+
+[template generateClassFile(cls : Class)]
+[file (cls.name + '.swift', 'overwrite', 'UTF-8')]
+//
+// [cls.name/].swift
+// Generated from UML model
+//
+
+import Foundation
+
+[if (cls.documentation <> null)]
+/// [cls.documentation/]
+[/if]
+[generateClassDeclaration(cls)/]
+[/file]
+[/template]
+
+[template generateClassDeclaration(cls : Class)]
+[if (cls.isFinal)]final [/if][if (cls.isStruct)]struct[else]class[/if] [cls.name/][generateInheritance(cls)/] {
+
+    // MARK: - Properties
+
+[for (prop : Property | cls.properties)]
+    [generateProperty(prop)/]
+[/for]
+
+    // MARK: - Initialisation
+
+    [generateInitialiser(cls)/]
+
+    // MARK: - Methods
+
+[for (op : Operation | cls.operations)]
+    [generateOperation(op)/]
+[/for]
+}
+[/template]
+
+[template generateInheritance(cls : Class)]
+[if (cls.superClass <> null or cls.protocols->notEmpty())]
+: [if (cls.superClass <> null)][cls.superClass.name/][if (cls.protocols->notEmpty())], [/if][/if][cls.protocols.name->sep(', ')/][/if]
+[/template]
+
+[template generateInitialiser(cls : Class)]
+[let requiredProps = cls.properties->select(p | p.defaultValue = null and not p.isOptional)]
+[if (requiredProps->notEmpty())]
+init([for (p : Property | requiredProps) separator(', ')][p.name/]: [generateTypeName(p)/][/for]) {
+[for (p : Property | requiredProps)]
+        self.[p.name/] = [p.name/]
+[/for]
+    }
+[else]
+init() {
+    }
+[/if]
+[/let]
+[/template]
+
+[comment ================================================================ /]
+[comment                     PROPERTY GENERATION                         /]
+[comment ================================================================ /]
+
+[template generateProperty(prop : Property)]
+[if (prop.isStatic)]static [/if][if (prop.isReadOnly)]let[else]var[/if] [prop.name/]: [generateTypeName(prop)/][generateDefaultValue(prop)/]
+[/template]
+
+[template generateTypeName(prop : TypedElement)]
+[if (prop.isCollection)]['[' + prop.type.name + ']'/][else][prop.type.name/][/if][if (prop.isOptional)]?[/if]
+[/template]
+
+[template generateDefaultValue(prop : Property)]
+[if (prop.defaultValue <> null)] = [prop.defaultValue/][elseif (prop.isOptional)] = nil[elseif (prop.isCollection)] = ['[]'/][/if]
+[/template]
+
+[comment ================================================================ /]
+[comment                    OPERATION GENERATION                         /]
+[comment ================================================================ /]
+
+[template generateOperation(op : Operation)]
+[if (op.isStatic)]static [/if]func [op.name/]([generateParameters(op)/])[if (op.isAsync)] async[/if][if (op.throws)] throws[/if][generateReturnType(op)/] {
+        // TODO: Implement [op.name/]
+        [generateReturnStub(op)/]
+    }
+[/template]
+
+[template generateParameters(op : Operation)]
+[for (p : Parameter | op.parameters) separator(', ')]
+[if (p.label <> null and p.label <> p.name)][p.label/] [/if][p.name/]: [if (p.isCollection)]['[' + p.type.name + ']'/][else][p.type.name/][/if][if (p.isOptional)]?[/if][if (p.defaultValue <> null)] = [p.defaultValue/][/if][/for]
+[/template]
+
+[template generateReturnType(op : Operation)]
+[if (op.returnType <> null)] -> [op.returnType.name/][/if]
+[/template]
+
+[template generateReturnStub(op : Operation)]
+[if (op.returnType <> null)]
+[if (op.returnType.name = 'String')]return ""
+[elseif (op.returnType.name = 'Int' or op.returnType.name = 'Double')]return 0
+[elseif (op.returnType.name = 'Bool')]return false
+[else]fatalError("Not implemented")
+[/if]
+[/if]
+[/template]
+
+[comment ================================================================ /]
+[comment                    PROTOCOL GENERATION                          /]
+[comment ================================================================ /]
+
+[template generateProtocolFile(proto : Protocol)]
+[file (proto.name + '.swift', 'overwrite', 'UTF-8')]
+//
+// [proto.name/].swift
+// Generated from UML model
+//
+
+import Foundation
+
+[if (proto.documentation <> null)]
+/// [proto.documentation/]
+[/if]
+protocol [proto.name/][if (proto.extends->notEmpty())]: [proto.extends.name->sep(', ')/][/if] {
+[for (prop : Property | proto.properties)]
+    var [prop.name/]: [generateTypeName(prop)/] { get[if (not prop.isReadOnly)] set[/if] }
+[/for]
+[for (op : Operation | proto.operations)]
+    func [op.name/]([generateParameters(op)/])[if (op.isAsync)] async[/if][if (op.throws)] throws[/if][generateReturnType(op)/]
+[/for]
+}
+[/file]
+[/template]
+
+[comment ================================================================ /]
+[comment                   ENUMERATION GENERATION                        /]
+[comment ================================================================ /]
+
+[template generateEnumFile(enum : Enumeration)]
+[file (enum.name + '.swift', 'overwrite', 'UTF-8')]
+//
+// [enum.name/].swift
+// Generated from UML model
+//
+
+import Foundation
+
+[if (enum.documentation <> null)]
+/// [enum.documentation/]
+[/if]
+enum [enum.name/][if (enum.rawType <> null)]: [enum.rawType.name/][/if] {
+[for (lit : EnumLiteral | enum.literals)]
+    case [lit.name/][if (lit.rawValue <> null)] = [lit.rawValue/][/if]
+[/for]
+}
+[/file]
+[/template]

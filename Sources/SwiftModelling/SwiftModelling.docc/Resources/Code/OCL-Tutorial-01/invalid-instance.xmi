@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:bank="http://www.example.org/bank">
+  <!--
+    Invalid Bank Instance - Contains multiple OCL constraint violations:
+
+    1. VIOLATION: Duplicate account numbers (uniqueAccountNumbers)
+       - Account "1234567890" appears twice
+
+    2. VIOLATION: Duplicate customer IDs (uniqueCustomerIds)
+       - Customer ID "CUST001" appears twice
+
+    3. VIOLATION: Invalid email (validEmail)
+       - "invalid-email" does not contain @
+
+    4. VIOLATION: Underage customer (adultCustomer)
+       - Age 16 is less than 18
+
+    5. VIOLATION: Negative balance (positiveBalance)
+       - Balance -500.00 is negative
+
+    6. VIOLATION: Invalid account number length (validAccountNumber)
+       - "12345" is only 5 digits, not 10
+
+    7. VIOLATION: Savings below minimum (sufficientMinimumBalance)
+       - Savings account with balance 50.00 but minimum is 100.00
+
+    8. VIOLATION: Negative transaction amount (positiveAmount)
+       - Amount -100.00 is negative
+
+    9. VIOLATION: Empty description (validDescription)
+       - Empty description string
+  -->
+  <bank:Bank name="Problem Bank" swiftCode="PROBLM33">
+
+    <!-- VIOLATION: Invalid email (no @ symbol) -->
+    <!-- VIOLATION: Underage customer (16 < 18) -->
+    <!-- VIOLATION: Duplicate customer ID "CUST001" -->
+    <customers customerId="CUST001" name="Tommy Young" email="invalid-email" age="16">
+
+      <!-- VIOLATION: Invalid account number (5 digits instead of 10) -->
+      <!-- VIOLATION: Negative balance -->
+      <accounts accountNumber="12345" accountType="CURRENT" balance="-500.00" minimumBalance="0.00" isActive="true">
+
+        <!-- VIOLATION: Negative transaction amount -->
+        <transactions transactionId="TXN001" transactionType="WITHDRAWAL" amount="-100.00" description="Bad withdrawal" timestamp="2025-01-01T10:00:00"/>
+
+        <!-- VIOLATION: Empty description -->
+        <transactions transactionId="TXN002" transactionType="DEPOSIT" amount="50.00" description="" timestamp="2025-01-02T10:00:00"/>
+      </accounts>
+    </customers>
+
+    <!-- VIOLATION: Duplicate customer ID "CUST001" (same as above) -->
+    <customers customerId="CUST001" name="Sarah Connor" email="sarah@future.com" age="30">
+
+      <!-- VIOLATION: Duplicate account number (same as in valid-instance) -->
+      <accounts accountNumber="1234567890" accountType="SAVINGS" balance="1000.00" minimumBalance="100.00" isActive="true">
+        <transactions transactionId="TXN003" transactionType="DEPOSIT" amount="1000.00" description="Valid deposit" timestamp="2025-01-03T10:00:00"/>
+      </accounts>
+
+      <!-- VIOLATION: Savings account below minimum balance -->
+      <!-- Balance 50.00 is less than minimumBalance 100.00 -->
+      <accounts accountNumber="9999888877" accountType="SAVINGS" balance="50.00" minimumBalance="100.00" isActive="true">
+        <transactions transactionId="TXN004" transactionType="DEPOSIT" amount="50.00" description="Small deposit" timestamp="2025-01-04T10:00:00"/>
+      </accounts>
+    </customers>
+  </bank:Bank>
+</xmi:XMI>

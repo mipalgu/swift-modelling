@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:relational="http://www.example.org/relational">
+  <!-- Expected Output: Library Management Database Schema -->
+  <relational:Schema name="library">
+    <!-- SQL Types -->
+    <types name="INTEGER"/>
+    <types name="VARCHAR(255)"/>
+    <types name="BOOLEAN"/>
+    <types name="DATE"/>
+
+    <!-- Author Table -->
+    <tables name="Author">
+      <columns name="id" keyOf="//@tables.0" type="//@types.0"/>
+      <columns name="firstName" type="//@types.1"/>
+      <columns name="lastName" type="//@types.1"/>
+      <columns name="birthYear" type="//@types.0"/>
+      <key>//@tables.0/@columns.0</key>
+    </tables>
+
+    <!-- Book Table -->
+    <tables name="Book">
+      <columns name="id" keyOf="//@tables.1" type="//@types.0"/>
+      <columns name="title" type="//@types.1"/>
+      <columns name="isbn" type="//@types.1"/>
+      <columns name="pageCount" type="//@types.0"/>
+      <columns name="available" type="//@types.2"/>
+      <columns name="author_id" type="//@types.0"/>
+      <key>//@tables.1/@columns.0</key>
+    </tables>
+
+    <!-- Book_keywords Table (for multi-valued attribute) -->
+    <tables name="Book_keywords">
+      <columns name="book_id" type="//@types.0"/>
+      <columns name="keywords" type="//@types.1"/>
+    </tables>
+
+    <!-- Member Table -->
+    <tables name="Member">
+      <columns name="id" keyOf="//@tables.3" type="//@types.0"/>
+      <columns name="memberNumber" type="//@types.1"/>
+      <columns name="name" type="//@types.1"/>
+      <columns name="email" type="//@types.1"/>
+      <columns name="joinDate" type="//@types.3"/>
+      <key>//@tables.3/@columns.0</key>
+    </tables>
+
+    <!-- Member_borrowedBooks Table (for multi-valued attribute) -->
+    <tables name="Member_borrowedBooks">
+      <columns name="member_id" type="//@types.0"/>
+      <columns name="borrowedBooks" type="//@types.1"/>
+    </tables>
+
+    <!-- Loan Table -->
+    <tables name="Loan">
+      <columns name="id" keyOf="//@tables.5" type="//@types.0"/>
+      <columns name="loanDate" type="//@types.3"/>
+      <columns name="dueDate" type="//@types.3"/>
+      <columns name="returned" type="//@types.2"/>
+      <columns name="book_id" type="//@types.0"/>
+      <columns name="member_id" type="//@types.0"/>
+      <key>//@tables.5/@columns.0</key>
+    </tables>
+  </relational:Schema>
+</xmi:XMI>

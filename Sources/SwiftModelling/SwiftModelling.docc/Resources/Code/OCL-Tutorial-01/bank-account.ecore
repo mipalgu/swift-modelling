@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="Bank" nsURI="http://www.example.org/bank" nsPrefix="bank">
+
+  <!-- OCL Constraints Documentation -->
+  <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+    <details key="documentation" value="Bank Account metamodel demonstrating OCL constraints including invariants, derivation rules, and pre/post conditions."/>
+  </eAnnotations>
+
+  <!-- Bank: Container for customers and accounts -->
+  <eClassifiers xsi:type="ecore:EClass" name="Bank">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+      <details key="constraints" value="uniqueAccountNumbers uniqueCustomerIds"/>
+    </eAnnotations>
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
+      <!-- Invariant: All account numbers must be unique -->
+      <details key="uniqueAccountNumbers" value="self.accounts->isUnique(accountNumber)"/>
+      <!-- Invariant: All customer IDs must be unique -->
+      <details key="uniqueCustomerIds" value="self.customers->isUnique(customerId)"/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="swiftCode" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="customers" upperBound="-1"
+        eType="#//Customer" containment="true" eOpposite="#//Customer/bank"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="accounts" upperBound="-1"
+        eType="#//Account" containment="true" eOpposite="#//Account/bank"/>
+  </eClassifiers>
+
+  <!-- Customer: Bank customer with accounts -->
+  <eClassifiers xsi:type="ecore:EClass" name="Customer">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+      <details key="constraints" value="validEmail adultCustomer"/>
+    </eAnnotations>
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
+      <!-- Invariant: Email must contain @ symbol -->
+      <details key="validEmail" value="self.email.indexOf('@') > 0"/>
+      <!-- Invariant: Customer must be at least 18 years old -->
+      <details key="adultCustomer" value="self.age >= 18"/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="customerId" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="email" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="age" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bank" eType="#//Bank"
+        eOpposite="#//Bank/customers"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="accounts" upperBound="-1"
+        eType="#//Account" eOpposite="#//Account/owner"/>
+    <!-- Derived: Total balance across all accounts -->
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="totalBalance" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"
+        changeable="false" volatile="true" transient="true" derived="true">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
+        <details key="derivation" value="self.accounts->collect(balance)->sum()"/>
+      </eAnnotations>
+    </eStructuralFeatures>
+    <!-- Derived: Number of active accounts -->
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="activeAccountCount" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"
+        changeable="false" volatile="true" transient="true" derived="true">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
+        <details key="derivation" value="self.accounts->select(isActive)->size()"/>
+      </eAnnotations>
+    </eStructuralFeatures>
+  </eClassifiers>
+
+  <!-- AccountType: Enum for account types -->
+  <eClassifiers xsi:type="ecore:EEnum" name="AccountType">
+    <eLiterals name="SAVINGS" value="0"/>
+    <eLiterals name="CURRENT" value="1"/>
+    <eLiterals name="FIXED_DEPOSIT" value="2"/>
+  </eClassifiers>
+
+  <!-- Account: Bank account with balance constraints -->
+  <eClassifiers xsi:type="ecore:EClass" name="Account">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+      <details key="constraints" value="positiveBalance validAccountNumber sufficientMinimumBalance"/>
+    </eAnnotations>
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
+      <!-- Invariant: Balance must not be negative -->
+      <details key="positiveBalance" value="self.balance >= 0"/>
+      <!-- Invariant: Account number must be 10 digits -->
+      <details key="validAccountNumber" value="self.accountNumber.size() = 10"/>
+      <!-- Invariant: Savings accounts must maintain minimum balance -->
+      <details key="sufficientMinimumBalance" value="self.accountType = AccountType::SAVINGS implies self.balance >= self.minimumBalance"/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="accountNumber" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="accountType" lowerBound="1"
+        eType="#//AccountType" defaultValueLiteral="SAVINGS"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="balance" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble" defaultValueLiteral="0.0"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="minimumBalance"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble" defaultValueLiteral="100.0"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isActive"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean" defaultValueLiteral="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bank" eType="#//Bank"
+        eOpposite="#//Bank/accounts"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="owner" lowerBound="1" eType="#//Customer"
+        eOpposite="#//Customer/accounts"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="transactions" upperBound="-1"
+        eType="#//Transaction" containment="true" eOpposite="#//Transaction/account"/>
+    <!-- Derived: Total deposits -->
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="totalDeposits" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"
+        changeable="false" volatile="true" transient="true" derived="true">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
+        <details key="derivation" value="self.transactions->select(t | t.transactionType = TransactionType::DEPOSIT)->collect(amount)->sum()"/>
+      </eAnnotations>
+    </eStructuralFeatures>
+    <!-- Derived: Total withdrawals -->
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="totalWithdrawals" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"
+        changeable="false" volatile="true" transient="true" derived="true">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
+        <details key="derivation" value="self.transactions->select(t | t.transactionType = TransactionType::WITHDRAWAL)->collect(amount)->sum()"/>
+      </eAnnotations>
+    </eStructuralFeatures>
+    <!-- Operation with pre/post conditions -->
+    <eOperations name="withdraw" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
+        <!-- Precondition: Amount must be positive -->
+        <details key="pre" value="amount > 0"/>
+        <!-- Precondition: Must have sufficient funds -->
+        <details key="pre" value="self.balance >= amount"/>
+        <!-- Postcondition: Balance is reduced -->
+        <details key="post" value="self.balance = self.balance@pre - amount"/>
+      </eAnnotations>
+      <eParameters name="amount" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"/>
+    </eOperations>
+    <eOperations name="deposit">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
+        <!-- Precondition: Amount must be positive -->
+        <details key="pre" value="amount > 0"/>
+        <!-- Postcondition: Balance is increased -->
+        <details key="post" value="self.balance = self.balance@pre + amount"/>
+      </eAnnotations>
+      <eParameters name="amount" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"/>
+    </eOperations>
+  </eClassifiers>
+
+  <!-- TransactionType: Enum for transaction types -->
+  <eClassifiers xsi:type="ecore:EEnum" name="TransactionType">
+    <eLiterals name="DEPOSIT" value="0"/>
+    <eLiterals name="WITHDRAWAL" value="1"/>
+    <eLiterals name="TRANSFER" value="2"/>
+  </eClassifiers>
+
+  <!-- Transaction: Individual transaction record -->
+  <eClassifiers xsi:type="ecore:EClass" name="Transaction">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+      <details key="constraints" value="positiveAmount validDescription"/>
+    </eAnnotations>
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
+      <!-- Invariant: Transaction amount must be positive -->
+      <details key="positiveAmount" value="self.amount > 0"/>
+      <!-- Invariant: Description must not be empty -->
+      <details key="validDescription" value="self.description.size() > 0"/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="transactionId" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="transactionType" lowerBound="1"
+        eType="#//TransactionType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="amount" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="timestamp" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="account" lowerBound="1" eType="#//Account"
+        eOpposite="#//Account/transactions"/>
+  </eClassifiers>
+</ecore:EPackage>

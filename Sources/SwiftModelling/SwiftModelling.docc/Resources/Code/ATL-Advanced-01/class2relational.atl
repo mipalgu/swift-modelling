@@ -1,0 +1,160 @@
+-- ATL Transformation: Class to Relational
+-- This transformation converts a simplified UML class model into a relational database schema
+-- Based on the classic TTC benchmark case
+-- @path Class=/Class2Relational/class.ecore
+-- @path Relational=/Class2Relational/relational.ecore
+
+module Class2Relational;
+create OUT: Relational from IN: Class;
+
+-- ===========================================================================
+-- Helper: Get all attributes including inherited ones
+-- ===========================================================================
+helper context Class!Class def: allAttributes: Sequence(Class!Attribute) =
+    if self.superType.oclIsUndefined() then
+        self.attributes->asSequence()
+    else
+        self.superType.allAttributes->union(self.attributes->asSequence())
+    endif;
+
+-- ===========================================================================
+-- Helper: Check if a classifier is a DataType (primitive type)
+-- ===========================================================================
+helper context Class!Classifier def: isDataType: Boolean =
+    self.oclIsTypeOf(Class!DataType);
+
+-- ===========================================================================
+-- Helper: Map class type to SQL type name
+-- ===========================================================================
+helper context Class!DataType def: sqlTypeName: String =
+    if self.name = 'Integer' then
+        'INTEGER'
+    else if self.name = 'Boolean' then
+        'BOOLEAN'
+    else if self.name = 'String' then
+        'VARCHAR(255)'
+    else if self.name = 'Double' or self.name = 'Float' then
+        'DECIMAL(10,2)'
+    else if self.name = 'Date' then
+        'DATE'
+    else
+        'VARCHAR(255)'
+    endif endif endif endif endif;
+
+-- ===========================================================================
+-- Rule: Package -> Schema
+-- Transforms a class package into a database schema
+-- ===========================================================================
+rule Package2Schema {
+    from
+        p: Class!Package
+    to
+        s: Relational!Schema (
+            name <- p.name,
+            tables <- p.classifiers->select(c | c.oclIsTypeOf(Class!Class)),
+            types <- p.classifiers->select(c | c.oclIsTypeOf(Class!DataType))
+        )
+}
+
+-- ===========================================================================
+-- Rule: DataType -> Type
+-- Maps primitive data types to SQL types
+-- ===========================================================================
+rule DataType2Type {
+    from
+        dt: Class!DataType
+    to
+        t: Relational!Type (
+            name <- dt.sqlTypeName
+        )
+}
+
+-- ===========================================================================
+-- Rule: Class -> Table
+-- Transforms a class into a database table with primary key
+-- ===========================================================================
+rule Class2Table {
+    from
+        c: Class!Class (not c.isAbstract)
+    to
+        t: Relational!Table (
+            name <- c.name,
+            columns <- Sequence{key}->union(
+                c.allAttributes->select(a | not a.multiValued and a.type.isDataType)
+            ),
+            key <- Sequence{key}
+        ),
+        key: Relational!Column (
+            name <- 'id',
+            type <- thisModule.resolveTemp(
+                Class!DataType.allInstances()->any(dt | dt.name = 'Integer'),
+                't'
+            ),
+            keyOf <- t
+        )
+}
+
+-- ===========================================================================
+-- Rule: SingleValuedAttribute -> Column
+-- Transforms single-valued primitive attributes to table columns
+-- ===========================================================================
+rule SingleValuedAttribute2Column {
+    from
+        a: Class!Attribute (
+            not a.multiValued and
+            a.type.oclIsTypeOf(Class!DataType)
+        )
+    to
+        c: Relational!Column (
+            name <- a.name,
+            type <- a.type
+        )
+}
+
+-- ===========================================================================
+-- Rule: MultiValuedAttribute -> Table
+-- Transforms multi-valued attributes to separate tables with foreign key
+-- ===========================================================================
+rule MultiValuedAttribute2Table {
+    from
+        a: Class!Attribute (
+            a.multiValued and
+            a.type.oclIsTypeOf(Class!DataType)
+        )
+    to
+        t: Relational!Table (
+            name <- a.owner.name + '_' + a.name,
+            columns <- Sequence{id, value}
+        ),
+        id: Relational!Column (
+            name <- a.owner.name.toLower() + '_id',
+            type <- thisModule.resolveTemp(
+                Class!DataType.allInstances()->any(dt | dt.name = 'Integer'),
+                't'
+            )
+        ),
+        value: Relational!Column (
+            name <- a.name,
+            type <- a.type
+        )
+}
+
+-- ===========================================================================
+-- Rule: ClassAttribute -> ForeignKey
+-- Transforms class-typed attributes to foreign key columns
+-- ===========================================================================
+rule ClassAttribute2ForeignKey {
+    from
+        a: Class!Attribute (
+            not a.multiValued and
+            a.type.oclIsTypeOf(Class!Class)
+        )
+    to
+        fk: Relational!Column (
+            name <- a.name + '_id',
+            type <- thisModule.resolveTemp(
+                Class!DataType.allInstances()->any(dt | dt.name = 'Integer'),
+                't'
+            )
+        )
+}

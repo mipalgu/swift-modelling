@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:class="http://www.example.org/class">
+  <!-- Sample Class Model: Library Management System -->
+  <class:Package name="library">
+    <!-- Primitive DataTypes -->
+    <classifiers xsi:type="class:DataType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Integer"/>
+    <classifiers xsi:type="class:DataType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="String"/>
+    <classifiers xsi:type="class:DataType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Boolean"/>
+    <classifiers xsi:type="class:DataType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Date"/>
+
+    <!-- Author Class -->
+    <classifiers xsi:type="class:Class" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Author">
+      <attributes name="firstName" type="//@classifiers.1"/>
+      <attributes name="lastName" type="//@classifiers.1"/>
+      <attributes name="birthYear" type="//@classifiers.0"/>
+    </classifiers>
+
+    <!-- Book Class -->
+    <classifiers xsi:type="class:Class" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Book">
+      <attributes name="title" type="//@classifiers.1"/>
+      <attributes name="isbn" type="//@classifiers.1"/>
+      <attributes name="pageCount" type="//@classifiers.0"/>
+      <attributes name="available" type="//@classifiers.2"/>
+      <attributes name="author" type="//@classifiers.4"/>
+      <attributes name="keywords" multiValued="true" type="//@classifiers.1"/>
+    </classifiers>
+
+    <!-- Member Class -->
+    <classifiers xsi:type="class:Class" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Member">
+      <attributes name="memberNumber" type="//@classifiers.1"/>
+      <attributes name="name" type="//@classifiers.1"/>
+      <attributes name="email" type="//@classifiers.1"/>
+      <attributes name="joinDate" type="//@classifiers.3"/>
+      <attributes name="borrowedBooks" multiValued="true" type="//@classifiers.1"/>
+    </classifiers>
+
+    <!-- Loan Class -->
+    <classifiers xsi:type="class:Class" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Loan">
+      <attributes name="loanDate" type="//@classifiers.3"/>
+      <attributes name="dueDate" type="//@classifiers.3"/>
+      <attributes name="returned" type="//@classifiers.2"/>
+      <attributes name="book" type="//@classifiers.5"/>
+      <attributes name="member" type="//@classifiers.6"/>
+    </classifiers>
+  </class:Package>
+</xmi:XMI>
