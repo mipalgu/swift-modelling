@@ -200,4 +200,4 @@ swift-ecore inspect MyMetamodel.ecore \
 
 - <doc:Tutorials>
 - <doc:swift-atl>
-- ``SwiftModelling``
+- <doc:SwiftModelling>

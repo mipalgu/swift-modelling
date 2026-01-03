@@ -307,4 +307,4 @@ called rule CreatePerson(member: Families!Member) {
 - <doc:Tutorials>
 - <doc:01-first-transformation>
 - <doc:swift-ecore>
-- ``SwiftModelling``
+- <doc:SwiftModelling>

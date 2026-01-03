@@ -352,4 +352,4 @@ class [className/] {
 - <doc:Tutorials>
 - <doc:swift-ecore>
 - <doc:swift-atl>
-- ``SwiftModelling``
+- <doc:SwiftModelling>
