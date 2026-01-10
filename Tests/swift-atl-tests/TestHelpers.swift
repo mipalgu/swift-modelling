@@ -1,11 +1,12 @@
 import Foundation
 import Subprocess
-#if canImport(System)
-import System
-#else
-import SystemPackage
-#endif
 import Testing
+
+#if canImport(System)
+    import System
+#else
+    import SystemPackage
+#endif
 
 // MARK: - Test Errors
 
@@ -18,7 +19,8 @@ enum TestError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .executableNotFound(let path):
-            return "Executable not found at: \(path). Run 'swift build --scratch-path /tmp/build-swift-modelling' first."
+            return
+                "Executable not found at: \(path). Run 'swift build' first."
         case .resourceNotFound(let name):
             return "Test resource not found: \(name)"
         case .unexpectedOutput:
@@ -55,24 +57,44 @@ struct SubprocessResult: Sendable {
 
 // MARK: - Executable Path Resolution
 
-/// Resolves the path to the swift-atl executable built in the scratch directory.
+/// Resolves the path to the swift-atl executable using `swift build --show-bin-path`.
 ///
-/// The executable is expected at `/tmp/build-swift-modelling/{platform}/debug/swift-atl`.
+/// This dynamically locates the build directory regardless of the scratch path used.
 ///
 /// - Returns: The absolute path to the swift-atl executable.
 /// - Throws: `TestError.executableNotFound` if the executable doesn't exist.
 func swiftATLExecutablePath() throws -> String {
-    let scratchPath = "/tmp/build-swift-modelling"
-    let configuration = "debug"
     let executableName = "swift-atl"
+    var bundleURL = Bundle.module.bundleURL
 
-    let path = "\(scratchPath)/\(configuration)/\(executableName)"
-
-    guard FileManager.default.fileExists(atPath: path) else {
-        throw TestError.executableNotFound(path)
+    // In Xcode, Bundle.module.bundleURL may point to Contents/Resources inside the bundle
+    // We need to navigate up to the Products/Debug directory
+    if bundleURL.pathComponents.contains("Contents")
+        && bundleURL.pathComponents.contains("Resources")
+    {
+        // Navigate up from .xctest/Contents/Resources to the directory containing .xctest
+        while !bundleURL.pathExtension.isEmpty || bundleURL.lastPathComponent == "Contents"
+            || bundleURL.lastPathComponent == "Resources"
+        {
+            bundleURL = bundleURL.deletingLastPathComponent()
+            if bundleURL.pathExtension == "xctest" {
+                bundleURL = bundleURL.deletingLastPathComponent()
+                break
+            }
+        }
+    } else {
+        // For SPM and standard Xcode builds, executable is sibling of test bundle
+        // SPM: /tmp/build/debug/swift-atl-testsPackageTests.bundle -> /tmp/build/debug
+        // Xcode: /DerivedData/.../Build/Products/Debug/swift-atl-testsPackageTests.bundle -> .../Debug
+        bundleURL = bundleURL.deletingLastPathComponent()
     }
 
-    return path
+    let bundleSiblingPath = bundleURL.appendingPathComponent(executableName).path
+    guard FileManager.default.fileExists(atPath: bundleSiblingPath) else {
+        throw TestError.executableNotFound(bundleSiblingPath)
+    }
+
+    return bundleSiblingPath
 }
 
 // MARK: - Resource Loading
@@ -92,7 +114,10 @@ func loadTestResource(named name: String, subdirectory: String? = nil) throws ->
     let subdirectoryPath = subdirectory.map { "Resources/\($0)" } ?? "Resources"
 
     // Try to find the resource using Bundle's built-in methods
-    guard let resourceURL = bundle.url(forResource: name, withExtension: nil, subdirectory: subdirectoryPath) else {
+    guard
+        let resourceURL = bundle.url(
+            forResource: name, withExtension: nil, subdirectory: subdirectoryPath)
+    else {
         // If not found, try manual construction as fallback
         guard let bundleURL = bundle.resourceURL else {
             throw TestError.resourceNotFound("Bundle resources not found")

@@ -1,11 +1,12 @@
 import Foundation
 import Subprocess
-#if canImport(System)
-import System
-#else
-import SystemPackage
-#endif
 import Testing
+
+#if canImport(System)
+    import System
+#else
+    import SystemPackage
+#endif
 
 // MARK: - Test Errors
 
@@ -18,7 +19,8 @@ enum TestError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .executableNotFound(let path):
-            return "Executable not found at: \(path). Run 'swift build --scratch-path /tmp/build-swift-modelling' first."
+            return
+                "Executable not found at: \(path). Run 'swift build' first."
         case .resourceNotFound(let name):
             return "Test resource not found: \(name)"
         case .unexpectedOutput:
@@ -55,24 +57,44 @@ struct SubprocessResult: Sendable {
 
 // MARK: - Executable Path Resolution
 
-/// Resolves the path to the swift-ecore executable built in the scratch directory.
+/// Resolves the path to the swift-ecore executable using `swift build --show-bin-path`.
 ///
-/// The executable is expected at `/tmp/build-swift-modelling/{platform}/debug/swift-ecore`.
+/// This dynamically locates the build directory regardless of the scratch path used.
 ///
 /// - Returns: The absolute path to the swift-ecore executable.
 /// - Throws: `TestError.executableNotFound` if the executable doesn't exist.
 func swiftEcoreExecutablePath() throws -> String {
-    let scratchPath = "/tmp/build-swift-modelling"
-    let configuration = "debug"
     let executableName = "swift-ecore"
+    var bundleURL = Bundle.module.bundleURL
 
-    let path = "\(scratchPath)/\(configuration)/\(executableName)"
-
-    guard FileManager.default.fileExists(atPath: path) else {
-        throw TestError.executableNotFound(path)
+    // In Xcode, Bundle.module.bundleURL may point to Contents/Resources inside the bundle
+    // We need to navigate up to the Products/Debug directory
+    if bundleURL.pathComponents.contains("Contents")
+        && bundleURL.pathComponents.contains("Resources")
+    {
+        // Navigate up from .xctest/Contents/Resources to the directory containing .xctest
+        while !bundleURL.pathExtension.isEmpty || bundleURL.lastPathComponent == "Contents"
+            || bundleURL.lastPathComponent == "Resources"
+        {
+            bundleURL = bundleURL.deletingLastPathComponent()
+            if bundleURL.pathExtension == "xctest" {
+                bundleURL = bundleURL.deletingLastPathComponent()
+                break
+            }
+        }
+    } else {
+        // For SPM and standard Xcode builds, executable is sibling of test bundle
+        // SPM: /tmp/build/debug/swift-ecore-testsPackageTests.bundle -> /tmp/build/debug
+        // Xcode: /DerivedData/.../Build/Products/Debug/swift-ecore-testsPackageTests.bundle -> .../Debug
+        bundleURL = bundleURL.deletingLastPathComponent()
     }
 
-    return path
+    let bundleSiblingPath = bundleURL.appendingPathComponent(executableName).path
+    guard FileManager.default.fileExists(atPath: bundleSiblingPath) else {
+        throw TestError.executableNotFound(bundleSiblingPath)
+    }
+
+    return bundleSiblingPath
 }
 
 // MARK: - Resource Loading
@@ -92,7 +114,10 @@ func loadTestResource(named name: String, subdirectory: String? = nil) throws ->
     let subdirectoryPath = subdirectory.map { "Resources/\($0)" } ?? "Resources"
 
     // Try to find the resource using Bundle's built-in methods
-    guard let resourceURL = bundle.url(forResource: name, withExtension: nil, subdirectory: subdirectoryPath) else {
+    guard
+        let resourceURL = bundle.url(
+            forResource: name, withExtension: nil, subdirectory: subdirectoryPath)
+    else {
         // If not found, try manual construction as fallback
         guard let bundleURL = bundle.resourceURL else {
             throw TestError.resourceNotFound("Bundle resources not found")
@@ -109,6 +134,99 @@ func loadTestResource(named name: String, subdirectory: String? = nil) throws ->
     }
 
     return resourceURL
+}
+
+// MARK: - Dependency Resource Resolution
+
+/// Finds a resource file in a dependency's checkouts directory.
+///
+/// This dynamically locates files in dependency checkouts regardless of the scratch path used.
+/// Uses `Bundle.module.bundleURL` to find the build directory, then navigates to checkouts.
+///
+/// For SPM: Bundle is at `/scratch-path/debug/TestBundle.bundle`
+///          Checkouts are at `/scratch-path/checkouts/`
+///
+/// For Xcode: Bundle is at `/DerivedData/.../Build/Products/Debug/TestBundle.xctest`
+///            Checkouts are at `/DerivedData/.../SourcePackages/checkouts/`
+///
+/// - Parameters:
+///   - fileName: The resource file name (e.g., "organisation.ecore").
+///   - dependencyName: The dependency package name (e.g., "swift-ecore").
+///   - relativePath: The path from the dependency root to the resource (e.g., "Tests/ECoreTests/Resources/xmi").
+/// - Returns: The path to the resource file.
+/// - Throws: `TestError.resourceNotFound` if the resource cannot be located.
+func findDependencyResource(
+    fileName: String,
+    dependencyName: String,
+    relativePath: String
+) throws -> String {
+    var bundleURL = Bundle.module.bundleURL
+
+    // In Xcode, Bundle.module.bundleURL may point to Contents/Resources inside the bundle
+    if bundleURL.pathComponents.contains("Contents")
+        && bundleURL.pathComponents.contains("Resources")
+    {
+        // Navigate up from .xctest/Contents/Resources to the directory containing .xctest
+        while !bundleURL.pathExtension.isEmpty || bundleURL.lastPathComponent == "Contents"
+            || bundleURL.lastPathComponent == "Resources"
+        {
+            bundleURL = bundleURL.deletingLastPathComponent()
+            if bundleURL.pathExtension == "xctest" {
+                bundleURL = bundleURL.deletingLastPathComponent()
+                break
+            }
+        }
+    } else {
+        // For SPM builds, bundle is at /scratch-path/debug/TestBundle.bundle
+        // Go up one level to get to /scratch-path/debug
+        bundleURL = bundleURL.deletingLastPathComponent()
+    }
+
+    // Now bundleURL points to the products directory (debug or Debug)
+    // For SPM: /scratch-path/arm64-apple-macosx/debug -> search upward to find checkouts
+    // For Xcode: /DerivedData/.../Build/Products/Debug -> search for SourcePackages/checkouts
+
+    // Search upward for a directory containing "checkouts" (SPM) or "SourcePackages/checkouts" (Xcode)
+    var searchURL = bundleURL
+    var lastTriedPath = ""
+    for _ in 0..<10 {
+        // Try SPM layout: checkouts at same level
+        let spmCheckoutsURL =
+            searchURL
+            .appendingPathComponent("checkouts")
+            .appendingPathComponent(dependencyName)
+            .appendingPathComponent(relativePath)
+            .appendingPathComponent(fileName)
+
+        if FileManager.default.fileExists(atPath: spmCheckoutsURL.path) {
+            return spmCheckoutsURL.path
+        }
+        lastTriedPath = spmCheckoutsURL.path
+
+        // Try Xcode layout: SourcePackages/checkouts at same level
+        let xcodeCheckoutsURL =
+            searchURL
+            .appendingPathComponent("SourcePackages")
+            .appendingPathComponent("checkouts")
+            .appendingPathComponent(dependencyName)
+            .appendingPathComponent(relativePath)
+            .appendingPathComponent(fileName)
+
+        if FileManager.default.fileExists(atPath: xcodeCheckoutsURL.path) {
+            return xcodeCheckoutsURL.path
+        }
+
+        let parent = searchURL.deletingLastPathComponent()
+        if parent.path == searchURL.path {
+            break  // Reached root
+        }
+        searchURL = parent
+    }
+
+    throw TestError.resourceNotFound(
+        "\(fileName) from \(dependencyName) at \(relativePath). "
+            + "Last tried path: \(lastTriedPath)"
+    )
 }
 
 // MARK: - Temporary Directory Management

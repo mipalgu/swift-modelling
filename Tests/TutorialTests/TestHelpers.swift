@@ -1,11 +1,12 @@
 import Foundation
 import Subprocess
-#if canImport(System)
-import System
-#else
-import SystemPackage
-#endif
 import Testing
+
+#if canImport(System)
+    import System
+#else
+    import SystemPackage
+#endif
 
 // MARK: - Test Errors
 
@@ -16,7 +17,8 @@ enum TestError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .executableNotFound(let path):
-            return "Executable not found at: \(path). Run 'swift build --scratch-path /tmp/build-swift-modelling' first."
+            return
+                "Executable not found at: \(path). Run 'swift build' first."
         case .unexpectedOutput:
             return "Unexpected command output"
         }
@@ -49,17 +51,37 @@ struct SubprocessResult: Sendable {
 // MARK: - Executable Path Resolution
 
 func swiftEcoreExecutablePath() throws -> String {
-    let scratchPath = "/tmp/build-swift-modelling"
-    let configuration = "debug"
     let executableName = "swift-ecore"
+    var bundleURL = Bundle.module.bundleURL
 
-    let path = "\(scratchPath)/\(configuration)/\(executableName)"
-
-    guard FileManager.default.fileExists(atPath: path) else {
-        throw TestError.executableNotFound(path)
+    // In Xcode, Bundle.module.bundleURL may point to Contents/Resources inside the bundle
+    // We need to navigate up to the Products/Debug directory
+    if bundleURL.pathComponents.contains("Contents")
+        && bundleURL.pathComponents.contains("Resources")
+    {
+        // Navigate up from .xctest/Contents/Resources to the directory containing .xctest
+        while !bundleURL.pathExtension.isEmpty || bundleURL.lastPathComponent == "Contents"
+            || bundleURL.lastPathComponent == "Resources"
+        {
+            bundleURL = bundleURL.deletingLastPathComponent()
+            if bundleURL.pathExtension == "xctest" {
+                bundleURL = bundleURL.deletingLastPathComponent()
+                break
+            }
+        }
+    } else {
+        // For SPM and standard Xcode builds, executable is sibling of test bundle
+        // SPM: /tmp/build/debug/swift-ecore-testsPackageTests.bundle -> /tmp/build/debug
+        // Xcode: /DerivedData/.../Build/Products/Debug/swift-ecore-testsPackageTests.bundle -> .../Debug
+        bundleURL = bundleURL.deletingLastPathComponent()
     }
 
-    return path
+    let bundleSiblingPath = bundleURL.appendingPathComponent(executableName).path
+    guard FileManager.default.fileExists(atPath: bundleSiblingPath) else {
+        throw TestError.executableNotFound(bundleSiblingPath)
+    }
+
+    return bundleSiblingPath
 }
 
 // MARK: - Subprocess Execution
