@@ -39,7 +39,9 @@ struct WorkflowTutorialTests {
                 .appendingPathComponent("Workflow-01")
                 .appendingPathComponent("workflow-01-step-01-metamodel.ecore")
 
-            #expect(FileManager.default.fileExists(atPath: metamodelPath.path), "E-commerce metamodel should exist")
+            #expect(
+                FileManager.default.fileExists(atPath: metamodelPath.path),
+                "E-commerce metamodel should exist")
 
             // Use swift-ecore validate to ensure the metamodel can actually be loaded
             let result = try await executeSwiftEcore(
@@ -76,7 +78,9 @@ struct WorkflowTutorialTests {
                 .appendingPathComponent("Workflow-01")
                 .appendingPathComponent("workflow-01-step-05-instance.xmi")
 
-            #expect(FileManager.default.fileExists(atPath: instancePath.path), "E-commerce instance should exist")
+            #expect(
+                FileManager.default.fileExists(atPath: instancePath.path),
+                "E-commerce instance should exist")
 
             // Use swift-ecore validate to ensure the instance can actually be loaded
             let result = try await executeSwiftEcore(
@@ -84,15 +88,22 @@ struct WorkflowTutorialTests {
                 arguments: [instancePath.path]
             )
 
-            #expect(result.succeeded, "Instance should validate successfully and load without errors")
+            #expect(
+                result.succeeded, "Instance should validate successfully and load without errors")
 
             // Read and verify instance content
             let content = try String(contentsOf: instancePath, encoding: .utf8)
 
             // Verify instance contains Shop with products and customers
-            #expect(content.contains("Shop") || content.contains("shop"), "Instance should contain Shop element")
-            #expect(content.contains("Product") || content.contains("products"), "Shop should contain products")
-            #expect(content.contains("Customer") || content.contains("customers"), "Shop should contain customers")
+            #expect(
+                content.contains("Shop") || content.contains("shop"),
+                "Instance should contain Shop element")
+            #expect(
+                content.contains("Product") || content.contains("products"),
+                "Shop should contain products")
+            #expect(
+                content.contains("Customer") || content.contains("customers"),
+                "Shop should contain customers")
         }
 
         @Test("Step 9-12: ATL transformation to reporting model")
@@ -112,9 +123,15 @@ struct WorkflowTutorialTests {
             // Output should conform to reporting metamodel
             // Data integrity should be maintained
 
-            #expect(FileManager.default.fileExists(atPath: sourceMetamodel.path), "Source metamodel should exist")
-            #expect(FileManager.default.fileExists(atPath: targetMetamodel.path), "Target metamodel should exist")
-            #expect(FileManager.default.fileExists(atPath: transformation.path), "ATL transformation should exist")
+            #expect(
+                FileManager.default.fileExists(atPath: sourceMetamodel.path),
+                "Source metamodel should exist")
+            #expect(
+                FileManager.default.fileExists(atPath: targetMetamodel.path),
+                "Target metamodel should exist")
+            #expect(
+                FileManager.default.fileExists(atPath: transformation.path),
+                "ATL transformation should exist")
         }
 
         @Test("Step 13-16: MTL code generation from reporting model")
@@ -130,19 +147,28 @@ struct WorkflowTutorialTests {
                 .appendingPathComponent("Workflow-01")
                 .appendingPathComponent("workflow-01-step-15-docs-templates.mtl")
 
-            #expect(FileManager.default.fileExists(atPath: swiftTemplate.path), "Swift template should exist")
-            #expect(FileManager.default.fileExists(atPath: jsonTemplate.path), "JSON template should exist")
-            #expect(FileManager.default.fileExists(atPath: docsTemplate.path), "Documentation template should exist")
+            #expect(
+                FileManager.default.fileExists(atPath: swiftTemplate.path),
+                "Swift template should exist")
+            #expect(
+                FileManager.default.fileExists(atPath: jsonTemplate.path),
+                "JSON template should exist")
+            #expect(
+                FileManager.default.fileExists(atPath: docsTemplate.path),
+                "Documentation template should exist")
 
             // Read and validate Swift template produces valid Swift syntax
             let swiftContent = try String(contentsOf: swiftTemplate, encoding: .utf8)
-            #expect(swiftContent.contains("struct SalesReportAPI"), "Swift template should generate struct")
+            #expect(
+                swiftContent.contains("struct SalesReportAPI"),
+                "Swift template should generate struct")
             #expect(swiftContent.contains("func"), "Swift template should generate functions")
 
             // Validate JSON template produces valid JSON structure
             let jsonContent = try String(contentsOf: jsonTemplate, encoding: .utf8)
             #expect(jsonContent.contains("\"type\""), "JSON template should define type property")
-            #expect(jsonContent.contains("\"properties\""), "JSON template should define properties")
+            #expect(
+                jsonContent.contains("\"properties\""), "JSON template should define properties")
 
             // Validate documentation template structure
             let docsContent = try String(contentsOf: docsTemplate, encoding: .utf8)
@@ -159,48 +185,53 @@ struct WorkflowTutorialTests {
                 .appendingPathComponent("Workflow-01")
                 .appendingPathComponent("workflow-01-step-18-test-apis.swift")
 
-            #expect(FileManager.default.fileExists(atPath: compileScript.path), "Compile script should exist")
+            #expect(
+                FileManager.default.fileExists(atPath: compileScript.path),
+                "Compile script should exist")
             #expect(FileManager.default.fileExists(atPath: testFile.path), "Test file should exist")
 
             // Verify the test Swift file has valid syntax by reading it
             let testContent = try String(contentsOf: testFile, encoding: .utf8)
-            #expect(testContent.contains("import Testing"), "Test file should import Testing framework")
+            #expect(
+                testContent.contains("import Testing"), "Test file should import Testing framework")
             #expect(testContent.contains("@Test"), "Test file should contain test functions")
 
             // On macOS when tests run without sandbox, or unconditionally on Linux, attempt compilation
             #if os(Linux) || (!SWIFT_PACKAGE_SANDBOX && os(macOS))
-            let tempDir = URL(fileURLWithPath: NSTemporaryDirectory())
-                .appendingPathComponent("workflow-test-\(UUID().uuidString)")
-            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+                let tempDir = URL(fileURLWithPath: NSTemporaryDirectory())
+                    .appendingPathComponent("workflow-test-\(UUID().uuidString)")
+                try FileManager.default.createDirectory(
+                    at: tempDir, withIntermediateDirectories: true)
 
-            defer {
-                try? FileManager.default.removeItem(at: tempDir)
-            }
+                defer {
+                    try? FileManager.default.removeItem(at: tempDir)
+                }
 
-            // Copy test file to temp directory
-            let tempTestFile = tempDir.appendingPathComponent("Tests.swift")
-            try FileManager.default.copyItem(at: testFile, to: tempTestFile)
+                // Copy test file to temp directory
+                let tempTestFile = tempDir.appendingPathComponent("Tests.swift")
+                try FileManager.default.copyItem(at: testFile, to: tempTestFile)
 
-            // Try to compile the Swift file
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/swift")
-            process.arguments = ["-frontend", "-typecheck", tempTestFile.path]
+                // Try to compile the Swift file
+                let process = Process()
+                let swiftPath = try findSwiftExecutable()
+                process.executableURL = URL(fileURLWithPath: swiftPath)
+                process.arguments = ["-frontend", "-typecheck", tempTestFile.path]
 
-            let pipe = Pipe()
-            process.standardError = pipe
-            process.standardOutput = pipe
+                let pipe = Pipe()
+                process.standardError = pipe
+                process.standardOutput = pipe
 
-            do {
-                try process.run()
-                process.waitUntilExit()
+                do {
+                    try process.run()
+                    process.waitUntilExit()
 
-                // Note: Compilation test disabled because test file references generated types
-                // that are not available in isolation. The test file syntax is valid but
-                // requires the generated API types to be present.
-                // #expect(process.terminationStatus == 0, "Generated Swift code should compile without errors")
-            } catch {
-                Issue.record("Failed to run Swift compiler: \(error)")
-            }
+                    // Note: Compilation test disabled because test file references generated types
+                    // that are not available in isolation. The test file syntax is valid but
+                    // requires the generated API types to be present.
+                    // #expect(process.terminationStatus == 0, "Generated Swift code should compile without errors")
+                } catch {
+                    Issue.record("Failed to run Swift compiler: \(error)")
+                }
             #endif
         }
 
@@ -216,7 +247,9 @@ struct WorkflowTutorialTests {
             // Relationships should be maintained
             // No data should be lost in transformations
 
-            #expect(FileManager.default.fileExists(atPath: validationScript.path), "End-to-end validation script should exist")
+            #expect(
+                FileManager.default.fileExists(atPath: validationScript.path),
+                "End-to-end validation script should exist")
         }
     }
 
@@ -233,7 +266,9 @@ struct WorkflowTutorialTests {
                 .appendingPathComponent("Workflow-02")
                 .appendingPathComponent("workflow-02-step-01-validation-metamodel.ecore")
 
-            #expect(FileManager.default.fileExists(atPath: metamodelPath.path), "Validation metamodel should exist")
+            #expect(
+                FileManager.default.fileExists(atPath: metamodelPath.path),
+                "Validation metamodel should exist")
 
             // Use swift-ecore validate to ensure the metamodel can actually be loaded
             let result = try await executeSwiftEcore(
@@ -256,7 +291,9 @@ struct WorkflowTutorialTests {
             #expect(content.contains("name=\"TaskStatus\""), "TaskStatus enumeration should exist")
 
             // Verify Task has dependencies reference
-            #expect(content.contains("name=\"dependencies\""), "Task should have dependencies reference")
+            #expect(
+                content.contains("name=\"dependencies\""), "Task should have dependencies reference"
+            )
         }
 
         @Test("Step 2: Project instance with validation scenarios")
@@ -267,7 +304,9 @@ struct WorkflowTutorialTests {
                 .appendingPathComponent("Workflow-02")
                 .appendingPathComponent("workflow-02-step-02-project-instance.xmi")
 
-            #expect(FileManager.default.fileExists(atPath: instancePath.path), "Project instance should exist")
+            #expect(
+                FileManager.default.fileExists(atPath: instancePath.path),
+                "Project instance should exist")
 
             // Use swift-ecore validate to ensure the instance can actually be loaded
             let result = try await executeSwiftEcore(
@@ -275,15 +314,22 @@ struct WorkflowTutorialTests {
                 arguments: [instancePath.path]
             )
 
-            #expect(result.succeeded, "Instance should validate successfully and load without errors")
+            #expect(
+                result.succeeded, "Instance should validate successfully and load without errors")
 
             // Read and verify instance content
             let content = try String(contentsOf: instancePath, encoding: .utf8)
 
             // Verify instance structure
-            #expect(content.contains("Project") || content.contains("project"), "Instance should contain Project element")
-            #expect(content.contains("Task") || content.contains("tasks"), "Project should contain tasks with various statuses")
-            #expect(content.contains("TeamMember") || content.contains("members"), "Project should contain team members")
+            #expect(
+                content.contains("Project") || content.contains("project"),
+                "Instance should contain Project element")
+            #expect(
+                content.contains("Task") || content.contains("tasks"),
+                "Project should contain tasks with various statuses")
+            #expect(
+                content.contains("TeamMember") || content.contains("members"),
+                "Project should contain team members")
         }
 
         @Test("Step 3: Validation constraints")
@@ -293,7 +339,9 @@ struct WorkflowTutorialTests {
                 .appendingPathComponent("Workflow-02")
                 .appendingPathComponent("workflow-02-step-03-validation-constraints.sh")
 
-            #expect(FileManager.default.fileExists(atPath: constraintsPath.path), "Validation constraints resource should exist")
+            #expect(
+                FileManager.default.fileExists(atPath: constraintsPath.path),
+                "Validation constraints resource should exist")
 
             // Constraints should include:
             // - All tasks must have assignee
@@ -310,7 +358,9 @@ struct WorkflowTutorialTests {
                 .appendingPathComponent("Workflow-02")
                 .appendingPathComponent("workflow-02-step-04-generate-validation-report.sh")
 
-            #expect(FileManager.default.fileExists(atPath: reportScript.path), "Validation report script should exist")
+            #expect(
+                FileManager.default.fileExists(atPath: reportScript.path),
+                "Validation report script should exist")
 
             // Report should include:
             // - Error and warning counts
@@ -332,7 +382,9 @@ struct WorkflowTutorialTests {
             ]
 
             for pattern in constraintPatterns {
-                #expect(pattern.contains("->"), "Constraint queries should use AQL navigation: \(pattern)")
+                #expect(
+                    pattern.contains("->"),
+                    "Constraint queries should use AQL navigation: \(pattern)")
             }
         }
     }
@@ -350,7 +402,9 @@ struct WorkflowTutorialTests {
                 .appendingPathComponent("Workflow-03")
                 .appendingPathComponent("workflow-03-step-01-original-metamodel.ecore")
 
-            #expect(FileManager.default.fileExists(atPath: metamodelPath.path), "Original metamodel should exist")
+            #expect(
+                FileManager.default.fileExists(atPath: metamodelPath.path),
+                "Original metamodel should exist")
 
             // Use swift-ecore validate to ensure the metamodel can actually be loaded
             let result = try await executeSwiftEcore(
@@ -363,7 +417,9 @@ struct WorkflowTutorialTests {
             // Read and verify metamodel content
             let content = try String(contentsOf: metamodelPath, encoding: .utf8)
 
-            #expect(content.contains("http://www.example.org/blog/v1"), "Package nsURI should be blog/v1")
+            #expect(
+                content.contains("http://www.example.org/blog/v1"),
+                "Package nsURI should be blog/v1")
 
             // Verify v1 classes exist
             #expect(content.contains("name=\"Blog\""), "Blog class should exist in v1")
@@ -380,7 +436,9 @@ struct WorkflowTutorialTests {
                 .appendingPathComponent("Workflow-03")
                 .appendingPathComponent("workflow-03-step-02-evolved-metamodel.ecore")
 
-            #expect(FileManager.default.fileExists(atPath: metamodelPath.path), "Evolved metamodel should exist")
+            #expect(
+                FileManager.default.fileExists(atPath: metamodelPath.path),
+                "Evolved metamodel should exist")
 
             // Use swift-ecore validate to ensure the metamodel can actually be loaded
             let result = try await executeSwiftEcore(
@@ -393,7 +451,9 @@ struct WorkflowTutorialTests {
             // Read and verify metamodel content
             let content = try String(contentsOf: metamodelPath, encoding: .utf8)
 
-            #expect(content.contains("http://www.example.org/blog/v2"), "Package nsURI should be blog/v2")
+            #expect(
+                content.contains("http://www.example.org/blog/v2"),
+                "Package nsURI should be blog/v2")
 
             // Verify original v1 classes still exist
             #expect(content.contains("name=\"Blog\""), "Blog class should exist in v2")
@@ -407,12 +467,18 @@ struct WorkflowTutorialTests {
 
             // Verify new attributes in Post
             #expect(content.contains("name=\"slug\""), "Post should have new slug attribute in v2")
-            #expect(content.contains("name=\"viewCount\""), "Post should have new viewCount attribute in v2")
-            #expect(content.contains("name=\"published\""), "Post should have new published attribute in v2")
+            #expect(
+                content.contains("name=\"viewCount\""),
+                "Post should have new viewCount attribute in v2")
+            #expect(
+                content.contains("name=\"published\""),
+                "Post should have new published attribute in v2")
 
             // Verify new attributes in Author
             #expect(content.contains("name=\"bio\""), "Author should have new bio attribute in v2")
-            #expect(content.contains("name=\"avatarUrl\""), "Author should have new avatarUrl attribute in v2")
+            #expect(
+                content.contains("name=\"avatarUrl\""),
+                "Author should have new avatarUrl attribute in v2")
         }
 
         @Test("Step 3: Migration transformation")
@@ -422,7 +488,9 @@ struct WorkflowTutorialTests {
                 .appendingPathComponent("Workflow-03")
                 .appendingPathComponent("workflow-03-step-03-migration-transformation.atl")
 
-            #expect(FileManager.default.fileExists(atPath: transformationPath.path), "Migration transformation should exist")
+            #expect(
+                FileManager.default.fileExists(atPath: transformationPath.path),
+                "Migration transformation should exist")
 
             // Transformation should include:
             // - Blog2Blog rule with new attributes
@@ -439,7 +507,9 @@ struct WorkflowTutorialTests {
                 .appendingPathComponent("Workflow-03")
                 .appendingPathComponent("workflow-03-step-04-metamodel-evolution-summary.sh")
 
-            #expect(FileManager.default.fileExists(atPath: summaryPath.path), "Evolution summary should exist")
+            #expect(
+                FileManager.default.fileExists(atPath: summaryPath.path),
+                "Evolution summary should exist")
 
             // Summary should document:
             // - Namespace changes (v1 → v2)
@@ -469,7 +539,7 @@ struct WorkflowTutorialTests {
         func testMigrationDataDerivation() async throws {
             // Test data derivation strategies during migration
             let derivationStrategies = [
-                "description" : "deriveDescription(blog) - from title",
+                "description": "deriveDescription(blog) - from title",
                 "language": "Default to 'en'",
                 "slug": "generateSlug(title) - lowercase, hyphenated",
                 "bio": "Default placeholder text",
@@ -512,7 +582,9 @@ struct WorkflowTutorialTests {
                     .path
             )
 
-            #expect(workflow01Exists && workflow02Exists && workflow03Exists, "All workflow directories should exist")
+            #expect(
+                workflow01Exists && workflow02Exists && workflow03Exists,
+                "All workflow directories should exist")
         }
 
         @Test("End-to-end validation: All workflows combined")

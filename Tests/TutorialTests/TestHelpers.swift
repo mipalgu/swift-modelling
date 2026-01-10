@@ -84,6 +84,36 @@ func swiftEcoreExecutablePath() throws -> String {
     return bundleSiblingPath
 }
 
+/// Finds the Swift compiler executable in the system PATH
+/// - Returns: Path to the swift executable
+/// - Throws: TestError if swift cannot be found
+func findSwiftExecutable() throws -> String {
+    // Check common locations
+    let commonPaths = [
+        "/usr/bin/swift",  // macOS system Swift
+        "/usr/local/bin/swift",  // Homebrew Swift on macOS
+    ]
+
+    for path in commonPaths {
+        if FileManager.default.fileExists(atPath: path) {
+            return path
+        }
+    }
+
+    // Search in PATH environment variable (for Linux and custom installations)
+    if let pathEnv = ProcessInfo.processInfo.environment["PATH"] {
+        let paths = pathEnv.split(separator: ":").map(String.init)
+        for dir in paths {
+            let swiftPath = "\(dir)/swift"
+            if FileManager.default.fileExists(atPath: swiftPath) {
+                return swiftPath
+            }
+        }
+    }
+
+    throw TestError.executableNotFound("swift")
+}
+
 // MARK: - Subprocess Execution
 
 @MainActor
