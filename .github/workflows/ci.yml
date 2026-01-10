@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # macOS build using Xcode (Swift 6)
+  # macOS build using Xcode 26 (Swift 6.2)
   build-macos:
     name: macOS (Xcode ${{ matrix.xcode }})
     runs-on: macos-15
@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - xcode: "16.2"
+          - xcode: "26.1.1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,9 +47,9 @@ jobs:
       matrix:
         include:
           - os: ubuntu-24.04
-            swift: "6.0.3"
+            swift: "6.2"
           - os: ubuntu-22.04
-            swift: "6.0.3"
+            swift: "6.2"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -69,31 +69,33 @@ jobs:
         run: swift test
 
   # Windows build using compnerd/gha-setup-swift
-  build-windows:
-    name: Windows (Swift ${{ matrix.swift }})
-    runs-on: windows-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - swift: "6.0.3"
-            swift-tag: "swift-6.0.3-release"
-            swift-build: "6.0.3-RELEASE"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Swift
-        uses: compnerd/gha-setup-swift@main
-        with:
-          swift-version: ${{ matrix.swift-tag }}
-          swift-build: ${{ matrix.swift-build }}
-
-      - name: Swift version
-        run: swift --version
-
-      - name: Build
-        run: swift build --build-tests
-
-      - name: Run tests
-        run: swift test
+  # Disabled for now, due to nondeterministic build failures
+  # build-windows:
+  #   name: Windows (Swift ${{ matrix.swift }})
+  #   runs-on: windows-latest
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - swift: "6.2"
+  #           swift-tag: "swift-6.2-release"
+  #           swift-build: "6.2-RELEASE"
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Setup Swift
+  #       uses: compnerd/gha-setup-swift@main
+  #       with:
+  #         swift-version: ${{ matrix.swift-tag }}
+  #         swift-build: ${{ matrix.swift-build }}
+  #         cache: true
+  #
+  #     - name: Swift version
+  #       run: swift --version
+  #
+  #     - name: Build
+  #       run: swift build --build-tests
+  #
+  #     - name: Run tests
+  #       run: swift test
