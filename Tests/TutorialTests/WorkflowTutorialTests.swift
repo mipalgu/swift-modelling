@@ -225,8 +225,8 @@ struct WorkflowTutorialTests {
                     _ = try await Subprocess.run(
                         .path(FilePath(swiftPath)),
                         arguments: Arguments(["-frontend", "-typecheck", tempTestFile.path]),
-                        output: .string(limit: 16384),
-                        error: .string(limit: 16384)
+                        output: .string(limit: .max),
+                        error: .string(limit: .max)
                     )
 
                     // Note: Compilation test disabled because test file references generated types
