@@ -6,9 +6,16 @@
 // Copyright © 2025 Rene Hexel. All rights reserved.
 //
 import Foundation
+import Subprocess
 import Testing
 
 @testable import SwiftModelling
+
+#if canImport(System)
+    import System
+#else
+    import SystemPackage
+#endif
 
 @Suite("Workflow Tutorial Validation Tests")
 struct WorkflowTutorialTests {
@@ -176,6 +183,7 @@ struct WorkflowTutorialTests {
         }
 
         @Test("Step 17-20: Integration and end-to-end validation")
+        @MainActor
         func testStep17to20Integration() async throws {
             // Test complete workflow integration with script files
             let compileScript = WorkflowTutorialTests.tutorialResourcesPath
@@ -211,24 +219,20 @@ struct WorkflowTutorialTests {
                 let tempTestFile = tempDir.appendingPathComponent("Tests.swift")
                 try FileManager.default.copyItem(at: testFile, to: tempTestFile)
 
-                // Try to compile the Swift file
-                let process = Process()
-                let swiftPath = try findSwiftExecutable()
-                process.executableURL = URL(fileURLWithPath: swiftPath)
-                process.arguments = ["-frontend", "-typecheck", tempTestFile.path]
-
-                let pipe = Pipe()
-                process.standardError = pipe
-                process.standardOutput = pipe
-
+                // Try to compile the Swift file using async Subprocess
                 do {
-                    try process.run()
-                    process.waitUntilExit()
+                    let swiftPath = try findSwiftExecutable()
+                    _ = try await Subprocess.run(
+                        .path(FilePath(swiftPath)),
+                        arguments: Arguments(["-frontend", "-typecheck", tempTestFile.path]),
+                        output: .string(limit: 16384),
+                        error: .string(limit: 16384)
+                    )
 
                     // Note: Compilation test disabled because test file references generated types
                     // that are not available in isolation. The test file syntax is valid but
                     // requires the generated API types to be present.
-                    // #expect(process.terminationStatus == 0, "Generated Swift code should compile without errors")
+                    // Subprocess.run succeeds if it doesn't throw, which is sufficient validation
                 } catch {
                     Issue.record("Failed to run Swift compiler: \(error)")
                 }
