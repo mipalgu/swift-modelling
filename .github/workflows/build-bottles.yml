@@ -1,0 +1,115 @@
+name: Build Bottles
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to build (e.g., v0.1.0)'
+        required: true
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Release tag to build'
+        required: false
+        type: string
+
+jobs:
+  build-macos:
+    name: Build macOS Bottle
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.1.1"
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Build release
+        run: swift build -c release
+
+      - name: Determine version and platform
+        run: |
+          TAG="${{ inputs.tag || github.event.inputs.tag || github.ref_name }}"
+          # Strip 'v' prefix for Homebrew version (v0.1.0 -> 0.1.0)
+          VERSION="${TAG#v}"
+          ARCH=$(uname -m)
+          # Map architecture to Homebrew platform name
+          if [ "$ARCH" = "arm64" ]; then
+            PLATFORM="arm64_sequoia"
+          else
+            PLATFORM="sequoia"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "PLATFORM=$PLATFORM" >> $GITHUB_ENV
+
+      - name: Create Homebrew bottle
+        run: |
+          # Create Homebrew bottle directory structure
+          mkdir -p swift-modelling/${{ env.VERSION }}/bin
+          cp .build/release/swift-ecore swift-modelling/${{ env.VERSION }}/bin/
+          cp .build/release/swift-atl swift-modelling/${{ env.VERSION }}/bin/
+          cp .build/release/swift-mtl swift-modelling/${{ env.VERSION }}/bin/
+          # Create bottle tarball with Homebrew naming convention
+          tar czf swift-modelling-${{ env.VERSION }}.${{ env.PLATFORM }}.bottle.tar.gz swift-modelling
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.TAG }}
+          files: swift-modelling-${{ env.VERSION }}.${{ env.PLATFORM }}.bottle.tar.gz
+
+  build-linux:
+    name: Build Linux Bottle
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.2"
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Build release
+        run: swift build -c release
+
+      - name: Determine version and platform
+        run: |
+          TAG="${{ inputs.tag || github.event.inputs.tag || github.ref_name }}"
+          # Strip 'v' prefix for Homebrew version (v0.1.0 -> 0.1.0)
+          VERSION="${TAG#v}"
+          ARCH=$(uname -m)
+          # Map to Homebrew platform name
+          PLATFORM="${ARCH}_linux"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "PLATFORM=$PLATFORM" >> $GITHUB_ENV
+
+      - name: Create Homebrew bottle
+        run: |
+          # Create Homebrew bottle directory structure
+          mkdir -p swift-modelling/${{ env.VERSION }}/bin
+          cp .build/release/swift-ecore swift-modelling/${{ env.VERSION }}/bin/
+          cp .build/release/swift-atl swift-modelling/${{ env.VERSION }}/bin/
+          cp .build/release/swift-mtl swift-modelling/${{ env.VERSION }}/bin/
+          # Create bottle tarball with Homebrew naming convention
+          tar czf swift-modelling-${{ env.VERSION }}.${{ env.PLATFORM }}.bottle.tar.gz swift-modelling
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.TAG }}
+          files: swift-modelling-${{ env.VERSION }}.${{ env.PLATFORM }}.bottle.tar.gz
