@@ -2,18 +2,22 @@
 
 [![CI](https://github.com/mipalgu/swift-modelling/actions/workflows/ci.yml/badge.svg)](https://github.com/mipalgu/swift-modelling/actions/workflows/ci.yml)
 [![Documentation](https://github.com/mipalgu/swift-modelling/actions/workflows/documentation.yml/badge.svg)](https://github.com/mipalgu/swift-modelling/actions/workflows/documentation.yml)
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fmipalgu%2Fswift-modelling%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/mipalgu/swift-modelling)
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fmipalgu%2Fswift-modelling%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/mipalgu/swift-modelling)
 [![License](https://img.shields.io/badge/License-BSD%204--Clause%20or%20GPL%202.0+-blue.svg)](https://github.com/mipalgu/swift-modelling/blob/main/LICENCE)
 
 Command-line tools for the Swift Modelling Framework.
 
+These tools aim to provide comprehensive support for the
+[Eclipse Modelling Framework (EMF)](https://eclipse.dev/emf/),
+[Atlas Transformation Language (ATL)](https://eclipse.dev/atl/),
+and the [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec/MOFM2T/) standard.
 
-These tools provide comprehensive support for Eclipse Modelling Framework (EMF), Atlas Transformation Language (ATL), and the OMG MOFM2T (MOF Model-to-Text Transformation) standard.
-
-## Features
+## Aims / Features
 
 ### ECore Support
 - **Pure Swift**: No Java/EMF dependencies, Swift 6.0+ with strict concurrency
-- **Cross-Platform**: Full support for macOS and Linux
+- **Cross-Platform**: Full support for macOS, Linux, and Windows
 - **Value Types**: Sendable structs and enums for thread safety
 - **BigInt Support**: Full arbitrary-precision integer support via swift-numerics
 - **Complete Metamodel**: EClass, EAttribute, EReference, EPackage, EEnum, EDataType
@@ -45,13 +49,14 @@ These tools provide comprehensive support for Eclipse Modelling Framework (EMF),
 ## Requirements
 
 - Swift 6.0 or later
-- macOS 15.0+ or Linux
+- macOS 15.0+, Linux, or Windows
 
 ## Installation
 
-### Homebrew
+### Homebrew (macOS / Linux)
 
-You can install the suite of modelling tools using Homebrew:
+You can install the suite of modelling tools using [Homebrew](https://brew.sh)
+on macOS or Linux:
 
 ```bash
 brew tap mipalgu/tap
@@ -59,6 +64,13 @@ brew install swift-modelling
 ```
 
 This will install `swift-ecore`, `swift-atl`, and `swift-mtl` to your system.
+
+### Windows
+
+Pre-built Windows binaries are available from the
+[GitHub Releases](https://github.com/mipalgu/swift-modelling/releases) page.
+Download `swift-modelling-vX.Y.Z-windows-x86_64.zip`, extract it, and add
+the executables to your PATH.
 
 ## Building
 
@@ -355,7 +367,7 @@ done
 
 **Large files:** Use `--verbose` to monitor progress on large models.
 
-**Cross-platform:** All functionality works identically on macOS and Linux.
+**Cross-platform:** All functionality works identically on macOS, Linux, and Windows.
 
 **PyEcore compatibility:** JSON output is compatible with PyEcore for cross-language workflows.
 

@@ -44,20 +44,20 @@ jobs:
           echo "ARCH=$ARCH" >> $GITHUB_ENV
 
       - name: Create archive
-        shell: bash
+        shell: pwsh
         run: |
-          TAG="${{ inputs.tag || github.event.inputs.tag || github.ref_name }}"
-          mkdir -p bottle
-          cp .build/release/swift-ecore.exe bottle/
-          cp .build/release/swift-atl.exe bottle/
-          cp .build/release/swift-mtl.exe bottle/
-          tar czf swift-modelling-${TAG}-windows-${{ env.ARCH }}.tar.gz -C bottle swift-ecore.exe swift-atl.exe swift-mtl.exe
+          $TAG = "${{ inputs.tag || github.event.inputs.tag || github.ref_name }}"
+          New-Item -ItemType Directory -Force -Path bottle
+          Copy-Item .build/release/swift-ecore.exe bottle/
+          Copy-Item .build/release/swift-atl.exe bottle/
+          Copy-Item .build/release/swift-mtl.exe bottle/
+          Compress-Archive -Path bottle/* -DestinationPath "swift-modelling-${TAG}-windows-${{ env.ARCH }}.zip"
 
       - name: Upload to release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ inputs.tag || github.event.inputs.tag || github.ref_name }}
-          files: swift-modelling-${{ inputs.tag || github.event.inputs.tag || github.ref_name }}-windows-${{ env.ARCH }}.tar.gz
+          files: swift-modelling-${{ inputs.tag || github.event.inputs.tag || github.ref_name }}-windows-${{ env.ARCH }}.zip
 
   build-macos:
     name: Build macOS Bottle
