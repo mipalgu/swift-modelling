@@ -81,7 +81,11 @@ func scratchPath() -> String {
 /// - Throws: `TestError.executableNotFound` if the executable doesn't exist.
 func swiftMTLExecutablePath() throws -> String {
     let configuration = "debug"
+    #if os(Windows)
+    let executableName = "swift-mtl.exe"
+    #else
     let executableName = "swift-mtl"
+    #endif
 
     // Strategy 1: Check environment variable
     if let envPath = ProcessInfo.processInfo.environment["SWIFT_MTL_SCRATCH_PATH"] {

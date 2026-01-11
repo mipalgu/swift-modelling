@@ -64,7 +64,11 @@ struct SubprocessResult: Sendable {
 /// - Returns: The absolute path to the swift-atl executable.
 /// - Throws: `TestError.executableNotFound` if the executable doesn't exist.
 func swiftATLExecutablePath() throws -> String {
+    #if os(Windows)
+    let executableName = "swift-atl.exe"
+    #else
     let executableName = "swift-atl"
+    #endif
     var bundleURL = Bundle.module.bundleURL
 
     // In Xcode, Bundle.module.bundleURL may point to Contents/Resources inside the bundle

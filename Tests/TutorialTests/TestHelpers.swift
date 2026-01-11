@@ -51,7 +51,11 @@ struct SubprocessResult: Sendable {
 // MARK: - Executable Path Resolution
 
 func swiftEcoreExecutablePath() throws -> String {
+    #if os(Windows)
+    let executableName = "swift-ecore.exe"
+    #else
     let executableName = "swift-ecore"
+    #endif
     var bundleURL = Bundle.module.bundleURL
 
     // In Xcode, Bundle.module.bundleURL may point to Contents/Resources inside the bundle

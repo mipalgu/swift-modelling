@@ -64,7 +64,11 @@ struct SubprocessResult: Sendable {
 /// - Returns: The absolute path to the swift-ecore executable.
 /// - Throws: `TestError.executableNotFound` if the executable doesn't exist.
 func swiftEcoreExecutablePath() throws -> String {
+    #if os(Windows)
+    let executableName = "swift-ecore.exe"
+    #else
     let executableName = "swift-ecore"
+    #endif
     var bundleURL = Bundle.module.bundleURL
 
     // In Xcode, Bundle.module.bundleURL may point to Contents/Resources inside the bundle
