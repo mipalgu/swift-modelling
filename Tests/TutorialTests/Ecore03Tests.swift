@@ -267,7 +267,9 @@ struct Ecore03Tests {
         // Not at the root level like in step-09-company-with-employees.xmi
 
         // Count top-level Company elements (should be 1)
-        let lines = content.components(separatedBy: "\n")
+        // Normalize line endings for cross-platform compatibility
+        let normalizedContent = content.replacingOccurrences(of: "\r\n", with: "\n")
+        let lines = normalizedContent.components(separatedBy: "\n")
         let topLevelCompanies = lines.filter { $0.trimmingCharacters(in: .whitespaces).starts(with: "<company:Company") }.count
         #expect(topLevelCompanies == 1)
 

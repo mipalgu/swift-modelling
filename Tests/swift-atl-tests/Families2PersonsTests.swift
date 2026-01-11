@@ -96,7 +96,9 @@ struct Families2PersonsTests {
     @Test("Transformation rules")
     func testTransformationRules() throws {
         let transformationURL = try loadTestResource(named: "Families2Persons.atl", subdirectory: "transformations")
-        let content = try String(contentsOf: transformationURL, encoding: .utf8)
+        let rawContent = try String(contentsOf: transformationURL, encoding: .utf8)
+        // Normalize line endings for cross-platform compatibility
+        let content = rawContent.replacingOccurrences(of: "\r\n", with: "\n")
 
         // Verify Member2Male rule
         #expect(content.contains("from\n\t\ts: Families!Member (not s.isFemale())"))
