@@ -35,7 +35,7 @@ struct SubprocessResult: Sendable {
     var exitCode: Int32 {
         switch terminationStatus {
         case .exited(let code):
-            return code
+            return Int32(code)
         case .unhandledException:
             return -1
         @unknown default:
