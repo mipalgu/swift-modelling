@@ -16,6 +16,49 @@ on:
         type: string
 
 jobs:
+  build-windows:
+    name: Build Windows Binary
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Swift
+        uses: compnerd/gha-setup-swift@main
+        with:
+          swift-version: "swift-6.2-release"
+          swift-build: "6.2-RELEASE"
+          cache: true
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Build release
+        run: swift build -c release
+
+      - name: Determine architecture
+        shell: bash
+        run: |
+          ARCH=$(uname -m)
+          echo "ARCH=$ARCH" >> $GITHUB_ENV
+
+      - name: Create archive
+        shell: bash
+        run: |
+          TAG="${{ inputs.tag || github.event.inputs.tag || github.ref_name }}"
+          mkdir -p bottle
+          cp .build/release/swift-ecore.exe bottle/
+          cp .build/release/swift-atl.exe bottle/
+          cp .build/release/swift-mtl.exe bottle/
+          tar czf swift-modelling-${TAG}-windows-${{ env.ARCH }}.tar.gz -C bottle swift-ecore.exe swift-atl.exe swift-mtl.exe
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.tag || github.event.inputs.tag || github.ref_name }}
+          files: swift-modelling-${{ inputs.tag || github.event.inputs.tag || github.ref_name }}-windows-${{ env.ARCH }}.tar.gz
+
   build-macos:
     name: Build macOS Bottle
     runs-on: macos-15
