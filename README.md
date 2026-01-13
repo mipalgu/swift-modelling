@@ -402,3 +402,16 @@ See the details in the LICENCE file.
 Swift Modelling aims for 100% round-trip compatibility with:
 - [emf4cpp](https://github.com/catedrasaes-umu/emf4cpp) - C++ EMF implementation
 - [pyecore](https://github.com/pyecore/pyecore) - Python EMF implementation
+
+## References
+
+This implementation is based on the following standards and technologies:
+
+- [Eclipse Modeling Framework (EMF)](https://eclipse.dev/emf/) - The reference EMF implementation
+- [Eclipse ATL (Atlas Transformation Language)](https://eclipse.dev/atl/) - The reference ATL implementation
+- [Eclipse Acceleo](https://eclipse.dev/acceleo/) - The reference MTL implementation
+- [OMG MOF (Meta Object Facility)](https://www.omg.org/mof/) - The metamodelling standard
+- [OMG XMI (XML Metadata Interchange)](https://www.omg.org/spec/XMI/) - The XML serialisation format
+- [OMG QVT (Query/View/Transformation)](https://www.omg.org/spec/QVT/) - The model transformation standard
+- [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec/MOFM2T/) - The model-to-text standard
+- [OMG OCL (Object Constraint Language)](https://www.omg.org/spec/OCL/) - The constraint and query language
