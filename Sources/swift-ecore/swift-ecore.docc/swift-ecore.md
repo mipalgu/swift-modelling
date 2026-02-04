@@ -4,7 +4,15 @@ Work with Ecore metamodels and model instances.
 
 ## Overview
 
-The `swift-ecore` command-line tool provides comprehensive utilities for working with Ecore metamodels and model instances in both XMI and JSON formats. It supports format conversion, model validation, metamodel inspection, and model manipulation operations.
+The `swift-ecore` command-line tool provides comprehensive
+utilities for working with Ecore metamodels and model instances
+in both XMI and JSON formats. It supports format conversion, model
+validation, metamodel inspection, and model manipulation operations.
+
+The tool is built on the swift-ecore package
+(https://github.com/mipalgu/swift-ecore), which provides a pure
+Swift implementation of the Eclipse Modeling Framework
+([EMF](https://eclipse.dev/emf/)) Ecore metamodelling framework.
 
 ## Commands
 
@@ -196,8 +204,15 @@ swift-ecore inspect MyMetamodel.ecore \
     --output metamodel-structure.txt
 ```
 
+## Topics
+
+### Essentials
+
+- <doc:GettingStarted>
+- <doc:UnderstandingSwiftEcore>
+
 ## See Also
 
-- <doc:Tutorials>
-- <doc:swift-atl>
-- <doc:SwiftModelling>
+- [Eclipse Modeling Framework (EMF)](https://eclipse.dev/emf/)
+- [OMG MOF (Meta Object Facility)](https://www.omg.org/mof/)
+- [OMG XMI (XML Metadata Interchange)](https://www.omg.org/spec/XMI/)

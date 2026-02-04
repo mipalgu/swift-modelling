@@ -4,13 +4,24 @@ Transform models with the Atlas Transformation Language.
 
 ## Overview
 
-The `swift-atl` command-line tool executes ATL (Atlas Transformation Language) transformations to convert models from one metamodel to another. It provides a complete implementation of the ATL specification with support for declarative rules, imperative sections, helpers, and advanced features like lazy rules and called rules.
+The `swift-atl` command-line tool executes ATL (Atlas
+Transformation Language) transformations to convert models from
+one metamodel to another. It provides a complete implementation of
+the ATL specification with support for declarative rules,
+imperative sections, helpers, and advanced features like lazy
+rules and called rules.
+
+The tool is built on the swift-atl package
+(https://github.com/mipalgu/swift-atl), which provides a pure
+Swift implementation of the Eclipse ATL
+([Eclipse ATL](https://eclipse.dev/atl/)) transformation language.
 
 ## Commands
 
 ### transform
 
-Execute an ATL transformation to convert a source model into a target model.
+Execute an ATL transformation to convert a source model into a
+target model.
 
 ```bash
 swift-atl transform <transformation-file> [options]
@@ -61,7 +72,8 @@ swift-atl transform Complex.atl \
 
 ### validate
 
-Validate an ATL transformation file for syntax and semantic correctness.
+Validate an ATL transformation file for syntax and semantic
+correctness.
 
 ```bash
 swift-atl validate <transformation-file> [options]
@@ -153,7 +165,8 @@ swift-atl query ExtractStatistics.atl \
 
 ### refine
 
-Execute an ATL refining transformation (in-place model modification).
+Execute an ATL refining transformation (in-place model
+modification).
 
 ```bash
 swift-atl refine <transformation-file> [options]
@@ -302,9 +315,15 @@ called rule CreatePerson(member: Families!Member) {
 }
 ```
 
+## Topics
+
+### Essentials
+
+- <doc:GettingStarted>
+- <doc:UnderstandingSwiftATL>
+
 ## See Also
 
-- <doc:Tutorials>
-- <doc:01-first-transformation>
-- <doc:swift-ecore>
-- <doc:SwiftModelling>
+- [Eclipse ATL (Atlas Transformation Language)](https://eclipse.dev/atl/)
+- [OMG QVT (Query/View/Transformation)](https://www.omg.org/spec/QVT/)
+- [OMG OCL (Object Constraint Language)](https://www.omg.org/spec/OCL/)

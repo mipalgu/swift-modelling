@@ -4,7 +4,17 @@ Generate code from models using templates.
 
 ## Overview
 
-The `swift-mtl` command-line tool executes MTL (Model-to-Text Language) templates to generate code and other text artefacts from models. It provides a complete implementation of the OMG MOFM2T (MOF Model-to-Text Transformation) standard with support for file generation, template inheritance, query expressions, and protected regions.
+The `swift-mtl` command-line tool executes MTL (Model-to-Text
+Language) templates to generate code and other text artefacts from
+models. It provides a complete implementation of the OMG MOFM2T
+(MOF Model-to-Text Transformation) standard with support for file
+generation, template inheritance, query expressions, and protected
+regions.
+
+The tool is built on the swift-mtl package
+(https://github.com/mipalgu/swift-mtl), which provides a pure
+Swift implementation of the MTL template language used by Eclipse
+Acceleo ([Eclipse Acceleo](https://eclipse.dev/acceleo/)).
 
 ## Commands
 
@@ -347,9 +357,15 @@ class [className/] {
 [/template]
 ```
 
+## Topics
+
+### Essentials
+
+- <doc:GettingStarted>
+- <doc:UnderstandingSwiftMTL>
+
 ## See Also
 
-- <doc:Tutorials>
-- <doc:swift-ecore>
-- <doc:swift-atl>
-- <doc:SwiftModelling>
+- [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec/MOFM2T/)
+- [Eclipse Acceleo](https://eclipse.dev/acceleo/)
+- [OMG OCL (Object Constraint Language)](https://www.omg.org/spec/OCL/)

@@ -15,18 +15,12 @@ SwiftModelling provides a comprehensive suite of CLI tools for Model-Driven Engi
 
 ### CLI Tools
 
-- <doc:swift-ecore>: Model validation, conversion, and querying
-- <doc:swift-atl>: Model transformation execution
-- <doc:swift-mtl>: Template-based code generation
+- <a href="../../swift-ecore/swift-ecore/">swift-ecore</a>: Model validation, conversion, and querying
+- <a href="../../swift-atl/swift-atl/">swift-atl</a>: Model transformation execution
+- <a href="../../swift-mtl/swift-mtl/">swift-mtl</a>: Template-based code generation
 
 ## Topics
 
 ### Tutorials
 
 - <doc:Tutorials>
-
-### CLI Reference
-
-- <doc:swift-ecore>
-- <doc:swift-atl>
-- <doc:swift-mtl>
