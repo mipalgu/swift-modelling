@@ -8,6 +8,7 @@
 
 import ArgumentParser
 import ECore
+import EMFBase
 import Foundation
 import MTL
 
@@ -170,10 +171,23 @@ struct GenerateCommand: AsyncParsableCommand {
         let strategy = MTLFileSystemStrategy(basePath: output)
         let generator = MTLGenerator(module: mtlModule, generationStrategy: strategy)
 
+        // Extract root objects from loaded models in CLI argument order
+        var rootObjects: [(any EcoreValue)?] = []
+        for modelPath in model {
+            let modelName = URL(fileURLWithPath: modelPath)
+                .deletingPathExtension().lastPathComponent
+            if let resource = loadedModels[modelName] {
+                let roots = await resource.getRootObjects()
+                for root in roots {
+                    rootObjects.append(root)
+                }
+            }
+        }
+
         do {
             try await generator.generate(
                 mainTemplate: mainTemplateName,
-                arguments: [],
+                arguments: rootObjects,
                 models: loadedModels
             )
         } catch {

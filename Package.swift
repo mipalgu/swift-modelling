@@ -67,6 +67,7 @@ let package = Package(
             dependencies: [
                 .product(name: "MTL", package: "swift-mtl"),
                 .product(name: "ECore", package: "swift-ecore"),
+                .product(name: "EMFBase", package: "swift-ecore"),
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
             swiftSettings: [
