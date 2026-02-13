@@ -1,0 +1,7 @@
+[module CompanyReport('http://www.example.org/company')]
+
+[template main(c : Company)]
+Company Report
+==============
+Name: [c.name/]
+[/template]

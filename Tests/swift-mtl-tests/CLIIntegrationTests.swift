@@ -436,6 +436,60 @@ struct CLIIntegrationTests {
         #expect(result.stdout.contains("Valid") || !result.stdout.contains("Error"))
     }
 
+    // MARK: - Model Parameter Tests
+
+    @Test("Generate command - template with model parameter")
+    @MainActor
+    func testGenerateTemplateWithModelParam() async throws {
+        // Given - a Company metamodel template and a Company instance model
+        let templateURL = try loadTestResource(named: "with-model-param.mtl", subdirectory: "templates")
+        let modelURL = try loadTestResource(named: "simple-model.xmi", subdirectory: "models")
+        let outputDir = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(outputDir) }
+
+        // When
+        let result = try await executeSwiftMTL(
+            command: "generate",
+            arguments: [
+                templateURL.path,
+                "--model", modelURL.path,
+                "--output", outputDir.path
+            ]
+        )
+
+        // Then - generation should succeed with the model root passed as argument
+        #expect(result.succeeded, "Expected generation to succeed, got stderr: \(result.stderr)")
+
+        let stdoutFile = outputDir.appendingPathComponent("stdout")
+        #expect(FileManager.default.fileExists(atPath: stdoutFile.path))
+
+        let content = try String(contentsOf: stdoutFile, encoding: .utf8)
+        #expect(content.contains("Company Report"))
+        #expect(content.contains("Name:"))
+    }
+
+    @Test("Generate command - template with model parameter fails without model")
+    @MainActor
+    func testGenerateTemplateWithModelParamFailsWithoutModel() async throws {
+        // Given
+        let templateURL = try loadTestResource(named: "with-model-param.mtl", subdirectory: "templates")
+        let outputDir = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(outputDir) }
+
+        // When - no --model flag, so no root objects are passed as arguments
+        let result = try await executeSwiftMTL(
+            command: "generate",
+            arguments: [
+                templateURL.path,
+                "--output", outputDir.path
+            ]
+        )
+
+        // Then - should fail because template expects 1 argument but gets 0
+        #expect(!result.succeeded)
+        #expect(result.stderr.contains("expects 1 arguments, got 0") || result.stderr.contains("Generation failed"))
+    }
+
     // MARK: - Help and Version Tests
 
     @Test("Help command")
