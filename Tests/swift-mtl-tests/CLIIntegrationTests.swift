@@ -521,7 +521,7 @@ struct CLIIntegrationTests {
 
         // Then
         #expect(result.succeeded)
-        #expect(result.stdout.contains("0.1.1"))
+        #expect(result.stdout.contains("0.1.7"))
     }
 
     @Test("Generate help")

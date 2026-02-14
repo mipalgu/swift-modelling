@@ -21,5 +21,5 @@
 /// - <doc:Tutorials>
 private enum SwiftModelling {
     /// The current version of the Swift Modelling framework.
-    static let version = "0.1.1"
+    static let version = "0.1.7"
 }
