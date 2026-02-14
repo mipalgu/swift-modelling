@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(swift run:*)",
+      "Bash(cat:*)",
+      "Bash(1)",
+      "Bash(swift build:*)",
+      "Bash(grep:*)",
+      "Bash(swift package:*)",
+      "Bash(git ls-remote:*)",
+      "Bash(rsync:*)"
+    ]
+  }
+}

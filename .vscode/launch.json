@@ -1,0 +1,64 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swift-modelling}",
+            "name": "Debug swift-ecore",
+            "target": "swift-ecore",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug swift-ecore"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swift-modelling}",
+            "name": "Release swift-ecore",
+            "target": "swift-ecore",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release swift-ecore"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swift-modelling}",
+            "name": "Debug swift-atl",
+            "target": "swift-atl",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug swift-atl"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swift-modelling}",
+            "name": "Release swift-atl",
+            "target": "swift-atl",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release swift-atl"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swift-modelling}",
+            "name": "Debug swift-mtl",
+            "target": "swift-mtl",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug swift-mtl"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swift-modelling}",
+            "name": "Release swift-mtl",
+            "target": "swift-mtl",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release swift-mtl"
+        }
+    ]
+}

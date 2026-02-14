@@ -1,0 +1,23 @@
+[2026-02-03T22:42:23.630Z] [DEBUG] === MODULE EXECUTION CHECK ===
+[2026-02-03T22:42:23.633Z] [DEBUG] Current file path: /Users/rh/Devel/src/other/TypeScript/mcp-console-automation/dist/mcp/server.js
+[2026-02-03T22:42:23.722Z] [DEBUG] Executed file path: /Users/rh/src/other/TypeScript/mcp-console-automation/dist/index.js
+[2026-02-03T22:42:23.750Z] [DEBUG] Is main module: false
+[2026-02-03T22:42:23.765Z] [DEBUG] Is from index.js: true
+[2026-02-03T22:42:23.776Z] [DEBUG] Starting server...
+[2026-02-03T22:42:23.803Z] [INIT] MCP Server initializing with SSH Bridge support
+[2026-02-03T22:42:23.816Z] [INIT] Setting up STDIO protection
+[2026-02-03T22:42:23.824Z] [INIT] STDIO protection enabled
+[2026-02-03T22:42:23.838Z] [INIT] Setting up STDIO protection
+[2026-02-03T22:42:23.845Z] [INIT] STDIO protection enabled
+[2026-02-03T22:42:23.858Z] [DEBUG] === SERVER START ===
+[2026-02-03T22:42:23.866Z] [DEBUG] Process argv: [
+  "/opt/homebrew/Cellar/node/25.5.0/bin/node",
+  "/Users/rh/src/other/TypeScript/mcp-console-automation/dist/index.js"
+]
+[2026-02-03T22:42:23.874Z] [DEBUG] Process env MCP_SERVER_MODE: true
+[2026-02-03T22:42:23.914Z] [DEBUG] Set MCP_SERVER_MODE to true
+[2026-02-03T22:42:23.921Z] [DEBUG] Creating StdioServerTransport...
+[2026-02-03T22:42:23.927Z] [DEBUG] Connecting server to transport...
+[2026-02-03T22:42:23.935Z] [DEBUG] Server connected successfully
+[2026-02-03T22:42:23.946Z] [DEBUG] Connection state set to: connected
+[2026-02-03T22:42:23.952Z] [DEBUG] Server initialization complete
