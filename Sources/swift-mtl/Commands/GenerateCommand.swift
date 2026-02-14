@@ -106,13 +106,35 @@ struct GenerateCommand: AsyncParsableCommand {
 
         // Load models
         var loadedModels: [String: Resource] = [:]
+        let resourceSet = ResourceSet()
         if !model.isEmpty {
             if verbose {
                 print("\n=== Loading Models ===")
             }
 
+            // First pass: load and register .ecore metamodels
+            for modelPath in model {
+                let ext = URL(fileURLWithPath: modelPath).pathExtension.lowercased()
+                guard ext == "ecore" else { continue }
+                guard FileManager.default.fileExists(atPath: modelPath) else {
+                    throw ValidationError.fileNotFound(modelPath)
+                }
+                if verbose {
+                    print("Loading metamodel: \(modelPath)")
+                }
+                let metamodelURL = URL(fileURLWithPath: modelPath)
+                let metamodel = try await EPackage(url: metamodelURL, enableDebugging: verbose)
+                await resourceSet.registerMetamodel(metamodel, uri: metamodel.nsURI)
+                if verbose {
+                    print("  ✓ Registered metamodel '\(metamodel.name)' with URI: \(metamodel.nsURI)")
+                }
+            }
+
+            // Second pass: load instance models (non-ecore files)
             for (index, modelPath) in model.enumerated() {
                 let modelURL = URL(fileURLWithPath: modelPath)
+                let ext = modelURL.pathExtension.lowercased()
+                guard ext != "ecore" else { continue }
                 guard FileManager.default.fileExists(atPath: modelPath) else {
                     throw ValidationError.fileNotFound(modelPath)
                 }
@@ -124,7 +146,7 @@ struct GenerateCommand: AsyncParsableCommand {
                     print("Loading model \(index + 1): \(modelPath) (format: \(format))")
                 }
 
-                let resource = try await loadModel(from: modelPath, format: format, verbose: verbose)
+                let resource = try await loadModel(from: modelPath, format: format, verbose: verbose, resourceSet: resourceSet)
 
                 // Use filename without extension as model name
                 let modelName = modelURL.deletingPathExtension().lastPathComponent
@@ -236,17 +258,25 @@ func detectFormat(from path: String) -> ModelFormat {
 }
 
 /// Loads a model from a file using the appropriate parser.
+///
+/// - Parameters:
+///   - path: The path to the model file.
+///   - format: The format of the model file (XMI or JSON).
+///   - verbose: Whether to enable verbose debugging output.
+///   - resourceSet: An optional `ResourceSet` for metamodel-guided parsing.
+/// - Returns: The loaded `Resource` containing the model objects.
 func loadModel(
     from path: String,
     format: ModelFormat,
-    verbose: Bool
+    verbose: Bool,
+    resourceSet: ResourceSet? = nil
 ) async throws -> Resource {
     let url = URL(fileURLWithPath: path)
 
     let resource: Resource
     switch format {
     case .xmi:
-        let parser = XMIParser(enableDebugging: verbose)
+        let parser = XMIParser(resourceSet: resourceSet, enableDebugging: verbose)
         resource = try await parser.parse(url)
     case .json:
         let parser = JSONParser()
