@@ -216,7 +216,7 @@ struct TransformCommand: AsyncParsableCommand {
             let parser = ATLParser(enableDebugging: debug)
             let module = try await parser.parseContent(
                 atlSource,
-                filename: URL(fileURLWithPath: transformation).lastPathComponent,
+                filename: URL(fileURLWithPath: transformation).path,
                 searchPaths: searchPaths,
                 continueAfterErrors: continueAfterErrors)
 
