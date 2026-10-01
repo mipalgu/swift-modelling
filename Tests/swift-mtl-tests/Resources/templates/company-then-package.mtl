@@ -1,0 +1,7 @@
+[module CompanyThenPackage('http://www.example.org/company')]
+
+[template main(c : Company, aPackage : EPackage)]
+[file ('order.txt', 'overwrite', 'UTF-8')]
+Company: [c.name/] Package: [aPackage.name/]
+[/file]
+[/template]
