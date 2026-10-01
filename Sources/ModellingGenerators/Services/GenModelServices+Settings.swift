@@ -72,7 +72,9 @@ extension GenModelServices {
     static func setting(_ name: String, of element: GenElement) -> (any EcoreValue)? {
         let attribute = element.object.eClass.getStructuralFeature(name: name) as? EAttribute
         if element.object.eIsSet(name), let value = element.object.eGet(name) {
-            if let enumeration = attribute?.eType as? EEnum { return literalText(of: value, in: enumeration) }
+            if let enumeration = attribute?.eType as? EEnum {
+                return element.stringValue(name) ?? literalText(of: value, in: enumeration)
+            }
             return value
         }
         guard let attribute else { return element.object.eGet(name) }

@@ -22,6 +22,6 @@
 [template public header(element : OclAny)]
 /**
 [if (not copyrightText(element).oclIsUndefined())]
- * [copyrightText(element).indentLines('\n * ')/]
+ * [copyrightText(element).indentLines('* ')/]
 [/if]
  */[/template]

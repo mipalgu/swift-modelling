@@ -10,6 +10,7 @@
 [merge ('/**', '*/', '@generated', '@generated NOT', 'braces')/]
 [import JavaNames/]
 [import JavaImports/]
+[import JavaTypes/]
 [import EnumClass/]
 
 [**

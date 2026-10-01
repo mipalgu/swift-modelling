@@ -33,7 +33,14 @@ extension GenModelServices {
     /// The services that return the native Ecore element that a generator element describes.
     var ecoreServices: [AQLService] {
         typealias Name = GenModelServiceName
+        let provider = self
+        let nativeClassifier: AQLReceiver = .custom { value in
+            value is EClass || value is EEnum || value is EDataType
+        }
         return [
+            AQLService(Name.genClassifier, receiver: nativeClassifier) { call in
+                provider.genClassifier(of: call.receiver)?.object
+            },
             property(Name.ecorePackage) { $0.ecorePackage },
             property(Name.ecoreClass) { $0.ecoreClass },
             property(Name.ecoreFeature) { $0.ecoreFeature.flatMap { $0 as? any EcoreValue } },
@@ -41,6 +48,19 @@ extension GenModelServices {
             property(Name.ecoreEnumLiteral) { $0.ecoreEnumLiteral },
             property(Name.ecoreDataType) { $0.ecoreDataType },
         ]
+    }
+
+    /// The generator classifier that describes an Ecore classifier.
+    ///
+    /// - Parameter value: A native Ecore class, enumeration or data type.
+    /// - Returns: The generator class, enumeration or data type, or `nil` if the model has none.
+    func genClassifier(of value: (any EcoreValue)?) -> GenElement? {
+        switch value {
+        case let eClass as EClass: return classifiers[eClass.id]
+        case let eEnum as EEnum: return classifiers[eEnum.id]
+        case let dataType as EDataType: return classifiers[dataType.id]
+        default: return nil
+        }
     }
 
     /// The literals of an enumeration that are the first to carry their value.

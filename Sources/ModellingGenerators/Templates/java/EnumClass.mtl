@@ -35,7 +35,7 @@ package [genPackage.interfacePackageName()/];
  * <!-- end-user-doc -->
 [if (genEnum.hasDocumentation())]
  * <!-- begin-model-doc -->
- * [genEnum.documentation().indentLines('\n * ')/]
+ * [genEnum.documentation().indentLines('* ')/]
  * <!-- end-model-doc -->
 [/if]
  * @see [genPackage.qualifiedPackageInterfaceName()/]#get[genEnum.name()/]()
@@ -55,7 +55,7 @@ public enum [genEnum.name()/] implements [if (genModel.isOn('suppressEMFMetaData
    * <!-- end-user-doc -->
 [if (literal.hasDocumentation())]
    * <!-- begin-model-doc -->
-   * [literal.documentation().indentLines('\n   * ')/]
+   * [literal.documentation().indentLines('* ')/]
    * <!-- end-model-doc -->
 [/if]
    * @see #[literal.enumLiteralValueConstantName()/]
@@ -84,7 +84,7 @@ public enum [genEnum.name()/] implements [if (genModel.isOn('suppressEMFMetaData
    * <!-- end-user-doc -->
 [if (literal.hasDocumentation())]
    * <!-- begin-model-doc -->
-   * [literal.documentation().indentLines('\n   * ')/]
+   * [literal.documentation().indentLines('* ')/]
    * <!-- end-model-doc -->
 [/if]
    * @see #[literal.enumLiteralInstanceConstantName()/]

@@ -92,6 +92,8 @@ public enum GenModelServiceName {
 
     // MARK: Ecore shortcuts
 
+    /// The generator classifier that describes an Ecore classifier.
+    public static let genClassifier = "genClassifier"
     /// The Ecore package of a generator package.
     public static let ecorePackage = "ecorePackage"
     /// The Ecore class of a generator class.

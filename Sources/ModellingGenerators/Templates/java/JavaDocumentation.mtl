@@ -67,7 +67,7 @@
 [**
  * The name of an enumeration literal split into words, as it appears in documentation.
  **/]
-[query public formattedLiteralName(genEnumLiteral : GenEnumLiteral) : String = genEnumLiteral.capName().formatName(' ')/]
+[query public formattedLiteralName(genEnumLiteral : GenEnumLiteral) : String = genEnumLiteral.enumLiteralName().capName().formatName(' ')/]
 
 [comment API tags /]
 

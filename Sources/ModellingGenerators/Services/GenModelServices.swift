@@ -34,11 +34,20 @@ public struct GenModelServices: AQLServiceProvider {
     /// The snapshot of the generator model that the services read.
     public let context: GenModelContext
 
+    /// The generator classifier for each Ecore classifier, by the identifier of the Ecore classifier.
+    let classifiers: [EUUID: GenElement]
+
     /// Creates the services for a snapshot of a generator model.
     ///
     /// - Parameter context: The snapshot that the services read; it is not updated later.
     public init(context: GenModelContext) {
         self.context = context
+        var classifiers: [EUUID: GenElement] = [:]
+        for element in context.elements(ofKind: GenModelConstants.ClassName.genClassifier) {
+            let identifier = element.ecoreClass?.id ?? element.ecoreEnum?.id ?? element.ecoreDataType?.id
+            if let identifier, classifiers[identifier] == nil { classifiers[identifier] = element }
+        }
+        self.classifiers = classifiers
     }
 
     /// The services offered to templates.

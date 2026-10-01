@@ -205,7 +205,9 @@ extension GenerationPipeline {
         } catch {
             throw GenerationError.generationFailed(String(describing: error))
         }
-        let text = await counting.getGeneratedFiles().values.first ?? ""
-        return Int(text.trimmingCharacters(in: .whitespacesAndNewlines))
+        let counts = await counting.getGeneratedFiles().values.compactMap {
+            Int($0.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        return counts.first
     }
 }
