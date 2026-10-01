@@ -254,7 +254,7 @@ swift run swift-ecore generate --language java model/library.genmodel -o src-gen
 
 **Existing files.** A file that exists is treated in this order: `--force-overwrite` replaces it; otherwise `--diff` writes the new text beside it; otherwise the generated members are merged with the file. In a merge, a member whose documentation comment carries `@generated` is regenerated, a member marked `@generated NOT` is kept as it is, and members without the tag (your own) are kept. Imports that you added stay.
 
-**Current coverage.** The Java template set writes one file for every enumeration of every package (the full `EnumClass` template for compliance level 5.0 and higher, `typeSafeEnumCompatible` honoured). The package interface and implementation, factory, classes (interface and implementation), switch, adapter factory, validator, XML processor, resource factory and project files are listed as `TODO` comments in `generate.mtl` and follow.
+**Current coverage.** The Java template set writes one file for every enumeration of every package (the full `EnumClass` template for compliance level 5.0 and higher, `typeSafeEnumCompatible` honoured). The package interface and implementation (`PackageClass`, with loaded initialisation, literals interface, operation reflection, nested packages and annotations; no generic metamodels) are written. The factory, classes (interface and implementation), switch, adapter factory, validator, XML processor, resource factory and project files are listed as `TODO` comments in `generate.mtl` and follow.
 
 **Checking the output.** Two optional checks run when their environment variable is set. `EMF_REFERENCE_ROOT` names a checkout of the Eclipse Modeling Framework; the generated `BookCategory.java` of its extended library example is then compared with the committed source. `EMF_RUNTIME_CLASSPATH` names the EMF runtime jars; the generated Java is then compiled with `javac`. `Scripts/fetch-emf-runtime.sh [directory]` downloads the jars from Maven Central and prints the class path:
 
@@ -277,6 +277,8 @@ Templates/java/
     JavaImports.mtl      imports and simple-name conflicts
     JavaDocumentation.mtl  documentation tags, literals and escapes
     EnumClass.mtl        the file of an enumeration
+    PackageClass.mtl     the package interface and implementation
+    PackageNames.mtl     queries for the package templates
     TypeMapping.ecore    a small metamodel for the language data
     java-types.xmi       type table, reserved words and implicit types, an instance of it
 ```
