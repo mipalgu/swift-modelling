@@ -69,6 +69,11 @@ enum TransformationError: Error, LocalizedError {
     /// - Parameter format: The unsupported format that was requested
     case unsupportedFormat(String)
 
+    /// A module parameter was not given as `name=value`.
+    ///
+    /// - Parameter argument: The argument as it was given on the command line
+    case invalidParameterArgument(String)
+
     /// Provides a localised description of the transformation error.
     ///
     /// Generates user-friendly error messages with context about the failure,
@@ -85,6 +90,8 @@ enum TransformationError: Error, LocalizedError {
             return "Target model '\(alias)' not found after transformation"
         case .unsupportedFormat(let format):
             return "Unsupported model format: \(format)"
+        case .invalidParameterArgument(let argument):
+            return "Invalid parameter '\(argument)': expected name=value"
         }
     }
 }
