@@ -96,7 +96,7 @@ swift run swift-mtl --help
 
 ## Usage
 
-The `swift-ecore` command-line tool provides comprehensive Eclipse Modelling Framework functionality for Swift. All commands support the `--verbose` flag for detailed output and `--help` for usage information.
+The `swift-ecore` command-line tool provides comprehensive Eclipse Modelling Framework functionality for Swift. All commands except `info` support the `-v, --verbose` flag for detailed output, and every command supports `--help` for usage information.
 
 ### Basic Information
 
@@ -467,7 +467,7 @@ swift run swift-mtl generate template.mtl \
 
 **Template path.** `--template-path <dir>` (repeatable) adds directories in which `[import ...]` looks for modules, after the directory of the template itself. A directory that does not exist is an error.
 
-**Parameters.** `--param name=value` (repeatable) is available to every template through two services: `parameter('name')` returns the value (`null` if it was not given) and `hasParameter('name')` tells whether it was given. A value is a boolean when it reads `true` or `false`, an integer when it is a whole number, and a string otherwise, so `[if (parameter('verbose'))]` and `[parameter('count') + 1/]` work. The value is everything after the first `=`, and a later argument replaces an earlier one of the same name. Parameters are services rather than variables: they are read with parentheses and are not visible as bare names.
+**Parameters.** `--param name=value` (repeatable) is available to every template as the bare variable `[name/]` and through two services: `parameter('name')` returns the value (`null` if it was not given) and `hasParameter('name')` tells whether it was given. A name must be an identifier that is not an MTL or AQL reserved keyword. A value is a boolean when it reads `true` or `false`, an integer when it is a whole number, and a string otherwise, so `[if (parameter('verbose'))]` and `[parameter('count') + 1/]` work. The value is everything after the first `=`, and a later argument replaces an earlier one of the same name.
 
 **Existing files.** A file that exists is merged with the generated text when the module declares a merge, and replaced otherwise. `--force-overwrite` always replaces it. `--diff` keeps it and writes the generated text beside it as `.<name>.new`; `--force-overwrite` wins when both are given.
 
