@@ -76,8 +76,6 @@ public enum GenModelImportConstants {
     public enum Parameter {
         /// The importer identifier.
         public static let importerID = "importerID"
-        /// The compliance level of generated code.
-        public static let complianceLevel = "complianceLevel"
         /// The class that generated root objects extend.
         public static let rootExtendsClass = "rootExtendsClass"
         /// Whether operation reflection is generated.
@@ -118,6 +116,14 @@ public enum GenModelImportConstants {
         public static let xmlTypeNsURI = "xmlTypeNsURI"
         /// The namespace URI of the Ecore metamodel.
         public static let ecoreNsURI = "ecoreNsURI"
+
+        /// Every parameter name, which the bundled transformation declares.
+        public static let all: Set<String> = [
+            importerID, rootExtendsClass, operationReflection, importOrganizing, copyrightFields,
+            bigModelThreshold, basePackage, prefix, packagePrefixes, modelProject, modelPluginID,
+            modelDirectory, modelName, copyright, foreignModels, listSeparator, assignmentSeparator,
+            extendedMetaDataSource, featureMapEntryClass, xmlTypeNsURI, ecoreNsURI,
+        ]
     }
 
     /// The names of the generator model settings that the import writes or preserves by name.

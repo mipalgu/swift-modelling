@@ -19,6 +19,16 @@ struct GenModelTransformation {
     /// The parsed transformation.
     let module: ATLModule
 
+    /// The location of the bundled transformation.
+    ///
+    /// - Returns: The file URL of the transformation, or `nil` if the bundle does not contain it.
+    static var resourceURL: URL? {
+        Bundle.module.url(
+            forResource: GenModelImportConstants.transformationName,
+            withExtension: GenModelImportConstants.transformationExtension,
+            subdirectory: GenModelImportConstants.transformationDirectory)
+    }
+
     /// Parses the bundled transformation.
     ///
     /// - Parameter generatorMetamodel: The generator metamodel that the transformation targets.
@@ -27,12 +37,7 @@ struct GenModelTransformation {
     ///   missing from the bundle or cannot be parsed.
     @MainActor
     static func load(generatorMetamodel: EPackage) async throws -> GenModelTransformation {
-        guard
-            let url = Bundle.module.url(
-                forResource: GenModelImportConstants.transformationName,
-                withExtension: GenModelImportConstants.transformationExtension,
-                subdirectory: GenModelImportConstants.transformationDirectory)
-        else {
+        guard let url = resourceURL else {
             throw GenerationError.transformationUnavailable("the bundled transformation is missing")
         }
         let registry = ATLMetamodelRegistry(packages: [EcorePackage.instance, generatorMetamodel])
