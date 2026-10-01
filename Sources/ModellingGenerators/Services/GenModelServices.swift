@@ -53,7 +53,7 @@ public struct GenModelServices: AQLServiceProvider {
     /// The services offered to templates.
     public var services: [AQLService] {
         namingServices + navigationServices + classServices + featureServices
-            + settingServices + textServices
+            + settingServices + textServices + serialisationServices
     }
 
     // MARK: - Receivers

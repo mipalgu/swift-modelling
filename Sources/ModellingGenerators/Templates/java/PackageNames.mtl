@@ -409,7 +409,9 @@
  **/]
 [query public parameterTypeName(parameter : OclAny) : String = if parameter.eType.oclIsUndefined() then 'Object' else (if parameter.eType.oclIsKindOf(EClass) then parameter.eType.name else instanceClassName(parameter.eType).substituteAll('$', '.').simpleTypeName() endif) endif/]
 
-[query simpleTypeName(typeName : String) : String = (if typeName.index('[') > 0 then typeName.substring(1, typeName.index('[') - 1) else typeName endif).substring((if typeName.index('[') > 0 then typeName.substring(1, typeName.index('[') - 1) else typeName endif).lastIndex('.') + 1)/]
+[query simpleTypeName(typeName : String) : String = if stripArray(typeName).contains('.') then stripArray(typeName).substring(stripArray(typeName).lastIndex('.') + 1) else stripArray(typeName) endif/]
+
+[query stripArray(typeName : String) : String = if typeName.contains('[') then typeName.substring(1, typeName.index('[') - 1) else typeName endif/]
 
 [**
  * The words of an operation name and its parameter types that the generator joins to name an operation.
