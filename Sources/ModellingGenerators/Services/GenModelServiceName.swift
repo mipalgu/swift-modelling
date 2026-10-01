@@ -160,6 +160,20 @@ public enum GenModelServiceName {
     public static let lines = "lines"
     /// The text with every line after the first prefixed.
     public static let indentLines = "indentLines"
+    /// The UTF-16 code units of a text.
+    public static let characterCodes = "characterCodes"
+    /// The character that a UTF-16 code unit stands for.
+    public static let fromCharacterCode = "fromCharacterCode"
+    /// A number in hexadecimal notation.
+    public static let toHexString = "toHexString"
+    /// A number in octal notation.
+    public static let toOctalString = "toOctalString"
+    /// The elements of a collection joined into one text.
+    public static let join = "join"
+    /// The keys of the details of an annotation.
+    public static let detailKeys = "detailKeys"
+    /// The value of a detail of an annotation.
+    public static let detailValue = "detailValue"
 
     // MARK: Template data
 

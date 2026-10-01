@@ -1,1 +1,21 @@
-{"name":"java","mainModule":"generate","mainTemplate":"generate"}
+{
+  "name": "java",
+  "summary": "Java model code for the Eclipse Modeling Framework runtime",
+  "mainModule": "generate",
+  "mainTemplate": "generate",
+  "dataModels": [
+    {
+      "name": "types",
+      "metamodel": "TypeMapping.ecore",
+      "model": "java-types.xmi"
+    }
+  ],
+  "layout": {
+    "sourceRootSetting": "modelDirectory",
+    "includeSourceRoot": false
+  },
+  "options": {
+    "lineDelimiter": "\n"
+  },
+  "fileCountTemplate": "fileCount"
+}

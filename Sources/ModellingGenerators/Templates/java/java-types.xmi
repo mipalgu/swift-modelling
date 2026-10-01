@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<typemapping:TypeTable xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:typemapping="http://swift-modelling.org/typemapping/1.0" language="java">
+  <mappings modelType="EString" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="java.lang.String" zeroValue="null"/>
+  <mappings modelType="EBoolean" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="boolean" boxedType="java.lang.Boolean" zeroValue="false"/>
+  <mappings modelType="EBooleanObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="java.lang.Boolean" zeroValue="null"/>
+  <mappings modelType="EByte" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="byte" boxedType="java.lang.Byte" zeroValue="(byte)0"/>
+  <mappings modelType="EByteObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="java.lang.Byte" zeroValue="null"/>
+  <mappings modelType="EByteArray" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="byte[]" zeroValue="null"/>
+  <mappings modelType="EChar" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="char" boxedType="java.lang.Character" zeroValue="'\u0000'"/>
+  <mappings modelType="ECharacterObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="java.lang.Character" zeroValue="null"/>
+  <mappings modelType="EDouble" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="double" boxedType="java.lang.Double" zeroValue="0.0"/>
+  <mappings modelType="EDoubleObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="java.lang.Double" zeroValue="null"/>
+  <mappings modelType="EFloat" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="float" boxedType="java.lang.Float" zeroValue="0.0F"/>
+  <mappings modelType="EFloatObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="java.lang.Float" zeroValue="null"/>
+  <mappings modelType="EInt" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="int" boxedType="java.lang.Integer" zeroValue="0"/>
+  <mappings modelType="EIntegerObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="java.lang.Integer" zeroValue="null"/>
+  <mappings modelType="ELong" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="long" boxedType="java.lang.Long" zeroValue="0L"/>
+  <mappings modelType="ELongObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="java.lang.Long" zeroValue="null"/>
+  <mappings modelType="EShort" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="short" boxedType="java.lang.Short" zeroValue="(short)0"/>
+  <mappings modelType="EShortObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="java.lang.Short" zeroValue="null"/>
+  <mappings modelType="EBigDecimal" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="java.math.BigDecimal" zeroValue="null"/>
+  <mappings modelType="EBigInteger" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="java.math.BigInteger" zeroValue="null"/>
+  <mappings modelType="EDate" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="java.util.Date" zeroValue="null"/>
+  <mappings modelType="EJavaObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="java.lang.Object" zeroValue="null"/>
+  <mappings modelType="EJavaClass" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="java.lang.Class&lt;?&gt;" zeroValue="null"/>
+  <mappings modelType="EEList" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="org.eclipse.emf.common.util.EList&lt;?&gt;" zeroValue="null"/>
+  <mappings modelType="EEnumerator" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="org.eclipse.emf.common.util.Enumerator" zeroValue="null"/>
+  <mappings modelType="EFeatureMapEntry" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="org.eclipse.emf.ecore.util.FeatureMap.Entry" zeroValue="null"/>
+  <mappings modelType="EDiagnosticChain" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="org.eclipse.emf.common.util.DiagnosticChain" zeroValue="null"/>
+  <mappings modelType="EResource" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="org.eclipse.emf.ecore.resource.Resource" zeroValue="null"/>
+  <mappings modelType="EResourceSet" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="org.eclipse.emf.ecore.resource.ResourceSet" zeroValue="null"/>
+  <mappings modelType="ETreeIterator" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="org.eclipse.emf.common.util.TreeIterator&lt;?&gt;" zeroValue="null"/>
+  <mappings modelType="EInvocationTargetException" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="java.lang.reflect.InvocationTargetException" zeroValue="null"/>
+  <mappings modelType="EJavaClassObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="java.lang.Class&lt;?&gt;" zeroValue="null"/>
+  <reservedWords word="abstract"/>
+  <reservedWords word="assert"/>
+  <reservedWords word="boolean"/>
+  <reservedWords word="break"/>
+  <reservedWords word="byte"/>
+  <reservedWords word="case"/>
+  <reservedWords word="catch"/>
+  <reservedWords word="char"/>
+  <reservedWords word="class"/>
+  <reservedWords word="const"/>
+  <reservedWords word="continue"/>
+  <reservedWords word="default"/>
+  <reservedWords word="do"/>
+  <reservedWords word="double"/>
+  <reservedWords word="else"/>
+  <reservedWords word="enum"/>
+  <reservedWords word="extends"/>
+  <reservedWords word="false"/>
+  <reservedWords word="final"/>
+  <reservedWords word="finally"/>
+  <reservedWords word="float"/>
+  <reservedWords word="for"/>
+  <reservedWords word="goto"/>
+  <reservedWords word="if"/>
+  <reservedWords word="implements"/>
+  <reservedWords word="import"/>
+  <reservedWords word="instanceof"/>
+  <reservedWords word="int"/>
+  <reservedWords word="interface"/>
+  <reservedWords word="long"/>
+  <reservedWords word="native"/>
+  <reservedWords word="new"/>
+  <reservedWords word="null"/>
+  <reservedWords word="package"/>
+  <reservedWords word="private"/>
+  <reservedWords word="protected"/>
+  <reservedWords word="public"/>
+  <reservedWords word="return"/>
+  <reservedWords word="short"/>
+  <reservedWords word="static"/>
+  <reservedWords word="strictfp"/>
+  <reservedWords word="super"/>
+  <reservedWords word="switch"/>
+  <reservedWords word="synchronized"/>
+  <reservedWords word="this"/>
+  <reservedWords word="throw"/>
+  <reservedWords word="throws"/>
+  <reservedWords word="transient"/>
+  <reservedWords word="true"/>
+  <reservedWords word="try"/>
+  <reservedWords word="void"/>
+  <reservedWords word="volatile"/>
+  <reservedWords word="while"/>
+  <implicitTypes name="AbstractMethodError"/>
+  <implicitTypes name="Appendable"/>
+  <implicitTypes name="ArithmeticException"/>
+  <implicitTypes name="ArrayIndexOutOfBoundsException"/>
+  <implicitTypes name="ArrayStoreException"/>
+  <implicitTypes name="AssertionError"/>
+  <implicitTypes name="AutoCloseable"/>
+  <implicitTypes name="Boolean"/>
+  <implicitTypes name="BootstrapMethodError"/>
+  <implicitTypes name="Byte"/>
+  <implicitTypes name="CharSequence"/>
+  <implicitTypes name="Character"/>
+  <implicitTypes name="Class"/>
+  <implicitTypes name="ClassCastException"/>
+  <implicitTypes name="ClassCircularityError"/>
+  <implicitTypes name="ClassFormatError"/>
+  <implicitTypes name="ClassLoader"/>
+  <implicitTypes name="ClassNotFoundException"/>
+  <implicitTypes name="ClassValue"/>
+  <implicitTypes name="Cloneable"/>
+  <implicitTypes name="CloneNotSupportedException"/>
+  <implicitTypes name="Comparable"/>
+  <implicitTypes name="Deprecated"/>
+  <implicitTypes name="Double"/>
+  <implicitTypes name="Enum"/>
+  <implicitTypes name="EnumConstantNotPresentException"/>
+  <implicitTypes name="Error"/>
+  <implicitTypes name="Exception"/>
+  <implicitTypes name="ExceptionInInitializerError"/>
+  <implicitTypes name="Float"/>
+  <implicitTypes name="FunctionalInterface"/>
+  <implicitTypes name="IllegalAccessError"/>
+  <implicitTypes name="IllegalAccessException"/>
+  <implicitTypes name="IllegalArgumentException"/>
+  <implicitTypes name="IllegalCallerException"/>
+  <implicitTypes name="IllegalMonitorStateException"/>
+  <implicitTypes name="IllegalStateException"/>
+  <implicitTypes name="IllegalThreadStateException"/>
+  <implicitTypes name="IncompatibleClassChangeError"/>
+  <implicitTypes name="IndexOutOfBoundsException"/>
+  <implicitTypes name="InheritableThreadLocal"/>
+  <implicitTypes name="InstantiationError"/>
+  <implicitTypes name="InstantiationException"/>
+  <implicitTypes name="Integer"/>
+  <implicitTypes name="InternalError"/>
+  <implicitTypes name="InterruptedException"/>
+  <implicitTypes name="Iterable"/>
+  <implicitTypes name="LayerInstantiationException"/>
+  <implicitTypes name="LinkageError"/>
+  <implicitTypes name="Long"/>
+  <implicitTypes name="Math"/>
+  <implicitTypes name="Module"/>
+  <implicitTypes name="ModuleLayer"/>
+  <implicitTypes name="NegativeArraySizeException"/>
+  <implicitTypes name="NoClassDefFoundError"/>
+  <implicitTypes name="NoSuchFieldError"/>
+  <implicitTypes name="NoSuchFieldException"/>
+  <implicitTypes name="NoSuchMethodError"/>
+  <implicitTypes name="NoSuchMethodException"/>
+  <implicitTypes name="NullPointerException"/>
+  <implicitTypes name="Number"/>
+  <implicitTypes name="NumberFormatException"/>
+  <implicitTypes name="Object"/>
+  <implicitTypes name="OutOfMemoryError"/>
+  <implicitTypes name="Override"/>
+  <implicitTypes name="Package"/>
+  <implicitTypes name="Process"/>
+  <implicitTypes name="ProcessBuilder"/>
+  <implicitTypes name="ProcessHandle"/>
+  <implicitTypes name="Readable"/>
+  <implicitTypes name="Record"/>
+  <implicitTypes name="ReflectiveOperationException"/>
+  <implicitTypes name="Runnable"/>
+  <implicitTypes name="Runtime"/>
+  <implicitTypes name="RuntimeException"/>
+  <implicitTypes name="RuntimePermission"/>
+  <implicitTypes name="SafeVarargs"/>
+  <implicitTypes name="SecurityException"/>
+  <implicitTypes name="Short"/>
+  <implicitTypes name="StackOverflowError"/>
+  <implicitTypes name="StackTraceElement"/>
+  <implicitTypes name="StackWalker"/>
+  <implicitTypes name="StrictMath"/>
+  <implicitTypes name="String"/>
+  <implicitTypes name="StringBuffer"/>
+  <implicitTypes name="StringBuilder"/>
+  <implicitTypes name="StringIndexOutOfBoundsException"/>
+  <implicitTypes name="SuppressWarnings"/>
+  <implicitTypes name="System"/>
+  <implicitTypes name="Thread"/>
+  <implicitTypes name="ThreadGroup"/>
+  <implicitTypes name="ThreadLocal"/>
+  <implicitTypes name="Throwable"/>
+  <implicitTypes name="TypeNotPresentException"/>
+  <implicitTypes name="UnknownError"/>
+  <implicitTypes name="UnsatisfiedLinkError"/>
+  <implicitTypes name="UnsupportedClassVersionError"/>
+  <implicitTypes name="UnsupportedOperationException"/>
+  <implicitTypes name="VerifyError"/>
+  <implicitTypes name="VirtualMachineError"/>
+  <implicitTypes name="Void"/>
+  <implicitTypes name="boolean"/>
+  <implicitTypes name="byte"/>
+  <implicitTypes name="char"/>
+  <implicitTypes name="double"/>
+  <implicitTypes name="float"/>
+  <implicitTypes name="int"/>
+  <implicitTypes name="long"/>
+  <implicitTypes name="short"/>
+</typemapping:TypeTable>

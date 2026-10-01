@@ -70,10 +70,12 @@ extension GenModelServices {
     ///   - element: The generator element.
     /// - Returns: The value of the setting.
     static func setting(_ name: String, of element: GenElement) -> (any EcoreValue)? {
-        if element.object.eIsSet(name), let value = element.object.eGet(name) { return value }
-        guard let attribute = element.object.eClass.getStructuralFeature(name: name) as? EAttribute else {
-            return element.object.eGet(name)
+        let attribute = element.object.eClass.getStructuralFeature(name: name) as? EAttribute
+        if element.object.eIsSet(name), let value = element.object.eGet(name) {
+            if let enumeration = attribute?.eType as? EEnum { return literalText(of: value, in: enumeration) }
+            return value
         }
+        guard let attribute else { return element.object.eGet(name) }
         if let enumeration = attribute.eType as? EEnum {
             let literal = attribute.defaultValueLiteral
             let match = enumeration.literals.first { ($0.literal ?? $0.name) == literal || $0.name == literal }
@@ -87,6 +89,26 @@ extension GenModelServices {
             return attribute.defaultValueLiteral.flatMap { Int($0) } ?? 0
         }
         return attribute.defaultValueLiteral
+    }
+
+    /// The text of an enumeration literal that a loaded value stands for.
+    ///
+    /// A document that lists a literal such as `17.0` can load it as a number, so the value is
+    /// matched with the literals of the enumeration numerically as well as textually.
+    ///
+    /// - Parameters:
+    ///   - value: The loaded value.
+    ///   - enumeration: The enumeration the value belongs to.
+    /// - Returns: The text of the matching literal, or the description of the value if none matches.
+    static func literalText(of value: any EcoreValue, in enumeration: EEnum) -> any EcoreValue {
+        if value is String { return value }
+        if let number = AQLValues.numericValue(value) {
+            for literal in enumeration.literals {
+                let text = literal.literal ?? literal.name
+                if Double(text) == number { return text }
+            }
+        }
+        return AQLValues.description(of: value)
     }
 
     /// The model documentation of a generator element.

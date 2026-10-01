@@ -1,6 +1,51 @@
-[module generate('http://www.eclipse.org/emf/2002/GenModel')/]
-[template generate(genModel : GenModel)]
-[file ('hello.txt')]
-[genModel.genPackages->first().genClasses->first().ecoreClass.name/]
+[comment encoding = UTF-8 /]
+[**
+ * The main module of the Java template set.
+ *
+ * It writes the model code of a generator model, one set of files for each generator package.
+ * Files that exist already are merged: members whose documentation comment carries the generated tag
+ * are regenerated, members marked as not generated are kept, and members without the tag are kept.
+ **/]
+[module generate('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[merge ('/**', '*/', '@generated', '@generated NOT', 'braces')/]
+[import JavaNames/]
+[import JavaImports/]
+[import EnumClass/]
+
+[**
+ * Writes the model code of every package of a generator model, nested packages included.
+ **/]
+[template public generate(genModel : GenModel)]
+[for (genPackage : GenPackage | genModel.allGenPackages())]
+[genPackage.generatePackage()/]
+[/for]
+[/template]
+
+[**
+ * Writes the files of one generator package, in the order the Eclipse generator uses.
+ **/]
+[template public generatePackage(genPackage : GenPackage)]
+[comment TODO: package interface, package implementation, factory interface and implementation. /]
+[comment TODO: XML processor (resource kind XML), validator (constraints). /]
+[comment TODO: interface and implementation of every class. /]
+[for (genEnum : GenEnum | genPackage.genEnums)]
+[genEnum.generateEnumFile()/]
+[/for]
+[comment TODO: switch and adapter factory (adapter factory with classes), resource factory and resource implementation (resource kind not None). /]
+[/template]
+
+[**
+ * Writes the file of one enumeration.
+ **/]
+[template public generateEnumFile(genEnum : GenEnum)]
+[file (genEnum.genPackage().interfacePackageName().packagePath() + '/' + genEnum.name() + '.java', false, 'UTF-8')][genEnum.enumClass()/][/file]
+[/template]
+
+[**
+ * The number of files that this module writes for a generator model, used to report progress.
+ **/]
+[template public fileCount(genModel : GenModel)]
+[file ('count')]
+[genModel.allGenPackages()->collect(p | p.genEnums->size())->sum()/]
 [/file]
 [/template]
