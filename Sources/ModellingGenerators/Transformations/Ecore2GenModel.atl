@@ -1,0 +1,264 @@
+-- Ecore2GenModel.atl
+--
+-- Transforms Ecore packages into a generator model with the settings that the
+-- Ecore importer gives to a model it imports for the first time.
+--
+-- Every generator element is created by a lazy or called rule, so that source
+-- elements are never replaced by their transformed counterparts when they are
+-- bound to the `ecore...` references of the generator model.
+--
+-- @nsURI Ecore=http://www.eclipse.org/emf/2002/Ecore
+-- @nsURI GenModel=http://www.eclipse.org/emf/2002/GenModel
+-- @param importerID : String
+-- @param rootExtendsClass : String
+-- @param operationReflection : Boolean
+-- @param importOrganizing : Boolean
+-- @param copyrightFields : Boolean
+-- @param bigModelThreshold : Integer
+-- @param basePackage : String
+-- @param prefix : String
+-- @param packagePrefixes : String
+-- @param modelProject : String
+-- @param modelPluginID : String
+-- @param modelDirectory : String
+-- @param modelName : String
+-- @param copyright : String
+-- @param foreignModels : String
+-- @param listSeparator : String
+-- @param assignmentSeparator : String
+-- @param extendedMetaDataSource : String
+-- @param featureMapEntryClass : String
+-- @param xmlTypeNsURI : String
+-- @param ecoreNsURI : String
+module Ecore2GenModel;
+create OUT : GenModel from IN : Ecore;
+
+-- Naming
+
+helper def : capName(name : String) : String =
+    if name.size() <= 1 then
+        name.toUpper()
+    else
+        name.substring(1, 1).toUpper().concat(name.substring(2, name.size()))
+    endif;
+
+helper def : validPluginID(name : String) : String =
+    let cleaned : String = name.replaceAll(' ', '_').regexReplaceAll('[^A-Za-z0-9_.-]', '') in
+    if cleaned.size() = 0 then '_' else cleaned endif;
+
+helper def : nonEmpty(text : String) : String =
+    if text.size() = 0 then OclUndefined else text endif;
+
+helper def : entries(text : String) : Sequence(String) =
+    text.split(thisModule.listSeparator)->select(e | e.size() > 0);
+
+-- Package settings
+
+helper def : rootPackages : Sequence(Ecore!EPackage) =
+    Ecore!EPackage.allInstances()->select(p | p.eSuperPackage.oclIsUndefined());
+
+helper def : projectName : String =
+    if thisModule.modelProject.size() > 0 then
+        thisModule.modelProject
+    else
+        thisModule.rootPackages->first().name
+    endif;
+
+helper def : prefixOverride(packageName : String) : String =
+    thisModule.entries(thisModule.packagePrefixes)
+        ->select(e | e.startsWith(packageName.concat(thisModule.assignmentSeparator)))
+        ->collect(e | e.substring(packageName.size() + thisModule.assignmentSeparator.size() + 1, e.size()))
+        ->first();
+
+helper def : packagePrefix(package : Ecore!EPackage) : String =
+    let override : String = thisModule.prefixOverride(package.name) in
+    if not override.oclIsUndefined() then
+        override
+    else
+        if package.eSuperPackage.oclIsUndefined() and thisModule.prefix.size() > 0 then
+            thisModule.prefix
+        else
+            thisModule.capName(package.name)
+        endif
+    endif;
+
+-- Number of model elements that decide whether a package is a big model.
+helper context Ecore!EPackage def : classes : Sequence(Ecore!EClass) =
+    self.eClassifiers->select(c | c.oclIsKindOf(Ecore!EClass));
+
+helper context Ecore!EPackage def : elementCount : Integer =
+    self.classes->size()
+    + self.classes->collect(c | c.eSuperTypes->size())->sum()
+    + self.classes->collect(c | c.eStructuralFeatures->size())->sum()
+    + self.classes->collect(c | c.eOperations->size())->sum()
+    + self.classes->collect(c | c.eOperations->collect(o | o.eParameters->size())->sum())->sum()
+    + self.classes->collect(c | c.eOperations->collect(o | o.eExceptions->size())->sum())->sum()
+    + self.eClassifiers->select(c | c.oclIsKindOf(Ecore!EEnum))->size()
+    + self.eClassifiers->select(c | c.oclIsKindOf(Ecore!EEnum))->collect(e | e.eLiterals->size())->sum()
+    + self.eClassifiers->select(c | c.oclIsTypeOf(Ecore!EDataType))->size();
+
+helper context Ecore!EPackage def : isBigModel : Boolean =
+    self.elementCount > thisModule.bigModelThreshold;
+
+helper context Ecore!EPackage def : hasExtendedMetaData : Boolean =
+    thisModule.xmlTypeNsURI = self.nsURI
+    or (self.nsURI <> thisModule.ecoreNsURI
+        and (self.eAnnotations->exists(a | a.source = thisModule.extendedMetaDataSource)
+             or self.classes->exists(c |
+                    c.eStructuralFeatures->exists(f |
+                        f.eAnnotations->exists(a | a.source = thisModule.extendedMetaDataSource)))));
+
+-- Feature settings
+
+helper context Ecore!EStructuralFeature def : isContainer : Boolean =
+    self.oclIsKindOf(Ecore!EReference)
+    and not self.eOpposite.oclIsUndefined()
+    and self.eOpposite.containment;
+
+helper context Ecore!EStructuralFeature def : isContainment : Boolean =
+    self.oclIsKindOf(Ecore!EReference) and self.containment;
+
+helper context Ecore!EStructuralFeature def : isFeatureMapType : Boolean =
+    not self.oclIsKindOf(Ecore!EReference)
+    and not self.eType.oclIsUndefined()
+    and self.eType.instanceClassName = thisModule.featureMapEntryClass;
+
+helper context Ecore!EStructuralFeature def : editability : String =
+    if self.changeable then #Editable else #Readonly endif;
+
+helper context Ecore!EStructuralFeature def : propertyKind : String =
+    if self.isContainer or self.isContainment or self.isFeatureMapType then
+        #None
+    else
+        self.editability
+    endif;
+
+helper context Ecore!EStructuralFeature def : isChildren : Boolean =
+    self.isContainment or self.isFeatureMapType;
+
+-- Rules
+
+entrypoint rule GenModel() {
+    to m : GenModel!GenModel (
+        importerID <- thisModule.importerID,
+        copyrightText <- thisModule.nonEmpty(thisModule.copyright),
+        copyrightFields <- thisModule.copyrightFields,
+        modelDirectory <-
+            if thisModule.modelDirectory.size() > 0 then
+                thisModule.modelDirectory
+            else
+                '/'.concat(thisModule.projectName).concat('/src')
+            endif,
+        modelPluginID <-
+            if thisModule.modelPluginID.size() > 0 then
+                thisModule.modelPluginID
+            else
+                thisModule.validPluginID(thisModule.projectName)
+            endif,
+        modelName <-
+            if thisModule.modelName.size() > 0 then
+                thisModule.modelName
+            else
+                thisModule.capName(thisModule.rootPackages->first().name)
+            endif,
+        operationReflection <- thisModule.operationReflection,
+        rootExtendsClass <- thisModule.rootExtendsClass,
+        importOrganizing <- thisModule.importOrganizing,
+        foreignModel <- thisModule.entries(thisModule.foreignModels),
+        genPackages <- thisModule.rootPackages->collect(p | thisModule.Package(p))
+    )
+}
+
+unique lazy rule Package {
+    from p : Ecore!EPackage
+    to g : GenModel!GenPackage (
+        prefix <- thisModule.packagePrefix(p),
+        basePackage <-
+            if p.eSuperPackage.oclIsUndefined() then
+                thisModule.nonEmpty(thisModule.basePackage)
+            else
+                OclUndefined
+            endif,
+        disposableProviderFactory <- true,
+        resource <- if p.hasExtendedMetaData then #XML else OclUndefined endif,
+        loadInitialization <- p.isBigModel,
+        literalsInterface <- not p.isBigModel,
+        ecorePackage <- p,
+        genEnums <- p.eClassifiers->select(c | c.oclIsKindOf(Ecore!EEnum))
+            ->collect(e | thisModule.Enum(e)),
+        genDataTypes <- p.eClassifiers->select(c | c.oclIsTypeOf(Ecore!EDataType))
+            ->collect(d | thisModule.DataType(d)),
+        genClasses <- p.classes->collect(c | thisModule.Class(c)),
+        nestedGenPackages <- p.eSubpackages->collect(s | thisModule.Package(s))
+    )
+}
+
+unique lazy rule Enum {
+    from e : Ecore!EEnum
+    to g : GenModel!GenEnum (
+        typeSafeEnumCompatible <- false,
+        ecoreEnum <- e,
+        genEnumLiterals <- e.eLiterals->collect(l | thisModule.EnumLiteral(l))
+    )
+}
+
+unique lazy rule EnumLiteral {
+    from l : Ecore!EEnumLiteral
+    to g : GenModel!GenEnumLiteral (
+        ecoreEnumLiteral <- l
+    )
+}
+
+unique lazy rule DataType {
+    from d : Ecore!EDataType
+    to g : GenModel!GenDataType (
+        ecoreDataType <- d
+    )
+}
+
+unique lazy rule Class {
+    from c : Ecore!EClass
+    to g : GenModel!GenClass (
+        image <- not c.abstract,
+        ecoreClass <- c,
+        genFeatures <- c.eStructuralFeatures->collect(f | thisModule.Feature(f)),
+        genOperations <- c.eOperations->collect(o | thisModule.Operation(o))
+    )
+}
+
+unique lazy rule Feature {
+    from f : Ecore!EStructuralFeature
+    to g : GenModel!GenFeature (
+        property <- f.propertyKind,
+        children <- f.isChildren,
+        createChild <- f.isChildren and f.changeable,
+        notify <- if f.oclIsKindOf(Ecore!EReference) or f.isFeatureMapType then f.isChildren else true endif,
+        propertySortChoices <-
+            if f.oclIsKindOf(Ecore!EReference) and not f.isContainer and not f.isContainment
+                and f.changeable then true else OclUndefined endif,
+        ecoreFeature <- f
+    )
+}
+
+unique lazy rule Operation {
+    from o : Ecore!EOperation
+    to g : GenModel!GenOperation (
+        ecoreOperation <- o,
+        genParameters <- o.eParameters->collect(p | thisModule.Parameter(p)),
+        genTypeParameters <- o.eTypeParameters->collect(t | thisModule.TypeParameter(t))
+    )
+}
+
+unique lazy rule Parameter {
+    from p : Ecore!EParameter
+    to g : GenModel!GenParameter (
+        ecoreParameter <- p
+    )
+}
+
+unique lazy rule TypeParameter {
+    from t : Ecore!ETypeParameter
+    to g : GenModel!GenTypeParameter (
+        ecoreTypeParameter <- t
+    )
+}

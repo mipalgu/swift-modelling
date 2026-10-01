@@ -11,6 +11,10 @@ let package = Package(
             name: "SwiftModelling",
             targets: ["SwiftModelling"]
         ),
+        .library(
+            name: "ModellingGenerators",
+            targets: ["ModellingGenerators"]
+        ),
         .executable(
             name: "swift-ecore",
             targets: ["swift-ecore"]
@@ -41,11 +45,28 @@ let package = Package(
                 .copy("SwiftModelling.docc")
             ]
         ),
+        .target(
+            name: "ModellingGenerators",
+            dependencies: [
+                .product(name: "ECore", package: "swift-ecore"),
+                .product(name: "EMFBase", package: "swift-ecore"),
+                .product(name: "GenModel", package: "swift-ecore"),
+                .product(name: "ATL", package: "swift-atl"),
+                .product(name: "MTL", package: "swift-mtl"),
+            ],
+            resources: [
+                .copy("Transformations")
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency")
+            ]
+        ),
         .executableTarget(
             name: "swift-ecore",
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "ECore", package: "swift-ecore"),
+                "ModellingGenerators",
             ],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency")
@@ -69,6 +90,21 @@ let package = Package(
                 .product(name: "ECore", package: "swift-ecore"),
                 .product(name: "EMFBase", package: "swift-ecore"),
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency")
+            ]
+        ),
+        .testTarget(
+            name: "ModellingGeneratorsTests",
+            dependencies: [
+                "ModellingGenerators",
+                .product(name: "ECore", package: "swift-ecore"),
+                .product(name: "EMFBase", package: "swift-ecore"),
+                .product(name: "GenModel", package: "swift-ecore"),
+            ],
+            resources: [
+                .copy("Resources")
             ],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency")
