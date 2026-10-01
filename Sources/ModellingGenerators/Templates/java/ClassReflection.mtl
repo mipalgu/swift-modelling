@@ -80,7 +80,7 @@
     switch (featureID)
     {
 [for (genFeature : GenFeature | genClass.eInverseAddFeatures())]
-      case [genClass.featureID(genFeature)/]:
+      case [genClass.featureConstant(genFeature)/]:
 [if (genFeature.isListType())]
         return [genFeature.internalListCast()/][genFeature.getterName()/]()).basicAdd(otherEnd, msgs);
 [elseif (genFeature.isContainer())]
@@ -89,7 +89,7 @@
 [if (genFeature.isBasicSet())]
         return basicSet[genFeature.accessorName()/](([genFeature.featureType()/])otherEnd, msgs);
 [else]
-        return eBasicSetContainer(otherEnd, [genClass.featureID(genFeature)/], msgs);
+        return eBasicSetContainer(otherEnd, [genClass.featureConstant(genFeature)/], msgs);
 [/if]
 [else]
 [if (genFeature.isVolatile())]
@@ -97,9 +97,9 @@
 [/if]
         if ([genFeature.localName()/] != null)
 [if (genFeature.isEffectiveContains())]
-          msgs = [genFeature.asInternalEObject(genFeature.localName(), true)/].eInverseRemove(this, EOPPOSITE_FEATURE_BASE - [genClass.featureID(genFeature)/], null, msgs);
+          msgs = [genFeature.asInternalEObject(genFeature.localName(), true)/].eInverseRemove(this, EOPPOSITE_FEATURE_BASE - [genClass.featureConstant(genFeature)/], null, msgs);
 [else]
-          msgs = [genFeature.asInternalEObject(genFeature.localName(), true)/].eInverseRemove(this, [genFeature.reverseGenFeature().genClass().featureID(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
+          msgs = [genFeature.asInternalEObject(genFeature.localName(), true)/].eInverseRemove(this, [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
 [/if]
         return basicSet[genFeature.accessorName()/](([genFeature.featureType()/])otherEnd, msgs);
 [/if]
@@ -118,11 +118,11 @@
     switch (featureID)
     {
 [for (genFeature : GenFeature | genClass.eInverseRemoveFeatures())]
-      case [genClass.featureID(genFeature)/]:
+      case [genClass.featureConstant(genFeature)/]:
 [if (genFeature.isListType() or genFeature.isFeatureMapFeature())]
         return (([importedName('org.eclipse.emf.ecore.util.InternalEList')/]<?>)[genFeature.getterName()/]()).basicRemove(otherEnd, msgs);
 [elseif (genFeature.isContainer() and not genFeature.isBasicSet())]
-        return eBasicSetContainer(null, [genClass.featureID(genFeature)/], msgs);
+        return eBasicSetContainer(null, [genClass.featureConstant(genFeature)/], msgs);
 [elseif (genFeature.isUnsettableFeature())]
         return basicUnset[genFeature.accessorName()/](msgs);
 [else]
@@ -143,8 +143,8 @@
     switch (eContainerFeatureID())
     {
 [for (genFeature : GenFeature | genClass.eBasicRemoveFromContainerFeatures())]
-      case [genClass.featureID(genFeature)/]:
-        return eInternalContainer().eInverseRemove(this, [genFeature.reverseGenFeature().genClass().featureID(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
+      case [genClass.featureConstant(genFeature)/]:
+        return eInternalContainer().eInverseRemove(this, [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
 [/for]
 [genClass.switchTail('eBasicRemoveFromContainerFeature', 'msgs', true)/]
   }
@@ -160,7 +160,7 @@
     switch (featureID)
     {
 [for (genFeature : GenFeature | genClass.reflectiveFeatures())]
-      case [genClass.featureID(genFeature)/]:
+      case [genClass.featureConstant(genFeature)/]:
 [if (genFeature.isPrimitiveFeature())]
         return [genFeature.getterName()/]();
 [elseif (genFeature.resolvesProxies() and not genFeature.isListType())]
@@ -193,7 +193,7 @@
     switch (featureID)
     {
 [for (genFeature : GenFeature | genClass.eSetFeatures())]
-      case [genClass.featureID(genFeature)/]:
+      case [genClass.featureConstant(genFeature)/]:
 [if (genFeature.isFeatureMapFeature())]
         (([importedName(featureMapTypeName())/].Internal)[genFeature.getterName()/]()).set(newValue);
 [elseif (genFeature.isMapFeature())]
@@ -220,7 +220,7 @@
     switch (featureID)
     {
 [for (genFeature : GenFeature | genClass.eSetFeatures())]
-      case [genClass.featureID(genFeature)/]:
+      case [genClass.featureConstant(genFeature)/]:
 [if (genFeature.isListType() and not genFeature.isUnsettableFeature())]
         [genFeature.getterName()/]().clear();
 [elseif (genFeature.isUnsettableFeature())]
@@ -246,7 +246,7 @@
     switch (featureID)
     {
 [for (genFeature : GenFeature | genClass.reflectiveFeatures())]
-      case [genClass.featureID(genFeature)/]:
+      case [genClass.featureConstant(genFeature)/]:
 [if (genFeature.isListType() and not genFeature.isUnsettableFeature())]
 [if (genClass.isFieldOf(genFeature))]
         return [genFeature.localName()/] != null && ![genFeature.localName()/].isEmpty();
@@ -319,7 +319,7 @@
       switch (derivedFeatureID)
       {
 [for (genFeature : GenFeature | mixin.genFeatures)]
-        case [genClass.featureID(genFeature)/]: return [mixin.featureID(genFeature)/];
+        case [genClass.featureConstant(genFeature)/]: return [mixin.featureConstant(genFeature)/];
 [/for]
         default: return -1;
       }
@@ -340,7 +340,7 @@
       switch (baseFeatureID)
       {
 [for (genFeature : GenFeature | mixin.genFeatures)]
-        case [mixin.featureID(genFeature)/]: return [genClass.featureID(genFeature)/];
+        case [mixin.featureConstant(genFeature)/]: return [genClass.featureConstant(genFeature)/];
 [/for]
         default: return -1;
       }

@@ -39,7 +39,7 @@
 [**
  * The Java constant that identifies a feature in the context of a class.
  **/]
-[template public featureID(genClass : GenClass, genFeature : GenFeature)][genClass.packageInterface()/].[genClass.classifierIDName()/]__[genFeature.featureUpperName()/][/template]
+[template public featureConstant(genClass : GenClass, genFeature : GenFeature)][genClass.packageInterface()/].[genClass.classifierIDName()/]__[genFeature.featureUpperName()/][/template]
 
 [**
  * The Java expression that denotes the metaclass of a feature in the package interface.
@@ -236,7 +236,7 @@
 [**
  * The expression that creates the list that holds the values of a many-valued feature.
  **/]
-[template public listConstructor(genClass : GenClass, genFeature : GenFeature)][let unsettable : String = if genFeature.isUnsettableFeature() then '.Unsettable' else '' endif][if (genFeature.isMapFeature())]new [importedName('org.eclipse.emf.ecore.util.EcoreEMap')/][unsettable/]<[importedName(objectTypeName(qualifiedTypeName(genFeature.entryFeature('key').eType)))/],[importedName(objectTypeName(qualifiedTypeName(genFeature.entryFeature('value').eType)))/]>([genFeature.ecoreFeature.eType.genClassifier().qualifiedClassifierAccessor()/], [importedName(genFeature.ecoreFeature.eType.genClassifier().qualifiedClassName())/].class, this, [genClass.featureID(genFeature)/][if (genFeature.isBidirectional())], [genFeature.reverseGenFeature().genClass().featureID(genFeature.reverseGenFeature())/][/if])[elseif (genFeature.isFeatureMapFeature())]new [importedName('org.eclipse.emf.ecore.util.BasicFeatureMap')/](this, [genClass.featureID(genFeature)/])[elseif (genClass.genModel().isSuppressNotification())]new [importedName('org.eclipse.emf.ecore.util.BasicInternalEList')/]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class)[elseif (genFeature.isEffectiveContains())][if (genFeature.isBidirectional())]new [importedName('org.eclipse.emf.ecore.util.EObjectContainmentWithInverseEList')/][unsettable/][if (genFeature.resolvesProxies())].Resolving[/if]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureID(genFeature)/], [genFeature.reverseGenFeature().genClass().featureID(genFeature.reverseGenFeature())/])[else]new [importedName('org.eclipse.emf.ecore.util.EObjectContainmentEList')/][unsettable/][if (genFeature.resolvesProxies())].Resolving[/if]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureID(genFeature)/])[/if][elseif (genFeature.isReferenceType())][if (genFeature.isBidirectional())]new [importedName(if genFeature.resolvesProxies() then 'org.eclipse.emf.ecore.util.EObjectWithInverseResolvingEList' else 'org.eclipse.emf.ecore.util.EObjectWithInverseEList' endif)/][unsettable/][if (genFeature.reverseGenFeature().isListType())].ManyInverse[/if]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureID(genFeature)/], [genFeature.reverseGenFeature().genClass().featureID(genFeature.reverseGenFeature())/])[else]new [importedName(if genFeature.resolvesProxies() then 'org.eclipse.emf.ecore.util.EObjectResolvingEList' else 'org.eclipse.emf.ecore.util.EObjectEList' endif)/][unsettable/]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureID(genFeature)/])[/if][else]new [importedName(if genFeature.ecoreFeature.unique then 'org.eclipse.emf.ecore.util.EDataTypeUniqueEList' else 'org.eclipse.emf.ecore.util.EDataTypeEList' endif)/][unsettable/]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureID(genFeature)/])[/if][/let][/template]
+[template public listConstructor(genClass : GenClass, genFeature : GenFeature)][let unsettable : String = if genFeature.isUnsettableFeature() then '.Unsettable' else '' endif][if (genFeature.isMapFeature())]new [importedName('org.eclipse.emf.ecore.util.EcoreEMap')/][unsettable/]<[importedName(objectTypeName(qualifiedTypeName(genFeature.entryFeature('key').eType)))/],[importedName(objectTypeName(qualifiedTypeName(genFeature.entryFeature('value').eType)))/]>([genFeature.ecoreFeature.eType.genClassifier().qualifiedClassifierAccessor()/], [importedName(genFeature.ecoreFeature.eType.genClassifier().qualifiedClassName())/].class, this, [genClass.featureConstant(genFeature)/][if (genFeature.isBidirectional())], [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/][/if])[elseif (genFeature.isFeatureMapFeature())]new [importedName('org.eclipse.emf.ecore.util.BasicFeatureMap')/](this, [genClass.featureConstant(genFeature)/])[elseif (genClass.genModel().isSuppressNotification())]new [importedName('org.eclipse.emf.ecore.util.BasicInternalEList')/]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class)[elseif (genFeature.isEffectiveContains())][if (genFeature.isBidirectional())]new [importedName('org.eclipse.emf.ecore.util.EObjectContainmentWithInverseEList')/][unsettable/][if (genFeature.resolvesProxies())].Resolving[/if]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureConstant(genFeature)/], [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/])[else]new [importedName('org.eclipse.emf.ecore.util.EObjectContainmentEList')/][unsettable/][if (genFeature.resolvesProxies())].Resolving[/if]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureConstant(genFeature)/])[/if][elseif (genFeature.isReferenceType())][if (genFeature.isBidirectional())]new [importedName(if genFeature.resolvesProxies() then 'org.eclipse.emf.ecore.util.EObjectWithInverseResolvingEList' else 'org.eclipse.emf.ecore.util.EObjectWithInverseEList' endif)/][unsettable/][if (genFeature.reverseGenFeature().isListType())].ManyInverse[/if]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureConstant(genFeature)/], [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/])[else]new [importedName(if genFeature.resolvesProxies() then 'org.eclipse.emf.ecore.util.EObjectResolvingEList' else 'org.eclipse.emf.ecore.util.EObjectEList' endif)/][unsettable/]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureConstant(genFeature)/])[/if][else]new [importedName(if genFeature.ecoreFeature.unique then 'org.eclipse.emf.ecore.util.EDataTypeUniqueEList' else 'org.eclipse.emf.ecore.util.EDataTypeEList' endif)/][unsettable/]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureConstant(genFeature)/])[/if][/let][/template]
 
 [comment Members /]
 
@@ -398,7 +398,7 @@
     }
     return [genFeature.localName()/];
 [elseif (genFeature.isContainer())]
-    if (eContainerFeatureID() != [genClass.featureID(genFeature)/]) return null;
+    if (eContainerFeatureID() != [genClass.featureConstant(genFeature)/]) return null;
     return ([genFeature.featureType()/])[if (genFeature.resolvesProxies())]eContainer[else]eInternalContainer[/if]();
 [else]
 [if (genFeature.resolvesProxies())]
@@ -411,23 +411,23 @@
 [if (genFeature.isEffectiveContains())]
         [importedName('org.eclipse.emf.ecore.InternalEObject')/] new[genFeature.capName()/] = [genFeature.asInternalEObject(genFeature.localName(), false)/];
 [if (not genFeature.isBidirectional())]
-        [importedName('org.eclipse.emf.common.notify.NotificationChain')/] msgs = old[genFeature.capName()/].eInverseRemove(this, EOPPOSITE_FEATURE_BASE - [genClass.featureID(genFeature)/], null, null);
+        [importedName('org.eclipse.emf.common.notify.NotificationChain')/] msgs = old[genFeature.capName()/].eInverseRemove(this, EOPPOSITE_FEATURE_BASE - [genClass.featureConstant(genFeature)/], null, null);
 [else]
-        [importedName('org.eclipse.emf.common.notify.NotificationChain')/] msgs =  old[genFeature.capName()/].eInverseRemove(this, [genFeature.reverseGenFeature().genClass().featureID(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, null);
+        [importedName('org.eclipse.emf.common.notify.NotificationChain')/] msgs =  old[genFeature.capName()/].eInverseRemove(this, [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, null);
 [/if]
         if (new[genFeature.capName()/].eInternalContainer() == null)
         {
 [if (not genFeature.isBidirectional())]
-          msgs = new[genFeature.capName()/].eInverseAdd(this, EOPPOSITE_FEATURE_BASE - [genClass.featureID(genFeature)/], null, msgs);
+          msgs = new[genFeature.capName()/].eInverseAdd(this, EOPPOSITE_FEATURE_BASE - [genClass.featureConstant(genFeature)/], null, msgs);
 [else]
-          msgs =  new[genFeature.capName()/].eInverseAdd(this, [genFeature.reverseGenFeature().genClass().featureID(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
+          msgs =  new[genFeature.capName()/].eInverseAdd(this, [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
 [/if]
         }
         if (msgs != null) msgs.dispatch();
 [/if]
 [if (not genClass.genModel().isSuppressNotification())]
         if (eNotificationRequired())
-          eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].RESOLVE, [genClass.featureID(genFeature)/], old[genFeature.capName()/], [genFeature.localName()/]));
+          eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].RESOLVE, [genClass.featureConstant(genFeature)/], old[genFeature.capName()/], [genFeature.localName()/]));
 [/if]
       }
     }
@@ -490,7 +490,7 @@
   public [genFeature.featureType()/] basicGet[genFeature.accessorName()/]()
   {
 [if (genFeature.isContainer())]
-    if (eContainerFeatureID() != [genClass.featureID(genFeature)/]) return null;
+    if (eContainerFeatureID() != [genClass.featureConstant(genFeature)/]) return null;
     return ([genFeature.featureType()/])eInternalContainer();
 [elseif (not genFeature.isVolatile())]
     return [genFeature.localName()/];
@@ -517,7 +517,7 @@
   public [importedName('org.eclipse.emf.common.notify.NotificationChain')/] basicSet[genFeature.accessorName()/]([genFeature.featureType()/] new[genFeature.capName()/], [importedName('org.eclipse.emf.common.notify.NotificationChain')/] msgs)
   {
 [if (genFeature.isContainer())]
-    msgs = eBasicSetContainer([genFeature.asInternalEObject('new' + genFeature.capName(), false)/], [genClass.featureID(genFeature)/], msgs);
+    msgs = eBasicSetContainer([genFeature.asInternalEObject('new' + genFeature.capName(), false)/], [genClass.featureConstant(genFeature)/], msgs);
     return msgs;
 [elseif (not genFeature.isVolatile())]
     [genFeature.featureType()/] old[genFeature.capName()/] = [genFeature.localName()/];
@@ -539,9 +539,9 @@
     if (eNotificationRequired())
     {
 [if (genFeature.isUnsettableFeature())]
-      [notificationClass()/] notification = new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureID(genFeature)/], old[genFeature.capName()/], new[genFeature.capName()/], !old[genFeature.capName()/]ESet);
+      [notificationClass()/] notification = new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureConstant(genFeature)/], old[genFeature.capName()/], new[genFeature.capName()/], !old[genFeature.capName()/]ESet);
 [else]
-      [notificationClass()/] notification = new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureID(genFeature)/], old[genFeature.capName()/], new[genFeature.capName()/]);
+      [notificationClass()/] notification = new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureConstant(genFeature)/], old[genFeature.capName()/], new[genFeature.capName()/]);
 [/if]
       if (msgs == null) msgs = notification; else msgs.add(notification);
     }
@@ -567,7 +567,7 @@
 [template public setNotification(genClass : GenClass, genFeature : GenFeature, oldValue : String, newValue : String, extra : String)]
 [if (not genClass.genModel().isSuppressNotification())]
     if (eNotificationRequired())
-      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureID(genFeature)/], [oldValue/], [newValue/][extra/]));
+      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureConstant(genFeature)/], [oldValue/], [newValue/][extra/]));
 [/if]
 [/template]
 
@@ -626,7 +626,7 @@
 [let newName : String = 'new' + genFeature.capName()]
 [if (not genFeature.isVolatile())]
 [if (genFeature.isContainer())]
-    if ([newName/] != eInternalContainer() || (eContainerFeatureID() != [genClass.featureID(genFeature)/] && [newName/] != null))
+    if ([newName/] != eInternalContainer() || (eContainerFeatureID() != [genClass.featureConstant(genFeature)/] && [newName/] != null))
     {
       if ([importedName('org.eclipse.emf.ecore.util.EcoreUtil')/].isAncestor(this, [genFeature.eObjectCast()/][newName/]))
         throw new [importedName('java.lang.IllegalArgumentException')/]("Recursive containment not allowed for " + toString());[nonNLS(genClass.genModel(), 1)/]
@@ -634,13 +634,13 @@
       if (eInternalContainer() != null)
         msgs = eBasicRemoveFromContainer(msgs);
       if ([newName/] != null)
-        msgs = [genFeature.asInternalEObject(newName, true)/].eInverseAdd(this, [genFeature.reverseGenFeature().genClass().featureID(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
+        msgs = [genFeature.asInternalEObject(newName, true)/].eInverseAdd(this, [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
       msgs = basicSet[genFeature.accessorName()/]([newName/], msgs);
       if (msgs != null) msgs.dispatch();
     }
 [if (not genClass.genModel().isSuppressNotification())]
     else if (eNotificationRequired())
-      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureID(genFeature)/], [newName/], [newName/]));
+      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureConstant(genFeature)/], [newName/], [newName/]));
 [/if]
 [elseif (genFeature.isBidirectional() or genFeature.isEffectiveContains())]
     if ([newName/] != [field/])
@@ -648,13 +648,13 @@
       [importedName('org.eclipse.emf.common.notify.NotificationChain')/] msgs = null;
       if ([field/] != null)
 [if (not genFeature.isBidirectional())]
-        msgs = [genFeature.asInternalEObject(field, true)/].eInverseRemove(this, EOPPOSITE_FEATURE_BASE - [genClass.featureID(genFeature)/], null, msgs);
+        msgs = [genFeature.asInternalEObject(field, true)/].eInverseRemove(this, EOPPOSITE_FEATURE_BASE - [genClass.featureConstant(genFeature)/], null, msgs);
       if ([newName/] != null)
-        msgs = [genFeature.asInternalEObject(newName, true)/].eInverseAdd(this, EOPPOSITE_FEATURE_BASE - [genClass.featureID(genFeature)/], null, msgs);
+        msgs = [genFeature.asInternalEObject(newName, true)/].eInverseAdd(this, EOPPOSITE_FEATURE_BASE - [genClass.featureConstant(genFeature)/], null, msgs);
 [else]
-        msgs = [genFeature.asInternalEObject(field, true)/].eInverseRemove(this, [genFeature.reverseGenFeature().genClass().featureID(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
+        msgs = [genFeature.asInternalEObject(field, true)/].eInverseRemove(this, [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
       if ([newName/] != null)
-        msgs = [genFeature.asInternalEObject(newName, true)/].eInverseAdd(this, [genFeature.reverseGenFeature().genClass().featureID(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
+        msgs = [genFeature.asInternalEObject(newName, true)/].eInverseAdd(this, [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
 [/if]
       msgs = basicSet[genFeature.accessorName()/]([newName/], msgs);
       if (msgs != null) msgs.dispatch();
@@ -675,12 +675,12 @@
 [/if]
 [if (not genClass.genModel().isSuppressNotification())]
       if (eNotificationRequired())
-        eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureID(genFeature)/], [newName/], [newName/], !old[capName/]ESet));
+        eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureConstant(genFeature)/], [newName/], [newName/], !old[capName/]ESet));
 [/if]
     }
 [elseif (not genClass.genModel().isSuppressNotification())]
     else if (eNotificationRequired())
-      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureID(genFeature)/], [newName/], [newName/]));
+      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureConstant(genFeature)/], [newName/], [newName/]));
 [/if]
 [else]
 [if (genClass.isFlagOf(genFeature))]
@@ -712,11 +712,11 @@
 [/if]
 [if (not genClass.genModel().isSuppressNotification())]
     if (eNotificationRequired())
-      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureID(genFeature)/], old[capName/], [if (genClass.isFlagOf(genFeature))][newName/][else][field/][/if], !old[capName/]ESet));
+      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureConstant(genFeature)/], old[capName/], [if (genClass.isFlagOf(genFeature))][newName/][else][field/][/if], !old[capName/]ESet));
 [/if]
 [elseif (not genClass.genModel().isSuppressNotification())]
     if (eNotificationRequired())
-      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureID(genFeature)/], old[capName/], [if (genClass.isFlagOf(genFeature))][newName/][else][field/][/if]));
+      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureConstant(genFeature)/], old[capName/], [if (genClass.isFlagOf(genFeature))][newName/][else][field/][/if]));
 [/if]
 [/if]
 [elseif (genFeature.hasDelegateFeature())]
@@ -760,7 +760,7 @@
 [if (not genClass.genModel().isSuppressNotification())]
     if (eNotificationRequired())
     {
-      [notificationClass()/] notification = new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].UNSET, [genClass.featureID(genFeature)/], old[genFeature.capName()/], null, old[genFeature.capName()/]ESet);
+      [notificationClass()/] notification = new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].UNSET, [genClass.featureConstant(genFeature)/], old[genFeature.capName()/], null, old[genFeature.capName()/]ESet);
       if (msgs == null) msgs = notification; else msgs.add(notification);
     }
     return msgs;
@@ -831,9 +831,9 @@
     {
       [importedName('org.eclipse.emf.common.notify.NotificationChain')/] msgs = null;
 [if (not genFeature.isBidirectional())]
-      msgs = [genFeature.asInternalEObject(field, true)/].eInverseRemove(this, EOPPOSITE_FEATURE_BASE - [genClass.featureID(genFeature)/], null, msgs);
+      msgs = [genFeature.asInternalEObject(field, true)/].eInverseRemove(this, EOPPOSITE_FEATURE_BASE - [genClass.featureConstant(genFeature)/], null, msgs);
 [else]
-      msgs = [genFeature.asInternalEObject(field, true)/].eInverseRemove(this, [genFeature.reverseGenFeature().genClass().featureID(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
+      msgs = [genFeature.asInternalEObject(field, true)/].eInverseRemove(this, [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
 [/if]
       msgs = basicUnset[genFeature.accessorName()/](msgs);
       if (msgs != null) msgs.dispatch();
@@ -853,7 +853,7 @@
 [/if]
 [if (not genClass.genModel().isSuppressNotification())]
       if (eNotificationRequired())
-        eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].UNSET, [genClass.featureID(genFeature)/], null, null, old[capName/]ESet));
+        eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].UNSET, [genClass.featureConstant(genFeature)/], null, null, old[capName/]ESet));
 [/if]
     }
 [else]
@@ -880,7 +880,7 @@
 [/if]
 [if (not genClass.genModel().isSuppressNotification())]
     if (eNotificationRequired())
-      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].UNSET, [genClass.featureID(genFeature)/], old[capName/], null, old[capName/]ESet));
+      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].UNSET, [genClass.featureConstant(genFeature)/], old[capName/], null, old[capName/]ESet));
 [/if]
 [else]
 [if (genClass.isFlagOf(genFeature))]
@@ -895,7 +895,7 @@
 [/if]
 [if (not genClass.genModel().isSuppressNotification())]
     if (eNotificationRequired())
-      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].UNSET, [genClass.featureID(genFeature)/], old[capName/], [genFeature.eDefaultName()/], old[capName/]ESet));
+      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].UNSET, [genClass.featureConstant(genFeature)/], old[capName/], [genFeature.eDefaultName()/], old[capName/]ESet));
 [/if]
 [/if]
 [/if]
