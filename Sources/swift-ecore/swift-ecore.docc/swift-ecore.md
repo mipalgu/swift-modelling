@@ -75,6 +75,46 @@ swift-ecore validate model.xmi \
     --format json
 ```
 
+### genmodel
+
+Create a generator model from Ecore models.
+
+```bash
+swift-ecore genmodel <model.ecore>... [options]
+```
+
+The generator model is written in the layout that the Eclipse Modeling Framework uses and carries the settings that the Ecore importer gives a freshly imported model. It is written beside the first Ecore model, named after it, unless `--output` says otherwise.
+
+**Options:**
+
+- `--base-package <name>` - Base package of the root packages
+- `--prefix <name>` - Prefix of the root package, or `package=name` for one package (repeatable)
+- `--model-project <name>` - Name of the model project
+- `--model-plugin-id <id>` - Plug-in identifier of the model project
+- `--model-directory <path>` - Source directory of the model project
+- `--copyright <text>` - Copyright text
+- `--jdk-level <level>` - Compliance level of the generated code (default: 17.0)
+- `--reload <path>` - Existing generator model whose settings are kept
+- `--output <path>` - Generator model to write
+- `--verbose` - Show progress and a summary
+
+The model project is the `--model-project` option if given. Otherwise it is the parent directory of an Ecore model that lives in a directory named `model`, and the name of the root package in any other case.
+
+When `--reload` names an existing generator model, its settings are kept for every element that still exists, matched by name. New Ecore elements get the defaults, removed ones are dropped, and options given on the command line override the existing settings.
+
+**Examples:**
+
+```bash
+# Write library.genmodel beside the Ecore model
+swift-ecore genmodel model/library.ecore --base-package org.example
+
+# Set the prefix of one nested package and the compliance level
+swift-ecore genmodel model/company.ecore --prefix projects=Proj --jdk-level 21.0
+
+# Follow changes to the Ecore model but keep the existing settings
+swift-ecore genmodel model/library.ecore --reload model/library.genmodel
+```
+
 ### inspect
 
 Display information about a metamodel or model.

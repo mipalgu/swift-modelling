@@ -28,6 +28,7 @@ and the [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec
 - **Dynamic Attribute Parsing**: Arbitrary XML attributes with automatic type inference (Int, Double, Bool, String)
 - **XPath Reference Resolution**: Same-resource references with XPath-style navigation (//@feature.index)
 - **XMI Serialisation**: Write models to XMI format with full round-trip support
+- **Generator Models**: Create Eclipse-compatible `.genmodel` files from Ecore models with `swift-ecore genmodel`, driven by a bundled ATL transformation
 
 ### ATL Support
 - **Eclipse ATL Compatibility**: Full syntax compatibility with Eclipse ATL transformations
@@ -177,6 +178,46 @@ swift run swift-ecore generate Tests/ECoreTests/Resources/xmi/organisation.ecore
 - 🚧 `llvm` - LLVM IR templates
 
 **Input formats:** Ecore metamodels (`.ecore`), XMI models (`.xmi`), JSON models (`.json`)
+
+### GenModel Command
+
+Create a generator model (`.genmodel`) from one or more Ecore models, as the Eclipse Ecore importer does. The result is the starting point for generating model code, and it opens unchanged in the Eclipse tooling.
+
+```bash
+# Write library.genmodel beside library.ecore
+swift run swift-ecore genmodel model/library.ecore --base-package org.example
+
+# Choose the output, project, plug-in identifier, copyright and compliance level
+swift run swift-ecore genmodel model/library.ecore --output gen/library.genmodel \
+  --model-project org.example.library --model-plugin-id org.example.library \
+  --copyright "Copyright 2026 Example Pty Ltd" --jdk-level 17.0 --verbose
+
+# Set the prefix of the root package, or of one named package
+swift run swift-ecore genmodel model/company.ecore --prefix Company --prefix projects=Proj
+
+# Keep the settings of an existing generator model while following changes to the Ecore model
+swift run swift-ecore genmodel model/library.ecore --reload model/library.genmodel
+```
+
+**Options:**
+- `--base-package` - the base package of the root packages
+- `--prefix` - a package prefix: `Name` for the root package, or `package=Name` for one package (repeatable)
+- `--model-project` - the name of the model project
+- `--model-plugin-id` - the plug-in identifier of the model project
+- `--model-directory` - the source directory of the model project
+- `--copyright` - the copyright text
+- `--jdk-level` - the compliance level of the generated code (default `17.0`; any level the generator model supports)
+- `--reload` - an existing generator model whose settings are kept
+- `-o, --output` - the generator model to write (default: beside the first Ecore model, named after it)
+- `-v, --verbose` - show progress and a summary
+
+**Defaults.** A new generator model gets the settings of the Ecore importer: importer identifier, compliance level `17.0`, model directory `/<project>/src`, model plug-in identifier derived from the project, model name taken from the generator model file, no copyright fields, operation reflection, `MinimalEObjectImpl$Container` as the root class, and import organising. Each package gets a prefix (its name with the first letter in upper case unless given), disposable provider factories, the XML resource kind when it uses extended metadata, and the load-initialisation settings that suit its size. Classes, features, enumerations, data types, operations and parameters get the settings that the importer derives from the Ecore model. References to the Ecore model are written in the layout Eclipse uses, for example `ecoreFeature="ecore:EAttribute library.ecore#//Book/title"`.
+
+**Project name.** The project is the `--model-project` option if given. Otherwise, when the Ecore model lives in a directory named `model`, the project is the name of that directory's parent (the Eclipse layout `<project>/model/<name>.ecore`); in any other case it is the name of the root package.
+
+**Reloading.** With `--reload`, every setting of the existing generator model is kept for the elements that still exist, matched by name, while new Ecore elements get the defaults and removed ones are dropped. Options given on the command line override the existing settings. The compliance level of the existing model is kept unless `--jdk-level` is given.
+
+**Several models.** Several Ecore models can be given; each contributes its root packages to one generator model, which refers to the models by relative paths.
 
 ### Query Command
 
