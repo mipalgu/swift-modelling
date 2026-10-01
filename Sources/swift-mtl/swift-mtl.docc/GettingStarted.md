@@ -32,6 +32,10 @@ swift build -c release
 The executable will be available at:
 `.build/release/swift-mtl`
 
+The tool has three subcommands: `generate` (the default, so
+`swift-mtl template.mtl --model m.xmi` also works), `parse` and
+`validate`. Run `swift-mtl help <subcommand>` for details.
+
 ## Your First Template
 
 ### Creating a Simple Template
@@ -74,15 +78,16 @@ class [c.name/] {
 Check template syntax before running:
 
 ```bash
-swift-mtl validate GenerateSwift.mtl \
-    --metamodel Company.ecore
+swift-mtl validate GenerateSwift.mtl
 ```
 
-This verifies:
-- Template syntax is correct
-- Referenced metamodel classes exist
-- Query expressions are well-formed
-- File paths are valid
+This reports syntax errors and structural issues for each template given
+and exits with a non-zero code if any template is invalid. To see how a
+template was understood, display its structure:
+
+```bash
+swift-mtl parse GenerateSwift.mtl --detailed
+```
 
 ### Generating Code
 
@@ -96,9 +101,10 @@ swift-mtl generate GenerateSwift.mtl \
 
 The tool:
 1. Loads the model
-2. Executes the `main` template
+2. Executes the main template (the one named with `--template`, otherwise
+   the template marked `@main`, otherwise the first)
 3. Evaluates expressions and loops
-4. Writes files to the output directory
+4. Writes files to the output directory (the current directory by default)
 
 ### Using Ecore Metamodels
 
@@ -136,17 +142,56 @@ registered and used as an input model.
 > as `aPackage.name` or `aPackage.eClassifiers`, requires a swift-ecore release
 > whose native metamodel objects support reflection.
 
-### Previewing Output
+### Passing Parameters and Extra Template Directories
 
-Preview without writing files:
+Pass values to templates with `--param name=value`, which can be repeated.
+Each parameter is available as the bare variable `[name/]`, through
+`parameter('name')` and tested with `hasParameter('name')`:
 
 ```bash
-swift-mtl preview GenerateSwift.mtl \
-    --model company.xmi
+swift-mtl generate GenerateSwift.mtl \
+    --model company.xmi \
+    --param package=com.example \
+    --param verbose=true \
+    --output generated/
 ```
 
-Shows generated content on stdout, useful for debugging templates
-before committing to file generation.
+```mtl
+package [package/]
+[if (hasParameter('verbose'))]// verbose output requested[/if]
+[parameter('package')/]
+```
+
+A value of `true` or `false` is a boolean, a whole number is an integer, and
+anything else is a string. A parameter name must be an identifier that is not
+an MTL or AQL reserved keyword; otherwise the tool stops with an error.
+
+Modules that a template imports are searched for in the directory of the
+template and then in each `--template-path` directory (repeatable):
+
+```bash
+swift-mtl generate GenerateSwift.mtl \
+    --model company.xmi \
+    --template-path shared/templates \
+    --output generated/
+```
+
+### Existing Files
+
+When an output file already exists, it is merged with the generated text if
+the module declares a merge, and replaced otherwise. Two flags change this:
+
+- `--force-overwrite` always replaces existing files without merging.
+- `--diff` keeps existing files and writes the generated text beside them as
+  `.<name>.new`, so that you can compare the two. If both flags are given,
+  `--force-overwrite` wins.
+
+```bash
+swift-mtl generate GenerateSwift.mtl \
+    --model company.xmi \
+    --output src/ \
+    --diff
+```
 
 ## Template Basics
 
@@ -242,19 +287,14 @@ Use this workflow when developing templates:
 vim MyTemplate.mtl
 
 # 2. Validate syntax
-swift-mtl validate MyTemplate.mtl \
-    --metamodel MyModel.ecore
+swift-mtl validate MyTemplate.mtl
 
-# 3. Preview output
-swift-mtl preview MyTemplate.mtl \
-    --model sample.xmi | less
-
-# 4. Generate to temporary directory
+# 3. Generate to temporary directory
 swift-mtl generate MyTemplate.mtl \
     --model sample.xmi \
     --output /tmp/generated
 
-# 5. Review generated files
+# 4. Review generated files
 ls -la /tmp/generated
 cat /tmp/generated/MyClass.swift
 ```
@@ -295,16 +335,18 @@ class [c.name/] {
     var [attr.name/]: [attr.type/]
     [/for]
 
-    // [protected ('custom-' + c.name)]
+    [protected ('custom-' + c.name, '// ', '// ')]
     // Add your custom code here
     // It will be preserved across regeneration
-    // [/protected]
+    [/protected]
 }
 [/file]
 [/template]
 ```
 
-The `protected` ID must be unique within the file.
+The `protected` ID must be unique within the file. The second and third
+arguments are the text placed in front of the start and end markers, so that
+they are comments in the target language.
 
 ### Using Protected Regions
 
@@ -315,10 +357,10 @@ class Employee {
     var name: String
     var age: Int
 
-    // [protected (custom-Employee)]
+    // START PROTECTED REGION custom-Employee
     // Add your custom code here
     // It will be preserved across regeneration
-    // [/protected]
+    // END PROTECTED REGION custom-Employee
 }
 ```
 
@@ -329,42 +371,24 @@ class Employee {
     var name: String
     var age: Int
 
-    // [protected (custom-Employee)]
+    // START PROTECTED REGION custom-Employee
     func greet() -> String {
         return "Hello, I'm \(name)"
     }
-    // [/protected]
+    // END PROTECTED REGION custom-Employee
 }
 ```
 
-Regenerate - custom code is preserved:
+Regenerate into the same output directory; the custom code is preserved
+because the tool scans the existing file for protected regions first:
 
 ```bash
 swift-mtl generate GenerateSwift.mtl \
     --model updated-company.xmi \
-    --output src/ \
-    --preserve-protected
+    --output src/
 ```
 
 The `greet()` method remains even though the model changed.
-
-### Extracting Protected Regions
-
-Back up protected regions before regeneration:
-
-```bash
-# Extract existing regions
-swift-mtl extract-protected src/ \
-    --output protected-backup.json
-
-# Regenerate (safe with backup)
-swift-mtl generate GenerateSwift.mtl \
-    --model updated.xmi \
-    --output src/ \
-    --preserve-protected
-```
-
-The backup enables recovery if something goes wrong.
 
 ## Queries
 
@@ -450,88 +474,42 @@ Control access with visibility modifiers:
 
 ## Production Use
 
-### Compilation
+### Existing Files
 
-Compile templates for faster execution:
+Control what happens to files that already exist in the output directory:
 
-```bash
-swift-mtl compile GenerateSwift.mtl --optimise
-```
-
-Creates `GenerateSwift.emtl` bytecode.
-
-Run compiled templates:
-
-```bash
-swift-mtl generate GenerateSwift.emtl \
-    --model production.xmi \
-    --output generated/
-```
-
-**Benefits:**
-- 5-10× faster execution
-- Reduced parse overhead
-- Optimised expression evaluation
-
-**Use for:**
-- Large models
-- Batch generation
-- Production pipelines
-- Repeated generation
-
-### Overwrite Strategies
-
-Control file overwriting:
-
-**All** - Always overwrite:
+- By default, an existing file is merged with the generated text when the
+  module declares a merge, and replaced otherwise.
+- `--force-overwrite` always replaces existing files.
+- `--diff` leaves existing files alone and writes the generated text beside
+  them as `.<name>.new`.
 
 ```bash
 swift-mtl generate Template.mtl \
     --model input.xmi \
     --output generated/ \
-    --overwrite all
+    --force-overwrite
 ```
 
-**None** - Never overwrite (skip existing files):
+### Template Parameters
 
-```bash
-swift-mtl generate Template.mtl \
-    --model input.xmi \
-    --output generated/ \
-    --overwrite none
-```
-
-**Smart** - Overwrite only generated files (default):
-
-```bash
-swift-mtl generate Template.mtl \
-    --model input.xmi \
-    --output generated/ \
-    --overwrite smart
-```
-
-Smart mode preserves manually-created files and respects
-protected regions.
-
-### Template Properties
-
-Pass configuration to templates:
+Pass configuration to templates with `--param`:
 
 ```bash
 swift-mtl generate GenerateSwift.mtl \
     --model input.xmi \
     --output generated/ \
-    --property "packageName=com.example" \
-    --property "version=1.2.3" \
-    --property "author=System"
+    --param packageName=com.example \
+    --param version=1.2.3 \
+    --param author=System
 ```
 
-Access in templates:
+Access in templates as bare variables or through the services:
 
 ```mtl
-[comment Use property /]
-// Package: [getProperty('packageName')/]
-// Version: [getProperty('version')/]
+// Package: [packageName/]
+// Version: [parameter('version')/]
+[if (hasParameter('author'))]// Author: [author/][/if]
 ```
 
 ## Integration with Other Tools
@@ -587,8 +565,7 @@ for model in models/*.xmi; do
     echo "Generating $name..."
     swift-mtl generate GenerateSwift.mtl \
         --model "$model" \
-        --output "$outdir" \
-        --preserve-protected
+        --output "$outdir"
 done
 ```
 
@@ -598,27 +575,28 @@ done
 
 **Problem**: "Parse error" or "Syntax error"
 
-**Solution**: Validate template:
+**Solution**: Validate the template, and display its structure:
 
 ```bash
-swift-mtl validate MyTemplate.mtl \
-    --metamodel MyModel.ecore \
-    --strict \
-    --report errors.json \
-    --format json
+swift-mtl validate MyTemplate.mtl --verbose
+swift-mtl parse MyTemplate.mtl --detailed
 ```
 
-Check the error report for line/column information.
+Check the reported error for the location of the problem.
 
 ### Expression Errors
 
 **Problem**: "Unknown feature" or "Type mismatch"
 
-**Solution**: Validate against metamodel:
+**Solution**: Generate with verbose output, which reports the loaded
+models and metamodels:
 
 ```bash
-swift-mtl validate MyTemplate.mtl \
-    --metamodel MyModel.ecore
+swift-mtl generate MyTemplate.mtl \
+    --metamodel MyModel.ecore \
+    --model test.xmi \
+    --output /tmp/test \
+    --verbose
 ```
 
 Ensure attributes/references exist and types match.
@@ -630,16 +608,14 @@ Ensure attributes/references exist and types match.
 **Solution**: Check the main template:
 
 ```bash
-swift-mtl list-templates MyTemplate.mtl --detail full
+swift-mtl parse MyTemplate.mtl --detailed
 ```
 
-Ensure `main` template exists and calls generation templates.
+Ensure the main template exists (mark it with `@main`, or name it with
+`--template`) and calls the templates that generate files.
 
-Preview to see what would be generated:
-
-```bash
-swift-mtl preview MyTemplate.mtl --model test.xmi
-```
+If files exist already, check whether `--diff` was used: the generated text
+is then written beside them as `.<name>.new`.
 
 ## Next Steps
 

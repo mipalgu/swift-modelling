@@ -40,16 +40,19 @@ swift-mtl generate <template-file> [options]
 
 **Template path.** Imported modules (`[import shared::Common/]`) are searched in the directory of the template and then in the `--template-path` directories, in order. A directory that does not exist is an error.
 
-**Parameters.** Every `--param name=value` is available to the templates through `parameter('name')`, which returns the value or `null`, and `hasParameter('name')`, which tells whether it was given. The value is a boolean for `true` and `false`, an integer for a whole number, and a string otherwise. The value is everything after the first `=`, and a later argument replaces an earlier one of the same name. Parameters are read with parentheses; they are not variables.
+**Parameters.** Every `--param name=value` is available to the templates in three ways: as the bare variable `[name/]`, through `parameter('name')`, which returns the value or `null`, and through `hasParameter('name')`, which tells whether it was given. The value is a boolean for `true` and `false`, an integer for a whole number, and a string otherwise. The value is everything after the first `=`, and a later argument replaces an earlier one of the same name. A name must be an identifier (a letter or underscore followed by letters, digits or underscores) that is not an MTL or AQL reserved keyword; an invalid name, a reserved keyword, or an argument without a name or without `=` is rejected with an error before generation starts.
 
 ```text
 [template public main()]
 [file ('settings.txt')]
-package=[parameter('package')/]
+package=[package/]
+same=[parameter('package')/]
 [if (hasParameter('verbose'))]verbose output requested[/if]
 [/file]
 [/template]
 ```
+
+**Metamodels.** `--metamodel` registers an Ecore file so that an instance model can be parsed against it, without passing its `EPackage` to the template. An Ecore file given with `--model` is registered as well, and its `EPackage` is also passed to the main template as an argument.
 
 **Existing files.** A file that exists is merged with the generated text when the module declares a merge, and replaced otherwise. `--force-overwrite` always replaces it. `--diff` keeps it and writes the generated text beside it; `--force-overwrite` wins when both are given.
 
@@ -73,150 +76,62 @@ swift-mtl generate ecore2dot.mtl --model library.ecore --output generated/
 
 ### validate
 
-Validate an MTL template file for syntax and semantic correctness.
+Validate one or more MTL template files for syntax errors and structural issues.
 
 ```bash
-swift-mtl validate <template-file> [options]
+swift-mtl validate <templates>... [options]
 ```
 
 **Options:**
 
-- `--metamodel <path>` - Metamodel for validation
-- `--strict` - Enable strict validation mode
-- `--report <path>` - Write validation report to file
-- `--format <text|json>` - Report format (default: text)
+- `-v, --verbose` - Enable verbose output
+
+The command prints one result per template and a summary, and exits with code 0 only if every template is valid.
 
 **Examples:**
 
 ```bash
-# Basic validation
+# Validate a single template
 swift-mtl validate GenerateSwift.mtl
 
-# Validation with metamodel
-swift-mtl validate MyTemplate.mtl \
-    --metamodel MyMetamodel.ecore
+# Validate several templates
+swift-mtl validate Template1.mtl Template2.mtl
 
-# Strict validation with JSON report
-swift-mtl validate ComplexTemplate.mtl \
-    --metamodel MyMetamodel.ecore \
-    --strict \
-    --report validation-report.json \
-    --format json
+# Validate every template in a directory
+swift-mtl validate Templates/*.mtl
+
+# Verbose validation
+swift-mtl validate GenerateSwift.mtl --verbose
 ```
 
-### preview
+### parse
 
-Preview generated output without writing files.
-
-```bash
-swift-mtl preview <template-file> [options]
-```
-
-**Options:**
-
-- `--model <path>` - Input model file path (required)
-- `--template-name <name>` - Specific template to preview (default: main template)
-- `--output <path>` - Write preview to file instead of stdout
-- `--format <text|json>` - Output format (default: text)
-
-**Examples:**
+Parse one or more MTL template files and display their structure.
 
 ```bash
-# Preview generation
-swift-mtl preview GenerateSwift.mtl --model mymodel.xmi
-
-# Preview specific template
-swift-mtl preview Templates.mtl \
-    --model mymodel.xmi \
-    --template-name generateClass
-
-# Save preview to file
-swift-mtl preview GenerateCode.mtl \
-    --model input.xmi \
-    --output preview.txt
-```
-
-### list-templates
-
-List available templates in a template module.
-
-```bash
-swift-mtl list-templates <template-file> [options]
+swift-mtl parse <templates>... [options]
 ```
 
 **Options:**
 
-- `--detail <summary|full>` - Level of detail (default: summary)
-- `--format <text|json>` - Output format (default: text)
-- `--filter <pattern>` - Filter templates by name pattern
+- `-d, --detailed` - Show detailed information about templates
+- `--json` - Output as JSON
+- `-v, --verbose` - Enable verbose output
 
 **Examples:**
 
 ```bash
-# List all templates
-swift-mtl list-templates GenerateSwift.mtl
+# Basic parsing
+swift-mtl parse GenerateSwift.mtl
 
-# List with full details
-swift-mtl list-templates MyTemplate.mtl --detail full
+# Detailed output
+swift-mtl parse GenerateSwift.mtl --detailed
 
-# List filtered templates as JSON
-swift-mtl list-templates AllTemplates.mtl \
-    --filter "generate*" \
-    --format json
-```
+# JSON output
+swift-mtl parse GenerateSwift.mtl --json
 
-### compile
-
-Compile an MTL template module to bytecode for faster execution.
-
-```bash
-swift-mtl compile <template-file> [options]
-```
-
-**Options:**
-
-- `--output <path>` - Output bytecode file path (default: same name with .emtl extension)
-- `--optimise` - Enable optimisation passes
-- `--metamodel <path>` - Metamodel for type checking
-
-**Examples:**
-
-```bash
-# Compile template
-swift-mtl compile GenerateSwift.mtl
-
-# Compile with optimisation
-swift-mtl compile MyTemplate.mtl \
-    --output MyTemplate.emtl \
-    --optimise \
-    --metamodel MyMetamodel.ecore
-```
-
-### extract-protected
-
-Extract protected regions from existing generated files.
-
-```bash
-swift-mtl extract-protected <directory> [options]
-```
-
-**Options:**
-
-- `--output <path>` - Output file for extracted regions (required)
-- `--pattern <glob>` - File pattern to process (default: "**/*.swift")
-- `--format <text|json>` - Output format (default: json)
-
-**Examples:**
-
-```bash
-# Extract protected regions
-swift-mtl extract-protected generated/ \
-    --output protected-regions.json
-
-# Extract from specific files
-swift-mtl extract-protected src/ \
-    --output regions.json \
-    --pattern "**/*.swift"
+# Parse several files
+swift-mtl parse Template1.mtl Template2.mtl --detailed
 ```
 
 ## Common Workflows
@@ -225,36 +140,31 @@ swift-mtl extract-protected src/ \
 
 ```bash
 # 1. Validate template syntax
-swift-mtl validate GenerateSwift.mtl \
-    --metamodel MyMetamodel.ecore
+swift-mtl validate GenerateSwift.mtl
 
-# 2. Preview generation
-swift-mtl preview GenerateSwift.mtl \
-    --model sample.xmi
+# 2. Inspect the template structure
+swift-mtl parse GenerateSwift.mtl --detailed
 
-# 3. Generate with verbose output
+# 3. Generate into a scratch directory with verbose output
 swift-mtl generate GenerateSwift.mtl \
     --model sample.xmi \
-    --output generated/ \
+    --output /tmp/generated \
     --verbose
 ```
 
-### Production Code Generation Pipeline
+### Regenerating into Existing Source
 
 ```bash
-# 1. Compile template with optimisation
-swift-mtl compile GenerateSwift.mtl --optimise
-
-# 2. Extract existing protected regions
-swift-mtl extract-protected src/ \
-    --output protected-backup.json
-
-# 3. Generate code preserving protected regions
-swift-mtl generate GenerateSwift.emtl \
+# Review the differences first: new text is written beside existing files
+swift-mtl generate GenerateSwift.mtl \
     --model production.xmi \
     --output src/ \
-    --preserve-protected \
-    --overwrite smart
+    --diff
+
+# Then regenerate, merging with the existing files where the module declares a merge
+swift-mtl generate GenerateSwift.mtl \
+    --model production.xmi \
+    --output src/
 ```
 
 ### Batch Generation from Multiple Models
@@ -300,9 +210,9 @@ class [c.name/] {
 [template public generateClass(c : Class)]
 [file (c.name + '.swift', false, 'UTF-8')]
 class [c.name/] {
-    // [protected ('custom-code-' + c.name)]
+    [protected ('custom-code-' + c.name, '// ', '// ')]
     // Add your custom code here
-    // [/protected]
+    [/protected]
 }
 [/file]
 [/template]

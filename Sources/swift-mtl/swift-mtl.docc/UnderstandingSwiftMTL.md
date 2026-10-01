@@ -93,7 +93,8 @@ class [c.name/] { }
 [/template]
 ```
 
-The `main` template is the default entry point.
+The main template is the one named with `--template`; otherwise the template
+marked `@main` is used, or the first template if none is marked.
 
 ### Queries
 
@@ -246,7 +247,7 @@ enables a hybrid approach:
 ### Syntax
 
 ```mtl
-[protected (uniqueID)]
+[protected (uniqueID, startPrefix, endPrefix)]
 ... default content (first generation only) ...
 [/protected]
 ```
@@ -254,10 +255,14 @@ enables a hybrid approach:
 The `uniqueID` must be unique within the file. Use expressions:
 
 ```mtl
-[protected ('custom-' + c.name)]
+[protected ('custom-' + c.name, '// ', '// ')]
 // Custom code here
 [/protected]
 ```
+
+The optional second and third arguments are the text placed in front of the
+start and end markers, so that the markers are comments in the target
+language.
 
 ### Lifecycle
 
@@ -267,9 +272,9 @@ The `uniqueID` must be unique within the file. Use expressions:
 class Employee {
     var name: String
 
-    // [protected (custom-Employee)]
+    // START PROTECTED REGION custom-Employee
     // Add your custom code here
-    // [/protected]
+    // END PROTECTED REGION custom-Employee
 }
 ```
 
@@ -279,11 +284,11 @@ class Employee {
 class Employee {
     var name: String
 
-    // [protected (custom-Employee)]
+    // START PROTECTED REGION custom-Employee
     func displayName() -> String {
         return "Name: \(name)"
     }
-    // [/protected]
+    // END PROTECTED REGION custom-Employee
 }
 ```
 
@@ -294,13 +299,13 @@ Model changes, new attribute added:
 ```swift
 class Employee {
     var name: String
-    var age: Int         // [comment New attribute /]
+    var age: Int
 
-    // [protected (custom-Employee)]
+    // START PROTECTED REGION custom-Employee
     func displayName() -> String {
         return "Name: \(name)"
     }
-    // [/protected]
+    // END PROTECTED REGION custom-Employee
 }
 ```
 
@@ -308,13 +313,17 @@ The `displayName()` method is preserved.
 
 ### Implementation
 
-When `--preserve-protected` is enabled:
+When `swift-mtl generate` writes to a file that already exists:
 
-1. Tool scans existing files for protected regions
-2. Stores region content keyed by ID
-3. Generates new file content
-4. Replaces protected region content from store
-5. Writes final result
+1. The tool scans the existing file for protected regions
+2. It stores the region content keyed by ID
+3. It generates the new file content
+4. It replaces the default content of each protected region from the store
+5. It writes the final result
+
+There is no flag to enable this. `--force-overwrite` replaces existing files
+without merging, and `--diff` leaves them alone and writes the generated text
+beside them as `.<name>.new`.
 
 ### Best Practices
 
@@ -322,26 +331,29 @@ When `--preserve-protected` is enabled:
 
 ```mtl
 [comment Good - stable across regeneration /]
-[protected ('methods-' + c.name)]
+[protected ('methods-' + c.name, '// ', '// ')]
 
 [comment Bad - might change /]
-[protected ('methods-' + c.attributes->size())]
+[protected ('methods-' + c.attributes->size(), '// ', '// ')]
 ```
 
 **Document protected regions**:
 
 ```mtl
-[protected ('init-' + c.name)]
+[protected ('init-' + c.name, '// ', '// ')]
 // Custom initialisation logic
 // Add additional setup here
 [/protected]
 ```
 
-**Back up before regeneration**:
+**Review before regenerating**:
 
 ```bash
-swift-mtl extract-protected src/ --output backup.json
+swift-mtl generate Template.mtl --model input.xmi --output src/ --diff
 ```
+
+Compare each `.<name>.new` file with the existing file before regenerating
+without `--diff`.
 
 ## Expression Language
 
@@ -469,125 +481,84 @@ class [c.name/] {
 
 The `[super/]` directive invokes the base template.
 
-## Compilation and Optimisation
-
-### Bytecode Compilation
-
-Compile templates to bytecode:
-
-```bash
-swift-mtl compile Template.mtl --optimise
-```
-
-Creates `Template.emtl` with:
-- Pre-parsed template structure
-- Type-checked expressions
-- Optimised evaluation paths
-
-**Execution time improvement**: 5-10× faster typical.
-
-### Optimisation Passes
-
-The `--optimise` flag enables:
-
-- **Constant folding** - Evaluate constant expressions at compile time
-- **Expression simplification** - Reduce complex expressions
-- **Loop optimisation** - Efficient iteration
-- **Template inlining** - Inline small templates
-
-### When to Compile
-
-**Compile for**:
-- Production generation
-- Batch processing
-- Large models
-- Repeated generation
-
-**Don't compile for**:
-- Template development (rapid iteration)
-- One-off generation
-- Debugging templates
-
 ## Generation Strategies
 
-### Overwrite Modes
+### Existing Files
 
 Control how existing files are handled:
 
-**All** - Always overwrite:
+- By default, an existing file is merged with the generated text when the
+  module declares a merge (`[merge (...)/]`), and replaced otherwise.
+- `--force-overwrite` always replaces existing files without merging.
+- `--diff` keeps existing files and writes the generated text beside them
+  as `.<name>.new`. If both flags are given, `--force-overwrite` wins.
 
 ```bash
 swift-mtl generate Template.mtl \
     --model input.xmi \
     --output generated/ \
-    --overwrite all
+    --diff
 ```
 
-Use when starting fresh or regenerating everything.
+### Template Parameters
 
-**None** - Never overwrite:
+Pass configuration to templates with `--param name=value`, which can be
+repeated:
 
 ```bash
 swift-mtl generate Template.mtl \
     --model input.xmi \
     --output generated/ \
-    --overwrite none
+    --param version=1.0.0 \
+    --param author=Generator
 ```
 
-Use for incremental generation of new files only.
-
-**Smart** (default) - Intelligent overwriting:
-
-```bash
-swift-mtl generate Template.mtl \
-    --model input.xmi \
-    --output generated/ \
-    --overwrite smart
-```
-
-Smart mode:
-- Overwrites files with generation markers
-- Preserves manually-created files
-- Respects protected regions
-- Safest for iterative development
-
-### File Encoding
-
-Specify character encoding:
-
-```bash
-swift-mtl generate Template.mtl \
-    --model input.xmi \
-    --output generated/ \
-    --encoding UTF-8
-```
-
-Common encodings: UTF-8, ISO-8859-1, ASCII.
-
-### Template Properties
-
-Pass configuration to templates:
-
-```bash
-swift-mtl generate Template.mtl \
-    --model input.xmi \
-    --output generated/ \
-    --property "version=1.0.0" \
-    --property "author=Generator"
-```
-
-Access in templates:
+Each parameter is available as the bare variable `[name/]`, through
+`parameter('name')` and tested with `hasParameter('name')`:
 
 ```mtl
-// Version: [getProperty('version')/]
-// Author: [getProperty('author')/]
+// Version: [version/]
+// Author: [parameter('author')/]
+[if (hasParameter('copyright'))]// (c) [copyright/][/if]
 ```
+
+A value of `true` or `false` is a boolean, a whole number is an integer, and
+anything else is a string. The value is everything after the first `=`, and a
+later argument replaces an earlier one of the same name. A name must be an
+identifier that is not an MTL or AQL reserved keyword; an invalid name is
+rejected with an error.
 
 Use for:
 - Package names
 - Version numbers
 - Copyright information
 - Build configuration
+
+### Template Search Path
+
+Modules that a template imports are searched for in the directory of the
+template and then in each `--template-path` directory, in order:
+
+```bash
+swift-mtl generate Template.mtl \
+    --model input.xmi \
+    --template-path shared/templates \
+    --output generated/
+```
+
+### Metamodels
+
+`--metamodel` registers an Ecore file so that instance models can be parsed
+against it, without passing its `EPackage` to the template. An Ecore file
+given with `--model` is registered too, and its `EPackage` is also passed to
+the main template as an argument.
+
+```bash
+swift-mtl generate Template.mtl \
+    --metamodel library.ecore \
+    --model books.xmi \
+    --output generated/
+```
 
 ## Validation
 
@@ -599,44 +570,24 @@ Check template syntax:
 swift-mtl validate Template.mtl
 ```
 
-Verifies:
-- Template structure
-- Block nesting
-- Expression syntax
-- File block parameters
+Reports, for each template given:
+- Syntax errors
+- Structural issues
 
-### Semantic Validation
+The command exits with code 0 only if every template is valid. With
+`--verbose`, the module name and the number of templates, queries and macros
+are shown for valid templates.
 
-Validate against metamodel:
+### Inspecting Templates
 
-```bash
-swift-mtl validate Template.mtl \
-    --metamodel MyModel.ecore \
-    --strict
-```
-
-Verifies:
-- Referenced classes exist
-- Attributes and references are valid
-- Type compatibility
-- Query well-formedness
-
-### Validation Reports
-
-Generate detailed reports:
+Display the structure of a template (its templates, queries, macros and
+imports):
 
 ```bash
-swift-mtl validate Template.mtl \
-    --metamodel MyModel.ecore \
-    --report validation.json \
-    --format json
+swift-mtl parse Template.mtl --detailed
 ```
 
-Reports include:
-- Error locations (line, column)
-- Error descriptions
-- Severity levels
-- Suggested fixes
+Use `--json` for machine-readable output.
 
 ## Best Practices
 
@@ -690,9 +641,9 @@ class [c.name/] {
     [/for]
 
     [comment User can add custom methods /]
-    // [protected ('methods-' + c.name)]
+    [protected ('methods-' + c.name, '// ', '// ')]
     // Add custom methods here
-    // [/protected]
+    [/protected]
 }
 [/file]
 [/template]
@@ -709,16 +660,13 @@ swift-mtl generate Template.mtl --model input.xmi --output generated/
 
 Invalid models produce incorrect code.
 
-### Compile for Production
+### Develop in a Scratch Directory
 
 ```bash
-# Development
 swift-mtl generate Template.mtl --model test.xmi --output /tmp/test/
-
-# Production
-swift-mtl compile Template.mtl --optimise
-swift-mtl generate Template.emtl --model prod.xmi --output generated/
 ```
+
+Review the generated files before generating into the real output directory.
 
 ### Test with Edge Cases
 
@@ -734,8 +682,7 @@ Test templates with:
 Mark generated files:
 
 ```mtl
-// Generated by swift-mtl [getProperty('version')/]
-// Date: [now()/]
+// Generated by swift-mtl [version/]
 // DO NOT EDIT - changes will be overwritten
 ```
 
@@ -748,14 +695,14 @@ Helps users identify generated vs manual code.
 ```bash
 #!/bin/bash
 # 1. Validate model
-swift-ecore validate input.xmi --metamodel Model.ecore --strict
+swift-ecore validate input.xmi --metamodel Model.ecore
 if [ $? -ne 0 ]; then
     echo "Model validation failed"
     exit 1
 fi
 
 # 2. Validate template
-swift-mtl validate Template.mtl --metamodel Model.ecore --strict
+swift-mtl validate Template.mtl
 if [ $? -ne 0 ]; then
     echo "Template validation failed"
     exit 1
