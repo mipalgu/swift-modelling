@@ -49,12 +49,12 @@
 [**
  * The name of a classifier as the model information spells it: its package and its name.
  **/]
-[query public ecoreTypeName(classifier : OclAny) : String = if classifier.oclIsUndefined() then '' else (if classifier.genClassifier().oclIsUndefined() then (if classifier.ePackage.nsURI = ecoreNamespace() then 'org.eclipse.emf.ecore.' + classifier.name else classifier.name endif) else classifier.genClassifier().genPackage().interfacePackageName() + '.' + classifier.name endif) endif/]
+[query public ecoreTypeName(classifier : OclAny) : String = if classifier.oclIsUndefined() then '' else (if classifier.genClassifier().oclIsUndefined() then (if typeMapping(classifier).oclIsUndefined() then classifier.name else 'org.eclipse.emf.ecore.' + classifier.name endif) else classifier.genClassifier().genPackage().interfacePackageName() + '.' + classifier.name endif) endif/]
 
 [**
  * Whether a classifier names an existing Java type itself, so that the model information has to say which model type it is.
  **/]
-[query public hasInstanceClassSetting(classifier : OclAny) : Boolean = if classifier.oclIsUndefined() then false else (if classifier.oclIsKindOf(EEnum) then false else not isBlank(classifier.instanceClassName) and not (classifier.ePackage.nsURI = ecoreNamespace()) endif) endif/]
+[query public hasInstanceClassSetting(classifier : OclAny) : Boolean = if classifier.oclIsUndefined() then false else (if classifier.oclIsKindOf(EEnum) then false else not isBlank(classifier.instanceClassName) and typeMapping(classifier).oclIsUndefined() endif) endif/]
 
 [**
  * The multiplicity settings of a typed element: lower and upper bounds, and whether it is many.
@@ -121,3 +121,17 @@
  * The lines of the model tag of an operation.
  **/]
 [query public modelInfo(genOperation : GenOperation) : OclAny = infoLines(Sequence{if genOperation.looksLikeGetter() then modelSetting('kind', 'operation') else '' endif}->union(genOperation.operationResultSettings())->union(Sequence{if genOperation.ecoreOperation.eExceptions->isEmpty() then '' else modelSetting('exceptions', genOperation.ecoreOperation.eExceptions->collect(e | ecoreTypeName(e))->join(' ')) endif})->union(genOperation.genParameters->collect(p | p.parameterSettings())->flatten()), featureAnnotationSettings(genOperation.ecoreOperation))/]
+
+[**
+ * The lines of the model tag, each starting with the prefix and the continuation lines aligned under the first.
+ **/]
+[template public modelTagLines(element : OclAny, prefix : String, info : OclAny)]
+[if (info->isEmpty())]
+[prefix/]@model
+[else]
+[prefix/]@model [info->first()/]
+[for (line : String | info->subSequence(2, info->size()))]
+[prefix/]       [line/]
+[/for]
+[/if]
+[/template]

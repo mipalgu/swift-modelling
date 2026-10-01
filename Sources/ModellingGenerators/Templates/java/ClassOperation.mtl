@@ -1,0 +1,134 @@
+[comment encoding = UTF-8 /]
+[**
+ * The methods that implement the operations of a class.
+ *
+ * The interface declares every operation with its documentation. The implementation writes the body
+ * that the model supplies in the body annotation of the operation, or a body that throws an exception
+ * for the author of the model to replace.
+ **/]
+[module ClassOperation('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaImports/]
+[import JavaTypes/]
+[import JavaDocumentation/]
+[import Header/]
+[import ClassQueries/]
+[import ClassModelInfo/]
+[import ClassFeature/]
+
+[**
+ * The text of the body that the model supplies for an operation, or nothing.
+ **/]
+[query public operationBody(genOperation : GenOperation) : OclAny = if not isBlank(genOperation.genAnnotationText('body')) then genOperation.genAnnotationText('body') else (if isBlank(genOperation.ecoreOperation.annotationDetail(copyrightSource(), 'body')) then null else genOperation.ecoreOperation.annotationDetail(copyrightSource(), 'body') endif) endif/]
+
+[**
+ * Whether the model supplies a body for an operation.
+ **/]
+[query public hasBody(genOperation : GenOperation) : Boolean = not genOperation.operationBody().oclIsUndefined()/]
+
+[**
+ * Whether an operation is left out of the interface.
+ **/]
+[query public isSuppressedVisibility(genOperation : GenOperation) : Boolean = genOperation.isOn('suppressedVisibility')/]
+
+[**
+ * The text of the types of the parameters of an operation for the signature of the operation in a message, separated by the given text.
+ **/]
+[query public parameterTypeNames(genOperation : GenOperation) : OclAny = genOperation.genParameters->collect(p | qualifiedTypeName(p.ecoreParameter.eType))/]
+
+[**
+ * Whether two operations have the same name and parameter types, so that one overrides the other.
+ **/]
+[query public isOverrideOf(genOperation : GenOperation, other : GenOperation) : Boolean = genOperation.name() = other.name() and genOperation.parameterTypeNames() = other.parameterTypeNames()/]
+
+[**
+ * Whether an operation has the name of an accessor of a feature of the class and so is implemented as that accessor.
+ **/]
+[query public isAccessorOperation(genOperation : GenOperation, genClass : GenClass) : Boolean = not genOperation.hasBody() and genClass.allGenFeatures()->exists(f | (genOperation.genParameters->isEmpty() and (genOperation.name() = f.getterName() or (genOperation.name() = 'isSet' + f.accessorName() and f.isUnsettableFeature()) or (genOperation.name() = 'unset' + f.accessorName() and f.isUnsettableFeature() and f.isChangeable()))) or (genOperation.genParameters->size() = 1 and f.isChangeable() and not f.isMany() and genOperation.name() = 'set' + f.accessorName()))/]
+
+[**
+ * The operations that the implementation of a class implements: its own and those of its interfaces, without overridden ones.
+ **/]
+[query public implementedOperations(genClass : GenClass) : OclAny = let all = genClass.implementedGenClasses()->reverse()->collect(c | c.genOperations)->flatten()->select(o | not o.isAccessorOperation(genClass) and not o.genClass().isEObject()) in all->select(o | not all->subSequence(1, all->indexOf(o) - 1)->exists(r | r.isOverrideOf(o)))/]
+
+[**
+ * The operations that the interface of a class declares.
+ **/]
+[query public declaredOperations(genClass : GenClass) : OclAny = genClass.genOperations->reject(o | o.isSuppressedVisibility())/]
+
+[**
+ * The text of the type of a typed element of an operation, registering its imports; void without a type.
+ **/]
+[template public typedElementType(typedElement : OclAny)][if (typedElement.eType.oclIsUndefined())]void[elseif (typedElement.upperBound > 1 or typedElement.upperBound = -1)][importedName('org.eclipse.emf.common.util.EList')/]<[importedName(objectTypeName(qualifiedTypeName(typedElement.eType)))/]>[else][importedName(qualifiedTypeName(typedElement.eType))/][/if][/template]
+
+[**
+ * The formal parameters of an operation, with the keyword that makes them final where an implementation has a body.
+ **/]
+[template public formalParameters(genOperation : GenOperation, isImplementation : Boolean)][for (p : GenParameter | genOperation.genParameters) separator(', ')][if (isImplementation and genOperation.hasBody())]final [/if][p.ecoreParameter.typedElementType()/] [p.parameterName()/][/for][/template]
+
+[**
+ * The name of a parameter as the generated code spells it.
+ **/]
+[query public parameterName(genParameter : GenParameter) : String = safeName(genParameter.ecoreParameter.name)/]
+
+[**
+ * The throws clause of an operation.
+ **/]
+[template public throwsClause(genOperation : GenOperation)][if (not genOperation.ecoreOperation.eExceptions->isEmpty())] throws [for (e : OclAny | genOperation.ecoreOperation.eExceptions) separator(', ')][importedName(qualifiedTypeName(e))/][/for][/if][/template]
+
+[**
+ * The method of an operation, in the interface or the implementation.
+ **/]
+[template public operationMembers(genClass : GenClass, genOperation : GenOperation, isInterface : Boolean, isImplementation : Boolean)]
+[if (isInterface)]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[if (genOperation.hasDocumentation() or genOperation.genParameters->exists(p | p.hasDocumentation()))]
+   * <!-- begin-model-doc -->
+[if (genOperation.hasDocumentation())]
+   * [genOperation.documentation().indentLines('* ')/]
+[/if]
+[for (p : GenParameter | genOperation.genParameters)]
+[if (p.hasDocumentation())]
+   * @param [p.parameterName()/] [p.documentation().indentLines('* ')/]
+[/if]
+[/for]
+   * <!-- end-model-doc -->
+[/if]
+[if (not genClass.genModel().isOn('suppressEMFModelTags'))]
+[genClass.modelTagLines('   * ', genOperation.modelInfo())/]
+[/if]
+   * @generated
+   */
+[else]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[genOperation.apiLines('   * ')/]
+   * @generated
+   */
+[/if]
+[if (genOperation.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+[if (not isImplementation)]
+  [genOperation.ecoreOperation.typedElementType()/] [genOperation.name()/]([genOperation.formalParameters(false)/])[genOperation.throwsClause()/];
+
+[else]
+[if (genClass.genModel().useInterfaceOverrideAnnotation() and not (isInterface and isImplementation) and not genClass.isMapEntry() and not genOperation.isSuppressedVisibility())]
+  @Override
+[/if]
+  public [genOperation.ecoreOperation.typedElementType()/] [genOperation.name()/]([genOperation.formalParameters(true)/])[genOperation.throwsClause()/]
+  {
+[if (genOperation.hasBody())]
+    [genOperation.operationBody()/]
+[else]
+    // TODO: implement this method
+    // Ensure that you remove @generated or mark it @generated NOT
+    throw new UnsupportedOperationException();
+[/if]
+  }
+
+[/if]
+[/template]

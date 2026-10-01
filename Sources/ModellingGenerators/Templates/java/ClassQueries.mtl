@@ -440,3 +440,8 @@
  * Whether the values of a feature are stored in a feature map of the same class.
  **/]
 [query public hasDelegateFeature(genFeature : GenFeature) : Boolean = not genFeature.delegateFeature().oclIsUndefined()/]
+
+[**
+ * Whether the class is serializable because one of its supertypes is the Java interface for serialization.
+ **/]
+[query public isJavaIOSerializable(genClass : GenClass) : Boolean = genClass.allBaseGenClasses()->exists(b | b.internalInterfaceName() = 'java.io.Serializable')/]

@@ -1,0 +1,13 @@
+[comment encoding = UTF-8 /]
+[**
+ * The reflective methods of an implementation class.
+ **/]
+[module ClassReflection('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaImports/]
+[import JavaTypes/]
+[import ClassQueries/]
+[import ClassFeature/]
+
+[template public reflectiveMembers(genClass : GenClass)]
+[/template]

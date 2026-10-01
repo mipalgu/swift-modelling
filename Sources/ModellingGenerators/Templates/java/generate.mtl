@@ -12,6 +12,8 @@
 [import JavaImports/]
 [import JavaTypes/]
 [import EnumClass/]
+[import Class/]
+[import ClassQueries/]
 
 [**
  * Writes the model code of every package of a generator model, nested packages included.
@@ -28,11 +30,25 @@
 [template public generatePackage(genPackage : GenPackage)]
 [comment TODO: package interface, package implementation, factory interface and implementation. /]
 [comment TODO: XML processor (resource kind XML), validator (constraints). /]
-[comment TODO: interface and implementation of every class. /]
+[for (genClass : GenClass | genPackage.orderedGenClasses())]
+[genClass.generateClassFiles()/]
+[/for]
 [for (genEnum : GenEnum | genPackage.genEnums)]
 [genEnum.generateEnumFile()/]
 [/for]
 [comment TODO: switch and adapter factory (adapter factory with classes), resource factory and resource implementation (resource kind not None). /]
+[/template]
+
+[**
+ * Writes the interface and the implementation of one class, as the Eclipse generator does.
+ **/]
+[template public generateClassFiles(genClass : GenClass)]
+[if (not genClass.isExternalInterface() and not genClass.genModel().isOn('suppressInterfaces'))]
+[file (genClass.genPackage().interfacePackageName().packagePath() + '/' + genClass.interfaceName() + '.java', false, 'UTF-8')][genClass.classInterfaceFile()/][/file]
+[/if]
+[if (not genClass.isInterface())]
+[file (genClass.genPackage().classPackageName().packagePath() + '/' + genClass.className() + '.java', false, 'UTF-8')][genClass.classImplementationFile()/][/file]
+[/if]
 [/template]
 
 [**
