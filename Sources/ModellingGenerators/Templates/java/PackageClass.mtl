@@ -1,0 +1,440 @@
+[comment encoding = UTF-8 /]
+[**
+ * The Java files of a generator package: the package interface and the package implementation class.
+ *
+ * The interface holds the identifiers of classifiers, features and operations, the accessors of the runtime
+ * objects that describe the classifiers, and optionally the nested Literals interface. The implementation
+ * class creates and initialises those runtime objects, registers the package, and creates the annotations of
+ * the model. Both are written by one template that knows whether it writes the interface, the implementation, or,
+ * when the model suppresses interfaces or reflective metadata, the two together.
+ *
+ * Supported: the generator settings that the reference generator honours for models at compliance level 5.0 and higher
+ * without generic types in the metamodel, with and without operation reflection, with loaded initialisation,
+ * with literals interface, family and nested packages, content types, annotations (including constraints) and
+ * dependencies on other packages of the model.
+ *
+ * Not supported: generic types and type parameters in the metamodel, generic exceptions, the GWT runtime platform,
+ * models below compliance level 5.0 for the bounds of generic types, and the pseudo imports that keep names of
+ * model classes from clashing with the nested types of the runtime.
+ **/]
+[module PackageClass('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaImports/]
+[import JavaTypes/]
+[import JavaDocumentation/]
+[import Header/]
+[import PackageNames/]
+
+[**
+ * The complete text of the file that declares the package interface of a generator package.
+ **/]
+[template public packageInterface(genPackage : GenPackage)]
+[genPackage.packageClass(true, false)/]
+[/template]
+
+[**
+ * The complete text of the file that declares the package implementation class of a generator package.
+ **/]
+[template public packageImplementation(genPackage : GenPackage)]
+[genPackage.packageClass(genPackage.genModel().isOn('suppressEMFMetaData') or genPackage.genModel().isOn('suppressInterfaces'), true)/]
+[/template]
+
+[**
+ * The complete text of a package interface, a package implementation, or both in one file.
+ **/]
+[template public packageClass(genPackage : GenPackage, isInterface : Boolean, isImplementation : Boolean)]
+[let genModel : GenModel = genPackage.genModel()]
+[let combined : Boolean = isInterface and isImplementation]
+[collect ('imports', if isImplementation then genPackage.qualifiedPackageClassName() else genPackage.qualifiedPackageInterfaceName() endif)/]
+[header(genPackage)/]
+package [if (isImplementation and not genModel.isOn('suppressInterfaces'))][genPackage.classPackageName()/][else][genPackage.reflectionPackageName()/][/if];
+
+
+[emit ('imports') once][importBlock(items)/][/emit]
+
+[if (isInterface)]
+/**
+ * <!-- begin-user-doc -->
+ * The <b>Package</b> for the model.
+ * It contains accessors for the meta objects to represent
+ * <ul>
+ *   <li>each class,</li>
+ *   <li>each feature of each class,</li>
+[if (genModel.isOn('operationReflection'))]
+ *   <li>each operation of each class,</li>
+[/if]
+ *   <li>each enum,</li>
+ *   <li>and each data type</li>
+ * </ul>
+ * <!-- end-user-doc -->
+[if (genPackage.hasDocumentation())]
+ * <!-- begin-model-doc -->
+ * [genPackage.documentation().indentLines('* ')/]
+ * <!-- end-model-doc -->
+[/if]
+ * @see [genPackage.factoryInterfaceQualifiedName()/]
+[genPackage.modelTag(' * ', genPackage.packageModelInfo())/]
+ * @generated
+ */
+[else]
+/**
+ * <!-- begin-user-doc -->
+ * An implementation of the model <b>Package</b>.
+ * <!-- end-user-doc -->
+[if (genPackage.hasOwnAPITags())]
+ * [genPackage.ownAPITagLines()->apiTagText('* ')/]
+[/if]
+ * @generated
+ */
+[/if]
+[if (genPackage.hasAPIDeprecatedTag())]
+@Deprecated
+[/if]
+[if (isImplementation)]
+[if (genModel.useGenerics() and anyDeprecated(genPackage.orderedClassifiers()) and not genPackage.hasAPIDeprecatedTag() and not genModel.isOn('suppressEMFMetaData'))]
+@SuppressWarnings("deprecation")
+[/if]
+public class [genPackage.packageClassName()/] extends [importedName('org.eclipse.emf.ecore.impl.EPackageImpl')/][if (not isInterface)] implements [importedName(genPackage.qualifiedPackageInterfaceName())/][/if]
+[else]
+public interface [genPackage.packageInterfaceName()/] extends [importedName(ePackageClass())/]
+[/if]
+{
+[if (genModel.hasCopyrightField())]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  [if (isImplementation)]public static final [/if][importedName('java.lang.String')/] copyright = [genModel.copyrightFieldLiteral()/];[nonNLS(genModel, 1)/]
+
+[/if]
+[if (isInterface)]
+[genPackage.packageConstants(isImplementation)/]
+[/if]
+[if (isImplementation)]
+[genPackage.packageImplementationHead()/]
+[/if]
+[if (isInterface and isImplementation)]
+
+[/if]
+[genPackage.packageAccessors(isInterface, isImplementation)/]
+[if (isImplementation)]
+[genPackage.packageContents(isInterface)/]
+[/if]
+[if (isInterface and genPackage.isOn('literalsInterface'))]
+[genPackage.literalsInterface(isImplementation)/]
+[/if]
+} //[if (isInterface)][genPackage.packageInterfaceName()/][else][genPackage.packageClassName()/][/if]
+[/let]
+[/let]
+[/template]
+
+[**
+ * The qualified name of the factory interface of a package.
+ **/]
+[query public factoryInterfaceQualifiedName(genPackage : GenPackage) : String = genPackage.reflectionPackageName() + '.' + genPackage.factoryInterfaceName()/]
+
+[comment Constants of the package interface /]
+
+[**
+ * The name, namespace and instance fields, and the identifiers of all classifiers, features and operations.
+ **/]
+[template public packageConstants(genPackage : GenPackage, isImplementation : Boolean)]
+[let genModel : GenModel = genPackage.genModel()]
+[let modifiers : String = if isImplementation then 'public static final ' else '' endif]
+  /**
+   * The package name.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  [modifiers/][importedName('java.lang.String')/] eNAME = "[genPackage.ecorePackage.name/]";[nonNLS(genModel, 1)/]
+
+  /**
+   * The package namespace URI.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  [modifiers/][importedName('java.lang.String')/] eNS_URI = "[genPackage.ecorePackage.nsURI/]";[nonNLS(genModel, 1)/]
+
+  /**
+   * The package namespace name.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  [modifiers/][importedName('java.lang.String')/] eNS_PREFIX = "[genPackage.ecorePackage.nsPrefix/]";[nonNLS(genModel, 1)/]
+[if (not isBlank(genPackage.setting('contentTypeIdentifier')))]
+
+  /**
+   * The package content type ID.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  [modifiers/][importedName('java.lang.String')/] eCONTENT_TYPE = "[genPackage.setting('contentTypeIdentifier')/]";[nonNLS(genModel, 1)/]
+[/if]
+
+  /**
+   * The singleton instance of the package.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  [modifiers/][genPackage.packageInterfaceName()/] eINSTANCE = [genPackage.qualifiedPackageClassName()/].init();
+
+[for (genClassifier : OclAny | genPackage.orderedClassifiers())]
+[genClassifier.classifierConstants(modifiers)/]
+[/for]
+[/let]
+[/let]
+[/template]
+
+[**
+ * The documentation, deprecation and declaration of the identifier of one classifier, followed by its features and operations.
+ **/]
+[template public classifierConstants(genClassifier : OclAny, modifiers : String)]
+[let genPackage : GenPackage = genClassifier.genPackage()]
+[let genModel : GenModel = genPackage.genModel()]
+  /**
+[if (genClassifier.oclIsKindOf(GenClass))]
+[if (not genClassifier.isInterface())]
+   * The meta object id for the '{@link [genClassifier.qualifiedClassName()/] <em>[genClassifier.formattedClassifierName()/]</em>}' class.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @see [genClassifier.qualifiedClassName()/]
+[else]
+   * The meta object id for the '{@link [genClassifier.metaQualifiedInterfaceName()/] <em>[genClassifier.formattedClassifierName()/]</em>}' class.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @see [genClassifier.metaQualifiedInterfaceName()/]
+[/if]
+[elseif (genClassifier.oclIsKindOf(GenEnum))]
+   * The meta object id for the '{@link [genClassifier.qualifiedEnumName()/] <em>[genClassifier.formattedClassifierName()/]</em>}' enum.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @see [genClassifier.qualifiedEnumName()/]
+[else]
+   * The meta object id for the '<em>[genClassifier.formattedClassifierName()/]</em>' data type.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[if (not genClassifier.isPrimitiveOrArray())]
+   * @see [genClassifier.dataTypeInstanceClass()/]
+[/if]
+[/if]
+   * @see [genPackage.qualifiedPackageClassName()/]#get[genClassifier.classifierAccessorName()/]()
+[if (genClassifier.hasOwnAPITags())]
+   * [genClassifier.ownAPITagLines()->apiTagText('* ')/]
+[/if]
+   * @generated
+   */
+[if (genModel.useGenerics() and genClassifier.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  [modifiers/]int [genClassifier.classifierID()/] = [genClassifier.classifierValue()/];
+
+[if (genClassifier.oclIsKindOf(GenClass))]
+[for (genFeature : GenFeature | genClassifier.allGenFeatures())]
+  /**
+   * The feature id for the '<em><b>[genFeature.formattedFeatureName()/]</b></em>' [genFeature.metaFeatureKind()/].
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[if (genFeature.hasInheritedAPITags())]
+   * [genFeature.implicitAPITagLines()->apiTagText('* ')/]
+[/if]
+   * @generated
+   * @ordered
+   */
+[if (genModel.useGenerics() and genFeature.hasImplicitAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  [modifiers/]int [genClassifier.featureIDName(genFeature)/] = [genClassifier.featureValue(genFeature)/];
+
+[/for]
+  /**
+   * The number of structural features of the '<em>[genClassifier.formattedClassifierName()/]</em>' class.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[if (genClassifier.hasOwnAPITags())]
+   * [genClassifier.ownAPITagLines()->apiTagText('* ')/]
+[/if]
+   * @generated
+   * @ordered
+   */
+[if (genModel.useGenerics() and genClassifier.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  [modifiers/]int [genClassifier.featureCountIDName()/] = [genClassifier.featureCountValue()/];
+
+[if (genModel.isOn('operationReflection'))]
+[for (genOperation : GenOperation | genClassifier.identifiedOperations())]
+  /**
+   * The operation id for the '<em>[genOperation.formattedOperationName()/]</em>' operation.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[if (genOperation.hasInheritedAPITags())]
+   * [genOperation.implicitAPITagLines()->apiTagText('* ')/]
+[/if]
+   * @generated
+   * @ordered
+   */
+[if (genModel.useGenerics() and genOperation.hasImplicitAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  [modifiers/]int [genClassifier.operationIDName(genOperation)/] = [genClassifier.operationValue(genOperation)/];
+
+[/for]
+  /**
+   * The number of operations of the '<em>[genClassifier.formattedClassifierName()/]</em>' class.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[if (genClassifier.hasOwnAPITags())]
+   * [genClassifier.ownAPITagLines()->apiTagText('* ')/]
+[/if]
+   * @generated
+   * @ordered
+   */
+[if (genModel.useGenerics() and genClassifier.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  [modifiers/]int [genClassifier.operationCountIDName()/] = [genClassifier.operationCountValue()/];
+
+[/if]
+[/if]
+[/let]
+[/let]
+[/template]
+
+[**
+ * The text that a constant of another package of the model needs: its name, with the package interface in front of it
+ * if the constant belongs to a different package.
+ **/]
+[template public siblingConstant(genClass : GenClass, base : GenClass, constantName : String)][if (base.genPackage() = genClass.genPackage())][constantName/][else][importedName(base.genPackage().qualifiedPackageInterfaceName())/].[constantName/][/if][/template]
+
+[**
+ * The value of the identifier of a feature: its position, or the identifier it has in the base class.
+ **/]
+[template public featureValue(genClass : GenClass, genFeature : GenFeature)][let index : Integer = genClass.allGenFeatures()->indexOf(genFeature) - 1][let base : OclAny = genClass.baseGenClass()][if (base.oclIsUndefined())][index/][elseif (index < base.featureCount())][genClass.siblingConstant(base, base.featureIDName(genFeature))/][else][genClass.siblingConstant(base, base.featureCountIDName())/] + [index - base.featureCount()/][/if][/let][/let][/template]
+
+[**
+ * The value of the constant that holds the number of features of a class.
+ **/]
+[template public featureCountValue(genClass : GenClass)][let base : OclAny = genClass.baseGenClass()][if (base.oclIsUndefined())][genClass.featureCount()/][else][genClass.siblingConstant(base, base.featureCountIDName())/] + [genClass.featureCount() - base.featureCount()/][/if][/let][/template]
+
+[**
+ * The value of the identifier of an operation: its position, or the identifier it has in the base class.
+ **/]
+[template public operationValue(genClass : GenClass, genOperation : GenOperation)][let index : Integer = genClass.allOperationsWithOverrides()->indexOf(genOperation) - 1][let base : OclAny = genClass.baseGenClass()][if (base.oclIsUndefined())][index/][elseif (index < base.operationCount())][genClass.siblingConstant(base, base.operationIDName(genOperation))/][else][genClass.siblingConstant(base, base.operationCountIDName())/] + [index - base.operationCount()/][/if][/let][/let][/template]
+
+[**
+ * The value of the constant that holds the number of operations of a class.
+ **/]
+[template public operationCountValue(genClass : GenClass)][let base : OclAny = genClass.baseGenClass()][if (base.oclIsUndefined())][genClass.operationCount()/][else][genClass.siblingConstant(base, base.operationCountIDName())/] + [genClass.operationCount() - base.operationCount()/][/if][/let][/template]
+
+[comment Literals interface /]
+
+[**
+ * The nested interface that holds the runtime objects of all classifiers, features and operations as constants.
+ **/]
+[template public literalsInterface(genPackage : GenPackage, isImplementation : Boolean)]
+[let genModel : GenModel = genPackage.genModel()]
+[let modifiers : String = if isImplementation then 'public static final ' else '' endif]
+  /**
+   * <!-- begin-user-doc -->
+   * Defines literals for the meta objects that represent
+   * <ul>
+   *   <li>each class,</li>
+   *   <li>each feature of each class,</li>
+[if (genModel.isOn('operationReflection'))]
+   *   <li>each operation of each class,</li>
+[/if]
+   *   <li>each enum,</li>
+   *   <li>and each data type</li>
+   * </ul>
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  [if (isImplementation)]public [/if]interface Literals
+  {
+[for (genClassifier : OclAny | genPackage.allClassifiers())]
+    /**
+[if (genClassifier.oclIsKindOf(GenClass))]
+[if (not genClassifier.isInterface())]
+     * The meta object literal for the '{@link [genClassifier.qualifiedClassName()/] <em>[genClassifier.formattedClassifierName()/]</em>}' class.
+     * <!-- begin-user-doc -->
+     * <!-- end-user-doc -->
+     * @see [genClassifier.qualifiedClassName()/]
+[else]
+     * The meta object literal for the '{@link [genClassifier.metaQualifiedInterfaceName()/] <em>[genClassifier.formattedClassifierName()/]</em>}' class.
+     * <!-- begin-user-doc -->
+     * <!-- end-user-doc -->
+     * @see [genClassifier.metaQualifiedInterfaceName()/]
+[/if]
+[elseif (genClassifier.oclIsKindOf(GenEnum))]
+     * The meta object literal for the '{@link [genClassifier.qualifiedEnumName()/] <em>[genClassifier.formattedClassifierName()/]</em>}' enum.
+     * <!-- begin-user-doc -->
+     * <!-- end-user-doc -->
+     * @see [genClassifier.qualifiedEnumName()/]
+[else]
+     * The meta object literal for the '<em>[genClassifier.formattedClassifierName()/]</em>' data type.
+     * <!-- begin-user-doc -->
+     * <!-- end-user-doc -->
+[if (not genClassifier.isPrimitiveOrArray())]
+     * @see [genClassifier.dataTypeInstanceClass()/]
+[/if]
+[/if]
+     * @see [genPackage.qualifiedPackageClassName()/]#get[genClassifier.classifierAccessorName()/]()
+[if (genClassifier.hasOwnAPITags())]
+     * [genClassifier.ownAPITagLines()->apiTagText('* ')/]
+[/if]
+     * @generated
+     */
+[if (genModel.useGenerics() and genClassifier.hasAPIDeprecatedTag())]
+    @Deprecated
+[/if]
+    [modifiers/][importedName(genClassifier.metaTypeName())/] [genClassifier.classifierID()/] = eINSTANCE.get[genClassifier.classifierAccessorName()/]();
+
+[if (genClassifier.oclIsKindOf(GenClass))]
+[for (genFeature : GenFeature | genClassifier.genFeatures)]
+    /**
+     * The meta object literal for the '<em><b>[genFeature.formattedFeatureName()/]</b></em>' [genFeature.metaFeatureKind()/] feature.
+     * <!-- begin-user-doc -->
+     * <!-- end-user-doc -->
+[if (genFeature.hasInheritedAPITags())]
+     * [genFeature.implicitAPITagLines()->apiTagText('* ')/]
+[/if]
+     * @generated
+     */
+[if (genModel.useGenerics() and genFeature.hasImplicitAPIDeprecatedTag())]
+    @Deprecated
+[/if]
+    [modifiers/][importedName(genFeature.featureMetaTypeName())/] [genClassifier.featureIDName(genFeature)/] = eINSTANCE.get[genFeature.featureAccessorName()/]();
+
+[/for]
+[if (genModel.isOn('operationReflection'))]
+[for (genOperation : GenOperation | genClassifier.genOperations)]
+    /**
+     * The meta object literal for the '<em><b>[genOperation.formattedOperationName()/]</b></em>' operation.
+     * <!-- begin-user-doc -->
+     * <!-- end-user-doc -->
+[if (genOperation.hasInheritedAPITags())]
+     * [genOperation.implicitAPITagLines()->apiTagText('* ')/]
+[/if]
+     * @generated
+     */
+[if (genModel.useGenerics() and genOperation.hasImplicitAPIDeprecatedTag())]
+    @Deprecated
+[/if]
+    [modifiers/][importedName('org.eclipse.emf.ecore.EOperation')/] [genClassifier.operationIDName(genOperation)/] = eINSTANCE.get[genOperation.operationAccessorName()/]();
+
+[/for]
+[/if]
+[/if]
+[/for]
+  }
+
+[/let]
+[/let]
+[/template]
+
