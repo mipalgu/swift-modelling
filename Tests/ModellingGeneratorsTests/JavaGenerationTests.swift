@@ -145,7 +145,7 @@ struct JavaGenerationTests {
         let result = try await generated.generate()
         #expect(result.language == "java")
         #expect(result.packageCount == 1)
-        #expect(result.files.map(\.lastPathComponent) == ["Colour.java", "Mode.java", "Empty.java"])
+        #expect(result.files.map(\.lastPathComponent) == ["Light.java", "LightImpl.java", "Colour.java", "Mode.java", "Empty.java"])
         #expect(result.outputDirectory.path == generated.output.standardizedFileURL.path)
     }
 
@@ -156,7 +156,8 @@ struct JavaGenerationTests {
             "library", stem: "library", options: GenModelImportOptions(basePackage: "org.example"))
         defer { generated.remove() }
         let result = try await generated.generate(options: GenerationOptions(includeSourceRoot: true))
-        #expect(generated.generatedPaths() == ["library/src/org/example/library/BookCategory.java"])
+        let libraryFiles = try #require(JavaGoldenCase.all.first { $0.fixture == "library" }).files
+        #expect(generated.generatedPaths() == libraryFiles.map { "library/src/\($0)" }.sorted())
         #expect(result.outputDirectory.lastPathComponent == "src")
     }
 
@@ -171,8 +172,8 @@ struct JavaGenerationTests {
         try await generated.generate(progress: { collector.add($0) })
         let updates = collector.updates
         let fileUpdates = updates.filter { $0.message.hasPrefix("Generated ") }
-        #expect(fileUpdates.map(\.completed) == [1, 2, 3])
-        #expect(fileUpdates.allSatisfy { $0.total == 3 })
+        #expect(fileUpdates.map(\.completed) == [1, 2, 3, 4, 5])
+        #expect(fileUpdates.allSatisfy { $0.total == 5 })
         #expect(fileUpdates.last?.fraction == 1)
         #expect(updates.last?.message == "Done")
         #expect(updates.first?.fraction == nil)

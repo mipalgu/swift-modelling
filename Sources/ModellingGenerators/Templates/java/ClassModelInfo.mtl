@@ -11,7 +11,6 @@
 [import JavaNames/]
 [import JavaTypes/]
 [import JavaDocumentation/]
-[import Header/]
 [import ClassQueries/]
 
 [comment Building blocks /]
@@ -34,7 +33,7 @@
 [**
  * Whether a detail of an annotation is left out of the model tag of a feature: the visibility settings are written as their own part.
  **/]
-[query public isHiddenFeatureDetail(source : String, key : String) : Boolean = isHiddenDetail(source, key) or (source = copyrightSource() and (key = 'suppressedGetVisibility' or key = 'suppressedSetVisibility' or key = 'suppressedIsSetVisibility' or key = 'suppressedUnsetVisibility'))/]
+[query public isHiddenFeatureDetail(source : String, key : String) : Boolean = isHiddenDetail(source, key) or (source = genModelNamespace() and (key = 'suppressedGetVisibility' or key = 'suppressedSetVisibility' or key = 'suppressedIsSetVisibility' or key = 'suppressedUnsetVisibility'))/]
 
 [**
  * The description of an annotation of a feature or operation for a model tag.

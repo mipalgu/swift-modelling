@@ -11,7 +11,6 @@
 [import JavaImports/]
 [import JavaTypes/]
 [import JavaDocumentation/]
-[import Header/]
 [import ClassQueries/]
 [import ClassModelInfo/]
 
@@ -478,7 +477,7 @@
 [**
  * The text of a detail of the generator model annotation of the feature.
  **/]
-[query public genAnnotationText(element : OclAny, key : String) : OclAny = element.annotationDetail(copyrightSource(), key)/]
+[query public genAnnotationText(element : OclAny, key : String) : OclAny = element.annotationDetail(genModelNamespace(), key)/]
 
 [**
  * The method that gets the value without resolving a proxy.

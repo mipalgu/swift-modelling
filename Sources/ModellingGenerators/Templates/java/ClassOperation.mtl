@@ -11,7 +11,6 @@
 [import JavaImports/]
 [import JavaTypes/]
 [import JavaDocumentation/]
-[import Header/]
 [import ClassQueries/]
 [import ClassModelInfo/]
 [import ClassFeature/]
@@ -19,7 +18,7 @@
 [**
  * The text of the body that the model supplies for an operation, or nothing.
  **/]
-[query public operationBody(genOperation : GenOperation) : OclAny = if not isBlank(genOperation.genAnnotationText('body')) then genOperation.genAnnotationText('body') else (if isBlank(genOperation.ecoreOperation.annotationDetail(copyrightSource(), 'body')) then null else genOperation.ecoreOperation.annotationDetail(copyrightSource(), 'body') endif) endif/]
+[query public operationBody(genOperation : GenOperation) : OclAny = if not isBlank(genOperation.genAnnotationText('body')) then genOperation.genAnnotationText('body') else (if isBlank(genOperation.ecoreOperation.annotationDetail(genModelNamespace(), 'body')) then null else genOperation.ecoreOperation.annotationDetail(genModelNamespace(), 'body') endif) endif/]
 
 [**
  * Whether the model supplies a body for an operation.
