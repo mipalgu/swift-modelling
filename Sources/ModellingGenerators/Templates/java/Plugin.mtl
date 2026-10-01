@@ -78,7 +78,7 @@ public final class [genModel.modelPluginClassName()/] extends EMFPlugin
    */
   public [genModel.modelPluginClassName()/]()
   {
-    super(new ResourceLocator [] {});
+    super(new ResourceLocator ['['/][']'/] {});
   }
 
   /**

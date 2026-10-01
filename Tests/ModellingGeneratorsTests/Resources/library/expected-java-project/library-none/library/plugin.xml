@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+
+<!--
+ Copyright 2026 Example Pty Ltd
+-->
+
+<plugin>
+
+   <extension point="org.eclipse.emf.ecore.generated_package">
+      <package
+            uri="http://swift-modelling.org/test/library/1.0"
+            class="org.example.library.LibraryPackage"/>
+   </extension>
+
+</plugin>

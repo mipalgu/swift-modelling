@@ -12,11 +12,13 @@
 [import JavaImports/]
 [import JavaTypes/]
 [import EnumClass/]
+[import ProjectFiles/]
 
 [**
  * Writes the model code of every package of a generator model, nested packages included.
  **/]
 [template public generate(genModel : GenModel)]
+[genModel.generateProjectFiles()/]
 [for (genPackage : GenPackage | genModel.allGenPackages())]
 [genPackage.generatePackage()/]
 [/for]
@@ -27,12 +29,14 @@
  **/]
 [template public generatePackage(genPackage : GenPackage)]
 [comment TODO: package interface, package implementation, factory interface and implementation. /]
-[comment TODO: XML processor (resource kind XML), validator (constraints). /]
+[genPackage.generateXMLProcessorFile()/]
+[comment TODO: validator (constraints). /]
 [comment TODO: interface and implementation of every class. /]
 [for (genEnum : GenEnum | genPackage.genEnums)]
 [genEnum.generateEnumFile()/]
 [/for]
-[comment TODO: switch and adapter factory (adapter factory with classes), resource factory and resource implementation (resource kind not None). /]
+[comment TODO: switch and adapter factory (adapter factory with classes). /]
+[genPackage.generateResourceFiles()/]
 [/template]
 
 [**
@@ -47,6 +51,6 @@
  **/]
 [template public fileCount(genModel : GenModel)]
 [file ('count')]
-[genModel.allGenPackages()->collect(p | p.genEnums->size())->sum()/]
+[genModel.allGenPackages()->collect(p | p.genEnums->size())->sum() + genModel.projectFileCount()/]
 [/file]
 [/template]

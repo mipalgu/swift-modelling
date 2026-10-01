@@ -34,12 +34,12 @@
 [**
  * Whether a generator package declares classes, enumerations or data types.
  **/]
-[query public hasClassifiers(genPackage : GenPackage) : Boolean = genPackage.genClasses->notEmpty() or genPackage.genEnums->notEmpty() or genPackage.genDataTypes->notEmpty()/]
+[query public declaresClassifiers(genPackage : GenPackage) : Boolean = genPackage.genClasses->notEmpty() or genPackage.genEnums->notEmpty() or genPackage.genDataTypes->notEmpty()/]
 
 [**
  * Whether a generator package generates an XML processor.
  **/]
-[query public hasXMLProcessor(genPackage : GenPackage) : Boolean = genPackage.hasClassifiers() and genPackage.resourceKind() = 'XML'/]
+[query public hasXMLProcessor(genPackage : GenPackage) : Boolean = genPackage.declaresClassifiers() and genPackage.resourceKind() = 'XML'/]
 
 [comment Names /]
 

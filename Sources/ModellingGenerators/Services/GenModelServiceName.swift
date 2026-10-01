@@ -177,6 +177,11 @@ public enum GenModelServiceName {
     /// The value of a detail of an annotation.
     public static let detailValue = "detailValue"
 
+    // MARK: Output layout
+
+    /// Whether the output location includes the source directory of the generator model.
+    public static let layoutIncludesSourceRoot = "layoutIncludesSourceRoot"
+
     // MARK: Template data
 
     /// The root objects of a data model bundled with a template set.

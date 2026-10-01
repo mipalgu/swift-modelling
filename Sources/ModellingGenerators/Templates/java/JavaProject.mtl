@@ -196,7 +196,7 @@
 [**
  * The packages of the generator model that have classifiers, nested ones included.
  **/]
-[query public packagesWithClassifiers(genModel : GenModel) : OclAny = genModel.allGenPackages()->select(p | p.hasClassifiers())/]
+[query public packagesWithClassifiers(genModel : GenModel) : OclAny = genModel.allGenPackages()->select(p | p.declaresClassifiers())/]
 
 [**
  * Whether the classifiers of a package declare constraints, which the Ecore annotation of the classifier lists.
