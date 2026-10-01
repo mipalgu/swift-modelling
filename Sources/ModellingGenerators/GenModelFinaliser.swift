@@ -14,23 +14,20 @@ import GenModel
 /// The transformation leaves a few things to this step because the model values it
 /// produces are not yet in the form that the serialiser and the generator model readers
 /// share: collections of text come back as untyped arrays, references to source model
-/// elements come back as unresolved proxies, and the references to the generator models
-/// of other metamodels cannot be expressed in the transformation at all.
+/// elements come back as unresolved proxies, and enumeration literals are kept as text
+/// rather than as the names that the transformation's enumeration checks accept.
 enum GenModelFinaliser {
     /// Finalises every generator model of a resource.
     ///
     /// - Parameters:
     ///   - resource: The resource holding the generator model.
     ///   - resourceSet: The resource set holding the resource and the source models.
-    ///   - sources: The root packages of the source models.
     ///   - complianceLevel: The compliance level to record, or `nil` to leave it unset.
     static func finalise(
-        _ resource: Resource, in resourceSet: ResourceSet, sources: [EPackage],
-        complianceLevel: String?
+        _ resource: Resource, in resourceSet: ResourceSet, complianceLevel: String?
     ) async {
         await normaliseTextCollections(in: resource)
         await resolveSourceReferences(in: resource, resourceSet: resourceSet)
-        let usesEcore = referencesEcoreClassifiers(sources)
         for case let object as DynamicEObject in await resource.getRootObjects()
         where object.eClass.name == GenModelConstants.ClassName.genModel {
             if let complianceLevel {
@@ -38,19 +35,7 @@ enum GenModelFinaliser {
                     objectId: object.id, feature: GenModelImportConstants.Setting.complianceLevel,
                     value: complianceLevel)
             }
-            if usesEcore {
-                _ = await resource.eSet(
-                    objectId: object.id, feature: GenModelConstants.FeatureName.usedGenPackages,
-                    value: [ecoreGenPackageProxy])
-            }
         }
-    }
-
-    /// The reference to the generator package of the Ecore metamodel.
-    static var ecoreGenPackageProxy: ResourceProxy {
-        ResourceProxy(
-            uri: GenModelImportConstants.ecoreGenModelLocation,
-            fragment: GenModelImportConstants.ecoreGenPackageFragment)
     }
 
     /// Replaces untyped collections of text by typed arrays.
@@ -100,38 +85,4 @@ enum GenModelFinaliser {
         return identifier
     }
 
-    /// Whether any of the packages refers to a classifier of the Ecore metamodel.
-    ///
-    /// A classifier counts as an Ecore classifier when none of the packages declares it and
-    /// the Ecore metamodel has a classifier of the same name.
-    ///
-    /// - Parameter packages: The root packages of the source models.
-    /// - Returns: `true` if a supertype or the type of a feature is an Ecore classifier.
-    static func referencesEcoreClassifiers(_ packages: [EPackage]) -> Bool {
-        var declared = Set<EUUID>()
-        var classes: [EClass] = []
-        func collect(_ package: EPackage) {
-            for classifier in package.eClassifiers {
-                declared.insert(classifier.id)
-                if let eClass = classifier as? EClass { classes.append(eClass) }
-            }
-            package.eSubpackages.forEach(collect)
-        }
-        packages.forEach(collect)
-
-        func isEcore(_ classifier: any EClassifier) -> Bool {
-            !declared.contains(classifier.id) && EcorePackage.instance.getClassifier(classifier.name) != nil
-        }
-        for eClass in classes {
-            if eClass.eSuperTypes.contains(where: { isEcore($0) }) { return true }
-            for feature in eClass.eStructuralFeatures {
-                switch feature {
-                case let attribute as EAttribute where isEcore(attribute.eType): return true
-                case let reference as EReference where isEcore(reference.eType): return true
-                default: continue
-                }
-            }
-        }
-        return false
-    }
 }

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
+    name="company" nsURI="http://swift-modelling.org/test/company" nsPrefix="company">
+  <eClassifiers xsi:type="ecore:EClass" name="Company">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="staff" upperBound="-1"
+        eType="#//people/Employee" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="projects" upperBound="-1"
+        eType="#//projects/Project" containment="true"/>
+  </eClassifiers>
+  <eSubpackages name="people" nsURI="http://swift-modelling.org/test/company/people" nsPrefix="people">
+    <eClassifiers xsi:type="ecore:EClass" name="Person" abstract="true">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="name"
+          eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Employee" eSuperTypes="#//people/Person">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="salary"
+          eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"/>
+    </eClassifiers>
+  </eSubpackages>
+  <eSubpackages name="projects" nsURI="http://swift-modelling.org/test/company/projects" nsPrefix="projects">
+    <eClassifiers xsi:type="ecore:EClass" name="Project">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="title"
+          eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="status" eType="#//projects/Status"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="members" upperBound="-1"
+          eType="#//people/Employee"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="Status">
+      <eLiterals name="Proposed"/>
+      <eLiterals name="Active" value="1"/>
+      <eLiterals name="Finished" value="2"/>
+    </eClassifiers>
+    <eSubpackages name="archive" nsURI="http://swift-modelling.org/test/company/projects/archive" nsPrefix="archive">
+      <eClassifiers xsi:type="ecore:EClass" name="Record">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="project" eType="#//projects/Project"/>
+      </eClassifiers>
+    </eSubpackages>
+  </eSubpackages>
+</ecore:EPackage>

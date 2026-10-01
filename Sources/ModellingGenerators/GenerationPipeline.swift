@@ -95,7 +95,7 @@ public enum GenerationPipeline {
             complianceLevel = GenModelImportConstants.defaultComplianceLevel
         }
         await GenModelFinaliser.finalise(
-            target, in: resourceSet, sources: loaded.map(\.package), complianceLevel: complianceLevel)
+            target, in: resourceSet, complianceLevel: complianceLevel)
 
         var reloaded = false
         if let reload = options.reload {

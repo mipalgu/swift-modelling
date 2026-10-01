@@ -39,12 +39,6 @@ public enum GenModelImportConstants {
     /// The file extension of source models.
     public static let ecoreFileExtension = "ecore"
 
-    /// The location of the generator model of the Ecore metamodel itself.
-    public static let ecoreGenModelLocation = "platform:/plugin/org.eclipse.emf.ecore/model/Ecore.genmodel"
-
-    /// The fragment of the generator package of the Ecore metamodel within its generator model.
-    public static let ecoreGenPackageFragment = "//ecore"
-
     /// The namespace URI of the Ecore metamodel.
     public static let ecoreNsURI = "http://www.eclipse.org/emf/2002/Ecore"
 
