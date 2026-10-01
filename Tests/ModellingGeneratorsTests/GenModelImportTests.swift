@@ -490,7 +490,7 @@ struct GenModelImportTests {
     func errorDescriptions() {
         let errors: [GenerationError] = [
             .noSourceModels, .sourceModelNotFound("a"), .sourceModelUnreadable("a", "b"),
-            .noRootPackage("a"), .reloadModelUnreadable("a", "b"),
+            .noRootPackage("a"), .reloadModelUnreadable("a", "b"), .unsupportedComplianceLevel("a", ["b"]),
             .transformationUnavailable("a"), .transformationFailed("a"), .outputFailed("a", "b"),
         ]
         for error in errors { #expect(!error.description.isEmpty) }
@@ -528,4 +528,38 @@ final class MessageLog: Sendable {
     }
 
     var all: [String] { messages.withLock { $0 } }
+}
+
+@Suite("Compliance levels")
+struct ComplianceLevelTests {
+    @Test("The supported levels come from the generator metamodel")
+    func supportedLevels() async throws {
+        let levels = try await GenerationPipeline.supportedComplianceLevels()
+        #expect(levels.first == "1.4")
+        #expect(levels.contains("5.0"))
+        #expect(levels.contains(GenModelImportConstants.defaultComplianceLevel))
+    }
+
+    @Test("An unsupported level is rejected with the supported ones")
+    @MainActor
+    func unsupportedLevel() async throws {
+        let project = try FixtureProject.make("families")
+        defer { project.remove() }
+        var options = GenModelImportOptions()
+        options.complianceLevel = "17"
+        do {
+            _ = try await GenerationPipeline.ecoreToGenModel(
+                ecoreURLs: [project.model("families.ecore")], options: options)
+            Issue.record("Expected the import to fail")
+        } catch let error as GenerationError {
+            guard case .unsupportedComplianceLevel(let level, let supported) = error else {
+                Issue.record("Unexpected error \(error)")
+                return
+            }
+            #expect(level == "17")
+            #expect(supported.contains("17.0"))
+            #expect(error.description.contains("17.0"))
+            #expect(error.errorDescription == error.description)
+        }
+    }
 }

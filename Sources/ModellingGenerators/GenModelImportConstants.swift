@@ -55,7 +55,10 @@ public enum GenModelImportConstants {
     public static let listSeparator = "\n"
 
     /// The separator between a package name and its prefix in a list of prefixes.
-    public static let assignmentSeparator = "="
+    public static let assignmentSeparator = String(assignmentSeparatorCharacter)
+
+    /// The separator between a package name and its prefix, as a character.
+    public static let assignmentSeparatorCharacter: Character = "="
 
     /// The alias of the Ecore source model in the transformation.
     public static let sourceAlias = "IN"

@@ -68,6 +68,13 @@ public enum GenerationPipeline {
         await resourceSet.registerMetamodel(generatorMetamodel, uri: GenModelConstants.nsURI)
         await GenModelFragments.register(in: resourceSet)
 
+        if let level = options.complianceLevel {
+            let supported = complianceLevels(of: generatorMetamodel)
+            guard supported.contains(level) else {
+                throw GenerationError.unsupportedComplianceLevel(level, supported)
+            }
+        }
+
         progress("Loading the transformation")
         let transformation = try await GenModelTransformation.load(generatorMetamodel: generatorMetamodel)
 
@@ -114,6 +121,25 @@ public enum GenerationPipeline {
             throw GenerationError.outputFailed(output.path, String(describing: error))
         }
         return await summary(of: target, resourceSet: resourceSet, url: output, reloaded: reloaded)
+    }
+
+    /// The compliance levels that generator models support.
+    ///
+    /// - Returns: The levels as written in generator models, such as `17.0`, in ascending order.
+    /// - Throws: ``GenerationError/transformationUnavailable(_:)`` if the generator metamodel
+    ///   cannot be loaded.
+    public static func supportedComplianceLevels() async throws -> [String] {
+        do {
+            return complianceLevels(of: try await GenModelPackage.load())
+        } catch {
+            throw GenerationError.transformationUnavailable(String(describing: error))
+        }
+    }
+
+    private static func complianceLevels(of generatorMetamodel: EPackage) -> [String] {
+        guard let levels = generatorMetamodel.getClassifier(GenModelConstants.EnumName.genJDKLevel) as? EEnum
+        else { return [] }
+        return levels.literals.map { $0.literal ?? $0.name }
     }
 
     /// The location of the generator model written for a source model when no output is given.
