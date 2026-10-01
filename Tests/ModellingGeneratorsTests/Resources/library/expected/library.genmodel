@@ -9,22 +9,22 @@
     </genEnums>
     <genDataTypes ecoreDataType="library.ecore#//ISBN"/>
     <genClasses image="false" ecoreClass="library.ecore#//Named">
-      <genFeatures ecoreFeature="ecore:EAttribute library.ecore#//Named/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute library.ecore#//Named/name"/>
     </genClasses>
     <genClasses image="false" ecoreClass="library.ecore#//Lendable">
-      <genFeatures ecoreFeature="ecore:EAttribute library.ecore#//Lendable/loanDays"/>
-      <genFeatures ecoreFeature="ecore:EAttribute library.ecore#//Lendable/onLoan"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute library.ecore#//Lendable/loanDays"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute library.ecore#//Lendable/onLoan"/>
     </genClasses>
     <genClasses ecoreClass="library.ecore#//Book">
-      <genFeatures ecoreFeature="ecore:EAttribute library.ecore#//Book/pages"/>
-      <genFeatures ecoreFeature="ecore:EAttribute library.ecore#//Book/category"/>
-      <genFeatures ecoreFeature="ecore:EAttribute library.ecore#//Book/isbn"/>
-      <genFeatures notify="false" propertySortChoices="true" ecoreFeature="ecore:EReference library.ecore#//Book/author"/>
-      <genFeatures property="None" notify="false" ecoreFeature="ecore:EReference library.ecore#//Book/library"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute library.ecore#//Book/pages"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute library.ecore#//Book/category"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute library.ecore#//Book/isbn"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference library.ecore#//Book/author"/>
+      <genFeatures property="None" notify="false" createChild="false" ecoreFeature="ecore:EReference library.ecore#//Book/library"/>
     </genClasses>
     <genClasses ecoreClass="library.ecore#//Writer">
-      <genFeatures ecoreFeature="ecore:EAttribute library.ecore#//Writer/aliases"/>
-      <genFeatures notify="false" propertySortChoices="true" ecoreFeature="ecore:EReference library.ecore#//Writer/books"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute library.ecore#//Writer/aliases"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference library.ecore#//Writer/books"/>
     </genClasses>
     <genClasses ecoreClass="library.ecore#//Library">
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference library.ecore#//Library/books"/>

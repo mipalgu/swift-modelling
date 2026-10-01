@@ -322,9 +322,7 @@ struct GenModelImportTests {
         defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent().deletingLastPathComponent()) }
         let result = try await GenerationPipeline.ecoreToGenModel(ecoreURLs: [url])
         let text = try String(contentsOf: result.url, encoding: .utf8)
-        withKnownIssue("The Ecore loader does not keep annotations yet", isIntermittent: true) {
-            #expect(text.contains(#"resource="XML""#))
-        }
+        #expect(text.contains(#"resource="XML""#))
     }
 
     @Test("The XML type namespace selects the XML resource kind")
@@ -372,11 +370,11 @@ struct GenModelImportTests {
         defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent().deletingLastPathComponent()) }
         let result = try await GenerationPipeline.ecoreToGenModel(ecoreURLs: [url])
         let text = try String(contentsOf: result.url, encoding: .utf8)
-        #expect(text.contains(#"<genFeatures property="Readonly" ecoreFeature="ecore:EAttribute sample.ecore#//Node/fixed"/>"#))
+        #expect(text.contains(#"<genFeatures property="Readonly" createChild="false" ecoreFeature="ecore:EAttribute sample.ecore#//Node/fixed"/>"#))
         #expect(text.contains(#"<genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EAttribute sample.ecore#//Node/entries"/>"#))
-        #expect(text.contains(#"<genFeatures property="Readonly" notify="false" ecoreFeature="ecore:EReference sample.ecore#//Node/peer"/>"#))
+        #expect(text.contains(#"<genFeatures property="Readonly" notify="false" createChild="false" ecoreFeature="ecore:EReference sample.ecore#//Node/peer"/>"#))
         #expect(text.contains(#"<genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference sample.ecore#//Node/owned"/>"#))
-        #expect(text.contains(#"<genFeatures property="None" children="true" ecoreFeature="ecore:EReference sample.ecore#//Node/frozen"/>"#))
+        #expect(text.contains(#"<genFeatures property="None" children="true" createChild="false" ecoreFeature="ecore:EReference sample.ecore#//Node/frozen"/>"#))
     }
 
     // MARK: - Round trip

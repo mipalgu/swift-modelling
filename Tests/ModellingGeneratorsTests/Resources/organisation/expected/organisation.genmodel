@@ -3,16 +3,16 @@
   <foreignModel>organisation.ecore</foreignModel>
   <genPackages prefix="Org" disposableProviderFactory="true" ecorePackage="organisation.ecore#/">
     <genClasses ecoreClass="organisation.ecore#//Person">
-      <genFeatures ecoreFeature="ecore:EAttribute organisation.ecore#//Person/name"/>
-      <genFeatures ecoreFeature="ecore:EAttribute organisation.ecore#//Person/age"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute organisation.ecore#//Person/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute organisation.ecore#//Person/age"/>
     </genClasses>
     <genClasses ecoreClass="organisation.ecore#//Team">
-      <genFeatures ecoreFeature="ecore:EAttribute organisation.ecore#//Team/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute organisation.ecore#//Team/name"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference organisation.ecore#//Team/members"/>
-      <genFeatures notify="false" propertySortChoices="true" ecoreFeature="ecore:EReference organisation.ecore#//Team/leader"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference organisation.ecore#//Team/leader"/>
     </genClasses>
     <genClasses ecoreClass="organisation.ecore#//Organisation">
-      <genFeatures ecoreFeature="ecore:EAttribute organisation.ecore#//Organisation/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute organisation.ecore#//Organisation/name"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference organisation.ecore#//Organisation/teams"/>
     </genClasses>
   </genPackages>

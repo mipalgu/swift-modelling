@@ -33,8 +33,8 @@ struct GenModelReconcileTests {
             text, replacing: #"<genClasses ecoreClass="library.ecore#//Book">"#,
             with: #"<genClasses image="false" ecoreClass="library.ecore#//Book">"#)
         text = try edited(
-            text, replacing: #"<genFeatures ecoreFeature="ecore:EAttribute library.ecore#//Book/pages"/>"#,
-            with: #"<genFeatures property="Readonly" propertyDescription="Page count" ecoreFeature="ecore:EAttribute library.ecore#//Book/pages"/>"#)
+            text, replacing: #"<genFeatures createChild="false" ecoreFeature="ecore:EAttribute library.ecore#//Book/pages"/>"#,
+            with: #"<genFeatures property="Readonly" createChild="false" propertyDescription="Page count" ecoreFeature="ecore:EAttribute library.ecore#//Book/pages"/>"#)
         text = try edited(
             text, replacing: #" modelPluginID="library""#,
             with: #" modelPluginID="library" usedGenPackages="platform:/plugin/org.example/model/Other.genmodel#//other""#)
@@ -78,9 +78,9 @@ struct GenModelReconcileTests {
         #expect(!text.contains("operationReflection"))
         #expect(text.contains(#"<genPackages prefix="Lib" basePackage="org.example""#))
         #expect(text.contains(#"<genClasses image="false" ecoreClass="library.ecore#//Book">"#))
-        #expect(text.contains(#"property="Readonly" propertyDescription="Page count" ecoreFeature="ecore:EAttribute library.ecore#//Book/pages""#))
+        #expect(text.contains(#"property="Readonly" createChild="false" propertyDescription="Page count" ecoreFeature="ecore:EAttribute library.ecore#//Book/pages""#))
         #expect(text.contains(#"usedGenPackages="platform:/plugin/org.example/model/Other.genmodel#//other""#))
-        #expect(text.contains(#"<genFeatures ecoreFeature="ecore:EAttribute library.ecore#//Book/subtitle"/>"#))
+        #expect(text.contains(#"<genFeatures createChild="false" ecoreFeature="ecore:EAttribute library.ecore#//Book/subtitle"/>"#))
         #expect(!text.contains("Writer/aliases"))
         #expect(text.contains(#"importerID="org.eclipse.emf.importer.ecore""#))
         #expect(text.contains("<foreignModel>library.ecore</foreignModel>"))

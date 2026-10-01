@@ -20,13 +20,6 @@ struct EMFParityTests {
     static let libraryDirectory =
         "tests/org.eclipse.emf.test.tools/data/ant.expected/models/5.0/creation/library.ecore/emf"
 
-    /// The attribute that the Eclipse tooling writes for an unsettable setting at its default value.
-    ///
-    /// The setting `createChild` is derived from `children` and `changeable` whenever it is
-    /// not written, so a model without it means the same; the serialiser omits it because
-    /// the value equals the attribute's default.
-    static let derivedCreateChild = #"createChild="false""#
-
     /// Splits a generator model into tokens that do not depend on layout.
     ///
     /// The values of `modelDirectory` and of `foreignModel` are replaced by fixed markers
@@ -77,7 +70,7 @@ struct EMFParityTests {
         let result = try await GenerationPipeline.ecoreToGenModel(ecoreURLs: [ecore], options: options)
 
         let actual = try String(contentsOf: result.url, encoding: .utf8)
-        let expectedTokens = Self.tokens(of: expected).filter { $0 != Self.derivedCreateChild }
+        let expectedTokens = Self.tokens(of: expected)
         let actualTokens = Self.tokens(of: actual)
         let differences = zip(expectedTokens, actualTokens).enumerated()
             .filter { $0.element.0 != $0.element.1 }

@@ -3,16 +3,16 @@
   <foreignModel>company.ecore</foreignModel>
   <genPackages prefix="Company" basePackage="org.example.company" disposableProviderFactory="true" ecorePackage="company.ecore#/">
     <genClasses ecoreClass="company.ecore#//Company">
-      <genFeatures ecoreFeature="ecore:EAttribute company.ecore#//Company/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute company.ecore#//Company/name"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference company.ecore#//Company/staff"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference company.ecore#//Company/projects"/>
     </genClasses>
     <nestedGenPackages prefix="People" disposableProviderFactory="true" ecorePackage="company.ecore#//people">
       <genClasses image="false" ecoreClass="company.ecore#//people/Person">
-        <genFeatures ecoreFeature="ecore:EAttribute company.ecore#//people/Person/name"/>
+        <genFeatures createChild="false" ecoreFeature="ecore:EAttribute company.ecore#//people/Person/name"/>
       </genClasses>
       <genClasses ecoreClass="company.ecore#//people/Employee">
-        <genFeatures ecoreFeature="ecore:EAttribute company.ecore#//people/Employee/salary"/>
+        <genFeatures createChild="false" ecoreFeature="ecore:EAttribute company.ecore#//people/Employee/salary"/>
       </genClasses>
     </nestedGenPackages>
     <nestedGenPackages prefix="Proj" disposableProviderFactory="true" ecorePackage="company.ecore#//projects">
@@ -22,13 +22,13 @@
         <genEnumLiterals ecoreEnumLiteral="company.ecore#//projects/Status/Finished"/>
       </genEnums>
       <genClasses ecoreClass="company.ecore#//projects/Project">
-        <genFeatures ecoreFeature="ecore:EAttribute company.ecore#//projects/Project/title"/>
-        <genFeatures ecoreFeature="ecore:EAttribute company.ecore#//projects/Project/status"/>
-        <genFeatures notify="false" propertySortChoices="true" ecoreFeature="ecore:EReference company.ecore#//projects/Project/members"/>
+        <genFeatures createChild="false" ecoreFeature="ecore:EAttribute company.ecore#//projects/Project/title"/>
+        <genFeatures createChild="false" ecoreFeature="ecore:EAttribute company.ecore#//projects/Project/status"/>
+        <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference company.ecore#//projects/Project/members"/>
       </genClasses>
       <nestedGenPackages prefix="Archive" disposableProviderFactory="true" ecorePackage="company.ecore#//projects/archive">
         <genClasses ecoreClass="company.ecore#//projects/archive/Record">
-          <genFeatures notify="false" propertySortChoices="true" ecoreFeature="ecore:EReference company.ecore#//projects/archive/Record/project"/>
+          <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference company.ecore#//projects/archive/Record/project"/>
         </genClasses>
       </nestedGenPackages>
     </nestedGenPackages>
