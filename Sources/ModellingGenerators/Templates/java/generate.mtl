@@ -15,6 +15,7 @@
 [import JavaUtilities/]
 [import SwitchClass/]
 [import AdapterFactoryClass/]
+[import ValidatorClass/]
 
 [**
  * Writes the model code of every package of a generator model, nested packages included.
@@ -35,6 +36,9 @@
 [for (genEnum : GenEnum | genPackage.genEnums)]
 [genEnum.generateEnumFile()/]
 [/for]
+[if (genPackage.generatesValidator())]
+[genPackage.generateValidatorFile()/]
+[/if]
 [if (genPackage.generatesAdapterFactory())]
 [genPackage.generateSwitchFile()/]
 [genPackage.generateAdapterFactoryFile()/]
@@ -57,6 +61,13 @@
 [/template]
 
 [**
+ * Writes the file of the validator of one generator package.
+ **/]
+[template public generateValidatorFile(genPackage : GenPackage)]
+[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.validatorClassName() + '.java', false, 'UTF-8')][genPackage.validatorClass()/][/file]
+[/template]
+
+[**
  * Writes the file of the adapter factory of one generator package.
  **/]
 [template public generateAdapterFactoryFile(genPackage : GenPackage)]
@@ -68,6 +79,6 @@
  **/]
 [template public fileCount(genModel : GenModel)]
 [file ('count')]
-[genModel.allGenPackages()->collect(p | p.genEnums->size() + (if p.generatesAdapterFactory() then 2 else 0 endif))->sum()/]
+[genModel.allGenPackages()->collect(p | p.genEnums->size() + (if p.generatesAdapterFactory() then 2 else 0 endif) + (if p.generatesValidator() then 1 else 0 endif))->sum()/]
 [/file]
 [/template]
