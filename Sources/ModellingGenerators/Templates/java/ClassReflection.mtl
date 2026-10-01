@@ -356,7 +356,62 @@
  * The methods that call operations by identifier.
  **/]
 [template public operationReflectionMembers(genClass : GenClass)]
+[let genModel : GenModel = genClass.genModel()]
+[if (genModel.isOperationReflection() and not genClass.mixinOperations()->isEmpty())]
+[reflectiveJavadoc()/]
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public int eDerivedOperationID(int baseOperationID, Class<?> baseClass)
+  {
+[for (mixin : GenClass | genClass.mixinGenClasses())]
+    if (baseClass == [mixin.rawInterfaceName()/].class)
+    {
+      switch (baseOperationID)
+      {
+[for (genOperation : GenOperation | mixin.genOperations)]
+        case [mixin.qualifiedOperationID(genOperation)/]: return [genClass.qualifiedOperationID(genOperation)/];
+[/for]
+        default: return -1;
+      }
+    }
+[/for]
+    return super.eDerivedOperationID(baseOperationID, baseClass);
+  }
+
+[/if]
+[if (genModel.isOperationReflection() and not genClass.implementedOperations()->isEmpty())]
+[reflectiveJavadoc()/]
+[if (genClass.reflectiveOperations()->exists(o | o.genParameters->exists(p | p.ecoreParameter.upperBound > 1 or p.ecoreParameter.upperBound = -1)))]
+  @SuppressWarnings("unchecked")
+[/if]
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public Object eInvoke(int operationID, [importedName('org.eclipse.emf.common.util.EList')/]<?> arguments) throws [importedName('java.lang.reflect.InvocationTargetException')/]
+  {
+    switch (operationID)
+    {
+[for (genOperation : GenOperation | genClass.reflectiveOperations())]
+      case [genClass.qualifiedOperationID(genOperation)/]:
+[if (genOperation.ecoreOperation.eType.oclIsUndefined())]
+        [genOperation.name()/]([genOperation.invocationArguments()/]);
+        return null;
+[else]
+        return [genOperation.name()/]([genOperation.invocationArguments()/]);
+[/if]
+[/for]
+[genClass.switchTail('eInvoke', 'operationID, arguments', true)/]
+  }
+
+[/if]
+[/let]
 [/template]
+
+[**
+ * The arguments of the call of an operation from its reflective invocation: each value taken from the argument list with a cast.
+ **/]
+[template public invocationArguments(genOperation : GenOperation)][for (p : GenParameter | genOperation.genParameters) separator(', ')][if (qualifiedTypeName(p.ecoreParameter.eType) <> 'java.lang.Object' or p.ecoreParameter.upperBound > 1 or p.ecoreParameter.upperBound = -1)]([if (p.ecoreParameter.upperBound > 1 or p.ecoreParameter.upperBound = -1)][p.ecoreParameter.typedElementType()/][else][importedName(objectTypeName(qualifiedTypeName(p.ecoreParameter.eType)))/][/if])[/if]arguments.get([(i - 1).toString()/])[/for][/template]
 
 [**
  * The text form of an object: the values of its attribute fields.

@@ -255,7 +255,7 @@
 [**
  * The index of the bit that holds the value of a feature.
  **/]
-[query public flagIndex(genClass : GenClass, genFeature : GenFeature) : Integer = (if genClass.implementingGenModel(genFeature).reservedFlagBits() > 0 then genClass.implementingGenModel(genFeature).reservedFlagBits() else 0 endif) + genClass.allGenFeatures()->subSequence(1, genClass.allGenFeatures()->indexOf(genFeature) - 1)->collect(g | genClass.flagBits(g))->sum()/]
+[query public flagIndex(genClass : GenClass, genFeature : GenFeature) : Integer = (if genClass.implementingGenModel(genFeature).reservedFlagBits() > 0 then genClass.implementingGenModel(genFeature).reservedFlagBits() else 0 endif) + (if genClass.allGenFeatures()->indexOf(genFeature) = 1 then 0 else genClass.allGenFeatures()->subSequence(1, genClass.allGenFeatures()->indexOf(genFeature) - 1)->collect(g | genClass.flagBits(g))->sum() endif)/]
 
 [**
  * The index of the bit that holds the set state of a feature.

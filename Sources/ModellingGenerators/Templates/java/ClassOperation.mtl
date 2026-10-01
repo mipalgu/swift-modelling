@@ -47,9 +47,14 @@
 [query public isAccessorOperation(genOperation : GenOperation, genClass : GenClass) : Boolean = not genOperation.hasBody() and genClass.allGenFeatures()->exists(f | (genOperation.genParameters->isEmpty() and (genOperation.name() = f.getterName() or (genOperation.name() = 'isSet' + f.accessorName() and f.isUnsettableFeature()) or (genOperation.name() = 'unset' + f.accessorName() and f.isUnsettableFeature() and f.isChangeable()))) or (genOperation.genParameters->size() = 1 and f.isChangeable() and not f.isMany() and genOperation.name() = 'set' + f.accessorName()))/]
 
 [**
+ * The operations of the classes that an implementation implements, most specific class first.
+ **/]
+[query public candidateOperations(genClass : GenClass) : OclAny = genClass.implementedGenClasses()->reverse()->collect(c | c.genOperations)->flatten()->select(o | not o.isAccessorOperation(genClass) and not o.genClass().isEObject())/]
+
+[**
  * The operations that the implementation of a class implements: its own and those of its interfaces, without overridden ones.
  **/]
-[query public implementedOperations(genClass : GenClass) : OclAny = let all = genClass.implementedGenClasses()->reverse()->collect(c | c.genOperations)->flatten()->select(o | not o.isAccessorOperation(genClass) and not o.genClass().isEObject()) in all->select(o | not all->subSequence(1, all->indexOf(o) - 1)->exists(r | r.isOverrideOf(o)))/]
+[query public implementedOperations(genClass : GenClass) : OclAny = genClass.candidateOperations()->select(o | genClass.candidateOperations()->indexOf(o) = 1 or not genClass.candidateOperations()->subSequence(1, genClass.candidateOperations()->indexOf(o) - 1)->exists(r | r.isOverrideOf(o)))/]
 
 [**
  * The operations that the interface of a class declares.
@@ -132,3 +137,28 @@
 
 [/if]
 [/template]
+
+[**
+ * The simple name of the type of a parameter as the operation identifiers spell it.
+ **/]
+[query public parameterTypeSimpleName(genParameter : GenParameter) : String = if genParameter.ecoreParameter.upperBound > 1 or genParameter.ecoreParameter.upperBound = -1 then 'EList' else (if qualifiedTypeName(genParameter.ecoreParameter.eType).contains('.') then qualifiedTypeName(genParameter.ecoreParameter.eType).substring(qualifiedTypeName(genParameter.ecoreParameter.eType).lastIndex('.') + 1).substituteAll('$', '.') else qualifiedTypeName(genParameter.ecoreParameter.eType) endif) endif/]
+
+[**
+ * The name of the constant that identifies an operation in the context of a class.
+ **/]
+[query public operationIDName(genClass : GenClass, genOperation : GenOperation) : String = genClass.classifierIDName() + '___' + genOperation.upperName() + (if genOperation.genParameters->isEmpty() then '' else '__' + genOperation.genParameters->collect(p | p.parameterTypeSimpleName().toUpper())->join('_') endif)/]
+
+[**
+ * The Java constant that identifies an operation in the context of a class.
+ **/]
+[template public qualifiedOperationID(genClass : GenClass, genOperation : GenOperation)][genClass.packageInterface()/].[genClass.operationIDName(genOperation)/][/template]
+
+[**
+ * The operations that the reflective invocation of a class covers.
+ **/]
+[query public reflectiveOperations(genClass : GenClass) : OclAny = if genClass.genModel().isMinimalReflective() then genClass.implementedOperations() else genClass.allGenOperations()->reject(o | o.genClass().isEObject()) endif/]
+
+[**
+ * The operations of the mixed in interfaces of a class.
+ **/]
+[query public mixinOperations(genClass : GenClass) : OclAny = genClass.mixinGenClasses()->collect(m | m.genOperations)->flatten()->reject(o | o.genClass().isEObject())/]
