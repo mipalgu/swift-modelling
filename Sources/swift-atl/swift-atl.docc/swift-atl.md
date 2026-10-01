@@ -6,10 +6,9 @@ Transform models with the Atlas Transformation Language.
 
 The `swift-atl` command-line tool executes ATL (Atlas
 Transformation Language) transformations to convert models from
-one metamodel to another. It provides a complete implementation of
-the ATL specification with support for declarative rules,
-imperative sections, helpers, and advanced features like lazy
-rules and called rules.
+one metamodel to another. It also parses, validates, tests,
+analyses and compiles ATL files, and generates generator models and
+source code from Ecore models.
 
 The tool is built on the swift-atl package
 (https://github.com/mipalgu/swift-atl), which provides a pure
@@ -99,22 +98,49 @@ swift-atl generate model/library.ecore --language java --transformations my-atl/
     --template-path my-templates -o src-gen
 ```
 
-### validate
+### parse
 
-Validate an ATL transformation file for syntax and semantic
-correctness.
+Parse ATL transformation files and report their structure.
 
 ```bash
-swift-atl validate <transformation-file> [options]
+swift-atl parse [<atl-files> ...] [options]
 ```
 
 **Options:**
 
-- `--source-metamodel <path>` - Source metamodel for validation
-- `--target-metamodel <path>` - Target metamodel for validation
+- `-f, --format <text|json|xml>` - Output format (default: `text`)
+- `-o, --output <file>` - Write the results to a file
+- `--metamodel-path <directory>` - Metamodel search path (repeatable)
+- `-v, --verbose` - Enable verbose output
+- `--show-structure`, `--show-rules`, `--show-helpers` - Show the module structure, the rule details, or the helper details
+- `--enable-stop-after-errors`, `--disable-stop-after-errors` - Stop after metamodel loading errors (default: disabled)
+
+**Examples:**
+
+```bash
+swift-atl parse Families2Persons.atl --verbose
+swift-atl parse *.atl --output parsing-report.txt
+swift-atl parse transformation.atl --format json
+```
+
+### validate
+
+Validate ATL transformation files for syntax and semantic
+correctness.
+
+```bash
+swift-atl validate [<atl-files> ...] [options]
+```
+
+**Options:**
+
+- `-o, --output <file>` - Write the validation results to a file
+- `--metamodel-path <directory>` - Metamodel search path (repeatable)
+- `-v, --verbose` - Enable verbose output
 - `--strict` - Enable strict validation mode
-- `--report <path>` - Write validation report to file
-- `--format <text|json>` - Report format (default: text)
+- `--check-metamodels` - Check metamodel compatibility
+- `--check-rules` - Validate rule completeness
+- `--enable-stop-after-errors`, `--disable-stop-after-errors` - Stop after metamodel loading errors (default: disabled)
 
 **Examples:**
 
@@ -122,102 +148,83 @@ swift-atl validate <transformation-file> [options]
 # Basic validation
 swift-atl validate Families2Persons.atl
 
-# Validation with metamodels
-swift-atl validate MyTransformation.atl \
-    --source-metamodel Source.ecore \
-    --target-metamodel Target.ecore
+# Strict validation of several files, with a log
+swift-atl validate *.atl --strict --output validation.log
 
-# Strict validation with JSON report
-swift-atl validate MyTransformation.atl \
-    --source-metamodel Source.ecore \
-    --target-metamodel Target.ecore \
-    --strict \
-    --report validation-report.json \
-    --format json
+# Check metamodel compatibility
+swift-atl validate transformation.atl --check-metamodels \
+    --metamodel-path metamodels/
+```
+
+### test
+
+Run parsing, validation and transformation execution tests on ATL
+files, or on a directory of them.
+
+```bash
+swift-atl test [<atl-files> ...] [options]
+```
+
+**Options:**
+
+- `-d, --directory <directory>` - Directory containing ATL test files
+- `-t, --timeout <seconds>` - Test timeout in seconds (default: 60)
+- `-o, --output <file>` - Write the test results to a file
+- `-v, --verbose` - Enable verbose output
+- `--fail-fast` - Stop on the first test failure
+
+**Examples:**
+
+```bash
+swift-atl test Families2Persons.atl
+swift-atl test --directory Tests/ATLTests/Resources
+swift-atl test *.atl --timeout 30 --verbose
+```
+
+### analyze
+
+Report complexity metrics, rule and helper analysis, and
+transformation patterns for ATL files.
+
+```bash
+swift-atl analyze [<atl-files> ...] [options]
+```
+
+**Options:**
+
+- `--metrics <list>` - Comma-separated metrics to compute from `complexity`, `rules`, `helpers` and `patterns` (default: all)
+- `-o, --output <file>` - Write the results to a file
+- `-f, --format <text|json>` - Output format (default: `text`)
+- `-v, --verbose` - Enable verbose output
+
+**Examples:**
+
+```bash
+swift-atl analyze Families2Persons.atl
+swift-atl analyze *.atl --metrics complexity,rules,helpers
+swift-atl analyze transformation.atl --output analysis.json
 ```
 
 ### compile
 
-Compile an ATL transformation to bytecode for faster execution.
+Compile an ATL transformation file.
 
 ```bash
-swift-atl compile <transformation-file> [options]
+swift-atl compile <atl-file> [options]
 ```
+
+The command parses the transformation and names the compiled module, which defaults to the input file name with a `.atlc` extension. Run transformations with `swift-atl transform` on the `.atl` source file.
 
 **Options:**
 
-- `--output <path>` - Output bytecode file path (default: same name with .asm extension)
-- `--optimise` - Enable optimisation passes
-- `--source-metamodel <path>` - Source metamodel for type checking
-- `--target-metamodel <path>` - Target metamodel for type checking
+- `-o, --output <file>` - Output file for the compiled transformation
+- `-v, --verbose` - Enable verbose output
+- `--optimise` - Optimise the transformation code
 
-**Examples:**
-
-```bash
-# Compile transformation
-swift-atl compile Families2Persons.atl
-
-# Compile with optimisation
-swift-atl compile MyTransformation.atl \
-    --output MyTransformation.asm \
-    --optimise \
-    --source-metamodel Source.ecore \
-    --target-metamodel Target.ecore
-```
-
-### query
-
-Execute an ATL query to extract information from a model.
+**Example:**
 
 ```bash
-swift-atl query <query-file> [options]
-```
-
-**Options:**
-
-- `--source <path>` - Source model file path (required)
-- `--output <path>` - Output file for query results
-- `--format <text|json|xml>` - Output format (default: text)
-
-**Examples:**
-
-```bash
-# Execute query
-swift-atl query FindAllClasses.atl --source model.xmi
-
-# Execute query with JSON output
-swift-atl query ExtractStatistics.atl \
-    --source model.xmi \
-    --output statistics.json \
-    --format json
-```
-
-### refine
-
-Execute an ATL refining transformation (in-place model
-modification).
-
-```bash
-swift-atl refine <transformation-file> [options]
-```
-
-**Options:**
-
-- `--model <path>` - Model file to refine (required)
-- `--backup` - Create backup before refining
-- `--verbose` - Enable verbose output
-
-**Examples:**
-
-```bash
-# Refine model in-place
-swift-atl refine NormaliseModel.atl --model mymodel.xmi
-
-# Refine with backup
-swift-atl refine UpdateReferences.atl \
-    --model mymodel.xmi \
-    --backup \
-    --verbose
+swift-atl compile Families2Persons.atl --output families2persons.atlc
 ```
 
 ## Common Workflows
@@ -226,38 +233,17 @@ swift-atl refine UpdateReferences.atl \
 
 ```bash
 # 1. Validate transformation syntax
-swift-atl validate Families2Persons.atl \
-    --source-metamodel Families.ecore \
-    --target-metamodel Persons.ecore
+swift-atl validate Families2Persons.atl --verbose
 
-# 2. Run transformation in debug mode
+# 2. Run the transformation with execution tracing
 swift-atl transform Families2Persons.atl \
     --source sample-Families.xmi \
     --target output-Persons.xmi \
-    --mode debug \
-    --verbose
+    --debug
 
 # 3. Validate output model
 swift-ecore validate output-Persons.xmi \
     --metamodel Persons.ecore
-```
-
-### Production Transformation Pipeline
-
-```bash
-# 1. Compile transformation with optimisation
-swift-atl compile Families2Persons.atl --optimise
-
-# 2. Execute compiled transformation
-swift-atl transform Families2Persons.asm \
-    --source production-input.xmi \
-    --target production-output.xmi \
-    --suppress-warnings
-
-# 3. Validate result
-swift-ecore validate production-output.xmi \
-    --metamodel Persons.ecore \
-    --strict
 ```
 
 ### Batch Processing Multiple Models
