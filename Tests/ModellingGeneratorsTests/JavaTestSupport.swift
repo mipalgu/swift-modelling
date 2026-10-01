@@ -41,6 +41,13 @@ struct GeneratedProject {
         return paths.sorted()
     }
 
+    /// The paths of the generated files that are not utility classes, relative to the output directory and sorted.
+    ///
+    /// The utility classes (switches, adapter factories, validators) have expectations of their own.
+    func modelPaths() -> [String] {
+        generatedPaths().filter { !$0.contains("/util/") }
+    }
+
     /// Imports a fixture into a generator model.
     ///
     /// - Parameters:
