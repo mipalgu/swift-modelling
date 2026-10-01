@@ -1,0 +1,264 @@
+[comment encoding = UTF-8 /]
+[**
+ * Queries about the model project of a generator model.
+ *
+ * The model project is the project that the model directory of the generator model belongs to: the
+ * first segment of the model directory names it. The queries decide which project files are written,
+ * where they go relative to the generated sources, which bundles the project requires, which packages
+ * it exports, and the names of its plugin class.
+ *
+ * The project files describe a plugin of the Eclipse platform. The generator model settings that decide
+ * about the form of the files are the plugin identifier, the plugin class, the runtime platform and
+ * version, the manifest and OSGi settings, and the compliance level. Edit, editor and test projects are
+ * not generated; a model project that is shared with an edit or editor project writes no manifest,
+ * plugin descriptor or plugin class, as the Eclipse generator does.
+ **/]
+[module JavaProject('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaImports/]
+[import JavaDocumentation/]
+[import JavaResources/]
+
+[comment Projects and directories /]
+
+[**
+ * The project that a directory path belongs to: its first segment, with the leading slash if the path has one.
+ **/]
+[query public projectPath(path : OclAny) : OclAny = if isBlank(path) then null else (if (if path.startsWith('/') then path.substring(2) else path endif).contains('/') then path.substring(1, (if path.startsWith('/') then 1 else 0 endif) + (if path.startsWith('/') then path.substring(2) else path endif).index('/') - 1) else path endif) endif/]
+
+[**
+ * The directory of the model project: the project of the model directory.
+ **/]
+[query public modelProjectDirectory(genModel : GenModel) : OclAny = projectPath(genModel.setting('modelDirectory'))/]
+
+[**
+ * Whether the model and edit directories belong to the same project.
+ **/]
+[query public sameModelEditProject(genModel : GenModel) : Boolean = not genModel.modelProjectDirectory().oclIsUndefined() and genModel.modelProjectDirectory() = projectPath(genModel.setting('editDirectory'))/]
+
+[**
+ * Whether the model and editor directories belong to the same project.
+ **/]
+[query public sameModelEditorProject(genModel : GenModel) : Boolean = not genModel.modelProjectDirectory().oclIsUndefined() and genModel.modelProjectDirectory() = projectPath(genModel.setting('editorDirectory'))/]
+
+[**
+ * The path of the source folder inside the model project, every segment followed by a slash; empty if the model directory is the project itself.
+ **/]
+[query public modelSourceFolder(genModel : GenModel) : String = if isBlank(genModel.setting('modelDirectory')) then '' else (if (if genModel.setting('modelDirectory').startsWith('/') then genModel.setting('modelDirectory').substring(2) else genModel.setting('modelDirectory') endif).contains('/') then (if genModel.setting('modelDirectory').startsWith('/') then genModel.setting('modelDirectory').substring(2) else genModel.setting('modelDirectory') endif).substring((if genModel.setting('modelDirectory').startsWith('/') then genModel.setting('modelDirectory').substring(2) else genModel.setting('modelDirectory') endif).index('/') + 1) + '/' else '' endif) endif/]
+
+[**
+ * The path from the source folder to the project directory, written as a sequence of parent steps.
+ **/]
+[query public projectRootPrefix(genModel : GenModel) : String = genModel.modelSourceFolder().replaceAll('[^/]+/', '../')/]
+
+[**
+ * Where a project file goes, relative to the output location, which holds the sources. Project files
+ * are written only if the output location includes the source folder, so that the project directory is known.
+ **/]
+[query public projectFilePath(genModel : GenModel, name : String) : String = genModel.projectRootPrefix() + name/]
+
+[comment Plugin support /]
+
+[**
+ * The identifier of the model plugin.
+ **/]
+[query public modelPluginID(genModel : GenModel) : OclAny = genModel.setting('modelPluginID')/]
+
+[**
+ * Whether the generator model describes a plugin: the plugin identifier is set.
+ **/]
+[query public hasPluginSupport(genModel : GenModel) : Boolean = not isBlank(genModel.modelPluginID())/]
+
+[**
+ * Whether the manifest of the plugin is written as a bundle manifest instead of in the plugin descriptor.
+ **/]
+[query public isBundleManifest(genModel : GenModel) : Boolean = genModel.setting('bundleManifest') = true/]
+
+[**
+ * Whether the model project is its own project: not shared with the edit or the editor project.
+ **/]
+[query public isOwnModelProject(genModel : GenModel) : Boolean = not genModel.sameModelEditProject() and not genModel.sameModelEditorProject()/]
+
+[**
+ * Whether the plugin descriptor and the manifest are written.
+ **/]
+[query public hasManifestFiles(genModel : GenModel) : Boolean = genModel.hasPluginSupport() and genModel.isOwnModelProject()/]
+
+[**
+ * Whether the runtime platform of the generator model is the one with the given name.
+ **/]
+[query public isRuntimePlatform(genModel : GenModel, platform : String) : Boolean = genModel.setting('runtimePlatform') = platform/]
+
+[**
+ * Whether the model is built for a web toolkit, which has no plugin descriptor.
+ **/]
+[query public isGWT(genModel : GenModel) : Boolean = genModel.isRuntimePlatform('GWT')/]
+
+[**
+ * Whether the runtime of the plugin is a rich client or rich ajax platform.
+ **/]
+[query public isRichPlatform(genModel : GenModel) : Boolean = genModel.isRuntimePlatform('RCP') or genModel.isRuntimePlatform('RAP')/]
+
+[**
+ * Whether the plugin needs the compatibility layer of the platform's runtime.
+ **/]
+[query public needsRuntimeCompatibility(genModel : GenModel) : Boolean = genModel.isOn('runtimeCompatibility') and not genModel.isRichPlatform()/]
+
+[**
+ * Whether the plugin is packaged as a jar of its own.
+ **/]
+[query public isRuntimeJar(genModel : GenModel) : Boolean = genModel.isOn('runtimeJar')/]
+
+[**
+ * Whether the plugin class can also be started as a plain OSGi bundle.
+ **/]
+[query public isOSGiCompatible(genModel : GenModel) : Boolean = genModel.isOn('oSGiCompatible')/]
+
+[**
+ * The place that holds the classes of the plugin: the jar of the plugin, or the project itself.
+ **/]
+[query public pluginClassesLocation(genModel : GenModel) : String = if genModel.isRuntimeJar() then genModel.modelPluginID() + '.jar' else '.' endif/]
+
+[comment Versions /]
+
+[**
+ * Whether the runtime version of the generator model is at least the given version, written as major and minor
+ * numbers. A generator model without a runtime version targets the newest runtime.
+ **/]
+[query public runtimeVersionAtLeast(genModel : GenModel, major : Integer, minor : Integer) : Boolean = if not genModel.isSetting('runtimeVersion') then true else (let version : String = genModel.setting('runtimeVersion') in version.substring(1, version.index('.') - 1).toInteger() > major or (version.substring(1, version.index('.') - 1).toInteger() = major and version.substring(version.index('.') + 1).toInteger() >= minor)) endif/]
+
+[**
+ * The execution environment that a compliance level asks for, written as the manifest names it.
+ **/]
+[query public executionEnvironment(complianceLevel : Real) : String = if complianceLevel = 5.0 then 'J2SE-1.5' else (if complianceLevel < 9.0 then 'JavaSE-1.' + complianceLevel.toString().substring(1, 1) else 'JavaSE-' + complianceLevel.toString().substring(1, complianceLevel.toString().index('.') - 1) endif) endif/]
+
+[comment Plugin class /]
+
+[**
+ * The plugin class that the model project uses: its own, or that of the edit or editor project it shares.
+ **/]
+[query public modelPluginClassToUse(genModel : GenModel) : OclAny = if not isBlank(genModel.setting('modelPluginClass')) then genModel.setting('modelPluginClass') else (if genModel.sameModelEditProject() and not isBlank(genModel.setting('editPluginClass')) then genModel.setting('editPluginClass') else (if genModel.sameModelEditorProject() then genModel.setting('editorPluginClass') else genModel.setting('modelPluginClass') endif) endif) endif/]
+
+[**
+ * Whether a model plugin class is generated.
+ **/]
+[query public hasModelPluginClass(genModel : GenModel) : Boolean = genModel.isOwnModelProject() and not isBlank(genModel.setting('modelPluginClass'))/]
+
+[**
+ * The package of a qualified class name; empty if the name has no package.
+ **/]
+[query public classPackageOf(qualifiedName : OclAny) : String = if isBlank(qualifiedName) or not qualifiedName.contains('.') then '' else qualifiedName.substring(1, qualifiedName.lastIndex('.') - 1) endif/]
+
+[**
+ * The package of the model plugin class: the package in the class name, otherwise the plugin identifier in lower case.
+ **/]
+[query public modelPluginPackageName(genModel : GenModel) : String = if isBlank(genModel.modelPluginClassToUse()) or not genModel.modelPluginClassToUse().contains('.') then (if genModel.modelPluginID().oclIsUndefined() then '' else genModel.modelPluginID().toLower() endif) else classPackageOf(genModel.modelPluginClassToUse()) endif/]
+
+[**
+ * The simple name of the model plugin class: from the class name, otherwise the model name followed by Plugin.
+ **/]
+[query public modelPluginClassName(genModel : GenModel) : String = if isBlank(genModel.modelPluginClassToUse()) then (if isBlank(genModel.setting('modelName')) then '' else genModel.setting('modelName') endif) + 'Plugin' else genModel.modelPluginClassToUse().substring(genModel.modelPluginClassToUse().lastIndex('.') + 1) endif/]
+
+[**
+ * The qualified name of the model plugin class.
+ **/]
+[query public qualifiedModelPluginClassName(genModel : GenModel) : String = genModel.modelPluginPackageName() + '.' + genModel.modelPluginClassName()/]
+
+[comment Bundle names /]
+
+[**
+ * The key of the bundle name in the plugin properties.
+ **/]
+[query public modelBundleNameKey(genModel : GenModel) : String = '%pluginName'/]
+
+[**
+ * The key of the bundle vendor in the plugin properties.
+ **/]
+[query public modelBundleVendorKey(genModel : GenModel) : String = '%providerName'/]
+
+[**
+ * The base name of the bundle localisation, which is the name of the plugin properties without extension.
+ **/]
+[query public modelBundleLocalization(genModel : GenModel) : String = 'plugin'/]
+
+[**
+ * The name of the bundle: the model name followed by Model.
+ **/]
+[query public modelBundleName(genModel : GenModel) : String = (if isBlank(genModel.setting('modelName')) then '' else genModel.setting('modelName') endif) + ' Model'/]
+
+[**
+ * The vendor of the bundle when nothing else is known.
+ **/]
+[query public modelBundleVendorName(genModel : GenModel) : String = 'www.example.org'/]
+
+[comment Required bundles and exported packages /]
+
+[**
+ * The packages of the generator model that have classifiers, nested ones included.
+ **/]
+[query public packagesWithClassifiers(genModel : GenModel) : OclAny = genModel.allGenPackages()->select(p | p.declaresClassifiers())/]
+
+[**
+ * Whether the classifiers of a package declare constraints, which the Ecore annotation of the classifier lists.
+ **/]
+[query declaresConstraints(genPackage : GenPackage) : Boolean = genPackage.genClassifiers()->exists(c | not isBlank(c.annotationDetail(ecoreNamespace(), 'constraints')))/]
+
+[**
+ * Whether the package writes classes into its utilities package: adapter factory, switch, validator or resources.
+ **/]
+[query public usesUtilitiesPackage(genPackage : GenPackage) : Boolean = (genPackage.setting('adapterFactory') = true and genPackage.genClasses->notEmpty()) or genPackage.declaresConstraints() or genPackage.hasResource()/]
+
+[**
+ * The packages that a package exports from the model plugin.
+ **/]
+[query public exportedPackageNames(genPackage : GenPackage) : OclAny = Sequence{genPackage.interfacePackageName(), genPackage.classPackageName()}->union(if genPackage.usesUtilitiesPackage() then Sequence{genPackage.utilitiesPackageName()} else Sequence{} endif)->union(if isBlank(genPackage.setting('metaDataPackageSuffix')) then Sequence{} else Sequence{genPackage.reflectionPackageName()} endif)/]
+
+[**
+ * The packages that the model plugin exports: those of all packages with classifiers and the package of the plugin
+ * class, without duplicates and in alphabetical order.
+ **/]
+[query public modelQualifiedPackageNames(genModel : GenModel) : OclAny = genModel.packagesWithClassifiers()->collect(p | p.exportedPackageNames())->flatten()->union(if isBlank(classPackageOf(genModel.modelPluginClassToUse())) then Sequence{} else Sequence{classPackageOf(genModel.modelPluginClassToUse())} endif)->asSet()->sortedBy(n | n)/]
+
+[**
+ * Whether a package or one of its nested packages loads its metadata when it is initialised.
+ **/]
+[query needsLoadInitialization(genPackage : GenPackage) : Boolean = genPackage.setting('loadInitialization') = true or genPackage.nestedGenPackages->exists(n | needsLoadInitialization(n))/]
+
+[**
+ * Whether a package is a content type: it names a content type identifier and the runtime has content types.
+ **/]
+[query public isContentType(genPackage : GenPackage) : Boolean = genPackage.genModel().runtimeVersionAtLeast(2, 4) and not isBlank(genPackage.setting('contentTypeIdentifier'))/]
+
+[**
+ * The identifier of a bundle that the plugin variable of the generator model names: the part after an equals sign if there is one.
+ **/]
+[query public pluginVariableID(variable : String) : String = if variable.contains('=') then variable.substring(variable.index('=') + 1) else variable endif/]
+
+[**
+ * The plugins that the model plugin requires, in the order of the manifest and without duplicates.
+ **/]
+[query public modelRequiredPlugins(genModel : GenModel) : OclAny = (if genModel.isGWT() then Sequence{'org.eclipse.emf.gwt.ecore'} else Sequence{if genModel.needsRuntimeCompatibility() then 'org.eclipse.core.runtime.compatibility' else 'org.eclipse.core.runtime' endif, 'org.eclipse.emf.ecore'} endif)->union(genModel.modelPluginVariables->collect(v | pluginVariableID(v)))->union(if genModel.genPackages->exists(p | p.hasResource() or needsLoadInitialization(p) or p.isContentType()) or genModel.allGenPackages()->exists(p | p.hasResource() or p.isContentType()) then Sequence{'org.eclipse.emf.ecore.xmi'} else Sequence{} endif)->union(genModel.usedGenPackages->collect(p | p.genModel().modelPluginID()))->asOrderedSet()/]
+
+[comment Content types /]
+
+[**
+ * The file extensions of a package, separated by commas: those of the generator package, otherwise its prefix in lower case.
+ **/]
+[query public fileExtensions(genPackage : GenPackage) : String = if isBlank(genPackage.setting('fileExtensions')) then genPackage.setting('prefix').toLower() else genPackage.setting('fileExtensions').replaceAll('\\s*,\\s*', ',') endif/]
+
+[**
+ * The file extensions of a package as a sequence.
+ **/]
+[query public fileExtensionList(genPackage : GenPackage) : OclAny = genPackage.fileExtensions().tokenize(',')/]
+
+[comment Documentation tags /]
+
+[**
+ * The API tag lines of the documentation of a generator model.
+ **/]
+[query public modelTagLines(genModel : GenModel) : OclAny = apiTagLines(genModel.setting('modelDocumentation'), '')/]
+
+[**
+ * Whether the documentation of the generator model carries a deprecation tag.
+ **/]
+[query public isModelDeprecated(genModel : GenModel) : Boolean = if isBlank(genModel.setting('modelDocumentation')) then false else modelTagLines(genModel)->exists(l | l.startsWith('@deprecated')) endif/]

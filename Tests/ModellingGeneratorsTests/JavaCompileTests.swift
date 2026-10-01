@@ -70,7 +70,9 @@ struct JavaCompileTests {
     }
 
     /// The prefixes of the packages that the runtime provides, whose types need no stand-ins.
-    static let runtimePrefixes = ["java.", "javax.", "org.eclipse.emf.ecore.", "org.eclipse.emf.common."]
+    static let runtimePrefixes = [
+        "java.", "javax.", "org.eclipse.emf.ecore.", "org.eclipse.emf.common.", "org.eclipse.core.runtime.", "org.osgi.",
+    ]
 
     /// Writes stand-ins for the model types that the generated files refer to but that no template has written yet.
     ///
@@ -163,6 +165,27 @@ struct JavaCompileTests {
         let classes = generated.project.root.appendingPathComponent("classes")
         try FileManager.default.createDirectory(at: classes, withIntermediateDirectories: true)
         let files = generated.modelPaths().filter { $0.hasSuffix(".java") }.map { generated.file($0) }
+        let standIns = try Self.writeStandIns(
+            for: files, in: generated.project.root.appendingPathComponent("stand-ins"))
+        let (status, text) = try Self.compile(files + standIns, into: classes, classPath: classPath)
+        #expect(status == 0, "javac failed:\n\(text)")
+    }
+
+    @Test(
+        "Generated plugin and resource classes compile against the EMF runtime",
+        .enabled(if: classPath != nil, "EMF_RUNTIME_CLASSPATH is not set; skipping the compile test"),
+        .enabled(if: compiler != nil, "No javac found; skipping the compile test"),
+        arguments: JavaProjectCase.all
+    )
+    @MainActor
+    func compilesProjectClasses(_ golden: JavaProjectCase) async throws {
+        let classPath = try #require(Self.classPath)
+        let generated = try await golden.generate()
+        defer { generated.remove() }
+        let classes = generated.project.root.appendingPathComponent("classes")
+        try FileManager.default.createDirectory(at: classes, withIntermediateDirectories: true)
+        let files = generated.modelPaths().filter { $0.hasSuffix(".java") }.map { generated.file($0) }
+        #expect(files.count > 1)
         let standIns = try Self.writeStandIns(
             for: files, in: generated.project.root.appendingPathComponent("stand-ins"))
         let (status, text) = try Self.compile(files + standIns, into: classes, classPath: classPath)

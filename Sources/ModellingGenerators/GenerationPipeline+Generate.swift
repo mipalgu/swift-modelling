@@ -65,6 +65,8 @@ extension GenerationPipeline {
             for: genModel, descriptor: templateSet.descriptor, in: outputDirectory, options: options)
         let services: [any AQLServiceProvider] = [
             GenModelServices(context: context), TemplateDataServices(roots: data.roots),
+            OutputLayoutServices(
+                includesSourceRoot: includesSourceRoot(descriptor: templateSet.descriptor, options: options)),
         ]
         var models: [String: Resource] = [TemplateSetConstants.genModelAlias: document.resource]
         for (index, resource) in data.resources.enumerated() {
@@ -173,12 +175,18 @@ extension GenerationPipeline {
 
     // MARK: - Layout and counting
 
+    private static func includesSourceRoot(
+        descriptor: TemplateSetDescriptor, options: GenerationOptions
+    ) -> Bool {
+        options.includeSourceRoot ?? descriptor.layout.includeSourceRoot
+    }
+
     private static func outputBase(
         for genModel: GenElement, descriptor: TemplateSetDescriptor, in directory: URL,
         options: GenerationOptions
     ) -> URL {
         var base = directory.standardizedFileURL
-        let includes = options.includeSourceRoot ?? descriptor.layout.includeSourceRoot
+        let includes = includesSourceRoot(descriptor: descriptor, options: options)
         if includes, let setting = descriptor.layout.sourceRootSetting,
             let root = GenModelServices.setting(setting, of: genModel) as? String
         {

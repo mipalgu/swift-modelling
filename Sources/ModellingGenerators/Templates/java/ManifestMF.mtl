@@ -1,0 +1,57 @@
+[comment encoding = UTF-8 /]
+[**
+ * The bundle manifest of a model project.
+ *
+ * The manifest names the bundle, its activator, the packages it exports and the bundles it requires. The
+ * bundle name, vendor and localisation are the defaults of the generator; the manifest of an existing project is
+ * not consulted. An existing manifest is not merged with the generated one: it is kept unless generation is forced.
+ * The capability entry for generated packages is not written.
+ **/]
+[module ManifestMF('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaResources/]
+[import JavaProject/]
+
+[**
+ * The text that follows the name of a required bundle in the manifest.
+ **/]
+[query requirementSuffix(genModel : GenModel, pluginID : String, isFirst : Boolean) : String = if pluginID.startsWith('org.eclipse.core.runtime') then (if genModel.isOSGiCompatible() then ';resolution:=optional;x-installation:=greedy' else '' endif) else (if isFirst or (pluginID <> 'org.eclipse.xtext.xbase.lib' and pluginID <> 'org.eclipse.emf.ecore.xcore.lib') then ';visibility:=reexport' else '' endif) endif/]
+
+[**
+ * The value of the Require-Bundle header.
+ **/]
+[query requiredBundles(genModel : GenModel) : String = genModel.modelRequiredPlugins()->collect(id | id + genModel.requirementSuffix(id, genModel.modelRequiredPlugins()->first() = id))->join(',\n ')/]
+
+[**
+ * The complete text of the manifest of a generator model.
+ **/]
+[template public manifestMF(genModel : GenModel)]
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: [genModel.modelBundleNameKey()/]
+Bundle-SymbolicName: [genModel.modelPluginID()/];singleton:=true
+Automatic-Module-Name: [genModel.modelPluginID()/]
+Bundle-Version: 1.0.0.qualifier
+Bundle-ClassPath: [genModel.pluginClassesLocation()/]
+[if (genModel.hasModelPluginClass())]
+Bundle-Activator: [genModel.qualifiedModelPluginClassName()/]$Implementation[if (genModel.isOSGiCompatible())]$Activator[/if]
+[/if]
+Bundle-Vendor: [genModel.modelBundleVendorKey()/]
+Bundle-Localization: [genModel.modelBundleLocalization()/]
+[if (genModel.complianceLevel() >= 5.0)]
+Bundle-RequiredExecutionEnvironment: [executionEnvironment(genModel.complianceLevel())/]
+[/if]
+[if (genModel.modelQualifiedPackageNames()->notEmpty())]
+Export-Package: [genModel.modelQualifiedPackageNames()->join(',\n ')/]
+[/if]
+[if (genModel.modelRequiredPlugins()->notEmpty())]
+Require-Bundle: [genModel.requiredBundles()/]
+[/if]
+[if (genModel.isOSGiCompatible() and genModel.hasModelPluginClass())]
+Import-Package: org.osgi.framework
+[/if]
+[if (not genModel.runtimeVersionAtLeast(2, 4))]
+Eclipse-LazyStart: true
+[/if]
+Bundle-ActivationPolicy: lazy
+[/template]

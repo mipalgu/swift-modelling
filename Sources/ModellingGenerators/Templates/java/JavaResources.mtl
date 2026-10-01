@@ -1,0 +1,166 @@
+[comment encoding = UTF-8 /]
+[**
+ * Queries about the resource support of a generator package.
+ *
+ * A package generates a resource factory and a resource when its resource kind is not None, and an
+ * XML processor when the resource kind is XML. The queries here decide the names of those classes,
+ * the base classes they extend, and the extended metadata facts that shape the XML specifics.
+ *
+ * Packages whose extended metadata comes from other packages than their own are treated by looking at
+ * the package itself only, as the Eclipse generator does.
+ **/]
+[module JavaResources('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaImports/]
+[import JavaDocumentation/]
+
+[comment Resource kinds /]
+
+[**
+ * The resource kind of a generator package: None, Basic, XMI or XML.
+ **/]
+[query public resourceKind(genPackage : GenPackage) : String = genPackage.setting('resource')/]
+
+[**
+ * Whether a generator package generates a resource factory and a resource.
+ **/]
+[query public hasResource(genPackage : GenPackage) : Boolean = genPackage.resourceKind() <> 'None'/]
+
+[**
+ * Whether the resource of a generator package is written in the XMI format, which is also the case without a resource.
+ **/]
+[query public isXMIResource(genPackage : GenPackage) : Boolean = genPackage.resourceKind() = 'None' or genPackage.resourceKind() = 'XMI'/]
+
+[**
+ * Whether a generator package declares classes, enumerations or data types.
+ **/]
+[query public declaresClassifiers(genPackage : GenPackage) : Boolean = genPackage.genClasses->notEmpty() or genPackage.genEnums->notEmpty() or genPackage.genDataTypes->notEmpty()/]
+
+[**
+ * Whether a generator package generates an XML processor.
+ **/]
+[query public hasXMLProcessor(genPackage : GenPackage) : Boolean = genPackage.declaresClassifiers() and genPackage.resourceKind() = 'XML'/]
+
+[comment Names /]
+
+[**
+ * The name of the resource class of a package.
+ **/]
+[query public resourceClassName(genPackage : GenPackage) : String = genPackage.genModel().patternedClassName(genPackage.prefixedName('Resource'))/]
+
+[**
+ * The qualified name of the resource class of a package.
+ **/]
+[query public qualifiedResourceClassName(genPackage : GenPackage) : String = genPackage.utilitiesPackageName() + '.' + genPackage.resourceClassName()/]
+
+[**
+ * The name of the resource factory class of a package.
+ **/]
+[query public resourceFactoryClassName(genPackage : GenPackage) : String = genPackage.genModel().patternedClassName(genPackage.prefixedName('ResourceFactory'))/]
+
+[**
+ * The qualified name of the resource factory class of a package.
+ **/]
+[query public qualifiedResourceFactoryClassName(genPackage : GenPackage) : String = genPackage.utilitiesPackageName() + '.' + genPackage.resourceFactoryClassName()/]
+
+[**
+ * The qualified name of the resource factory that the package registers: its own, or the XMI factory of the runtime without a resource.
+ **/]
+[query public qualifiedEffectiveResourceFactoryClassName(genPackage : GenPackage) : String = if genPackage.resourceKind() = 'None' then 'org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl' else genPackage.qualifiedResourceFactoryClassName() endif/]
+
+[**
+ * The name of the XML processor class of a package.
+ **/]
+[query public xmlProcessorClassName(genPackage : GenPackage) : String = genPackage.prefixedName('XMLProcessor')/]
+
+[**
+ * The qualified name of the XML processor class of a package.
+ **/]
+[query public qualifiedXMLProcessorClassName(genPackage : GenPackage) : String = genPackage.utilitiesPackageName() + '.' + genPackage.xmlProcessorClassName()/]
+
+[**
+ * The qualified name of the class that a resource class of a package extends.
+ **/]
+[query public resourceBaseClassName(genPackage : GenPackage) : String = if genPackage.resourceKind() = 'XML' then 'org.eclipse.emf.ecore.xmi.impl.XMLResourceImpl' else (if genPackage.resourceKind() = 'XMI' then 'org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl' else 'org.eclipse.emf.ecore.resource.impl.ResourceImpl' endif) endif/]
+
+[comment Extended metadata /]
+
+[**
+ * The namespace of the Ecore metamodel.
+ **/]
+[query public ecoreNamespace() : String = 'http://www.eclipse.org/emf/2002/Ecore'/]
+
+[**
+ * The namespace of the XML namespace metamodel.
+ **/]
+[query public xmlNamespaceNamespace() : String = 'http://www.w3.org/XML/1998/namespace'/]
+
+[**
+ * The namespace of the XML type metamodel.
+ **/]
+[query public xmlTypeNamespace() : String = 'http://www.eclipse.org/emf/2003/XMLType'/]
+
+[**
+ * The source of the annotation that maps an XML schema to a package.
+ **/]
+[query public xsdMappingSource() : String = 'http:///org/eclipse/emf/mapping/xsd2ecore/XSD2Ecore'/]
+
+[**
+ * Whether an annotated model element carries an annotation with the given source.
+ **/]
+[query public hasAnnotation(element : OclAny, source : String) : Boolean = element.eAnnotations->exists(a | a.source = source)/]
+
+[**
+ * Whether the Ecore package of a generator package, or any of its features, carries extended metadata.
+ * A package of the XML type metamodel always does and the Ecore and XML namespace metamodels never do.
+ **/]
+[query public ecoreHasExtendedMetaData(ePackage : OclAny) : Boolean = if ePackage.nsURI = ecoreNamespace() or ePackage.nsURI = xmlNamespaceNamespace() then false else (if ePackage.nsURI = xmlTypeNamespace() then true else (ePackage.hasAnnotation(extendedMetaDataSource()) or ePackage.eClassifiers->filter(EClass)->exists(c | c.eStructuralFeatures->exists(f | f.hasAnnotation(extendedMetaDataSource())))) endif) endif/]
+
+[**
+ * Whether the package generates its resources with extended metadata, which requires the XML resource kind.
+ **/]
+[query public hasExtendedMetaData(genPackage : GenPackage) : Boolean = genPackage.resourceKind() = 'XML' and ecoreHasExtendedMetaData(genPackage.ecorePackage)/]
+
+[**
+ * Whether the package maps an XML schema without extended metadata, which requires the XML resource kind.
+ **/]
+[query public hasXMLMap(genPackage : GenPackage) : Boolean = genPackage.resourceKind() = 'XML' and genPackage.ecorePackage.hasAnnotation(xsdMappingSource())/]
+
+[**
+ * Whether the namespace of the package takes part in the XML representation.
+ **/]
+[query public hasTargetNamespace(genPackage : GenPackage) : Boolean = if genPackage.hasExtendedMetaData() then genPackage.ecorePackage.annotationDetail(extendedMetaDataSource(), 'qualified') <> 'false' else (not genPackage.ecorePackage.hasAnnotation(xsdMappingSource()) or not genPackage.ecorePackage.annotationDetail(xsdMappingSource(), 'targetNamespace').oclIsUndefined()) endif/]
+
+[comment Documentation tags /]
+
+[**
+ * The lines of the API tags (since, deprecated, noreference) that a documentation text sets.
+ * The link is the target that a deprecation points to; a blank link leaves the text of the tag as written.
+ **/]
+[query public apiTagLines(documentation : OclAny, link : String) : OclAny = if isBlank(documentation) then Sequence{} else Sequence{apiTagLine(documentation, 'since', ''), apiTagLine(documentation, 'deprecated', link), apiTagLine(documentation, 'noreference', link)}->select(l | l.size() > 0) endif/]
+
+[**
+ * Whether a line of documentation begins with a tag.
+ **/]
+[query isTagLine(line : String, tag : String) : Boolean = line.trim() = '@' + tag or line.trim().startsWith('@' + tag + ' ') or line.trim().startsWith('@' + tag + '\t')/]
+
+[**
+ * The text after a tag in a documentation text, trimmed: empty if the text lacks the tag or the tag has no text.
+ **/]
+[query tagText(documentation : String, tag : String) : String = if documentation.lines()->exists(l | isTagLine(l, tag)) then documentation.lines()->select(l | isTagLine(l, tag))->first().trim().substring('@'.size() + tag.size() + 1).trim() else '' endif/]
+
+[**
+ * The line for one tag of a documentation text: empty if the text lacks the tag, and for a since tag without text.
+ * A deprecation or no-reference tag with text points to the model documentation when there is a link.
+ **/]
+[query apiTagLine(documentation : String, tag : String, link : String) : String = if not documentation.lines()->exists(l | isTagLine(l, tag)) then '' else (if tag = 'since' then (if tagText(documentation, tag).size() = 0 then '' else '@since ' + tagText(documentation, tag) endif) else '@' + tag + (if tagText(documentation, tag).size() = 0 then '' else (if link.size() > 0 then ' See {@link ' + link + ' model documentation} for details.' else ' ' + tagText(documentation, tag) endif) endif) endif) endif/]
+
+[**
+ * The API tag lines of a generator package.
+ **/]
+[query public packageTagLines(genPackage : GenPackage) : OclAny = apiTagLines(genPackage.documentation(), genPackage.qualifiedPackageInterfaceName())/]
+
+[**
+ * Whether the documentation of a generator package carries API tags.
+ **/]
+[query public hasAPITags(genPackage : GenPackage) : Boolean = genPackage.packageTagLines()->notEmpty()/]

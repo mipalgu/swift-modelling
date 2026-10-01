@@ -1,0 +1,71 @@
+[comment encoding = UTF-8 /]
+[**
+ * The Java file of the resource of a generator package.
+ *
+ * The resource extends the resource implementation that matches the resource kind of the package:
+ * the XML or XMI resource of the runtime, or the basic resource. It declares the constructor that
+ * takes the location of the resource.
+ *
+ * This template writes the form for compliance level 5.0 and higher. The frame factory and the
+ * data type converter loading that the Eclipse generator writes for packages whose data type
+ * converters are on and that have a document root, or that are the XML type package, are not written.
+ **/]
+[module ResourceClass('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaImports/]
+[import Header/]
+[import JavaDocumentation/]
+[import JavaResources/]
+
+[**
+ * The complete text of the file that declares the resource of a generator package.
+ **/]
+[template public resourceClass(genPackage : GenPackage)]
+[let genModel : GenModel = genPackage.genModel()]
+[collect ('imports', genPackage.qualifiedResourceClassName())/]
+[collect ('imports', 'org.eclipse.emf.common.util.URI')/]
+[header(genPackage)/]
+package [genPackage.utilitiesPackageName()/];
+
+
+[emit ('imports') once][importBlock(items)/][/emit]
+
+/**
+ * <!-- begin-user-doc -->
+ * The <b>Resource </b> associated with the package.
+ * <!-- end-user-doc -->
+ * @see [genPackage.qualifiedResourceFactoryClassName()/]
+[for (line | genPackage.packageTagLines())]
+ * [line/]
+[/for]
+ * @generated
+ */
+[if (genModel.useGenerics() and genPackage.hasAPIDeprecatedTag())]
+@Deprecated
+[/if]
+public class [genPackage.resourceClassName()/] extends [importedName(genPackage.resourceBaseClassName())/]
+{
+[if (genModel.hasCopyrightField())]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public static final [importedName('java.lang.String')/] copyright = [genModel.copyrightFieldLiteral()/];[nonNLS(genModel, 1)/]
+
+[/if]
+  /**
+   * Creates an instance of the resource.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @param uri the URI of the new resource.
+   * @generated
+   */
+  public [genPackage.resourceClassName()/](URI uri)
+  {
+    super(uri);
+  }
+
+} //[genPackage.resourceClassName()/]
+[/let]
+[/template]

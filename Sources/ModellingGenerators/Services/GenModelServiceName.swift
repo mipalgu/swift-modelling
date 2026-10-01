@@ -180,6 +180,11 @@ public enum GenModelServiceName {
     /// The Ecore model of a generator package as `.ecore` text, optionally without the annotations of one source.
     public static let serialisedEcore = "serialisedEcore"
 
+    // MARK: Output layout
+
+    /// Whether the output location includes the source directory of the generator model.
+    public static let layoutIncludesSourceRoot = "layoutIncludesSourceRoot"
+
     // MARK: Template data
 
     /// The root objects of a data model bundled with a template set.
