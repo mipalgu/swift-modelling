@@ -114,9 +114,6 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
 [if (isImplementation)]
 [genPackage.packageImplementationHead()/]
 [/if]
-[if (isInterface and isImplementation)]
-
-[/if]
 [genPackage.packageAccessors(isInterface, isImplementation)/]
 [if (isImplementation)]
 [genPackage.packageContents(isInterface)/]
@@ -438,3 +435,828 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
 [/let]
 [/template]
 
+
+[comment Implementation /]
+
+[**
+ * The fields that hold the runtime objects, the constructor and the static initialisation of the package class.
+ **/]
+[template public packageImplementationHead(genPackage : GenPackage)]
+[let genModel : GenModel = genPackage.genModel()]
+[let familyMember : Boolean = genPackage.isFamilyMember()]
+[let basic : String = genPackage.basicPackageName()]
+[let interfaceName : String = importedName(genPackage.qualifiedPackageInterfaceName())]
+[let epackage : String = importedName(ePackageClass())]
+[if (genPackage.isLoadingInitialization())]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  protected String packageFilename = "[genPackage.serializedPackageFilename()/]";[nonNLS(genModel, 1)/]
+
+[/if]
+[for (genClassifier : OclAny | genPackage.allClassifiers())]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[if (genClassifier.hasOwnPublicAPITags())]
+   * [genClassifier.ownPublicAPITagLines()->apiTagText('* ')/]
+[/if]
+   * @generated
+   */
+[if (genModel.useGenerics() and genClassifier.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  private [importedName(genClassifier.metaTypeName())/] [genClassifier.classifierInstanceName()/] = null;
+
+[/for]
+  /**
+   * Creates an instance of the model <b>Package</b>, registered with
+   * {@link org.eclipse.emf.ecore.EPackage.Registry EPackage.Registry} by the package
+   * package URI value.
+   * <p>Note: the correct way to create the package is via the static
+   * factory method {@link #init init()}, which also performs
+   * initialization of the package, or returns the registered package,
+   * if one already exists.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @see org.eclipse.emf.ecore.EPackage.Registry
+   * @see [genPackage.qualifiedPackageInterfaceName()/]#eNS_URI
+   * @see #init()
+   * @generated
+   */
+  [if (familyMember)]public[else]private[/if] [genPackage.packageClassName()/]()
+  {
+    super(eNS_URI, [genPackage.factoryInstanceAccessor()/]);
+  }
+[if (not familyMember)]
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  private static boolean isInited = false;
+[/if]
+
+  /**
+   * Creates, registers, and initializes the <b>Package</b> for this model, and for any others upon which it depends.
+   *
+   * <p>This method is used to initialize {@link [interfaceName/]#eINSTANCE} when that field is accessed.
+   * Clients should not invoke it directly. Instead, they should simply access that field to obtain the package.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @see #eNS_URI
+[if (not genPackage.isLoadedInitialization())]
+   * @see #createPackageContents()
+   * @see #initializePackageContents()
+[/if]
+   * @generated
+   */
+  public static [interfaceName/] init()
+  {
+[if (familyMember)]
+    // Initialize the family head to initialize the entire family
+    [importedName(genPackage.familyHeadGenPackage().qualifiedPackageInterfaceName())/].eINSTANCE.eClass();
+    return ([interfaceName/])[epackage/].Registry.INSTANCE.getEPackage([interfaceName/].eNS_URI);
+[else]
+    if (isInited) return ([interfaceName/])[epackage/].Registry.INSTANCE.getEPackage([interfaceName/].eNS_URI);
+
+    // Obtain or create and register package
+    Object registered[basic/] = [epackage/].Registry.INSTANCE.get(eNS_URI);
+    [genPackage.packageClassName()/] the[basic/] = registered[basic/] instanceof [genPackage.packageClassName()/] ? ([genPackage.packageClassName()/])registered[basic/] : new [genPackage.packageClassName()/]();
+
+    isInited = true;
+
+[if (genPackage.packageSimpleDependencies()->notEmpty())]
+    // Initialize simple dependencies
+[for (dep : GenPackage | genPackage.packageSimpleDependencies())]
+    [importedName(dep.qualifiedPackageInterfaceName())/].eINSTANCE.eClass();
+[/for]
+
+[/if]
+[if (genPackage.packageInterDependencies()->notEmpty())]
+    // Obtain or create and register interdependencies
+[for (interdep : GenPackage | genPackage.packageInterDependencies())]
+    [if (i = 1)]Object [/if]registeredPackage = [epackage/].Registry.INSTANCE.[if (genPackage.familyTreeDependencies()->includes(interdep))]get[else]getEPackage[/if]([importedName(interdep.qualifiedPackageInterfaceName())/].eNS_URI);
+    [importedName(interdep.qualifiedPackageClassName())/] [genPackage.packageInstanceVariable(interdep)/] = ([importedName(interdep.qualifiedPackageClassName())/])(registeredPackage instanceof [importedName(interdep.qualifiedPackageClassName())/] ? registeredPackage : [if (genPackage.familyTreeDependencies()->includes(interdep))]new [importedName(interdep.qualifiedPackageClassName())/]()[else][importedName(interdep.qualifiedPackageInterfaceName())/].eINSTANCE[/if]);
+[/for]
+
+[/if]
+[if (genPackage.isLoadedInitialization() or genPackage.packageLoadInterDependencies()->notEmpty())]
+    // Load packages
+[if (genPackage.isLoadingInitialization())]
+    the[basic/].loadPackage();
+[/if]
+[for (interdep : GenPackage | genPackage.packageLoadInterDependencies())]
+[if (interdep.isLoadingInitialization())]
+    [genPackage.packageInstanceVariable(interdep)/].loadPackage();
+[/if]
+[/for]
+
+[/if]
+[if (not genPackage.isLoadedInitialization() or genPackage.packageBuildInterDependencies()->notEmpty())]
+    // Create package meta-data objects
+[if (not genPackage.isLoadedInitialization())]
+    the[basic/].createPackageContents();
+[/if]
+[for (interdep : GenPackage | genPackage.packageBuildInterDependencies())]
+    [genPackage.packageInstanceVariable(interdep)/].createPackageContents();
+[/for]
+
+    // Initialize created meta-data
+[if (not genPackage.isLoadedInitialization())]
+    the[basic/].initializePackageContents();
+[/if]
+[for (interdep : GenPackage | genPackage.packageBuildInterDependencies())]
+    [genPackage.packageInstanceVariable(interdep)/].initializePackageContents();
+[/for]
+
+[/if]
+[if (genPackage.isLoadedInitialization() or genPackage.packageLoadInterDependencies()->notEmpty())]
+    // Fix loaded packages
+[if (genPackage.isLoadedInitialization())]
+    the[basic/].fixPackageContents();
+[/if]
+[for (interdep : GenPackage | genPackage.packageLoadInterDependencies())]
+    [genPackage.packageInstanceVariable(interdep)/].fixPackageContents();
+[/for]
+
+[/if]
+[if (genPackage.hasConstraints())]
+    // Register package validator
+    [importedName('org.eclipse.emf.ecore.EValidator')/].Registry.INSTANCE.put
+      (the[basic/],
+       new [importedName('org.eclipse.emf.ecore.EValidator')/].Descriptor()
+       {
+[if (genModel.useInterfaceOverrideAnnotation())]
+         @Override
+[/if]
+         public [importedName('org.eclipse.emf.ecore.EValidator')/] getEValidator()
+         {
+           return [importedName(genPackage.qualifiedValidatorClassName())/].INSTANCE;
+         }
+       });
+
+[/if]
+[if (genPackage.familyTreeDependencies()->notEmpty())]
+    // Freeze and register the family tree packages.
+[for (member : GenPackage | genPackage.familyTreeDependencies()->excluding(genPackage.familyHeadGenPackage()))]
+    [genPackage.packageInstanceVariable(member)/].freeze();
+    [epackage/].Registry.INSTANCE.put([importedName(member.qualifiedPackageInterfaceName())/].eNS_URI, [genPackage.packageInstanceVariable(member)/]);
+[/for]
+
+[/if]
+[if (not genPackage.isEcorePackage())]
+    // Mark meta-data to indicate it can't be changed
+    the[basic/].freeze();
+
+[/if]
+    // Update the registry and return the package
+    [epackage/].Registry.INSTANCE.put([interfaceName/].eNS_URI, the[basic/]);
+    return the[basic/];
+[/if]
+  }
+
+[/let]
+[/let]
+[/let]
+[/let]
+[/let]
+[/template]
+
+[**
+ * The accessors of the runtime objects of all classifiers, features and operations, and of the factory.
+ **/]
+[template public packageAccessors(genPackage : GenPackage, isInterface : Boolean, isImplementation : Boolean)]
+[let genModel : GenModel = genPackage.genModel()]
+[let overriding : Boolean = genModel.useInterfaceOverrideAnnotation() and not (isInterface and isImplementation)]
+[let loaded : Boolean = genPackage.isLoadedInitialization()]
+[for (genClassifier : OclAny | genPackage.allClassifiers())]
+[if (isInterface)]
+  /**
+[if (genClassifier.oclIsKindOf(GenClass))]
+   * Returns the meta object for class '{@link [genClassifier.metaQualifiedInterfaceName()/] <em>[genClassifier.formattedClassifierName()/]</em>}'.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @return the meta object for class '<em>[genClassifier.formattedClassifierName()/]</em>'.
+   * @see [genClassifier.metaQualifiedInterfaceName()/]
+[if (not genModel.isOn('suppressEMFModelTags') and (genClassifier.hasExternalInterface() or genClassifier.isOn('dynamic')))]
+[genClassifier.modelTag(' * ', if genClassifier.hasExternalInterface() then genClassifier.classModelInfo() else Sequence{} endif)/]
+[/if]
+[elseif (genClassifier.oclIsKindOf(GenEnum))]
+   * Returns the meta object for enum '{@link [genClassifier.qualifiedEnumName()/] <em>[genClassifier.formattedClassifierName()/]</em>}'.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @return the meta object for enum '<em>[genClassifier.formattedClassifierName()/]</em>'.
+   * @see [genClassifier.qualifiedEnumName()/]
+[else]
+[if (genClassifier.isPrimitiveOrArray())]
+   * Returns the meta object for data type '<em>[genClassifier.formattedClassifierName()/]</em>'.
+[else]
+   * Returns the meta object for data type '{@link [genClassifier.dataTypeInstanceClass()/] <em>[genClassifier.formattedClassifierName()/]</em>}'.
+[/if]
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[if (genClassifier.hasDocumentation())]
+   * <!-- begin-model-doc -->
+   * [genClassifier.documentation().indentLines('* ')/]
+   * <!-- end-model-doc -->
+[/if]
+   * @return the meta object for data type '<em>[genClassifier.formattedClassifierName()/]</em>'.
+[if (not genClassifier.isPrimitiveOrArray())]
+   * @see [genClassifier.dataTypeInstanceClass()/]
+[/if]
+[genClassifier.modelTag(' * ', genClassifier.dataTypeModelInfo())/]
+[/if]
+[if ((genClassifier.oclIsKindOf(GenClass) or genClassifier.oclIsKindOf(GenEnum)) and genClassifier.hasOwnAPITags())]
+   * [genClassifier.ownAPITagLines()->apiTagText('* ')/]
+[/if]
+   * @generated
+   */
+[else]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[if (genClassifier.hasOwnAPITags())]
+   * [genClassifier.ownAPITagLines()->apiTagText('* ')/]
+[/if]
+   * @generated
+   */
+[/if]
+[if (genModel.useGenerics() and genClassifier.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+[if (isImplementation)]
+[if (overriding)]
+  @Override
+[/if]
+  public [importedName(genClassifier.metaTypeName())/] get[genClassifier.classifierAccessorName()/]()
+  {
+[if (loaded)]
+    if ([genClassifier.classifierInstanceName()/] == null)
+    {
+      [genClassifier.classifierInstanceName()/] = ([importedName(genClassifier.metaTypeName())/])[importedName(ePackageClass())/].Registry.INSTANCE.getEPackage([importedName(genPackage.qualifiedPackageInterfaceName())/].eNS_URI).getEClassifiers().get([genClassifier.localClassifierIndex()/]);
+    }
+[/if]
+    return [genClassifier.classifierInstanceName()/];
+  }
+
+[else]
+  [importedName(genClassifier.metaTypeName())/] get[genClassifier.classifierAccessorName()/]();
+
+[/if]
+[if (genClassifier.oclIsKindOf(GenClass))]
+[for (genFeature : GenFeature | genClassifier.genFeatures)]
+[if (isInterface)]
+  /**
+   * Returns the meta object for the [genFeature.metaFeatureKind()/] '{@link [genClassifier.metaQualifiedInterfaceName()/]#[genFeature.getAccessor(genFeature.isBooleanFeature())/] <em>[genFeature.formattedFeatureName()/]</em>}'.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @return the meta object for the [genFeature.metaFeatureKind()/] '<em>[genFeature.formattedFeatureName()/]</em>'.
+   * @see [genClassifier.metaQualifiedInterfaceName()/]#[genFeature.getAccessor(genFeature.isBooleanFeature())/]()
+   * @see #get[genClassifier.classifierAccessorName()/]()
+[if (genFeature.hasInheritedAPITags())]
+   * [genFeature.implicitAPITagLines()->apiTagText('* ')/]
+[/if]
+   * @generated
+   */
+[else]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[if (genFeature.hasInheritedAPITags())]
+   * [genFeature.implicitAPITagLines()->apiTagText('* ')/]
+[/if]
+   * @generated
+   */
+[/if]
+[if (genModel.useGenerics() and genFeature.hasImplicitAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+[if (isImplementation)]
+[if (overriding)]
+  @Override
+[/if]
+  public [importedName(genFeature.featureMetaTypeName())/] get[genFeature.featureAccessorName()/]()
+  {
+[if (not loaded)]
+    return ([importedName(genFeature.featureMetaTypeName())/])[genClassifier.classifierInstanceName()/].getEStructuralFeatures().get([genFeature.localFeatureIndex()/]);
+[else]
+    return ([importedName(genFeature.featureMetaTypeName())/])get[genClassifier.classifierAccessorName()/]().getEStructuralFeatures().get([genFeature.localFeatureIndex()/]);
+[/if]
+  }
+[else]
+  [importedName(genFeature.featureMetaTypeName())/] get[genFeature.featureAccessorName()/]();
+[/if]
+
+[/for]
+[if (genModel.isOn('operationReflection'))]
+[for (genOperation : GenOperation | genClassifier.genOperations)]
+[if (isInterface)]
+  /**
+   * Returns the meta object for the '{@link [genClassifier.metaQualifiedInterfaceName()/]#[genOperation.name()/]([genOperation.parameterTypes()/]) <em>[genOperation.formattedOperationName()/]</em>}' operation.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @return the meta object for the '<em>[genOperation.formattedOperationName()/]</em>' operation.
+   * @see [genClassifier.metaQualifiedInterfaceName()/]#[genOperation.name()/]([genOperation.parameterTypes()/])
+[if (genOperation.hasInheritedAPITags())]
+   * [genOperation.implicitAPITagLines()->apiTagText('* ')/]
+[/if]
+   * @generated
+   */
+[else]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[if (genOperation.hasInheritedAPITags())]
+   * [genOperation.implicitAPITagLines()->apiTagText('* ')/]
+[/if]
+   * @generated
+   */
+[/if]
+[if (genModel.useGenerics() and genOperation.hasImplicitAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+[if (isImplementation)]
+[if (overriding)]
+  @Override
+[/if]
+  public [importedName('org.eclipse.emf.ecore.EOperation')/] get[genOperation.operationAccessorName()/]()
+  {
+[if (not loaded)]
+    return [genClassifier.classifierInstanceName()/].getEOperations().get([genOperation.localOperationIndex()/]);
+[else]
+    return get[genClassifier.classifierAccessorName()/]().getEOperations().get([genOperation.localOperationIndex()/]);
+[/if]
+  }
+[else]
+  [importedName('org.eclipse.emf.ecore.EOperation')/] get[genOperation.operationAccessorName()/]();
+[/if]
+
+[/for]
+[/if]
+[/if]
+[/for]
+[if (isInterface)]
+  /**
+   * Returns the factory that creates the instances of the model.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @return the factory that creates the instances of the model.
+   * @generated
+   */
+[else]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[/if]
+[if (isImplementation)]
+[if (overriding)]
+  @Override
+[/if]
+  public [importedName(genPackage.factoryInterfaceQualifiedName())/] get[genPackage.factoryName()/]()
+  {
+    return ([importedName(genPackage.factoryInterfaceQualifiedName())/])getEFactoryInstance();
+  }
+[else]
+  [genPackage.factoryInterfaceName()/] get[genPackage.factoryName()/]();
+[/if]
+
+[/let]
+[/let]
+[/let]
+[/template]
+
+[**
+ * The creation and initialisation of the runtime objects, the annotations, and the support for loaded packages.
+ **/]
+[template public packageContents(genPackage : GenPackage, isInterface : Boolean)]
+[let genModel : GenModel = genPackage.genModel()]
+[if (not genPackage.isLoadedInitialization())]
+[genPackage.createPackageContents()/]
+[genPackage.initializePackageContents()/]
+[for (source : OclAny | genPackage.annotationSources())]
+[genPackage.annotationMethod(source)/]
+[/for]
+[else]
+[genPackage.loadedPackageContents()/]
+[/if]
+[/let]
+[/template]
+
+[**
+ * Whether any member of the package has an own deprecation tag, which needs a suppression of deprecation warnings.
+ **/]
+[query public membersDeprecated(genPackage : GenPackage) : Boolean = genPackage.genClasses->exists(c | c.genFeatures->exists(f | f.hasAPIDeprecatedTag()) or c.genOperations->exists(o | o.hasAPIDeprecatedTag()))/]
+
+[**
+ * Whether any literal of the package has its own deprecation tag.
+ **/]
+[query public literalsDeprecated(genPackage : GenPackage) : Boolean = genPackage.genEnums->exists(e | e.genEnumLiterals->exists(l | l.hasAPIDeprecatedTag()))/]
+
+[**
+ * The method that creates the runtime objects of the package.
+ **/]
+[template public createPackageContents(genPackage : GenPackage)]
+[let genModel : GenModel = genPackage.genModel()]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  private boolean isCreated = false;
+
+  /**
+   * Creates the meta-model objects for the package.  This method is
+   * guarded to have no affect on any invocation but its first.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useGenerics() and not genModel.isOn('suppressEMFMetaData') and genPackage.membersDeprecated() and not (genModel.useGenerics() and anyDeprecated(genPackage.orderedClassifiers()) and not genPackage.hasAPIDeprecatedTag()))]
+  @SuppressWarnings("deprecation")
+[/if]
+  public void createPackageContents()
+  {
+    if (isCreated) return;
+    isCreated = true;
+[if (genPackage.genClasses->notEmpty())]
+
+    // Create classes and their features
+[for (genClass : GenClass | genPackage.genClasses)]
+    [genClass.classifierInstanceName()/] = create[genClass.metaType()/]([genClass.classifierID()/]);
+[for (genFeature : GenFeature | genClass.genFeatures)]
+    create[genFeature.featureMetaType()/]([genClass.classifierInstanceName()/], [genClass.featureIDName(genFeature)/]);
+[/for]
+[if (genModel.isOn('operationReflection'))]
+[for (genOperation : GenOperation | genClass.genOperations)]
+    createEOperation([genClass.classifierInstanceName()/], [genClass.operationIDName(genOperation)/]);
+[/for]
+[/if]
+[if (i < genPackage.genClasses->size())]
+
+[/if]
+[/for]
+[/if]
+[if (genPackage.genEnums->notEmpty())]
+
+    // Create enums
+[for (genEnum : GenEnum | genPackage.genEnums)]
+    [genEnum.classifierInstanceName()/] = createEEnum([genEnum.classifierID()/]);
+[/for]
+[/if]
+[if (genPackage.genDataTypes->notEmpty())]
+
+    // Create data types
+[for (genDataType : GenDataType | genPackage.genDataTypes)]
+    [genDataType.classifierInstanceName()/] = createEDataType([genDataType.classifierID()/]);
+[/for]
+[/if]
+  }
+
+[/let]
+[/template]
+
+[**
+ * The text that marks the strings of a Java line for tools that externalise strings.
+ **/]
+[query public stringMarkers(genModel : GenModel, text : String, start : Integer) : String = genModel.markersFor(text.size() - text.substituteAll('"', '').size(), start)/]
+
+[query markersFor(genModel : GenModel, quotes : Integer, start : Integer) : String = if quotes <= 0 then '' else nonNLS(genModel, start) + genModel.markersFor(quotes - 2, start + 1) endif/]
+
+[**
+ * The expression that reads the runtime object of a classifier from the package of the generator package that refers to it.
+ **/]
+[query public classifierExpression(genPackage : GenPackage, classifier : OclAny) : String = genPackage.packageInstanceVariable(classifier.classifierGenPackage()) + '.get' + classifier.nativeAccessorName() + '()'/]
+
+[query nativeAccessorName(classifier : OclAny) : String = if classifier.name = 'Class' or classifier.name = 'Name' then classifier.name + '_' else classifier.name endif/]
+
+[**
+ * The text of a default value argument: its literal or null.
+ **/]
+[query public defaultValueArgument(genFeature : GenFeature) : String = if genFeature.ecoreFeature.defaultValueLiteral.oclIsUndefined() then 'null' else javaStringLiteral(genFeature.ecoreFeature.defaultValueLiteral) endif/]
+
+[**
+ * The method that initialises the runtime objects of the package.
+ **/]
+[template public initializePackageContents(genPackage : GenPackage)]
+[let genModel : GenModel = genPackage.genModel()]
+[let reflection : Boolean = genModel.isOn('operationReflection')]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  private boolean isInitialized = false;
+
+  /**
+   * Complete the initialization of the package and its meta-model.  This
+   * method is guarded to have no affect on any invocation but its first.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useGenerics() and genPackage.literalsDeprecated() and not (anyDeprecated(genPackage.orderedClassifiers()) and not genPackage.hasAPIDeprecatedTag() and not genModel.isOn('suppressEMFMetaData')))]
+  @SuppressWarnings("deprecation")
+[/if]
+  public void initializePackageContents()
+  {
+    if (isInitialized) return;
+    isInitialized = true;
+
+    // Initialize package
+    setName(eNAME);
+    setNsPrefix(eNS_PREFIX);
+    setNsURI(eNS_URI);
+[if (genPackage.packageInitializationDependencies()->notEmpty())]
+
+    // Obtain other dependent packages
+[for (dep : GenPackage | genPackage.packageInitializationDependencies())]
+    [importedName(dep.qualifiedPackageInterfaceName())/] [genPackage.packageInstanceVariable(dep)/] = ([importedName(dep.qualifiedPackageInterfaceName())/])[importedName(ePackageClass())/].Registry.INSTANCE.getEPackage([importedName(dep.qualifiedPackageInterfaceName())/].eNS_URI);
+[/for]
+[/if]
+[if (genPackage.subGenPackages()->notEmpty())]
+
+    // Add subpackages
+[for (sub : GenPackage | genPackage.subGenPackages())]
+    getESubpackages().add([genPackage.packageInstanceVariable(sub)/]);
+[/for]
+[/if]
+[if (genPackage.genClasses->notEmpty())]
+[if (genModel.useGenerics())]
+
+    // Create type parameters
+
+    // Set bounds for type parameters
+[/if]
+
+    // Add supertypes to classes
+[for (genClass : GenClass | genPackage.genClasses)]
+[for (superType : OclAny | genClass.ecoreClass.eSuperTypes)]
+    [genClass.classifierInstanceName()/].getESuperTypes().add([genPackage.classifierExpression(superType)/]);
+[/for]
+[/for]
+
+    // Initialize classes[if (reflection)], features, and operations; add parameters[else] and features; add operations and parameters[/if]
+[for (genClass : GenClass | genPackage.genClasses)]
+    initEClass([genClass.classifierInstanceName()/], [if (genClass.isOn('dynamic'))]null[else][importedName(genClass.metaQualifiedInterfaceName())/].class[/if], "[genClass.name()/]", [genClass.abstractFlag()/], [genClass.interfaceFlag()/], [genClass.generatedInstanceClassFlag()/]);[nonNLS(genModel, 1)/]
+[for (genFeature : GenFeature | genClass.genFeatures)]
+[if (genFeature.isReferenceType())]
+    initEReference(get[genFeature.featureAccessorName()/](), [genPackage.classifierExpression(genFeature.ecoreFeature.eType)/], [if (genFeature.reverseGenFeature().oclIsUndefined())]null[else][genPackage.packageInstanceVariable(genFeature.reverseGenFeature().genPackage())/].get[genFeature.reverseGenFeature().featureAccessorName()/]()[/if], "[genFeature.name()/]", [genFeature.defaultValueArgument()/], [genFeature.ecoreFeature.lowerBound/], [genFeature.ecoreFeature.upperBound/], [importedName(genClass.metaQualifiedInterfaceName())/].class, [genFeature.transientFlag()/], [genFeature.volatileFlag()/], [genFeature.changeableFlag()/], [genFeature.containmentFlag()/], [genFeature.resolveProxiesFlag()/], [genFeature.unsettableFlag()/], [genFeature.ecoreFeature.uniqueFlag()/], [genFeature.derivedFlag()/], [genFeature.ecoreFeature.orderedFlag()/]);[nonNLS(genModel, 1)/][genModel.stringMarkers(genFeature.defaultValueArgument(), 2)/]
+[else]
+    initEAttribute(get[genFeature.featureAccessorName()/](), [genPackage.classifierExpression(genFeature.ecoreFeature.eType)/], "[genFeature.name()/]", [genFeature.defaultValueArgument()/], [genFeature.ecoreFeature.lowerBound/], [genFeature.ecoreFeature.upperBound/], [importedName(genClass.metaQualifiedInterfaceName())/].class, [genFeature.transientFlag()/], [genFeature.volatileFlag()/], [genFeature.changeableFlag()/], [genFeature.unsettableFlag()/], [genFeature.idFlag()/], [genFeature.ecoreFeature.uniqueFlag()/], [genFeature.derivedFlag()/], [genFeature.ecoreFeature.orderedFlag()/]);[nonNLS(genModel, 1)/][genModel.stringMarkers(genFeature.defaultValueArgument(), 2)/]
+[/if]
+[/for]
+[for (genOperation : GenOperation | genClass.genOperations)]
+[let operation : OclAny = genOperation.nativeOperation()]
+
+    [if (operation.eParameters->notEmpty() or operation.eExceptions->notEmpty())][if (genClass.operationDeclaresVariable(genOperation))]EOperation [/if]op = [/if][if (reflection)]initEOperation(get[genOperation.operationAccessorName()/]()[else]addEOperation([genClass.classifierInstanceName()/][/if], [if (operation.eType.oclIsUndefined())]null[else][genPackage.classifierExpression(operation.eType)/][/if], "[genOperation.name()/]", [operation.lowerBound/], [operation.upperBound/], [operation.uniqueFlag()/], [operation.orderedFlag()/]);[nonNLS(genModel, 1)/]
+[for (parameter : OclAny | operation.eParameters)]
+    addEParameter(op, [genPackage.classifierExpression(parameter.eType)/], "[parameter.name/]", [parameter.lowerBound/], [parameter.upperBound/], [parameter.uniqueFlag()/], [parameter.orderedFlag()/]);[nonNLS(genModel, 1)/]
+[/for]
+[for (exception : OclAny | operation.eExceptions)]
+    addEException(op, [genPackage.classifierExpression(exception)/]);
+[/for]
+[/let]
+[/for]
+[if (i < genPackage.genClasses->size())]
+
+[/if]
+[/for]
+[/if]
+[if (genPackage.genEnums->notEmpty())]
+
+    // Initialize enums and add enum literals
+[for (genEnum : GenEnum | genPackage.genEnums)]
+    initEEnum([genEnum.classifierInstanceName()/], [importedName(genEnum.qualifiedEnumName())/].class, "[genEnum.name()/]");[nonNLS(genModel, 1)/]
+[for (literal : GenEnumLiteral | genEnum.genEnumLiterals)]
+    addEEnumLiteral([genEnum.classifierInstanceName()/], [if (importedName(genEnum.qualifiedEnumName()) = genEnum.classifierID())][genEnum.qualifiedEnumName()/][else][importedName(genEnum.qualifiedEnumName())/][/if].[literal.enumLiteralInstanceConstantName()/]);
+[/for]
+[if (i < genPackage.genEnums->size())]
+
+[/if]
+[/for]
+[/if]
+[if (genPackage.genDataTypes->notEmpty())]
+
+    // Initialize data types
+[for (genDataType : GenDataType | genPackage.genDataTypes)]
+    initEDataType([genDataType.classifierInstanceName()/], [importedName(genDataType.dataTypeInstanceClass())/].class, "[genDataType.name()/]", [genDataType.serializableFlag()/], [genDataType.dataTypeGeneratedInstanceClassFlag()/]);[nonNLS(genModel, 1)/]
+[/for]
+[/if]
+[if (genPackage.superGenPackage().oclIsUndefined())]
+
+    // Create resource
+    createResource([genPackage.schemaLocation()/]);
+[/if]
+[if (not genPackage.isEcorePackage() and genPackage.annotationSources()->notEmpty())]
+
+    // Create annotations
+[for (source : OclAny | genPackage.annotationSources())]
+    // [source/]
+    create[source.annotationSourceIdentifier()/]Annotations();
+[/for]
+[/if]
+  }
+
+[/let]
+[/let]
+[/template]
+
+[**
+ * Whether the operation is the first of its class in the initialisation code to need the shared operation variable.
+ **/]
+[query public operationDeclaresVariable(genClass : GenClass, genOperation : GenOperation) : Boolean = genClass.genPackage().genClasses->collect(c | c.operationsNeedingVariable())->flatten()->first() = genOperation/]
+
+[query operationsNeedingVariable(genClass : GenClass) : OclAny = genClass.genOperations->select(o | o.nativeOperation().eParameters->notEmpty() or o.nativeOperation().eExceptions->notEmpty())/]
+
+[**
+ * The argument that names the location of the schema of the package for its resource.
+ **/]
+[query public schemaLocation(genPackage : GenPackage) : String = if genPackage.ecorePackage.annotationDetail(ecoreNamespace(), 'schemaLocation').oclIsUndefined() then 'eNS_URI' else javaStringLiteral(genPackage.ecorePackage.annotationDetail(ecoreNamespace(), 'schemaLocation')) endif/]
+
+[**
+ * The file name of the serialised form of a package that loads its metadata.
+ **/]
+[query public serializedPackageFilename(genPackage : GenPackage) : String = genPackage.name() + '.' + (if isBlank(genPackage.setting('loadInitializationFileExtension')) then 'ecore' else genPackage.setting('loadInitializationFileExtension') endif)/]
+
+[**
+ * The expression for the instance of the factory, as the package passes it to its base class.
+ **/]
+[template public factoryInstanceAccessor(genPackage : GenPackage)][let access : String = importedName(genPackage.factoryInterfaceQualifiedName()) + '.' + (if genPackage.genModel().isOn('suppressEMFMetaData') then 'INSTANCE' else 'eINSTANCE' endif)][if (genPackage.genModel().isOn('suppressEMFMetaData') and not genPackage.genModel().isOn('suppressInterfaces'))](([importedName('org.eclipse.emf.ecore.EFactory')/])[access/])[else][access/][/if][/let][/template]
+
+[**
+ * The method that creates the annotations of one source.
+ **/]
+[template public annotationMethod(genPackage : GenPackage, source : OclAny)]
+[let genModel : GenModel = genPackage.genModel()]
+  /**
+   * Initializes the annotations for <b>[source/]</b>.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  protected void create[source.annotationSourceIdentifier()/]Annotations()
+  {
+    String source = "[source/]";[nonNLS(genModel, 1)/]
+[genPackage.annotationCalls(source, 'this', genPackage.ecorePackage)/]
+[for (eClassifier : OclAny | genPackage.ecorePackage.eClassifiers)]
+[let owner : OclAny = eClassifier.genClassifier()]
+[genPackage.annotationCalls(source, owner.classifierInstanceName(), eClassifier)/]
+[if (eClassifier.oclIsKindOf(EClass))]
+[for (eOperation : OclAny | eClassifier.eOperations)]
+[genPackage.annotationCalls(source, if genModel.isOn('operationReflection') then 'get' + owner.name() + '__' + owner.operationUniqueName(owner.genOperations->at(eClassifier.eOperations->indexOf(eOperation))) + '()' else owner.classifierInstanceName() + '.getEOperations().get(' + (eClassifier.eOperations->indexOf(eOperation) - 1).toString() + ')' endif, eOperation)/]
+[for (eParameter : OclAny | eOperation.eParameters)]
+[genPackage.annotationCalls(source, '(' + (if genModel.isOn('operationReflection') then 'get' + owner.name() + '__' + owner.operationUniqueName(owner.genOperations->at(eClassifier.eOperations->indexOf(eOperation))) + '()' else owner.classifierInstanceName() + '.getEOperations().get(' + (eClassifier.eOperations->indexOf(eOperation) - 1).toString() + ')' endif) + ').getEParameters().get(' + (eOperation.eParameters->indexOf(eParameter) - 1).toString() + ')', eParameter)/]
+[/for]
+[/for]
+[for (eFeature : OclAny | eClassifier.eStructuralFeatures)]
+[genPackage.annotationCalls(source, 'get' + eClassifier.name + '_' + eFeature.name.capName() + '()', eFeature)/]
+[/for]
+[elseif (eClassifier.oclIsKindOf(EEnum))]
+[for (eLiteral : OclAny | eClassifier.eLiterals)]
+[genPackage.annotationCalls(source, owner.classifierInstanceName() + '.getELiterals().get(' + (eClassifier.eLiterals->indexOf(eLiteral) - 1).toString() + ')', eLiteral)/]
+[/for]
+[/if]
+[/let]
+[/for]
+  }
+
+[/let]
+[/template]
+
+[**
+ * The addAnnotation statements for the annotations of one source on one model element.
+ **/]
+[template public annotationCalls(genPackage : GenPackage, source : OclAny, accessor : String, element : OclAny)]
+[let genModel : GenModel = genPackage.genModel()]
+[for (annotation : OclAny | element.eAnnotations->select(a | a.source = source))]
+    addAnnotation
+      ([accessor/],
+       source,
+       new String['['/][']'/]
+       {
+[for (key : OclAny | annotation.detailKeys())]
+         [javaStringLiteral(key)/], [javaStringLiteral(annotation.detailValue(key))/][if (i < annotation.detailKeys()->size())],[/if][genModel.stringMarkers(javaStringLiteral(key) + javaStringLiteral(annotation.detailValue(key)), 1)/]
+[/for]
+       });
+[/for]
+[/let]
+[/template]
+
+[**
+ * The support for a package whose metadata is loaded from a serialised form.
+ **/]
+[template public loadedPackageContents(genPackage : GenPackage)]
+[let genModel : GenModel = genPackage.genModel()]
+[if (genPackage.isLoadingInitialization())]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  private boolean isLoaded = false;
+
+  /**
+   * Loads the package and any sub-packages from their serialized form.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public void loadPackage()
+  {
+    if (isLoaded) return;
+    isLoaded = true;
+
+    [importedName('java.net.URL')/] url = getClass().getResource(packageFilename);
+    if (url == null)
+    {
+      throw new RuntimeException("Missing serialized package: " + packageFilename);[nonNLS(genModel, 1)/]
+    }
+    [importedName('org.eclipse.emf.common.util.URI')/] uri = [importedName('org.eclipse.emf.common.util.URI')/].createURI(url.toString());
+    [importedName('org.eclipse.emf.ecore.resource.Resource')/] resource = new [importedName('org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl')/]().createResource(uri);
+    try
+    {
+      resource.load([if (genPackage.setting('loadInitializationFileExtension') = 'ebin')][importedName('java.util.Collections')/].singletonMap([importedName('org.eclipse.emf.ecore.xmi.XMLResource')/].OPTION_BINARY, Boolean.TRUE)[else]null[/if]);
+    }
+    catch ([importedName('java.io.IOException')/] exception)
+    {
+      throw new [importedName('org.eclipse.emf.common.util.WrappedException')/](exception);
+    }
+    initializeFromLoadedEPackage(this, ([importedName(ePackageClass())/])resource.getContents().get(0));
+    createResource(eNS_URI);
+  }
+
+[/if]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  private boolean isFixed = false;
+
+  /**
+   * Fixes up the loaded package, to make it appear as if it had been programmatically built.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public void fixPackageContents()
+  {
+    if (isFixed) return;
+    isFixed = true;
+    fixEClassifiers();
+  }
+
+  /**
+   * Sets the instance class on the given classifier.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  protected void fixInstanceClass([importedName('org.eclipse.emf.ecore.EClassifier')/] eClassifier)
+  {
+    if (eClassifier.getInstanceClassName() == null)
+    {
+[if (genPackage.genClasses->select(c | c.isOn('dynamic'))->isEmpty())]
+      eClassifier.setInstanceClassName("[genPackage.interfacePackageName()/]." + eClassifier.getName());[nonNLS(genModel, 1)/]
+      setGeneratedClassName(eClassifier);
+[else]
+      switch (eClassifier.getClassifierID())
+      {
+[for (genClass : GenClass | genPackage.genClasses->select(c | c.isOn('dynamic')))]
+        case [genClass.classifierID()/]:
+[/for]
+        {
+          break;
+        }
+        default:
+        {
+          eClassifier.setInstanceClassName("[genPackage.interfacePackageName()/]." + eClassifier.getName());[nonNLS(genModel, 1)/]
+          setGeneratedClassName(eClassifier);
+          break;
+        }
+      }
+[/if]
+    }
+  }
+
+[/let]
+[/template]
+
+[**
+ * Whether any classifier of a package has constraints in its annotations.
+ **/]
+[query public hasConstraints(genPackage : GenPackage) : Boolean = genPackage.ecorePackage.eClassifiers->exists(c | c.eAnnotations->exists(a | a.source = ecoreNamespace() and a.detailKeys()->includes('constraints')))/]
+
+[**
+ * The qualified name of the validator class of a package.
+ **/]
+[query public qualifiedValidatorClassName(genPackage : GenPackage) : String = genPackage.utilitiesPackageName() + '.' + genPackage.prefixedName('Validator')/]

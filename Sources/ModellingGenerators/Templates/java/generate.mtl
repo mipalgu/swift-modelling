@@ -12,6 +12,8 @@
 [import JavaImports/]
 [import JavaTypes/]
 [import EnumClass/]
+[import PackageClass/]
+[import PackageNames/]
 
 [**
  * Writes the model code of every package of a generator model, nested packages included.
@@ -26,7 +28,8 @@
  * Writes the files of one generator package, in the order the Eclipse generator uses.
  **/]
 [template public generatePackage(genPackage : GenPackage)]
-[comment TODO: package interface, package implementation, factory interface and implementation. /]
+[genPackage.generatePackageClasses()/]
+[comment TODO: factory interface and implementation. /]
 [comment TODO: XML processor (resource kind XML), validator (constraints). /]
 [comment TODO: interface and implementation of every class. /]
 [for (genEnum : GenEnum | genPackage.genEnums)]
@@ -49,4 +52,16 @@
 [file ('count')]
 [genModel.allGenPackages()->collect(p | p.genEnums->size())->sum()/]
 [/file]
+[/template]
+
+[**
+ * Writes the package interface and the package implementation of a generator package that has classifiers.
+ **/]
+[template public generatePackageClasses(genPackage : GenPackage)]
+[if (genPackage.hasClassifiers())]
+[if (not genPackage.genModel().isOn('suppressEMFMetaData') and not genPackage.genModel().isOn('suppressInterfaces'))]
+[file (genPackage.reflectionPackageName().packagePath() + '/' + genPackage.packageInterfaceName() + '.java', false, 'UTF-8')][genPackage.packageInterface()/][/file]
+[/if]
+[file ((if genPackage.genModel().isOn('suppressInterfaces') then genPackage.reflectionPackageName() else genPackage.classPackageName() endif).packagePath() + '/' + genPackage.packageClassName() + '.java', false, 'UTF-8')][genPackage.packageImplementation()/][/file]
+[/if]
 [/template]

@@ -220,7 +220,7 @@
 [**
  * Whether the class is abstract, which an interface always is.
  **/]
-[query public isAbstractMeta(genClass : GenClass) : Boolean = genClass.ecoreClass.isAbstract or genClass.ecoreClass.isInterface/]
+[query public isAbstractMeta(genClass : GenClass) : Boolean = genClass.ecoreClass.abstract or genClass.ecoreClass.interface/]
 
 [**
  * The flag expression for a Boolean: the name of the flag constant, negated if the value is false.
@@ -235,7 +235,7 @@
 [**
  * The flag that tells whether the class is an interface.
  **/]
-[query public interfaceFlag(genClass : GenClass) : String = metaFlag(genClass.ecoreClass.isInterface, 'IS_INTERFACE')/]
+[query public interfaceFlag(genClass : GenClass) : String = metaFlag(genClass.ecoreClass.interface, 'IS_INTERFACE')/]
 
 [**
  * The flag that tells whether the generator writes the instance class of a class.
@@ -533,3 +533,18 @@
  * The lines of the model tag of a package: its kind and annotations.
  **/]
 [query public packageModelInfo(genPackage : GenPackage) : OclAny = Sequence{'kind="package"'}->union(annotationSettings(genPackage.ecorePackage))/]
+
+[**
+ * The lines of annotation tags of an element without the tag that restricts references.
+ **/]
+[query public ownPublicAPITagLines(element : OclAny) : OclAny = Sequence{ownSinceLine(element), ownDeprecatedLine(element)}->select(l | l.size() > 0)/]
+
+[**
+ * Whether an element has annotation tags of its own other than the reference restriction.
+ **/]
+[query public hasOwnPublicAPITags(element : OclAny) : Boolean = element.ownPublicAPITagLines()->notEmpty()/]
+
+[**
+ * Whether a feature is a single valued attribute of the primitive boolean type, whose getter starts with is.
+ **/]
+[query public isBooleanFeature(genFeature : GenFeature) : Boolean = genFeature.isAttributeType() and not genFeature.isListType() and instanceClassName(genFeature.ecoreFeature.eType) = 'boolean'/]
