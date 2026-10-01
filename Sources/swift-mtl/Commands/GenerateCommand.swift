@@ -220,7 +220,7 @@ struct GenerateCommand: AsyncParsableCommand {
         }
 
         // Execute generation
-        let strategy = MTLFileSystemStrategy(basePath: output)
+        let strategy = MTLFileSystemStrategy(basePath: output, standardOutput: .capture)
         let generator = MTLGenerator(module: mtlModule, generationStrategy: strategy)
 
         // Template arguments are the root objects of each model in command line order
@@ -237,6 +237,7 @@ struct GenerateCommand: AsyncParsableCommand {
         } catch {
             throw ValidationError.generationFailed(error.localizedDescription)
         }
+        try await writeStandardOutput(of: strategy)
 
         // Display results
         if verbose {
@@ -379,5 +380,22 @@ enum ValidationError: Error, CustomStringConvertible {
         case .generationFailed(let message):
             return "Generation failed: \(message)"
         }
+    }
+}
+
+extension GenerateCommand {
+    /// Writes the text a template produced outside any file block.
+    ///
+    /// Text that a template writes outside a `[file]` block is collected by the
+    /// generation strategy and saved in the output directory under the standard
+    /// output file name, so that it remains available after the command finishes.
+    /// Nothing is written when the template produced no such text.
+    ///
+    /// - Parameter strategy: The file system strategy used for generation.
+    /// - Throws: An error if the file cannot be written.
+    func writeStandardOutput(of strategy: MTLFileSystemStrategy) async throws {
+        guard let text = await strategy.standardOutput else { return }
+        let url = URL(fileURLWithPath: output).appendingPathComponent(MTLStandardOutput.fileName)
+        try text.write(to: url, atomically: true, encoding: .utf8)
     }
 }
