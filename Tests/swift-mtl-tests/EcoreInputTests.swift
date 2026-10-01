@@ -49,8 +49,7 @@ struct EcoreInputTests {
     }
 
     @Test(
-        "Template reads the name of an EPackage",
-        .disabled("requires reflective Ecore metamodel objects")
+        "Template reads the name of an EPackage"
     )
     @MainActor
     func ecoreModelPackageName() async throws {
@@ -65,8 +64,7 @@ struct EcoreInputTests {
     }
 
     @Test(
-        "Template navigates class names of an EPackage",
-        .disabled("requires reflective Ecore metamodel objects")
+        "Template navigates class names of an EPackage"
     )
     @MainActor
     func ecoreModelNavigatesClasses() async throws {
