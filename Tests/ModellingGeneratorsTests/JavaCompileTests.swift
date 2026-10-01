@@ -49,14 +49,17 @@ struct JavaCompileTests {
     ///   - files: The files to compile.
     ///   - directory: The directory that receives the class files.
     ///   - classPath: The class path of the runtime.
+    ///   - sourcePath: A directory of sources that the files refer to, compiled on demand.
     /// - Returns: The exit status and the text that the compiler wrote.
-    static func compile(_ files: [URL], into directory: URL, classPath: String) throws -> (Int32, String) {
+    static func compile(
+        _ files: [URL], into directory: URL, classPath: String, sourcePath: String? = nil
+    ) throws -> (Int32, String) {
         guard let compiler else { return (-1, "no Java compiler found") }
         let process = Process()
         process.executableURL = compiler
         process.arguments =
             ["-Xlint:none", "--release", release, "-encoding", "UTF-8", "-cp", classPath, "-d", directory.path]
-            + files.map(\.path)
+            + (sourcePath.map { ["-sourcepath", $0] } ?? []) + files.map(\.path)
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = pipe
@@ -139,6 +142,10 @@ struct JavaCompileTests {
         return package + "." + file.deletingPathExtension().lastPathComponent
     }
 
+    /// Compiles the generated model code of each fixture against stand-ins for the class interfaces.
+    ///
+    /// The utility classes (switches, adapter factories, validators) depend on the class hierarchy and are left
+    /// out until the class templates write the real interfaces.
     @Test(
         "Generated files compile against the EMF runtime",
         .enabled(if: classPath != nil, "EMF_RUNTIME_CLASSPATH is not set; skipping the compile test"),
@@ -155,7 +162,7 @@ struct JavaCompileTests {
 
         let classes = generated.project.root.appendingPathComponent("classes")
         try FileManager.default.createDirectory(at: classes, withIntermediateDirectories: true)
-        let files = generated.generatedPaths().filter { $0.hasSuffix(".java") }.map { generated.file($0) }
+        let files = generated.modelPaths().filter { $0.hasSuffix(".java") }.map { generated.file($0) }
         let standIns = try Self.writeStandIns(
             for: files, in: generated.project.root.appendingPathComponent("stand-ins"))
         let (status, text) = try Self.compile(files + standIns, into: classes, classPath: classPath)
@@ -183,9 +190,86 @@ struct JavaCompileTests {
             genModelURL: genModel, language: "java", outputDirectory: output)
         let classes = output.appendingPathComponent("classes")
         try FileManager.default.createDirectory(at: classes, withIntermediateDirectories: true)
-        let files = result.files.filter { $0.pathExtension == "java" }
+        let files = result.files.filter { $0.pathExtension == "java" && !$0.path.contains("/util/") }
         let standIns = try Self.writeStandIns(for: files, in: output.appendingPathComponent("stand-ins"))
         let (status, text) = try Self.compile(files + standIns, into: classes, classPath: classPath)
+        #expect(status == 0, "javac failed:\n\(text)")
+    }
+
+    @Test(
+        "The utility classes of the extended library example compile against the EMF runtime and the reference model",
+        .enabled(if: classPath != nil, "EMF_RUNTIME_CLASSPATH is not set; skipping the compile test"),
+        .enabled(if: compiler != nil, "No javac found; skipping the compile test"),
+        .enabled(
+            if: EMFParityTests.referenceRoot != nil, "EMF_REFERENCE_ROOT is not set; skipping Eclipse parity")
+    )
+    @MainActor
+    func compilesReferenceLibraryUtilities() async throws {
+        let classPath = try #require(Self.classPath)
+        let root = try #require(EMFParityTests.referenceRoot)
+        let directory = root.appendingPathComponent(EMFJavaParityTests.libraryDirectory)
+        let output = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-modelling-java-compile")
+            .appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: output) }
+        let result = try await GenerationPipeline.generate(
+            genModelURL: directory.appendingPathComponent(EMFJavaParityTests.genModelPath), language: "java",
+            outputDirectory: output)
+        let utilities = result.files.filter { $0.path.contains("/util/") }
+        #expect(utilities.count == 2)
+        let classes = output.appendingPathComponent("classes")
+        try FileManager.default.createDirectory(at: classes, withIntermediateDirectories: true)
+        let (status, text) = try Self.compile(
+            utilities, into: classes, classPath: classPath,
+            sourcePath: directory.appendingPathComponent("src").path)
+        #expect(status == 0, "javac failed:\n\(text)")
+    }
+
+    /// Minimal declarations of the model code that the generated bank utility classes refer to.
+    static let bankStubs: [String: String] = [
+        "org/example/bank/bank/Account.java": "package org.example.bank.bank; public interface Account extends org.eclipse.emf.ecore.EObject { boolean hasOwner(org.eclipse.emf.common.util.DiagnosticChain diagnostics, java.util.Map<Object, Object> context); }",
+        "org/example/bank/bank/SavingsAccount.java": "package org.example.bank.bank; public interface SavingsAccount extends Account { }",
+        "org/example/bank/bank/Branch.java": "package org.example.bank.bank; public interface Branch extends org.eclipse.emf.ecore.EObject { }",
+        "org/example/bank/bank/BankPackage.java": """
+            package org.example.bank.bank;
+            public interface BankPackage extends org.eclipse.emf.ecore.EPackage {
+              BankPackage eINSTANCE = null;
+              int ACCOUNT = 0; int SAVINGS_ACCOUNT = 1; int BRANCH = 2; int PERCENTAGE = 3; int BSB = 4; int CURRENCY = 5; int MONEY = 6;
+              interface Literals {
+                org.eclipse.emf.ecore.EClass ACCOUNT = null;
+                org.eclipse.emf.ecore.EDataType PERCENTAGE = null; org.eclipse.emf.ecore.EDataType BSB = null;
+                org.eclipse.emf.ecore.EDataType CURRENCY = null; org.eclipse.emf.ecore.EDataType MONEY = null;
+              }
+            }
+            """,
+    ]
+
+    @Test(
+        "The generated validator compiles against the EMF runtime",
+        .enabled(if: classPath != nil, "EMF_RUNTIME_CLASSPATH is not set; skipping the compile test"),
+        .enabled(if: compiler != nil, "No javac found; skipping the compile test")
+    )
+    @MainActor
+    func compilesValidator() async throws {
+        let classPath = try #require(Self.classPath)
+        let golden = try #require(JavaUtilityCase.all.first { $0.fixture == "constraints" })
+        let generated = try await GeneratedProject.make(golden.fixture, stem: golden.stem, options: golden.options)
+        defer { generated.remove() }
+        try await generated.generate()
+
+        let stubs = generated.project.root.appendingPathComponent("stubs")
+        var files = golden.files.filter { $0.hasSuffix("Validator.java") }.map { generated.file($0) }
+        #expect(files.count == 1)
+        for (path, text) in Self.bankStubs {
+            let url = stubs.appendingPathComponent(path)
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try text.write(to: url, atomically: true, encoding: .utf8)
+            files.append(url)
+        }
+        let classes = generated.project.root.appendingPathComponent("classes")
+        try FileManager.default.createDirectory(at: classes, withIntermediateDirectories: true)
+        let (status, text) = try Self.compile(files, into: classes, classPath: classPath)
         #expect(status == 0, "javac failed:\n\(text)")
     }
 }

@@ -1,0 +1,198 @@
+[comment encoding = UTF-8 /]
+[**
+ * The Java file of the adapter factory of a generator package.
+ *
+ * The adapter factory extends the adapter factory class of the runtime. It uses an instance of the
+ * package's switch to choose, for an object of the model, the create method of the object's class, and
+ * offers one create method for each class that the switch handles. Each create method returns null,
+ * so that subclasses override the methods of the classes they have adapters for.
+ *
+ * This template writes the form for compliance level 5.0 and higher and for lower levels without generics.
+ **/]
+[module AdapterFactoryClass('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaImports/]
+[import JavaTypes/]
+[import JavaDocumentation/]
+[import JavaUtilities/]
+[import SwitchClass/]
+[import Header/]
+
+[**
+ * The complete text of the file that declares the adapter factory of a generator package.
+ **/]
+[template public adapterFactoryClass(genPackage : GenPackage)]
+[let genModel : GenModel = genPackage.genModel()]
+[let typeArgument : String = if genModel.useGenerics() then '<Adapter>' else '' endif]
+[let returnType : String = if genModel.useGenerics() then 'Adapter' else 'Object' endif]
+[let adapterCast : String = if genModel.useGenerics() then '' else '(Adapter)' endif]
+[collect ('imports', genPackage.qualifiedAdapterFactoryClassName())/]
+[collect ('imports', Sequence{'org.eclipse.emf.common.notify.Adapter', 'org.eclipse.emf.common.notify.Notifier', 'org.eclipse.emf.common.notify.impl.AdapterFactoryImpl', 'org.eclipse.emf.ecore.EObject'})/]
+[if (genPackage.usesInterfaceWildcard())]
+[collect ('imports', genPackage.interfacePackageName() + '.*')/]
+[/if]
+[header(genPackage)/]
+package [genPackage.utilitiesPackageName()/];
+
+
+[emit ('imports') once][importBlock(items)/][/emit]
+
+/**
+ * <!-- begin-user-doc -->
+ * The <b>Adapter Factory</b> for the model.
+ * It provides an adapter <code>createXXX</code> method for each class of the model.
+ * <!-- end-user-doc -->
+ * @see [genPackage.qualifiedPackageInterfaceName()/]
+[if (genPackage.hasOwnAPITags())]
+[genPackage.apiTagLines(' * ')/]
+[/if]
+ * @generated
+ */
+[if (genModel.complianceLevel() >= 5.0 and genPackage.hasAPIDeprecatedTag())]
+@Deprecated
+[elseif (genModel.complianceLevel() >= 5.0 and anyDeprecated(genPackage.allSwitchGenClasses()))]
+@SuppressWarnings("deprecation")
+[/if]
+public class [genPackage.adapterFactoryClassName()/] extends [importedName('org.eclipse.emf.common.notify.impl.AdapterFactoryImpl')/]
+{
+[if (genModel.hasCopyrightField())]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public static final [importedName('java.lang.String')/] copyright = [genModel.copyrightFieldLiteral()/];[nonNLS(genModel, 1)/]
+
+[/if]
+  /**
+   * The cached model package.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  protected static [genPackage.utilityPackageName()/] modelPackage;
+
+  /**
+   * Creates an instance of the adapter factory.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public [genPackage.adapterFactoryClassName()/]()
+  {
+    if (modelPackage == null)
+    {
+      modelPackage = [genPackage.utilityPackageName()/].eINSTANCE;
+    }
+  }
+
+  /**
+   * Returns whether this factory is applicable for the type of the object.
+   * <!-- begin-user-doc -->
+   * This implementation returns <code>true</code> if the object is either the model's package or is an instance object of the model.
+   * <!-- end-user-doc -->
+   * @return whether this factory is applicable for the type of the object.
+   * @generated
+   */
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public boolean isFactoryForType(Object object)
+  {
+    if (object == modelPackage)
+    {
+      return true;
+    }
+    if (object instanceof [importedName('org.eclipse.emf.ecore.EObject')/])
+    {
+      return (([importedName('org.eclipse.emf.ecore.EObject')/])object).eClass().getEPackage() == modelPackage;
+    }
+    return false;
+  }
+
+  /**
+   * The switch that delegates to the <code>createXXX</code> methods.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  protected [genPackage.switchClassName()/][typeArgument/] modelSwitch =
+    new [genPackage.switchClassName()/][typeArgument/]()
+    {
+[for (genClass : GenClass | genPackage.allSwitchGenClasses())]
+[if (genModel.useClassOverrideAnnotation())]
+      @Override
+[/if]
+      public [genClass.typeParameters()/][returnType/] case[genPackage.classUniqueName(genClass)/]([genPackage.utilityTypeName(genClass)/][genClass.interfaceTypeArguments()/] object)
+      {
+        return create[genPackage.classUniqueName(genClass)/]Adapter();
+      }
+[/for]
+[if (genModel.useClassOverrideAnnotation())]
+      @Override
+[/if]
+      public [returnType/] defaultCase([importedName('org.eclipse.emf.ecore.EObject')/] object)
+      {
+        return create[genPackage.classUniqueName(null)/]Adapter();
+      }
+    };
+
+  /**
+   * Creates an adapter for the <code>target</code>.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @param target the object to adapt.
+   * @return the adapter for the <code>target</code>.
+   * @generated
+   */
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public [importedName('org.eclipse.emf.common.notify.Adapter')/] createAdapter([importedName('org.eclipse.emf.common.notify.Notifier')/] target)
+  {
+    return [adapterCast/]modelSwitch.doSwitch(([importedName('org.eclipse.emf.ecore.EObject')/])target);
+  }
+
+[for (genClass : GenClass | genPackage.allSwitchGenClasses())]
+
+  /**
+   * Creates a new adapter for an object of class '{@link [genClass.qualifiedInterfaceName()/] <em>[genClass.formattedClassifierName()/]</em>}'.
+   * <!-- begin-user-doc -->
+   * This default implementation returns null so that we can easily ignore cases;
+   * it's useful to ignore a case when inheritance will catch all the cases anyway.
+   * <!-- end-user-doc -->
+   * @return the new adapter.
+   * @see [genClass.qualifiedInterfaceName()/]
+[if (genClass.hasOwnAPITags())]
+[genClass.apiTagLines('   * ')/]
+[/if]
+   * @generated
+   */
+[if (genModel.complianceLevel() >= 5.0 and genClass.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  public [importedName('org.eclipse.emf.common.notify.Adapter')/] create[genPackage.classUniqueName(genClass)/]Adapter()
+  {
+    return null;
+  }
+[/for]
+
+  /**
+   * Creates a new adapter for the default case.
+   * <!-- begin-user-doc -->
+   * This default implementation returns null.
+   * <!-- end-user-doc -->
+   * @return the new adapter.
+   * @generated
+   */
+  public [importedName('org.eclipse.emf.common.notify.Adapter')/] create[genPackage.classUniqueName(null)/]Adapter()
+  {
+    return null;
+  }
+
+} //[genPackage.adapterFactoryClassName()/]
+[/let]
+[/let]
+[/let]
+[/let]
+[/template]

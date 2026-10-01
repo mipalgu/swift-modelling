@@ -182,4 +182,101 @@ struct EMFJavaParityTests {
                 == Self.withoutImportGaps(Self.withoutHeader(expectedWithoutMarkers)),
             "\(path) differs from the reference beyond header, string markers and import spacing")
     }
+
+    /// The utility classes of the reference library example that are compared, relative to its source directory.
+    static let utilityPaths = [
+        "src/org/eclipse/emf/examples/extlibrary/util/EXTLibrarySwitch.java",
+        "src/org/eclipse/emf/examples/extlibrary/util/EXTLibraryAdapterFactory.java",
+    ]
+
+    /// Removes the differences in layout that the committed reference files have from freshly generated code.
+    ///
+    /// The committed files carry blank lines among their imports that a code formatter left behind, and
+    /// one of them has the opening brace of its class on the line of the declaration. The text is
+    /// returned without its header, without blank lines before the first documentation comment that
+    /// follows the imports, and with the brace of a class on the line of its declaration.
+    ///
+    /// - Parameter text: The text of a Java file.
+    /// - Returns: The text in a layout that does not depend on those differences.
+    static func normalisingLayout(_ text: String) -> String {
+        var lines = withoutHeader(normalisingLineEndings(text)).components(separatedBy: "\n")
+        let lastImport = lines.lastIndex { $0.hasPrefix("import ") } ?? 0
+        let firstComment = lines.indices.first { $0 > lastImport && lines[$0].hasPrefix("/**") } ?? 0
+        lines = lines.enumerated().filter { offset, line in
+            !(line.isEmpty && offset < firstComment)
+        }.map(\.element)
+        var result: [String] = []
+        for line in lines {
+            if line == "{", let previous = result.last, previous.hasPrefix("public class ") {
+                result[result.count - 1] = previous + " {"
+            } else {
+                result.append(line)
+            }
+        }
+        return result.joined(separator: "\n")
+    }
+
+    @Test(
+        "The utility classes of the extended library example match the Eclipse output",
+        .enabled(
+            if: EMFParityTests.referenceRoot != nil, "EMF_REFERENCE_ROOT is not set; skipping Eclipse parity"),
+        arguments: utilityPaths
+    )
+    @MainActor
+    func utilityClassesMatchReference(_ path: String) async throws {
+        let root = try #require(EMFParityTests.referenceRoot)
+        let directory = root.appendingPathComponent(Self.libraryDirectory)
+        let output = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-modelling-java-parity")
+            .appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: output) }
+
+        _ = try await GenerationPipeline.generate(
+            genModelURL: directory.appendingPathComponent(Self.genModelPath), language: "java",
+            outputDirectory: output)
+        let generatedPath = String(path.dropFirst("src/".count))
+        let expected = try String(contentsOf: directory.appendingPathComponent(path), encoding: .utf8)
+        let actual = try String(contentsOf: output.appendingPathComponent(generatedPath), encoding: .utf8)
+        #expect(
+            Self.normalisingLayout(actual) == Self.normalisingLayout(expected),
+            "\(generatedPath) differs from the reference beyond import layout and class brace position")
+    }
+
+    /// The generator model of the reference switch test models, relative to the reference checkout.
+    static let switchGenModelPath = "tests/org.eclipse.emf.test.common/models/Switch/switch.genmodel"
+
+    /// The utility classes of the reference switch test models, relative to the reference checkout.
+    static let switchPaths = (1...3).flatMap { number in
+        ["Switch", "AdapterFactory"].map {
+            "tests/org.eclipse.emf.test.common/src/org/eclipse/emf/test/models/switch\(number)/util/Switch\(number)\($0).java"
+        }
+    }
+
+    @Test(
+        "The switches that refer to each other in the reference test models match the Eclipse output",
+        .enabled(
+            if: EMFParityTests.referenceRoot != nil, "EMF_REFERENCE_ROOT is not set; skipping Eclipse parity")
+    )
+    @MainActor
+    func crossPackageSwitchesMatchReference() async throws {
+        let root = try #require(EMFParityTests.referenceRoot)
+        let output = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-modelling-java-parity")
+            .appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: output) }
+        _ = try await GenerationPipeline.generate(
+            genModelURL: root.appendingPathComponent(Self.switchGenModelPath), language: "java",
+            outputDirectory: output)
+        for path in Self.switchPaths {
+            let generatedPath = String(path.dropFirst("tests/org.eclipse.emf.test.common/src/".count))
+            let expected = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+            let actual = try String(contentsOf: output.appendingPathComponent(generatedPath), encoding: .utf8)
+            // The reference switches of this model were saved without the documentation of isSwitchFor.
+            let comment = #"(?s)  /\*\*\n   \* Checks whether this is a switch.*?\*/\n"#
+            #expect(
+                Self.normalisingLayout(actual).replacingOccurrences(of: comment, with: "", options: .regularExpression)
+                    == Self.normalisingLayout(expected),
+                "\(generatedPath) differs from the reference")
+        }
+    }
 }

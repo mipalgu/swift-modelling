@@ -32,6 +32,7 @@ For every enumeration of every package the set writes the Java enum that impleme
 - `Header.mtl` writes the copyright comment that opens a file.
 - `EnumClass.mtl` writes the file of an enumeration.
 - `PackageClass.mtl` writes the package interface and the package implementation, and `PackageNames.mtl` holds its queries. Generic types and type parameters in the metamodel, the GWT platform and compliance levels below 5.0 are not supported.
+- `SwitchClass.mtl` and `AdapterFactoryClass.mtl` write the switch and the adapter factory of a package that has classes and asks for adapter factories. `ValidatorClass.mtl` writes the validator of a package that has constraints (annotated constraints, invariant operations and data type facets). `JavaUtilities.mtl` holds what the three share. Classes with type parameters, external interfaces, runtimes older than 2.7 and facets that derive from base, item or member types are not covered.
 - `TypeMapping.ecore` and `java-types.xmi` are the data model with the type table, the reserved words and the types that need no import.
 
 ### Existing files

@@ -16,6 +16,10 @@
 [import PackageNames/]
 [import Header/]
 [import FactoryClass/]
+[import JavaUtilities/]
+[import SwitchClass/]
+[import AdapterFactoryClass/]
+[import ValidatorClass/]
 
 [**
  * Writes the model code of every package of a generator model, nested packages included.
@@ -37,18 +41,30 @@
 [/if]
 [genPackage.generateFactoryImplementationFile()/]
 [/if]
-[comment TODO: XML processor (resource kind XML), validator (constraints). /]
+[comment TODO: XML processor (resource kind XML). /]
+[if (genPackage.generatesValidator())]
+[genPackage.generateValidatorFile()/]
+[/if]
 [comment TODO: interface and implementation of every class. /]
 [for (genEnum : GenEnum | genPackage.genEnums)]
 [genEnum.generateEnumFile()/]
 [/for]
-[comment TODO: switch and adapter factory (adapter factory with classes), resource factory and resource implementation (resource kind not None). /]
+[if (genPackage.generatesAdapterFactory())]
+[genPackage.generateSwitchFile()/]
+[genPackage.generateAdapterFactoryFile()/]
+[/if]
+[comment TODO: resource factory and resource implementation (resource kind not None). /]
 [/template]
 
 [**
  * The number of files that this module writes for the factory of a generator package.
  **/]
 [query public factoryFileCount(genPackage : GenPackage) : Integer = if genPackage.hasClassifiers() then (if genPackage.genModel().isOn('suppressInterfaces') then 1 else 2 endif) else 0 endif/]
+
+[**
+ * The number of files that this module writes for the validator, switch and adapter factory of a generator package.
+ **/]
+[query public utilityFileCount(genPackage : GenPackage) : Integer = (if genPackage.generatesAdapterFactory() then 2 else 0 endif) + (if genPackage.generatesValidator() then 1 else 0 endif)/]
 
 [**
  * Writes the file of the factory interface of a package.
@@ -72,11 +88,32 @@
 [/template]
 
 [**
+ * Writes the file of the switch of one generator package.
+ **/]
+[template public generateSwitchFile(genPackage : GenPackage)]
+[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.switchClassName() + '.java', false, 'UTF-8')][genPackage.switchClass()/][/file]
+[/template]
+
+[**
+ * Writes the file of the validator of one generator package.
+ **/]
+[template public generateValidatorFile(genPackage : GenPackage)]
+[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.validatorClassName() + '.java', false, 'UTF-8')][genPackage.validatorClass()/][/file]
+[/template]
+
+[**
+ * Writes the file of the adapter factory of one generator package.
+ **/]
+[template public generateAdapterFactoryFile(genPackage : GenPackage)]
+[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.adapterFactoryClassName() + '.java', false, 'UTF-8')][genPackage.adapterFactoryClass()/][/file]
+[/template]
+
+[**
  * The number of files that this module writes for a generator model, used to report progress.
  **/]
 [template public fileCount(genModel : GenModel)]
 [file ('count')]
-[genModel.allGenPackages()->collect(p | p.genEnums->size() + p.packageFileCount() + p.factoryFileCount())->sum()/]
+[genModel.allGenPackages()->collect(p | p.genEnums->size() + p.packageFileCount() + p.factoryFileCount() + p.utilityFileCount())->sum()/]
 [/file]
 [/template]
 
