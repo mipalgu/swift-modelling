@@ -1,0 +1,558 @@
+[comment encoding = UTF-8 /]
+[**
+ * Queries for the generated package interface and package implementation.
+ *
+ * The queries decide the names of the constants, accessors and fields of a package, which classifiers
+ * and packages the initialisation code refers to, and the values of the flags that describe classes,
+ * features, operations and data types to the reflective runtime. They have no output of their own;
+ * the templates of PackageClass use them.
+ *
+ * Operations are read from the Ecore class that a generator class describes, because the generator
+ * model snapshot has no native operations. A generator operation is paired with the Ecore operation
+ * at the same position in its class.
+ **/]
+[module PackageNames('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaImports/]
+[import JavaTypes/]
+[import JavaDocumentation/]
+[import Header/]
+
+[comment Constants /]
+
+[**
+ * The namespace of the Ecore metamodel, whose classifiers are reached through the Ecore package instance.
+ **/]
+[query public ecoreNamespace() : String = 'http://www.eclipse.org/emf/2002/Ecore'/]
+
+[**
+ * The name of the variable that holds the Ecore package in the initialisation code.
+ **/]
+[query public ecorePackageVariable() : String = 'ecorePackage'/]
+
+[**
+ * The qualified name of the runtime class that keeps the packages of a program.
+ **/]
+[query public ePackageClass() : String = 'org.eclipse.emf.ecore.EPackage'/]
+
+[comment Packages /]
+
+[**
+ * The classes, enumerations and data types of a package, in that order.
+ **/]
+[query public allClassifiers(genPackage : GenPackage) : OclAny = genPackage.genClasses->union(genPackage.genEnums)->union(genPackage.genDataTypes)/]
+
+[**
+ * The classifiers of a package with the classes ordered so that a class follows its first base class.
+ **/]
+[query public orderedClassifiers(genPackage : GenPackage) : OclAny = genPackage.orderedGenClasses()->union(genPackage.genEnums)->union(genPackage.genDataTypes)/]
+
+[**
+ * Whether a package declares any classifier.
+ **/]
+[query public hasClassifiers(genPackage : GenPackage) : Boolean = genPackage.allClassifiers()->notEmpty()/]
+
+[**
+ * Whether a package is the Ecore package itself.
+ **/]
+[query public isEcorePackage(genPackage : GenPackage) : Boolean = genPackage.ecorePackage.nsURI = ecoreNamespace()/]
+
+[**
+ * The basic name of a package, which is its prefix followed by Package.
+ **/]
+[query public basicPackageName(genPackage : GenPackage) : String = genPackage.prefixedName('Package')/]
+
+[**
+ * The name of the factory accessor of a package without its get prefix.
+ **/]
+[query public factoryName(genPackage : GenPackage) : String = genPackage.prefixedName('Factory')/]
+
+[**
+ * The nested packages that have classifiers, looking through nested packages without classifiers.
+ **/]
+[query public subGenPackages(genPackage : GenPackage) : OclAny = genPackage.nestedGenPackages->collect(n | if n.hasClassifiers() then Sequence{n} else n.subGenPackages() endif)->flatten()/]
+
+[**
+ * The nearest enclosing package that has classifiers, or nothing for a top level package.
+ **/]
+[query public superGenPackage(genPackage : GenPackage) : OclAny = if genPackage.parentGenPackage().oclIsUndefined() then null else (if genPackage.parentGenPackage().hasClassifiers() then genPackage.parentGenPackage() else genPackage.parentGenPackage().superGenPackage() endif) endif/]
+
+[**
+ * The outermost package of the nesting of a package, which has classifiers.
+ **/]
+[query public rootGenPackage(genPackage : GenPackage) : OclAny = if genPackage.superGenPackage().oclIsUndefined() then genPackage else genPackage.superGenPackage().rootGenPackage() endif/]
+
+[**
+ * Whether a package or one of its sub packages asks for its metadata to be loaded from a serialised form.
+ **/]
+[query public needsLoadInitialization(genPackage : GenPackage) : Boolean = genPackage.isOn('loadInitialization') or genPackage.subGenPackages()->exists(s | s.needsLoadInitialization())/]
+
+[**
+ * Whether a package loads the serialised form of itself and its sub packages: only an outermost package does.
+ **/]
+[query public isLoadingInitialization(genPackage : GenPackage) : Boolean = genPackage.rootGenPackage() = genPackage and genPackage.needsLoadInitialization()/]
+
+[**
+ * Whether the metadata of a package is loaded from the serialised form of its outermost package.
+ **/]
+[query public isLoadedInitialization(genPackage : GenPackage) : Boolean = genPackage.rootGenPackage().needsLoadInitialization()/]
+
+[**
+ * The packages of the nesting of a package that have classifiers, outermost first, if one of them is the head of its family.
+ **/]
+[query public familyTreeDependencies(genPackage : GenPackage) : OclAny = if genPackage.familyTreePackages()->exists(p | p.isOn('familyTreeInitialization')) then Sequence{genPackage.familyTreePackages()->select(p | p.isOn('familyTreeInitialization'))->first()}->union(genPackage.familyTreePackages()->reject(p | p = genPackage.familyTreePackages()->select(q | q.isOn('familyTreeInitialization'))->first())) else Sequence{} endif/]
+
+[**
+ * All packages with classifiers within the nesting of a package, outermost first, depth first.
+ **/]
+[query familyTreePackages(genPackage : GenPackage) : OclAny = genPackage.rootGenPackage().treePackages()/]
+
+[query treePackages(genPackage : GenPackage) : OclAny = (if genPackage.hasClassifiers() then Sequence{genPackage} else Sequence{} endif)->union(genPackage.nestedGenPackages->collect(n | n.treePackages())->flatten())/]
+
+[**
+ * The package that heads the family of a package, or nothing if the packages do not form a family.
+ **/]
+[query public familyHeadGenPackage(genPackage : GenPackage) : OclAny = genPackage.familyTreeDependencies()->first()/]
+
+[**
+ * Whether a package is a member of a family that another package heads.
+ **/]
+[query public isFamilyMember(genPackage : GenPackage) : Boolean = not genPackage.familyHeadGenPackage().oclIsUndefined() and genPackage.familyHeadGenPackage() <> genPackage/]
+
+[**
+ * The packages that this model uses, which the initialisation depends on only through their registration.
+ **/]
+[query public packageSimpleDependencies(genPackage : GenPackage) : OclAny = if genPackage.isEcorePackage() then Sequence{} else genPackage.genModel().usedGenPackages->select(u | u.hasClassifiers() and not genPackage.genModel().genPackages->includes(u)) endif/]
+
+[**
+ * The other packages of the model that have classifiers, which the initialisation of this package must also build.
+ **/]
+[query public packageInterDependencies(genPackage : GenPackage) : OclAny = genPackage.genModel().allGenPackages()->select(p | p.hasClassifiers() and p <> genPackage)/]
+
+[**
+ * The inter dependencies that load their metadata from a serialised form.
+ **/]
+[query public packageLoadInterDependencies(genPackage : GenPackage) : OclAny = genPackage.packageInterDependencies()->select(p | p.isLoadedInitialization())/]
+
+[**
+ * The inter dependencies that build their metadata with code.
+ **/]
+[query public packageBuildInterDependencies(genPackage : GenPackage) : OclAny = genPackage.packageInterDependencies()->reject(p | p.isLoadedInitialization())/]
+
+[**
+ * The packages that the initialisation of the contents of a package obtains: the sub packages, then the packages
+ * of every classifier that the classes refer to, other than the package itself and the Ecore package.
+ **/]
+[query public packageInitializationDependencies(genPackage : GenPackage) : OclAny = if genPackage.isEcorePackage() then Sequence{} else genPackage.subGenPackages()->union(genPackage.genClasses->collect(c | c.referencedGenPackages())->flatten())->asOrderedSet()->reject(p | p = genPackage or p.isEcorePackage()) endif/]
+
+[**
+ * The packages that a class refers to when its metadata is initialised, in the order of the references.
+ **/]
+[query referencedGenPackages(genClass : GenClass) : OclAny = genClass.ecoreClass.eSuperTypes->collect(s | s.classifierGenPackage())->union(genClass.genFeatures->collect(f | f.referencedFeaturePackages())->flatten())->union(genClass.nativeOperations()->collect(o | o.referencedOperationPackages())->flatten())->select(p | not p.oclIsUndefined())/]
+
+[query referencedFeaturePackages(genFeature : GenFeature) : OclAny = Sequence{genFeature.ecoreFeature.eType.classifierGenPackage()}->union(if genFeature.reverseGenFeature().oclIsUndefined() then Sequence{} else Sequence{genFeature.reverseGenFeature().genPackage()} endif)/]
+
+[query referencedOperationPackages(operation : OclAny) : OclAny = (if operation.eType.oclIsUndefined() then Sequence{} else Sequence{operation.eType.classifierGenPackage()} endif)->union(operation.eParameters->collect(p | p.eType.classifierGenPackage()))->union(operation.eExceptions->collect(e | e.classifierGenPackage()))/]
+
+[**
+ * The generator package of a native classifier, or nothing if the generator model does not describe it.
+ **/]
+[query public classifierGenPackage(classifier : OclAny) : OclAny = if classifier.genClassifier().oclIsUndefined() then null else classifier.genClassifier().genPackage() endif/]
+
+[**
+ * The expression that denotes a package in the initialisation code of another package: this for the package
+ * itself, the Ecore package variable for the Ecore metamodel, and otherwise the variable named after the package.
+ **/]
+[query public packageInstanceVariable(genPackage : GenPackage, other : OclAny) : String = if other = genPackage then 'this' else (if other.oclIsUndefined() then ecorePackageVariable() else (if other.isEcorePackage() then ecorePackageVariable() else 'the' + other.basicPackageName() endif) endif) endif/]
+
+[comment Classifiers /]
+
+[**
+ * The position of a classifier among all classifiers of its package, which is its value in the package interface.
+ **/]
+[query public classifierValue(classifier : OclAny) : Integer = classifier.genPackage().allClassifiers()->indexOf(classifier) - 1/]
+
+[**
+ * The position of a classifier among the classifiers that the Ecore package of the generator package lists.
+ **/]
+[query public localClassifierIndex(classifier : OclAny) : Integer = classifier.genPackage().ecorePackage.eClassifiers->indexOf(if classifier.oclIsKindOf(GenClass) then classifier.ecoreClass else (if classifier.oclIsKindOf(GenEnum) then classifier.ecoreEnum else classifier.ecoreDataType endif) endif) - 1/]
+
+[**
+ * The qualified name of the runtime type that describes a classifier.
+ **/]
+[query public metaTypeName(classifier : OclAny) : String = if classifier.oclIsKindOf(GenClass) then 'org.eclipse.emf.ecore.EClass' else (if classifier.oclIsKindOf(GenEnum) then 'org.eclipse.emf.ecore.EEnum' else 'org.eclipse.emf.ecore.EDataType' endif) endif/]
+
+[**
+ * The simple name of the runtime type that describes a classifier.
+ **/]
+[query public metaType(classifier : OclAny) : String = shortName(classifier.metaTypeName())/]
+
+[**
+ * The name of the field or variable that holds the runtime object of a classifier.
+ **/]
+[query public classifierInstanceName(classifier : OclAny) : String = classifier.name().uncapPrefixedName() + classifier.metaType()/]
+
+[**
+ * The constant name of a classifier in the package interface.
+ **/]
+[query public classifierID(classifier : OclAny) : String = classifier.classifierIDName()/]
+
+[**
+ * Whether a classifier carries a deprecation tag in its documentation.
+ **/]
+[query public isDeprecatedClassifier(classifier : OclAny) : Boolean = classifier.hasAPIDeprecatedTag()/]
+
+[**
+ * Whether any classifier of a list carries a deprecation tag.
+ **/]
+[query public anyDeprecated(classifiers : OclAny) : Boolean = classifiers->exists(c | c.hasAPIDeprecatedTag())/]
+
+[**
+ * The qualified name of the interface that a class stands for, or its instance class if the model names one.
+ **/]
+[query public metaQualifiedInterfaceName(genClass : GenClass) : String = if genClass.isOn('dynamic') then (if genClass.baseGenClass().oclIsUndefined() then 'org.eclipse.emf.ecore.EObject' else genClass.baseGenClass().metaQualifiedInterfaceName() endif) else (if isBlank(genClass.ecoreClass.instanceClassName) then genClass.qualifiedInterfaceName() else genClass.ecoreClass.instanceClassName.substituteAll('$', '.') endif) endif/]
+
+[**
+ * Whether the class has an instance class that the model gives, so that the generator does not write its interface.
+ **/]
+[query public hasExternalInterface(genClass : GenClass) : Boolean = not isBlank(genClass.ecoreClass.instanceClassName) or not isBlank(genClass.ecoreClass.instanceTypeName)/]
+
+[**
+ * Whether the class is abstract, which an interface always is.
+ **/]
+[query public isAbstractMeta(genClass : GenClass) : Boolean = genClass.ecoreClass.abstract or genClass.ecoreClass.interface/]
+
+[**
+ * The flag expression for a Boolean: the name of the flag constant, negated if the value is false.
+ **/]
+[query public metaFlag(value : Boolean, constant : String) : String = if value then constant else '!' + constant endif/]
+
+[**
+ * The flag that tells whether the class is abstract.
+ **/]
+[query public abstractFlag(genClass : GenClass) : String = metaFlag(genClass.isAbstractMeta(), 'IS_ABSTRACT')/]
+
+[**
+ * The flag that tells whether the class is an interface.
+ **/]
+[query public interfaceFlag(genClass : GenClass) : String = metaFlag(genClass.ecoreClass.interface, 'IS_INTERFACE')/]
+
+[**
+ * The flag that tells whether the generator writes the instance class of a class.
+ **/]
+[query public generatedInstanceClassFlag(genClass : GenClass) : String = metaFlag(not (genClass.hasExternalInterface() or genClass.isOn('dynamic')), 'IS_GENERATED_INSTANCE_CLASS')/]
+
+[**
+ * The flag that tells whether the generator writes the instance class of a data type: only enumerations are generated.
+ **/]
+[query public dataTypeGeneratedInstanceClassFlag(genDataType : OclAny) : String = metaFlag(genDataType.oclIsKindOf(GenEnum), 'IS_GENERATED_INSTANCE_CLASS')/]
+
+[**
+ * The flag that tells whether the values of a data type are serialisable.
+ **/]
+[query public serializableFlag(genDataType : OclAny) : String = metaFlag(genDataType.ecoreDataType.serializable, 'IS_SERIALIZABLE')/]
+
+[**
+ * The Java class that a data type stands for, as the instance class of its runtime object.
+ **/]
+[query public dataTypeInstanceClass(genDataType : OclAny) : String = if genDataType.oclIsKindOf(GenEnum) then genDataType.qualifiedEnumName() else genDataType.ecoreDataType.instanceClass() endif/]
+
+[query instanceClass(dataType : OclAny) : String = instanceClassName(dataType).substituteAll('$', '.')/]
+
+[**
+ * Whether a data type stands for a primitive or an array type, which the documentation does not link.
+ **/]
+[query public isPrimitiveOrArray(genDataType : OclAny) : Boolean = isPrimitiveType(genDataType.dataTypeInstanceClass()) or genDataType.dataTypeInstanceClass().contains('[')/]
+
+[**
+ * Whether the data type is a type of objects, which have no generated array helpers.
+ **/]
+[query public isObjectDataType(genDataType : OclAny) : Boolean = genDataType.dataTypeInstanceClass() = 'java.lang.Object'/]
+
+[comment Features /]
+
+[**
+ * Whether a classifier of the Ecore metamodel stands for a map entry.
+ **/]
+[query public isMapEntryMeta(classifier : OclAny) : Boolean = not isBlank(classifier.instanceClassName) and (classifier.instanceClassName = 'java.util.Map$Entry' or classifier.instanceClassName = 'java.util.Map.Entry')/]
+
+[**
+ * The kind of a feature as the documentation names it: attribute, reference, container reference, containment
+ * reference or map, followed by list for a many valued feature other than a map.
+ **/]
+[query public metaFeatureKind(genFeature : GenFeature) : String = (if genFeature.isReferenceType() then (if genFeature.isContainment() then (if genFeature.ecoreFeature.eType.isMapEntryMeta() then 'map' else 'containment reference' endif) else (if genFeature.isContainer() then 'container reference' else 'reference' endif) endif) else 'attribute' endif) + (if genFeature.isListType() and not (genFeature.isReferenceType() and genFeature.isContainment() and genFeature.ecoreFeature.eType.isMapEntryMeta()) then ' list' else '' endif)/]
+
+[**
+ * The qualified name of the runtime type that describes a feature.
+ **/]
+[query public featureMetaTypeName(genFeature : GenFeature) : String = if genFeature.isReferenceType() then 'org.eclipse.emf.ecore.EReference' else 'org.eclipse.emf.ecore.EAttribute' endif/]
+
+[**
+ * The name of the create method for a feature of the runtime package.
+ **/]
+[query public featureMetaType(genFeature : GenFeature) : String = shortName(genFeature.featureMetaTypeName())/]
+
+[**
+ * The name of the formatted feature for documentation: its words capitalised and separated by spaces.
+ **/]
+[query public formattedFeatureName(element : OclAny) : String = element.capName().formatName(' ')/]
+
+[**
+ * The constant that holds the identifier of a feature of a class.
+ **/]
+[query public featureIDName(genClass : GenClass, genFeature : GenFeature) : String = genClass.classifierID() + '__' + genFeature.name().formatName('_').toUpper()/]
+
+[**
+ * The constant that holds the number of features of a class.
+ **/]
+[query public featureCountIDName(genClass : GenClass) : String = genClass.classifierID() + '_FEATURE_COUNT'/]
+
+[**
+ * The position of a feature among the features its class declares.
+ **/]
+[query public localFeatureIndex(genFeature : GenFeature) : Integer = genFeature.genClass().genFeatures->indexOf(genFeature) - 1/]
+
+[**
+ * The name that a feature has in the initialisation code of a package: a getter call.
+ **/]
+[query public featureGetterCall(genFeature : GenFeature) : String = 'get' + genFeature.featureAccessorName() + '()'/]
+
+[**
+ * Whether a feature is unsettable in the generated code: the model must not suppress it and the feature must not be a container.
+ **/]
+[query public isEffectivelyUnsettable(genFeature : GenFeature) : Boolean = not genFeature.genModel().isOn('suppressUnsettable') and genFeature.ecoreFeature.unsettable and not genFeature.isContainer()/]
+
+[**
+ * Whether proxies of a reference are resolved in the generated code.
+ **/]
+[query public isEffectivelyResolvingProxies(genFeature : GenFeature) : Boolean = genFeature.isReferenceType() and ((not genFeature.isContainer() and not genFeature.isContainment()) or genFeature.genModel().isOn('containmentProxies')) and genFeature.ecoreFeature.resolveProxies/]
+
+[**
+ * The flag that tells whether a feature is transient.
+ **/]
+[query public transientFlag(genFeature : GenFeature) : String = metaFlag(genFeature.ecoreFeature.transient, 'IS_TRANSIENT')/]
+
+[**
+ * The flag that tells whether a feature is volatile.
+ **/]
+[query public volatileFlag(genFeature : GenFeature) : String = metaFlag(genFeature.ecoreFeature.volatile, 'IS_VOLATILE')/]
+
+[**
+ * The flag that tells whether a feature is changeable.
+ **/]
+[query public changeableFlag(genFeature : GenFeature) : String = metaFlag(genFeature.ecoreFeature.changeable, 'IS_CHANGEABLE')/]
+
+[**
+ * The flag that tells whether a feature is unsettable.
+ **/]
+[query public unsettableFlag(genFeature : GenFeature) : String = metaFlag(genFeature.isEffectivelyUnsettable(), 'IS_UNSETTABLE')/]
+
+[**
+ * The flag that tells whether an attribute is an identifier.
+ **/]
+[query public idFlag(genFeature : GenFeature) : String = metaFlag(genFeature.ecoreFeature.iD, 'IS_ID')/]
+
+[**
+ * The flag that tells whether a reference is a containment.
+ **/]
+[query public containmentFlag(genFeature : GenFeature) : String = metaFlag(genFeature.ecoreFeature.containment, 'IS_COMPOSITE')/]
+
+[**
+ * The flag that tells whether the proxies of a reference are resolved.
+ **/]
+[query public resolveProxiesFlag(genFeature : GenFeature) : String = metaFlag(genFeature.isEffectivelyResolvingProxies(), 'IS_RESOLVE_PROXIES')/]
+
+[**
+ * The flag that tells whether a feature is derived.
+ **/]
+[query public derivedFlag(genFeature : GenFeature) : String = metaFlag(genFeature.ecoreFeature.derived, 'IS_DERIVED')/]
+
+[**
+ * The flag that tells whether the values of a typed element are unique.
+ **/]
+[query public uniqueFlag(typedElement : OclAny) : String = metaFlag(typedElement.unique, 'IS_UNIQUE')/]
+
+[**
+ * The flag that tells whether the values of a typed element are ordered.
+ **/]
+[query public orderedFlag(typedElement : OclAny) : String = metaFlag(typedElement.ordered, 'IS_ORDERED')/]
+
+[comment Operations /]
+
+[**
+ * The Ecore operations of a class, in model order.
+ **/]
+[query public nativeOperations(genClass : GenClass) : OclAny = genClass.ecoreClass.eOperations/]
+
+[**
+ * The Ecore operation that a generator operation describes.
+ **/]
+[query public nativeOperation(genOperation : GenOperation) : OclAny = genOperation.genClass().ecoreClass.eOperations->at(genOperation.genClass().genOperations->indexOf(genOperation))/]
+
+[**
+ * Whether an operation has no result type.
+ **/]
+[query public isVoidMeta(genOperation : GenOperation) : Boolean = genOperation.nativeOperation().eType.oclIsUndefined()/]
+
+[**
+ * All operations of a class, inherited operations first, without leaving out overrides.
+ **/]
+[query public allOperationsWithOverrides(genClass : GenClass) : OclAny = genClass.allBaseGenClasses->collect(b | b.genOperations)->flatten()->union(genClass.genOperations)/]
+
+[**
+ * The operations of a class that have an identifier of their own: the first operation of each signature.
+ **/]
+[query public identifiedOperations(genClass : GenClass) : OclAny = genClass.allGenOperations()/]
+
+[**
+ * The simple name of the Java type of a parameter, which makes the names of overloaded operations unique.
+ **/]
+[query public parameterTypeName(parameter : OclAny) : String = if parameter.eType.oclIsUndefined() then 'Object' else (if parameter.eType.oclIsKindOf(EClass) then parameter.eType.name else instanceClassName(parameter.eType).substituteAll('$', '.').simpleTypeName() endif) endif/]
+
+[query simpleTypeName(typeName : String) : String = if stripArray(typeName).contains('.') then stripArray(typeName).substring(stripArray(typeName).lastIndex('.') + 1) else stripArray(typeName) endif/]
+
+[query stripArray(typeName : String) : String = if typeName.contains('[') then typeName.substring(1, typeName.index('[') - 1) else typeName endif/]
+
+[**
+ * The words of an operation name and its parameter types that the generator joins to name an operation.
+ **/]
+[query public operationBaseName(genOperation : GenOperation) : String = genOperation.capName() + (if genOperation.nativeOperation().eParameters->isEmpty() then '' else '__' + genOperation.nativeOperation().eParameters->collect(p | p.parameterTypeName())->join('_') endif)/]
+
+[**
+ * The unique name of an operation within its class: the base name, with a number appended if an earlier operation has it.
+ **/]
+[query public operationUniqueName(genClass : GenClass, genOperation : GenOperation) : String = genOperation.operationBaseName() + (if genClass.uniqueOperationsBefore(genOperation) = 0 then '' else '_' + genClass.uniqueOperationsBefore(genOperation).toString() endif)/]
+
+[query uniqueOperationsBefore(genClass : GenClass, genOperation : GenOperation) : Integer = genClass.uniqueNameOperations()->subSequence(1, genClass.uniqueNameOperations()->indexOf(genOperation) - 1)->select(o | o.operationBaseName() = genOperation.operationBaseName())->size()/]
+
+[query uniqueNameOperations(genClass : GenClass) : OclAny = genClass.allOperationsWithOverrides()->select(o | genClass.allGenOperations()->includes(o))/]
+
+[**
+ * The constant that holds the identifier of an operation of a class.
+ **/]
+[query public operationIDName(genClass : GenClass, genOperation : GenOperation) : String = genClass.classifierID() + '___' + (genOperation.name().formatName('_') + (if genOperation.nativeOperation().eParameters->isEmpty() then '' else genClass.operationUniqueName(genOperation).substring(genClass.operationUniqueName(genOperation).index('__')) endif)).toUpper()/]
+
+[**
+ * The constant that holds the number of operations of a class.
+ **/]
+[query public operationCountIDName(genClass : GenClass) : String = genClass.classifierID() + '_OPERATION_COUNT'/]
+
+[**
+ * The position of an operation among the operations its class declares.
+ **/]
+[query public localOperationIndex(genOperation : GenOperation) : Integer = genOperation.genClass().genOperations->indexOf(genOperation) - 1/]
+
+[**
+ * The name of the accessor of an operation in the package, without its get prefix.
+ **/]
+[query public operationAccessorName(genOperation : GenOperation) : String = genOperation.genClass().name() + '__' + genOperation.genClass().operationUniqueName(genOperation)/]
+
+[**
+ * The name of an operation for documentation, with spaces between its words.
+ **/]
+[query public formattedOperationName(genOperation : GenOperation) : String = genOperation.capName().formatName(' ')/]
+
+[**
+ * The Java types of the parameters of an operation, separated by commas and a space, for links in documentation.
+ **/]
+[query public parameterTypes(genOperation : GenOperation) : String = genOperation.nativeOperation().eParameters->collect(p | p.rawParameterType())->join(', ')/]
+
+[query rawParameterType(parameter : OclAny) : String = if parameter.eType.oclIsUndefined() then 'java.lang.Object' else (if parameter.eType.oclIsKindOf(EClass) then (if parameter.eType.genClassifier().oclIsUndefined() then 'org.eclipse.emf.ecore.EObject' else parameter.eType.genClassifier().metaQualifiedInterfaceName() endif) else (if parameter.eType.oclIsKindOf(EEnum) then qualifiedTypeName(parameter.eType) else instanceClassName(parameter.eType).substituteAll('$', '.') endif) endif) endif/]
+
+[comment Annotations /]
+
+[**
+ * Whether an annotation source is left out of the generated code.
+ **/]
+[query public isSuppressedAnnotationSource(genModel : GenModel, source : OclAny) : Boolean = genModel.isOn('suppressGenModelAnnotations') and source = copyrightSource()/]
+
+[**
+ * The annotations of the Ecore package of a generator package, excluding the packages nested in it,
+ * which are the annotations of the package, its classifiers, their members and the literals of enumerations.
+ **/]
+[query public allAnnotations(genPackage : GenPackage) : OclAny = genPackage.ecorePackage.eAnnotations->union(genPackage.ecorePackage.eClassifiers->collect(c | c.annotationsWithMembers())->flatten())/]
+
+[query annotationsWithMembers(classifier : OclAny) : OclAny = classifier.eAnnotations->union(if classifier.oclIsKindOf(EClass) then classifier.eStructuralFeatures->collect(f | f.eAnnotations)->flatten()->union(classifier.eOperations->collect(o | o.eAnnotations->union(o.eParameters->collect(p | p.eAnnotations)->flatten()))->flatten()) else (if classifier.oclIsKindOf(EEnum) then classifier.eLiterals->collect(l | l.eAnnotations)->flatten() else Sequence{} endif) endif)/]
+
+[**
+ * The sources of the annotations of a package that are written, without repeating a source.
+ **/]
+[query public annotationSources(genPackage : GenPackage) : OclAny = genPackage.allAnnotations()->reject(a | genPackage.genModel().isSuppressedAnnotationSource(a.source))->collect(a | a.source)->asOrderedSet()/]
+
+[**
+ * The identifier that stands for an annotation source in the name of the method that creates its annotations:
+ * the last part of the source, without its extension and with a capital first letter.
+ **/]
+[query public annotationSourceIdentifier(source : OclAny) : String = if source.oclIsUndefined() then 'Null' else sourceIdentifierPart(source).toUpperFirst() endif/]
+
+[query sourceIdentifierPart(source : String) : String = (if source.lastIndex('/') = source.size() then source.substring(1, source.size() - 1) else source endif).lastPart().firstWord()/]
+
+[query lastPart(text : String) : String = if text.lastIndex('/') > 0 then text.substring(text.lastIndex('/') + 1) else text endif/]
+
+[query firstWord(text : String) : String = if text.index('.') > 0 then text.substring(1, text.index('.') - 1) else text endif/]
+
+[comment Documentation /]
+
+[**
+ * The annotation tags of the documentation of an element that the package writes on classifiers,
+ * as the lines of text for a documentation comment.
+ **/]
+[query public ownAPITagLines(element : OclAny) : OclAny = Sequence{ownSinceLine(element), ownDeprecatedLine(element), ownNoReferenceLine(element)}->select(l | l.size() > 0)/]
+
+[query ownSinceLine(element : OclAny) : String = if element.hasDocumentationTag('since') and element.documentationTagText('since').size() > 0 then '@since ' + element.documentationTagText('since') else '' endif/]
+
+[query ownDeprecatedLine(element : OclAny) : String = if element.hasDocumentationTag('deprecated') then '@deprecated' + (if element.documentationTagText('deprecated').size() = 0 then '' else ' ' + element.documentationTagText('deprecated') endif) else '' endif/]
+
+[query ownNoReferenceLine(element : OclAny) : String = if element.hasDocumentationTag('noreference') then '@noreference' + (if element.documentationTagText('noreference').size() = 0 then '' else ' ' + element.documentationTagText('noreference') endif) else '' endif/]
+
+[**
+ * Whether an element has annotation tags of its own in its documentation.
+ **/]
+[query public hasOwnAPITags(element : OclAny) : Boolean = element.ownAPITagLines()->notEmpty()/]
+
+[**
+ * Whether an element has annotation tags of its own or of its container.
+ **/]
+[query public hasInheritedAPITags(element : OclAny) : Boolean = element.hasOwnAPITags() or element.genContainer().hasOwnAPITags()/]
+
+[**
+ * Writes the lines of annotation tags of an element behind the prefix of a documentation line.
+ **/]
+[query public apiTagText(lines : OclAny, prefix : String) : String = lines->join('\n' + prefix)/]
+
+[**
+ * The lines of the model tag of a data type: its instance class if the model gives one, whether its values are not
+ * serialisable, and its annotations.
+ **/]
+[query public dataTypeModelInfo(genDataType : OclAny) : OclAny = Sequence{if isBlank(genDataType.ecoreDataType.instanceClassName) then '' else 'instanceClass="' + xmlEscape(genDataType.dataTypeInstanceClass()) + '"' endif, if genDataType.ecoreDataType.serializable then '' else 'serializeable="false"' endif}->select(s | s.size() > 0)->union(annotationSettings(genDataType.ecoreDataType))/]
+
+[**
+ * The lines of the model tag of a class that has an instance class of its own: that class and the annotations.
+ **/]
+[query public classModelInfo(genClass : GenClass) : OclAny = Sequence{'instanceClass="' + xmlEscape(if isBlank(genClass.ecoreClass.instanceTypeName) then genClass.ecoreClass.instanceClassName else genClass.ecoreClass.instanceTypeName endif) + '"'}->union(annotationSettings(genClass.ecoreClass))/]
+
+[**
+ * The lines of the model tag of a package: its kind and annotations.
+ **/]
+[query public packageModelInfo(genPackage : GenPackage) : OclAny = Sequence{'kind="package"'}->union(annotationSettings(genPackage.ecorePackage))/]
+
+[**
+ * The lines of annotation tags of an element without the tag that restricts references.
+ **/]
+[query public ownPublicAPITagLines(element : OclAny) : OclAny = Sequence{ownSinceLine(element), ownDeprecatedLine(element)}->select(l | l.size() > 0)/]
+
+[**
+ * Whether an element has annotation tags of its own other than the reference restriction.
+ **/]
+[query public hasOwnPublicAPITags(element : OclAny) : Boolean = element.ownPublicAPITagLines()->notEmpty()/]
+
+[**
+ * Whether a feature is a single valued attribute of the primitive boolean type, whose getter starts with is.
+ **/]
+[query public isBooleanFeature(genFeature : GenFeature) : Boolean = genFeature.isAttributeType() and not genFeature.isListType() and instanceClassName(genFeature.ecoreFeature.eType) = 'boolean'/]
+
+[**
+ * The number of files that the templates of this module write for a package: the interface and implementation,
+ * and the serialised form of a package that loads its metadata.
+ **/]
+[query public packageFileCount(genPackage : GenPackage) : Integer = if genPackage.hasClassifiers() then 1 + (if genPackage.genModel().isOn('suppressEMFMetaData') or genPackage.genModel().isOn('suppressInterfaces') then 0 else 1 endif) + (if genPackage.isLoadingInitialization() then 1 else 0 endif) else 0 endif/]

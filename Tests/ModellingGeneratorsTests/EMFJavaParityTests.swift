@@ -74,4 +74,59 @@ struct EMFJavaParityTests {
             Self.withoutHeader(actualWithoutMarkers) == Self.withoutHeader(expected),
             "BookCategory.java differs from the reference beyond header and string markers")
     }
+
+    /// The generated package interface of the reference library example, relative to its directory.
+    static let packageInterfacePath = "src/org/eclipse/emf/examples/extlibrary/EXTLibraryPackage.java"
+
+    /// The generated package implementation of the reference library example, relative to its directory.
+    static let packageImplementationPath = "src/org/eclipse/emf/examples/extlibrary/impl/EXTLibraryPackageImpl.java"
+
+    /// The documentation line that the reference interface carries from an older generator release.
+    ///
+    /// The reference sources were produced before the generator stopped writing the release of the content
+    /// type constant, so the line is left out of the comparison.
+    static let olderReleaseLine = "   * @since 2.4"
+
+    /// Removes the lines that the reference carries from an older generator release.
+    ///
+    /// - Parameter text: The text of a reference file.
+    /// - Returns: The text without those lines.
+    static func withoutOlderReleaseLines(_ text: String) -> String {
+        text.split(separator: "\n", omittingEmptySubsequences: false)
+            .filter { $0 != olderReleaseLine }
+            .joined(separator: "\n")
+    }
+
+    @Test(
+        "The package interface and implementation of the extended library match the Eclipse output",
+        .enabled(
+            if: EMFParityTests.referenceRoot != nil, "EMF_REFERENCE_ROOT is not set; skipping Eclipse parity"),
+        arguments: [
+            (packageInterfacePath, "org/eclipse/emf/examples/extlibrary/EXTLibraryPackage.java"),
+            (packageImplementationPath, "org/eclipse/emf/examples/extlibrary/impl/EXTLibraryPackageImpl.java"),
+        ]
+    )
+    @MainActor
+    func packageFilesMatchReference(referencePath: String, generatedPath: String) async throws {
+        let root = try #require(EMFParityTests.referenceRoot)
+        let directory = root.appendingPathComponent(Self.libraryDirectory)
+        let output = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-modelling-java-parity")
+            .appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: output) }
+
+        _ = try await GenerationPipeline.generate(
+            genModelURL: directory.appendingPathComponent(Self.genModelPath), language: "java",
+            outputDirectory: output)
+
+        let expected = Self.withoutOlderReleaseLines(
+            Self.normalisingLineEndings(
+                try String(
+                    contentsOf: directory.appendingPathComponent(referencePath), encoding: .utf8)))
+        let actual = Self.normalisingLineEndings(
+            try String(contentsOf: output.appendingPathComponent(generatedPath), encoding: .utf8))
+        #expect(
+            Self.withoutHeader(actual) == Self.withoutHeader(expected),
+            "\(generatedPath) differs from the reference beyond its header")
+    }
 }
