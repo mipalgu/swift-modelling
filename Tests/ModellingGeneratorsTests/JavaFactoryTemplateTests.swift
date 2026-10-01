@@ -105,3 +105,74 @@ struct JavaFactoryTemplateTests {
         #expect(interface.contains("@since 2.0"))
     }
 }
+
+/// Compiles generated factories against stand-ins for the files of the other templates.
+@Suite("Compiling generated factories")
+struct JavaFactoryCompileTests {
+    /// The package of the data types fixture.
+    static let packageName = "org.example.types.datatypes"
+
+    /// Source of the model code that the factories need, which other templates generate.
+    static let stubs: [String: String] = [
+        "DatatypesPackage": """
+        public interface DatatypesPackage extends org.eclipse.emf.ecore.EPackage {
+          String eNS_URI = "http://example.org";
+          DatatypesPackage eINSTANCE = null;
+          int THING = 0; int CLASS = 1; int GIZMO = 2; int COLOUR = 3; int COUNT = 4;
+          int ANYTHING = 5; int STAMP = 6; int HIDDEN = 7;
+          interface Literals {
+            org.eclipse.emf.ecore.EEnum COLOUR = null;
+            org.eclipse.emf.ecore.EDataType COUNT = null;
+            org.eclipse.emf.ecore.EDataType ANYTHING = null;
+            org.eclipse.emf.ecore.EDataType STAMP = null;
+          }
+        }
+        """,
+        "Thing": "public interface Thing extends org.eclipse.emf.ecore.EObject {}",
+        "Class": "public interface Class extends org.eclipse.emf.ecore.EObject {}",
+        "Gizmo": "public interface Gizmo extends org.eclipse.emf.ecore.EObject {}",
+        "impl/ThingImpl": implementation("Thing"),
+        "impl/ClassImpl": implementation("Class"),
+        "impl/GizmoImpl": implementation("Gizmo"),
+    ]
+
+    /// Source of a stand-in implementation class.
+    ///
+    /// - Parameter name: The name of the interface it implements.
+    /// - Returns: The source text.
+    static func implementation(_ name: String) -> String {
+        "public class \(name)Impl extends org.eclipse.emf.ecore.impl.MinimalEObjectImpl.Container implements "
+            + "org.example.types.datatypes.\(name) {}"
+    }
+
+    @Test(
+        "Factories compile for each form of the data types fixture",
+        .enabled(
+            if: JavaCompileTests.classPath != nil, "EMF_RUNTIME_CLASSPATH is not set; skipping the compile test"),
+        .enabled(if: JavaCompileTests.compiler != nil, "No javac found; skipping the compile test"),
+        arguments: [nil] + FactoryVariant.all.map { Optional($0) }
+    )
+    @MainActor
+    func compiles(_ variant: FactoryVariant?) async throws {
+        let classPath = try #require(JavaCompileTests.classPath)
+        let generated = try await JavaFactoryTemplateTests.generate(variant)
+        defer { generated.remove() }
+        let directory = generated.output
+        for (name, body) in Self.stubs {
+            let isImplementation = name.hasPrefix("impl/")
+            let header = "package \(Self.packageName)\(isImplementation ? ".impl" : "");\n"
+            let file = directory.appendingPathComponent("stubs/org/example/types/datatypes/\(name).java")
+            try FileManager.default.createDirectory(
+                at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try (header + body + "\n").write(to: file, atomically: true, encoding: .utf8)
+        }
+        let stubFiles = Self.stubs.keys.map {
+            directory.appendingPathComponent("stubs/org/example/types/datatypes/\($0).java")
+        }
+        let classes = directory.appendingPathComponent("classes")
+        try FileManager.default.createDirectory(at: classes, withIntermediateDirectories: true)
+        let files = generated.generatedPaths().map { generated.file($0) } + stubFiles
+        let (status, text) = try JavaCompileTests.compile(files, into: classes, classPath: classPath)
+        #expect(status == 0, "javac failed:\n\(text)")
+    }
+}
