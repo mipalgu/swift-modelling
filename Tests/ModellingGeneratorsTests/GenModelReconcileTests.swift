@@ -187,6 +187,29 @@ struct GenModelReconcileTests {
         #expect(text.contains(##"labelFeature="#//@genPackages.0/@genClasses.2/@genFeatures.1""##))
     }
 
+    @Test("Many-valued settings of the existing model are kept")
+    @MainActor
+    func manyValuedSettingsAreKept() async throws {
+        let generated = try await generate(OracleCase.all[0])
+        defer { generated.project.remove() }
+        let old = try edited(
+            generated.text, replacing: "  <foreignModel>library.ecore</foreignModel>\n",
+            with: """
+                  <foreignModel>library.ecore</foreignModel>
+                  <modelPluginVariables>EMF_CORE=org.eclipse.emf.ecore</modelPluginVariables>
+                  <modelPluginVariables>EMF_COMMON=org.eclipse.emf.common</modelPluginVariables>
+
+                """)
+        try old.write(to: generated.result.url, atomically: true, encoding: .utf8)
+        var options = OracleCase.all[0].options
+        options.reload = generated.result.url
+        let result = try await GenerationPipeline.ecoreToGenModel(
+            ecoreURLs: [generated.project.model("library.ecore")], options: options)
+        let text = try String(contentsOf: result.url, encoding: .utf8)
+        #expect(text.contains("<modelPluginVariables>EMF_CORE=org.eclipse.emf.ecore</modelPluginVariables>"))
+        #expect(text.contains("<modelPluginVariables>EMF_COMMON=org.eclipse.emf.common</modelPluginVariables>"))
+    }
+
     @Test("Reloading an unchanged model reproduces it")
     @MainActor
     func reloadIsIdempotent() async throws {

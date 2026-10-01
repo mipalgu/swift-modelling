@@ -198,10 +198,6 @@ enum GenModelReconciler {
 
         /// Converts the text of a setting to the type of its attribute.
         private static func typed(_ value: any EcoreValue, for attribute: EAttribute) -> any EcoreValue {
-            if let array = value as? EcoreValueArray {
-                let texts = array.values.compactMap { $0 as? String }
-                return texts.count == array.values.count ? texts : value
-            }
             guard let text = value as? String else { return value }
             switch EcoreDataType(rawValue: attribute.eType.name) {
             case .eBoolean: return text == "true"
@@ -217,19 +213,10 @@ enum GenModelReconciler {
             switch old.object.eGet(feature) {
             case let list as [ResourceProxy]: proxies = list
             case let proxy as ResourceProxy: proxies = [proxy]
-            case let texts as [String]: proxies = texts.compactMap(Self.proxy(from:))
-            case let text as String: proxies = Self.proxy(from: text).map { [$0] } ?? []
             default: break
             }
             guard !proxies.isEmpty else { return }
             _ = await resource.eSet(objectId: new.object.id, feature: feature, value: proxies)
-        }
-
-        private static func proxy(from text: String) -> ResourceProxy? {
-            guard let separator = text.firstIndex(of: GenModelConstants.fragmentSeparator) else { return nil }
-            return ResourceProxy(
-                uri: String(text[..<separator]),
-                fragment: String(text[text.index(after: separator)...]))
         }
 
         /// Re-selects the label feature of a class by the name of the feature in the existing model.
