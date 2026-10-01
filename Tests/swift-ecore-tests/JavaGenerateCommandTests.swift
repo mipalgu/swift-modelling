@@ -253,3 +253,106 @@ struct JavaGenerateCommandTests {
         #expect(result.stderr.contains("not a directory"))
     }
 }
+
+@Suite("swift-ecore - from Ecore to Java through the command line")
+struct JavaChainTests {
+    /// The directory that holds the Java files that generating the library fixture must produce.
+    private static let expectedJava = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .appendingPathComponent("ModellingGeneratorsTests/Resources/library/expected-java")
+
+    /// The files below a directory, relative to it and sorted.
+    private static func files(below directory: URL) -> [String] {
+        let base = directory.standardizedFileURL.path
+        guard
+            let enumerator = FileManager.default.enumerator(
+                at: directory, includingPropertiesForKeys: [.isRegularFileKey])
+        else { return [] }
+        var paths: [String] = []
+        for case let url as URL in enumerator {
+            let isFile = (try? url.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) ?? false
+            if isFile { paths.append(String(url.standardizedFileURL.path.dropFirst(base.count + 1))) }
+        }
+        return paths.sorted()
+    }
+
+    /// Copies the library model into a scratch directory.
+    private func libraryModel() throws -> (scratch: URL, ecore: URL) {
+        let scratch = try createTemporaryDirectory()
+        let source = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("ModellingGeneratorsTests/Resources/library/model/library.ecore")
+        let project = scratch.appendingPathComponent("library/model")
+        try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
+        let ecore = project.appendingPathComponent("library.ecore")
+        try FileManager.default.copyItem(at: source, to: ecore)
+        return (scratch, ecore)
+    }
+
+    @Test("genmodel then generate produces exactly the golden files")
+    @MainActor
+    func genModelThenGenerate() async throws {
+        let (scratch, ecore) = try libraryModel()
+        defer { cleanupTemporaryDirectory(scratch) }
+        let output = scratch.appendingPathComponent("java")
+
+        let created = try await executeSwiftEcore(
+            command: "genmodel",
+            arguments: [
+                ecore.path, "--base-package", "org.example", "--copyright", "Copyright 2026 Example Pty Ltd",
+            ])
+        #expect(created.succeeded, "\(created.stderr)")
+        let genModel = ecore.deletingPathExtension().appendingPathExtension("genmodel")
+        let generated = try await executeSwiftEcore(
+            command: "generate", arguments: ["--language", "java", genModel.path, "-o", output.path])
+        #expect(generated.succeeded, "\(generated.stderr)")
+
+        let expected = Self.files(below: Self.expectedJava)
+        #expect(!expected.isEmpty)
+        #expect(Self.files(below: output) == expected)
+        for path in expected {
+            let actual = try? String(contentsOf: output.appendingPathComponent(path), encoding: .utf8)
+            let golden = try String(contentsOf: Self.expectedJava.appendingPathComponent(path), encoding: .utf8)
+            #expect(actual == golden, "\(path) differs from the golden file")
+        }
+    }
+
+    @Test("generating again keeps a method marked as not generated")
+    @MainActor
+    func keepsNotGenerated() async throws {
+        let (scratch, ecore) = try libraryModel()
+        defer { cleanupTemporaryDirectory(scratch) }
+        let output = scratch.appendingPathComponent("java")
+        let arguments = ["--language", "java", ecore.path, "-o", output.path]
+        _ = try await executeSwiftEcore(command: "generate", arguments: arguments)
+        let file = output.appendingPathComponent("library/BookCategory.java")
+        let original = try String(contentsOf: file, encoding: .utf8)
+        let method = try #require(original.range(of: "public static BookCategory getByName"))
+        let tag = try #require(
+            original.range(of: "@generated", options: .backwards, range: original.startIndex..<method.lowerBound))
+        var edited = original
+        edited.replaceSubrange(tag, with: "@generated NOT")
+        edited = edited.replacingOccurrences(
+            of: "if (result.getName().equals(name))", with: "if (result.getName().equalsIgnoreCase(name))")
+        try edited.write(to: file, atomically: true, encoding: .utf8)
+
+        let again = try await executeSwiftEcore(command: "generate", arguments: arguments)
+
+        #expect(again.succeeded, "\(again.stderr)")
+        let text = try String(contentsOf: file, encoding: .utf8)
+        #expect(text.contains("equalsIgnoreCase(name)"))
+        #expect(text.contains("@generated NOT"))
+    }
+
+    @Test("lists the languages of the template sets and of the built-in generator in the help")
+    @MainActor
+    func helpListsLanguages() async throws {
+        let result = try await executeSwiftEcore(command: "generate", arguments: ["--help"])
+
+        #expect(result.succeeded)
+        #expect(result.stdout.contains("Languages with a template set: java"))
+        #expect(result.stdout.contains("swift, cpp, c, llvm"))
+    }
+}
