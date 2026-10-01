@@ -87,6 +87,30 @@ struct JavaCompileTests {
         #expect(status == 0, "javac failed:\n\(text)")
     }
 
+    /// The project cases whose classes refer to nothing that the other templates generate.
+    static let standaloneProjectCases = JavaProjectCase.all.filter {
+        ["library-xmi", "library-descriptor", "nested"].contains($0.name)
+    }
+
+    @Test(
+        "Generated plugin and resource classes compile against the EMF runtime",
+        .enabled(if: classPath != nil, "EMF_RUNTIME_CLASSPATH is not set; skipping the compile test"),
+        .enabled(if: compiler != nil, "No javac found; skipping the compile test"),
+        arguments: standaloneProjectCases
+    )
+    @MainActor
+    func compilesProjectClasses(_ golden: JavaProjectCase) async throws {
+        let classPath = try #require(Self.classPath)
+        let generated = try await golden.generate()
+        defer { generated.remove() }
+        let classes = generated.project.root.appendingPathComponent("classes")
+        try FileManager.default.createDirectory(at: classes, withIntermediateDirectories: true)
+        let files = generated.generatedPaths().filter { $0.hasSuffix(".java") }.map { generated.file($0) }
+        #expect(files.count > 1)
+        let (status, text) = try Self.compile(files, into: classes, classPath: classPath)
+        #expect(status == 0, "javac failed:\n\(text)")
+    }
+
     @Test(
         "The extended library enumeration compiles against the EMF runtime",
         .enabled(if: classPath != nil, "EMF_RUNTIME_CLASSPATH is not set; skipping the compile test"),
