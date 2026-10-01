@@ -53,6 +53,31 @@ public enum GenerationError: Error, Sendable, Equatable, CustomStringConvertible
     /// The first associated value is the path, the second a description of the cause.
     case outputFailed(String, String)
 
+    /// No template set exists for the requested language.
+    ///
+    /// The first associated value is the requested language, the second the available languages.
+    case unknownLanguage(String, [String])
+
+    /// A template set is incomplete or its descriptor cannot be read.
+    ///
+    /// The first associated value is the language, the second a description of the problem.
+    case templateSetInvalid(String, String)
+
+    /// The generator model to generate from cannot be read.
+    ///
+    /// The first associated value is the path, the second a description of the cause.
+    case genModelUnreadable(String, String)
+
+    /// The templates failed while generating.
+    ///
+    /// The associated value describes the cause.
+    case generationFailed(String)
+
+    /// A template path override is not a directory.
+    ///
+    /// The associated value is the offending path.
+    case templatePathInvalid(String)
+
     /// A description of the error for display to the user.
     public var errorDescription: String? { description }
 
@@ -78,6 +103,17 @@ public enum GenerationError: Error, Sendable, Equatable, CustomStringConvertible
             return "The Ecore to generator model transformation failed: \(cause)"
         case .outputFailed(let path, let cause):
             return "The generator model '\(path)' cannot be written: \(cause)"
+        case .unknownLanguage(let language, let available):
+            let known = available.isEmpty ? "none" : available.joined(separator: ", ")
+            return "There is no template set for the language '\(language)'; available languages: \(known)"
+        case .templateSetInvalid(let language, let cause):
+            return "The template set '\(language)' is invalid: \(cause)"
+        case .genModelUnreadable(let path, let cause):
+            return "The generator model '\(path)' cannot be read: \(cause)"
+        case .generationFailed(let cause):
+            return "Generation failed: \(cause)"
+        case .templatePathInvalid(let path):
+            return "The template path '\(path)' is not a directory"
         }
     }
 }

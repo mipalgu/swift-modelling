@@ -1,0 +1,6 @@
+[module generate('http://www.eclipse.org/emf/2002/GenModel')/]
+[template generate(genModel : GenModel)]
+[file ('hello.txt')]
+[genModel.genPackages->first().genClasses->first().ecoreClass.name/]
+[/file]
+[/template]
