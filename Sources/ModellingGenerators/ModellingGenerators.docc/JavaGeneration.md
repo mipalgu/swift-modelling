@@ -16,11 +16,11 @@ let result = try await GenerationPipeline.generate(
     options: options)
 ```
 
-From the command line, `swift-ecore generate --language java model/library.genmodel --output src-gen` does the same.
+From the command line, `swift-ecore generate --language java model/library.genmodel --output src-gen` and `swift-atl generate model/library.ecore --language java --output src-gen` do the same; <doc:GettingStarted> walks through the chain.
 
 ### What is generated
 
-For every enumeration of every package the set writes the Java enum that implements the runtime's `Enumerator`: the literal constants, the integer value constants, `VALUES_ARRAY` and `VALUES`, the lookup methods `get(String)`, `getByName(String)` and `get(int)`, and the accessors. The form for compliance level 5.0 and higher is written; `typeSafeEnumCompatible` decides how constants are named. The remaining files of the Eclipse generator (package, factory, classes, switch, adapter factory, validator, resources and project files) are listed as `TODO` in the main module.
+For every package the set writes the package interface and implementation, the factory interface and implementation, the interface and implementation class of every class, the Java enum of every enumeration, and, where the package asks for them, the XML processor, resource factory and resource, the switch and adapter factory, and the validator. When the output location includes the source directory of the model project it also writes the plugin class, plugin properties, build properties, bundle manifest and plugin descriptor. Compliance level 5.0 and higher is covered; generic type parameters, reflective, dynamic and virtual feature delegation, packed enumeration flags and the Google Web Toolkit platform are not.
 
 ### Modules of the set
 
