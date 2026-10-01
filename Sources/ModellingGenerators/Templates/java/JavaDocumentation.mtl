@@ -1,0 +1,154 @@
+[comment encoding = UTF-8 /]
+[**
+ * Documentation comments, literals and markers in generated Java code.
+ *
+ * The queries here write the pieces that surround generated declarations: the model tags of
+ * documentation comments, API tags taken from model documentation, escaped string literals and the
+ * markers that tell a tool not to externalise strings.
+ **/]
+[module JavaDocumentation('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import Header/]
+
+[comment Literals and escapes /]
+
+[**
+ * Whether a text consists only of printable ASCII characters other than backslash, quotes and comment terminators.
+ **/]
+[query public isPlainText(text : String) : Boolean = text.matches('^[ -!#-&(-\\[\\]-~]*$') and not text.contains('*/')/]
+
+[**
+ * Escapes one UTF-16 code unit for a Java string or character literal, writing non-ASCII characters
+ * as Unicode escapes. Characters in the additional text are escaped as well.
+ **/]
+[query public escapeCode(code : Integer, additional : String) : String = if code = 8 then '\\b' else (if code = 9 then '\\t' else (if code = 10 then '\\n' else (if code = 12 then '\\f' else (if code = 13 then '\\r' else (if code = 34 then '\\"' else (if code = 39 then '\\\'' else (if code = 92 then '\\\\' else (if code >= 32 and code < 127 and not additional.contains(code.fromCharacterCode()) then code.fromCharacterCode() else (if code < 256 then '\\' + code.toOctalString(3) else '\\u' + code.toHexString(4) endif) endif) endif) endif) endif) endif) endif) endif) endif) endif/]
+
+[**
+ * Escapes one UTF-16 code unit for a Java string literal, writing every character outside printable ASCII as a Unicode escape.
+ **/]
+[query public escapeLiteralCode(code : Integer) : String = if code = 8 then '\\b' else (if code = 9 then '\\t' else (if code = 10 then '\\n' else (if code = 12 then '\\f' else (if code = 13 then '\\r' else (if code = 34 then '\\"' else (if code = 39 then '\\\'' else (if code = 92 then '\\\\' else (if code >= 32 and code < 127 then code.fromCharacterCode() else '\\u' + code.toHexString(4) endif) endif) endif) endif) endif) endif) endif) endif) endif/]
+
+[**
+ * Escapes a text for use inside a Java comment or model tag. Characters in the additional text are escaped as well.
+ **/]
+[query public escapeText(text : String, additional : String) : String = if text.isPlainText() and additional.size() = 0 then text else text.characterCodes()->collect(c | escapeCode(c, additional))->join('') endif/]
+
+[**
+ * A Java string literal for a text; null becomes the null literal.
+ **/]
+[query public javaStringLiteral(text : OclAny) : String = if text.oclIsUndefined() then 'null' else '"' + (if text.isPlainText() then text else text.characterCodes()->collect(c | escapeLiteralCode(c))->join('') endif) + '"' endif/]
+
+[**
+ * Escapes the characters that XML attributes need.
+ **/]
+[query public xmlEscape(text : String) : String = text.substituteAll('&', '&amp;').substituteAll('<', '&lt;').substituteAll('>', '&gt;').substituteAll('"', '&quot;')/]
+
+[comment Non-externalised string markers /]
+
+[**
+ * The marker that tells Eclipse not to externalise a string, or nothing if the generator model does not ask for markers.
+ **/]
+[query public nonNLS(genModel : GenModel, number : Integer) : String = if genModel.isOn('nonNLSMarkers') then ' //$NON-NLS-' + number.toString() + '$' else '' endif/]
+
+[comment Copyright fields /]
+
+[**
+ * Whether classes carry the copyright text as a field.
+ **/]
+[query public hasCopyrightField(genModel : GenModel) : Boolean = genModel.isOn('copyrightFields') and not isBlank(genModel.setting('copyrightText'))/]
+
+[**
+ * The literal that initialises the copyright field.
+ **/]
+[query public copyrightFieldLiteral(genModel : GenModel) : String = if genModel.isOn('copyrightFields') and not isBlank(genModel.setting('copyrightText')) then javaStringLiteral(genModel.setting('copyrightText')) else 'null' endif/]
+
+[comment Names for documentation /]
+
+[**
+ * The name of an enumeration literal split into words, as it appears in documentation.
+ **/]
+[query public formattedLiteralName(genEnumLiteral : GenEnumLiteral) : String = genEnumLiteral.enumLiteralName().capName().formatName(' ')/]
+
+[comment API tags /]
+
+[**
+ * The first word of every line of documentation that begins with a tag.
+ **/]
+[query documentationTagLines(element : OclAny) : OclAny = if element.hasDocumentation() then element.documentation().lines()->select(l | l.trim().startsWith('@')) else Sequence{} endif/]
+
+[**
+ * Whether the documentation of an element contains a tag, such as deprecated or since.
+ **/]
+[query public hasDocumentationTag(element : OclAny, tag : String) : Boolean = documentationTagLines(element)->exists(l | l.trim() = '@' + tag or l.trim().startsWith('@' + tag + ' ') or l.trim().startsWith('@' + tag + '\t'))/]
+
+[**
+ * The text that follows a tag in the documentation of an element, trimmed; empty if the tag has no text.
+ **/]
+[query public documentationTagText(element : OclAny, tag : String) : String = documentationTagLines(element)->select(l | l.trim() = '@' + tag or l.trim().startsWith('@' + tag + ' ') or l.trim().startsWith('@' + tag + '\t'))->first().trim().substring('@'.size() + tag.size() + 1).trim()/]
+
+[**
+ * Whether the documentation of an element carries a deprecation tag.
+ **/]
+[query public hasAPIDeprecatedTag(element : OclAny) : Boolean = element.hasDocumentationTag('deprecated')/]
+
+[**
+ * Whether an element or its container is deprecated.
+ **/]
+[query public hasImplicitAPIDeprecatedTag(element : OclAny) : Boolean = element.hasAPIDeprecatedTag() or element.genContainer().hasAPIDeprecatedTag()/]
+
+[**
+ * The lines of the API tags that an element takes from the documentation of its container,
+ * leaving out the tags that its own documentation sets.
+ **/]
+[query public implicitAPITagLines(element : OclAny) : OclAny = Sequence{sinceTagLine(element), deprecatedTagLine(element), noReferenceTagLine(element)}->select(l | l.size() > 0)/]
+
+[query sinceTagLine(element : OclAny) : String = if element.hasDocumentationTag('since') or not element.genContainer().hasDocumentationTag('since') or element.genContainer().documentationTagText('since').size() = 0 then '' else '@since ' + element.genContainer().documentationTagText('since') endif/]
+
+[query deprecatedTagLine(element : OclAny) : String = if element.hasDocumentationTag('deprecated') or not element.genContainer().hasDocumentationTag('deprecated') then '' else '@deprecated' + (if element.genContainer().documentationTagText('deprecated').size() = 0 then '' else ' ' + element.genContainer().documentationTagText('deprecated') endif) endif/]
+
+[query noReferenceTagLine(element : OclAny) : String = if element.hasDocumentationTag('noreference') or not element.genContainer().hasDocumentationTag('noreference') then '' else '@noreference' + (if element.genContainer().documentationTagText('noreference').size() = 0 then '' else ' ' + element.genContainer().documentationTagText('noreference') endif) endif/]
+
+[comment Model tags /]
+
+[**
+ * The source of the annotations that EMF writes with its own tag.
+ **/]
+[query extendedMetaDataSource() : String = 'http:///org/eclipse/emf/ecore/util/ExtendedMetaData'/]
+
+[**
+ * Whether a detail of an annotation is left out of model tags.
+ **/]
+[query isHiddenDetail(source : String, key : String) : Boolean = source = copyrightSource() and (key = 'documentation' or key = 'copyright')/]
+
+[**
+ * The description of an annotation for a model tag: its source followed by the keys and quoted values of its details.
+ * Annotations whose details are all hidden give an empty text.
+ **/]
+[query annotationInfo(annotation : OclAny) : String = if annotation.source.oclIsUndefined() then '' else (if annotation.detailKeys()->isEmpty() then escapeText(annotation.source, ' =') else (if annotation.detailKeys()->reject(k | isHiddenDetail(annotation.source, k))->isEmpty() then '' else escapeText(annotation.source, ' =') + annotation.detailKeys()->reject(k | isHiddenDetail(annotation.source, k))->collect(k | ' ' + escapeText(k, ' =') + '=\'' + escapeText(annotation.detailValue(k), '') + '\'')->join('') endif) endif) endif/]
+
+[**
+ * The settings of an annotation as model tag settings.
+ **/]
+[query annotationSetting(info : String) : String = if info.startsWith(extendedMetaDataSource()) then 'extendedMetaData="' + xmlEscape(info.substring(extendedMetaDataSource().size() + 2)) + '"' else 'annotation="' + xmlEscape(info) + '"' endif/]
+
+[**
+ * The model tag settings for the annotations of a native model element, one per annotation.
+ **/]
+[query public annotationSettings(modelElement : OclAny) : OclAny = if modelElement.oclIsUndefined() then Sequence{} else modelElement.eAnnotations->collect(a | annotationInfo(a))->select(info | info.size() > 0)->collect(info | annotationSetting(info)) endif/]
+
+[**
+ * The lines of the model tag of an enumeration: the instance class if the model sets one, and its annotations.
+ **/]
+[query public modelInfo(genEnum : GenEnum) : OclAny = Sequence{if isBlank(genEnum.ecoreEnum.instanceClassName) then '' else 'instanceClass="' + xmlEscape(genEnum.qualifiedEnumName()) + '"' endif}->select(s | s.size() > 0)->union(annotationSettings(genEnum.ecoreEnum))/]
+
+[**
+ * The lines of the model tag of an enumeration literal: its name when that differs from its constant
+ * identifier, its literal when that differs from its name, and its annotations.
+ **/]
+[query public modelInfo(genEnumLiteral : GenEnumLiteral) : OclAny = Sequence{if genEnumLiteral.enumLiteralID() = genEnumLiteral.enumLiteralName() then '' else 'name="' + xmlEscape(genEnumLiteral.enumLiteralName()) + '"' endif, if genEnumLiteral.enumLiteralName() = genEnumLiteral.ecoreEnumLiteral.literal then '' else 'literal="' + xmlEscape(escapeText(genEnumLiteral.ecoreEnumLiteral.literal, '')) + '"' endif}->select(s | s.size() > 0)->union(annotationSettings(genEnumLiteral.ecoreEnumLiteral))/]
+
+[**
+ * The model tag lines of an element for a documentation comment, each starting with the prefix;
+ * continuation lines are aligned under the first. Nothing is written if the generator model suppresses model tags.
+ **/]
+[query public modelTag(element : OclAny, prefix : String, info : OclAny) : String = if element.genModel().isOn('suppressEMFModelTags') then '' else prefix + '@model' + (if info->isEmpty() then '' else ' ' + info->first() + info->subSequence(2, info->size())->collect(l | '\n' + prefix + '       ' + l)->join('') endif) endif/]

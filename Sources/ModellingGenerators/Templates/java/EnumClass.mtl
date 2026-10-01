@@ -1,0 +1,291 @@
+[comment encoding = UTF-8 /]
+[**
+ * The Java file of a generator enumeration.
+ *
+ * The file declares an enum that implements the runtime's Enumerator interface. It holds one
+ * constant for each literal, one integer constant for each literal value, the lookup methods
+ * get(String), getByName(String) and get(int), and the accessors of the enumerator.
+ *
+ * This template writes the form for compliance level 5.0 and higher.
+ **/]
+[module EnumClass('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaImports/]
+[import Header/]
+[import JavaDocumentation/]
+
+[**
+ * The complete text of the file that declares a generator enumeration.
+ **/]
+[template public enumClass(genEnum : GenEnum)]
+[let genPackage : GenPackage = genEnum.genPackage()]
+[let genModel : GenModel = genPackage.genModel()]
+[collect ('imports', genPackage.interfacePackageName() + '.' + genEnum.name())/]
+[collect ('imports', Sequence{'java.util.Arrays', 'java.util.List', 'java.util.Collections'})/]
+[header(genEnum)/]
+package [genPackage.interfacePackageName()/];
+
+
+[emit ('imports') once][importBlock(items)/][/emit]
+
+/**
+ * <!-- begin-user-doc -->
+ * A representation of the literals of the enumeration '<em><b>[genEnum.formattedClassifierName()/]</b></em>',
+ * and utility methods for working with them.
+ * <!-- end-user-doc -->
+[if (genEnum.hasDocumentation())]
+ * <!-- begin-model-doc -->
+ * [genEnum.documentation().indentLines('* ')/]
+ * <!-- end-model-doc -->
+[/if]
+ * @see [genPackage.qualifiedPackageInterfaceName()/]#get[genEnum.name()/]()
+[genEnum.modelTag(' * ', genEnum.modelInfo())/]
+ * @generated
+ */
+public enum [genEnum.name()/] implements [if (genModel.isOn('suppressEMFMetaData') and not genModel.isOn('suppressInterfaces'))]Internal[genEnum.name()/][else][importedName('org.eclipse.emf.common.util.Enumerator')/][/if]
+{
+[if (genEnum.genEnumLiterals->isEmpty())]
+  ;
+
+[else]
+[for (literal : GenEnumLiteral | genEnum.genEnumLiterals)]
+  /**
+   * The '<em><b>[literal.formattedLiteralName()/]</b></em>' literal object.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[if (literal.hasDocumentation())]
+   * <!-- begin-model-doc -->
+   * [literal.documentation().indentLines('* ')/]
+   * <!-- end-model-doc -->
+[/if]
+   * @see #[literal.enumLiteralValueConstantName()/]
+   * @generated
+   * @ordered
+   */
+[if (literal.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  [literal.enumLiteralInstanceConstantName()/]([literal.ecoreEnumLiteral.value/], "[literal.enumLiteralName()/]", [literal.ecoreEnumLiteral.literal.javaStringLiteral()/])[if (i < genEnum.genEnumLiterals->size())],[else];[/if][nonNLS(genModel, 1)/][nonNLS(genModel, 2)/]
+[/for]
+[/if]
+[if (genModel.hasCopyrightField())]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public static final [importedName('java.lang.String')/] copyright = [genModel.copyrightFieldLiteral()/];[nonNLS(genModel, 1)/]
+
+[/if]
+[for (literal : GenEnumLiteral | genEnum.genEnumLiterals)]
+  /**
+   * The '<em><b>[literal.formattedLiteralName()/]</b></em>' literal value.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[if (literal.hasDocumentation())]
+   * <!-- begin-model-doc -->
+   * [literal.documentation().indentLines('* ')/]
+   * <!-- end-model-doc -->
+[/if]
+   * @see #[literal.enumLiteralInstanceConstantName()/]
+[literal.modelTag('   * ', literal.modelInfo())/]
+   * @generated
+   * @ordered
+   */
+[if (literal.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  public static final int [literal.enumLiteralValueConstantName()/] = [literal.ecoreEnumLiteral.value/];
+
+[/for]
+  /**
+   * An array of all the '<em><b>[genEnum.formattedClassifierName()/]</b></em>' enumerators.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  private static final [genEnum.name()/]['['/][']'/] VALUES_ARRAY =
+    new [genEnum.name()/]['['/][']'/]
+    {
+[for (literal : GenEnumLiteral | genEnum.genEnumLiterals)]
+      [literal.enumLiteralInstanceConstantName()/],
+[/for]
+    };
+
+  /**
+   * A public read-only list of all the '<em><b>[genEnum.formattedClassifierName()/]</b></em>' enumerators.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public static final List<[genEnum.name()/]> VALUES = Collections.unmodifiableList(Arrays.asList(VALUES_ARRAY));
+
+  /**
+   * Returns the '<em><b>[genEnum.formattedClassifierName()/]</b></em>' literal with the specified literal value.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @param literal the literal.
+   * @return the matching enumerator or <code>null</code>.
+   * @generated
+   */
+  public static [genEnum.name()/] get([importedName('java.lang.String')/] literal)
+  {
+    for (int i = 0; i < VALUES_ARRAY.length; ++i)
+    {
+      [genEnum.name()/] result = VALUES_ARRAY['['/]i[']'/];
+      if (result.toString().equals(literal))
+      {
+        return result;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Returns the '<em><b>[genEnum.formattedClassifierName()/]</b></em>' literal with the specified name.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @param name the name.
+   * @return the matching enumerator or <code>null</code>.
+   * @generated
+   */
+  public static [genEnum.name()/] getByName([importedName('java.lang.String')/] name)
+  {
+    for (int i = 0; i < VALUES_ARRAY.length; ++i)
+    {
+      [genEnum.name()/] result = VALUES_ARRAY['['/]i[']'/];
+      if (result.getName().equals(name))
+      {
+        return result;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Returns the '<em><b>[genEnum.formattedClassifierName()/]</b></em>' literal with the specified integer value.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @param value the integer value.
+   * @return the matching enumerator or <code>null</code>.
+   * @generated
+   */
+  public static [genEnum.name()/] get(int value)
+  {
+    switch (value)
+    {
+[for (literal : GenEnumLiteral | genEnum.uniqueValuedGenEnumLiterals())]
+      case [literal.enumLiteralValueConstantName()/]: return [literal.enumLiteralInstanceConstantName()/];
+[/for]
+[if (genModel.isOn('switchMissingDefaultCase'))]
+      default: return null;
+    }
+[else]
+    }
+    return null;
+[/if]
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  private final int value;
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  private final [importedName('java.lang.String')/] name;
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  private final [importedName('java.lang.String')/] literal;
+
+  /**
+   * Only this class can construct instances.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  private [genEnum.name()/](int value, [importedName('java.lang.String')/] name, [importedName('java.lang.String')/] literal)
+  {
+    this.value = value;
+    this.name = name;
+    this.literal = literal;
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useInterfaceOverrideAnnotation())]
+  @Override
+[/if]
+  public int getValue()
+  {
+    return value;
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useInterfaceOverrideAnnotation())]
+  @Override
+[/if]
+  public [importedName('java.lang.String')/] getName()
+  {
+    return name;
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useInterfaceOverrideAnnotation())]
+  @Override
+[/if]
+  public [importedName('java.lang.String')/] getLiteral()
+  {
+    return literal;
+  }
+
+  /**
+   * Returns the literal value of the enumerator, which is its string representation.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public [importedName('java.lang.String')/] toString()
+  {
+    return literal;
+  }
+}
+[if (genModel.isOn('suppressEMFMetaData') and not genModel.isOn('suppressInterfaces'))]
+
+/**
+ * A private implementation interface used to hide the inheritance from Enumerator.
+ * <!-- begin-user-doc -->
+ * <!-- end-user-doc -->
+ * @generated
+ */
+interface Internal[genEnum.name()/] extends org.eclipse.emf.common.util.Enumerator
+{
+  // Empty
+}
+[/if]
+[/let]
+[/let]
+[/template]

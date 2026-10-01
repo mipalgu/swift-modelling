@@ -1,0 +1,82 @@
+[comment encoding = UTF-8 /]
+[**
+ * Java types for the elements of a generator model.
+ *
+ * The queries here map built-in model data types to Java types with the table that the template set
+ * bundles, derive the Java class that a data type, enumeration or class stands for, and decide which
+ * container type a feature uses. The templates write type names through importedName, which
+ * registers the imports of the file.
+ **/]
+[module JavaTypes('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaImports/]
+
+[comment Built-in data types /]
+
+[**
+ * The entry of the type table for a built-in data type, which is a data type without an instance class name.
+ **/]
+[query public typeMapping(dataType : OclAny) : OclAny = languageTable().mappings->select(m | m.modelType = dataType.name)->first()/]
+
+[**
+ * The Java class that a data type stands for: its instance class name when the model gives one,
+ * otherwise the Java type of the built-in mapping, otherwise java.lang.Object.
+ **/]
+[query public instanceClassName(dataType : OclAny) : String = if not isBlank(dataType.instanceClassName) then dataType.instanceClassName else (if typeMapping(dataType).oclIsUndefined() then 'java.lang.Object' else typeMapping(dataType).targetType endif) endif/]
+
+[**
+ * Whether a Java type name denotes a primitive type.
+ **/]
+[query public isPrimitiveType(typeName : String) : Boolean = languageTable().mappings->exists(m | m.targetType = typeName and not isBlank(m.boxedType))/]
+
+[**
+ * The reference type that stands for a Java type: the wrapper class of a primitive type, the type itself otherwise.
+ **/]
+[query public objectTypeName(typeName : String) : String = if isPrimitiveType(typeName) then languageTable().mappings->select(m | m.targetType = typeName)->first().boxedType else typeName endif/]
+
+[**
+ * The default value of a Java type when a model gives none: zero, false, or null.
+ **/]
+[query public zeroValue(typeName : String) : String = if languageTable().mappings->exists(m | m.targetType = typeName) then languageTable().mappings->select(m | m.targetType = typeName)->first().zeroValue else 'null' endif/]
+
+[comment Classifiers /]
+
+[**
+ * The qualified Java name that a model classifier stands for: the interface of a class, the enum of an
+ * enumeration, or the instance class of a data type. Classifiers the generator model does not describe
+ * map to java.lang.Object.
+ **/]
+[query public qualifiedTypeName(classifier : OclAny) : String = if classifier.oclIsUndefined() then 'java.lang.Object' else (if classifier.oclIsKindOf(EClass) then (if classifier.genClassifier().oclIsUndefined() then 'org.eclipse.emf.ecore.EObject' else classifier.genClassifier().qualifiedInterfaceName() endif) else (if classifier.oclIsKindOf(EEnum) then (if classifier.genClassifier().oclIsUndefined() then 'org.eclipse.emf.common.util.Enumerator' else classifier.genClassifier().qualifiedEnumName() endif) else classifier.instanceClassName() endif) endif) endif/]
+
+[comment Features /]
+
+[**
+ * Whether a feature is a reference to a map entry class, which is written as a map.
+ **/]
+[query public isMapType(genFeature : GenFeature) : Boolean = if genFeature.isListType() and genFeature.isReferenceType() then (if genFeature.ecoreFeature.eType.genClassifier().oclIsUndefined() then false else genFeature.ecoreFeature.eType.genClassifier().isMapEntry() endif) else false endif/]
+
+[**
+ * The qualified Java name of the value type of a feature, before boxing.
+ **/]
+[query public itemTypeName(genFeature : GenFeature) : String = qualifiedTypeName(genFeature.ecoreFeature.eType)/]
+
+[**
+ * The Java name of the feature's type, as an element of a list: a primitive type becomes its wrapper class.
+ **/]
+[query public listItemTypeName(genFeature : GenFeature) : String = objectTypeName(genFeature.itemTypeName())/]
+
+[**
+ * The name of the container type that a many-valued feature uses.
+ **/]
+[query public listTypeName(genFeature : GenFeature) : String = if genFeature.isMapType() then 'org.eclipse.emf.common.util.EMap' else 'org.eclipse.emf.common.util.EList' endif/]
+
+[**
+ * The feature of a map entry class that holds the key or the value.
+ **/]
+[query public entryFeature(genFeature : GenFeature, name : String) : OclAny = genFeature.ecoreFeature.eType.eStructuralFeatures->select(f | f.name = name)->first()/]
+
+[**
+ * The Java type of a feature with its imports registered: the type of its value, or a list or map
+ * of values. Lists and maps carry type arguments from compliance level 5.0.
+ **/]
+[template public importedType(genFeature : GenFeature)][if (genFeature.isListType())][importedName(genFeature.listTypeName())/][if (genFeature.genModel().useGenerics())]<[if (genFeature.isMapType())][importedName(qualifiedTypeName(genFeature.entryFeature('key').eType))/], [importedName(qualifiedTypeName(genFeature.entryFeature('value').eType))/][else][importedName(genFeature.listItemTypeName())/][/if]>[/if][else][importedName(genFeature.itemTypeName())/][/if][/template]

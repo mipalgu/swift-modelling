@@ -29,6 +29,8 @@ and the [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec
 - **XPath Reference Resolution**: Same-resource references with XPath-style navigation (//@feature.index)
 - **XMI Serialisation**: Write models to XMI format with full round-trip support
 - **Generator Models**: Create Eclipse-compatible `.genmodel` files from Ecore models with `swift-ecore genmodel`, driven by a bundled ATL transformation
+- **Java Generation**: Generate Java model code from a generator model with `swift-ecore generate --language java`, driven by bundled MTL templates that follow the Eclipse code generator (enumerations so far)
+- **Template Sets**: Languages are directories of templates and data files; a new language needs no Swift code
 
 ### ATL Support
 - **Eclipse ATL Compatibility**: Full syntax compatibility with Eclipse ATL transformations
@@ -179,6 +181,8 @@ swift run swift-ecore generate Tests/ECoreTests/Resources/xmi/organisation.ecore
 
 **Input formats:** Ecore metamodels (`.ecore`), XMI models (`.xmi`), JSON models (`.json`)
 
+Languages that have a template set, such as `java`, are generated from a generator model; see [Generating Java from a Generator Model](#generating-java-from-a-generator-model).
+
 ### GenModel Command
 
 Create a generator model (`.genmodel`) from one or more Ecore models, as the Eclipse Ecore importer does. The result is the starting point for generating model code, and it opens unchanged in the Eclipse tooling.
@@ -218,6 +222,108 @@ swift run swift-ecore genmodel model/library.ecore --reload model/library.genmod
 **Reloading.** With `--reload`, every setting of the existing generator model is kept for the elements that still exist, matched by name, while new Ecore elements get the defaults and removed ones are dropped. Options given on the command line override the existing settings. The compliance level of the existing model is kept unless `--jdk-level` is given.
 
 **Several models.** Several Ecore models can be given; each contributes its root packages to one generator model, which refers to the models by relative paths.
+
+### Generating Java from a Generator Model
+
+Generate Java model code from a generator model (`.genmodel`), with the templates of the bundled `java` template set. The generated code follows the output of the Eclipse Modeling Framework code generator for the default options, including its `@generated` tags, so that files can be merged with hand-written code and, where the Eclipse tooling is in use, with Eclipse's own output.
+
+```bash
+# Write the packages of the model below the output directory
+swift run swift-ecore generate --language java model/library.genmodel --output src-gen/
+
+# Start from an Ecore model; a temporary generator model with the importer defaults is used
+swift run swift-ecore generate --language java model/library.ecore --output src-gen/
+
+# Write below the model directory of the generator model (src-gen/library/src/org/example/...)
+swift run swift-ecore generate --language java model/library.genmodel -o src-gen --model-directory
+
+# Replace bundled templates, keep a copy of what would change, or replace everything
+swift run swift-ecore generate --language java model/library.genmodel -o src-gen --template-path my-templates
+swift run swift-ecore generate --language java model/library.genmodel -o src-gen --diff
+swift run swift-ecore generate --language java model/library.genmodel -o src-gen --force-overwrite
+```
+
+**Options:**
+- `-l, --language` - `java`, or the name of any other template set
+- `-o, --output` - the directory to write below (default: the current directory)
+- `--template-path` - a directory whose template files replace bundled files of the same name (repeatable; later directories win)
+- `--force-overwrite` - replace existing files without merging
+- `--diff` - write the generated text of an existing file beside it as `.<name>.new` and leave the file alone
+- `--model-directory` - write below the model directory of the generator model
+- `-v, --verbose` - show every progress report; without it a progress bar appears on an interactive terminal
+
+**Existing files.** A file that exists is treated in this order: `--force-overwrite` replaces it; otherwise `--diff` writes the new text beside it; otherwise the generated members are merged with the file. In a merge, a member whose documentation comment carries `@generated` is regenerated, a member marked `@generated NOT` is kept as it is, and members without the tag (your own) are kept. Imports that you added stay.
+
+**Current coverage.** The Java template set writes one file for every enumeration of every package (the full `EnumClass` template for compliance level 5.0 and higher, `typeSafeEnumCompatible` honoured). The package interface and implementation, factory, classes (interface and implementation), switch, adapter factory, validator, XML processor, resource factory and project files are listed as `TODO` comments in `generate.mtl` and follow.
+
+**Checking the output.** Two optional checks run when their environment variable is set. `EMF_REFERENCE_ROOT` names a checkout of the Eclipse Modeling Framework; the generated `BookCategory.java` of its extended library example is then compared with the committed source. `EMF_RUNTIME_CLASSPATH` names the EMF runtime jars; the generated Java is then compiled with `javac`. `Scripts/fetch-emf-runtime.sh [directory]` downloads the jars from Maven Central and prints the class path:
+
+```bash
+export EMF_RUNTIME_CLASSPATH="$(Scripts/fetch-emf-runtime.sh)"
+swift test --filter JavaCompileTests
+```
+
+### Template Sets
+
+A template set generates code for one language. It is a directory named after the language that holds a descriptor, template modules and, optionally, data models. The bundled sets live in `Sources/ModellingGenerators/Templates/<language>/`. Nothing about a language is written in Swift: the Swift side provides the engines, the generator model, a set of language-neutral services and the pipeline.
+
+```text
+Templates/java/
+    templateset.json     descriptor
+    generate.mtl         main module: for each package, which files to write
+    Header.mtl           file header comment
+    JavaNames.mtl        names of packages, classes, accessors and constants
+    JavaTypes.mtl        type mapping and container types
+    JavaImports.mtl      imports and simple-name conflicts
+    JavaDocumentation.mtl  documentation tags, literals and escapes
+    EnumClass.mtl        the file of an enumeration
+    TypeMapping.ecore    a small metamodel for the language data
+    java-types.xmi       type table, reserved words and implicit types, an instance of it
+```
+
+**Descriptor (`templateset.json`).** Only `name`, `mainModule` and `mainTemplate` are required.
+
+```json
+{
+  "name": "java",
+  "summary": "Java model code for the Eclipse Modeling Framework runtime",
+  "mainModule": "generate",
+  "mainTemplate": "generate",
+  "fileCountTemplate": "fileCount",
+  "dataModels": [
+    { "name": "types", "metamodel": "TypeMapping.ecore", "model": "java-types.xmi" }
+  ],
+  "layout": { "sourceRootSetting": "modelDirectory", "includeSourceRoot": false },
+  "options": { "lineDelimiter": "\n" }
+}
+```
+
+- `mainModule` and `mainTemplate` name the template that runs with the generator model (`GenModel`) as its only argument. It writes files with `[file (...)]` blocks; file names are relative to the output directory.
+- `fileCountTemplate` (optional) names a template of the main module that writes the number of files the main template will write as the only content of one file. The pipeline runs it first, without touching the disk, so that progress reports can carry a total for a progress bar.
+- `dataModels` lists models that the templates read: the metamodel (`.ecore`) and an instance (`.xmi`) in the set. Templates reach the root objects with `templateData('name')`. The Java set keeps its type table, reserved words and implicit types this way, so they change without touching code.
+- `layout` says where files go by default. `sourceRootSetting` names a generator model setting that holds a source directory, such as `modelDirectory`; `includeSourceRoot` states whether it is part of the output location unless `--model-directory` decides otherwise.
+- `options.lineDelimiter` is the line delimiter written to files.
+
+**Modules.** Modules are written in the Acceleo dialect of MTL that swift-mtl implements. The module header names the metamodels that the templates use (the generator metamodel `http://www.eclipse.org/emf/2002/GenModel` and the namespaces of the data models). Modules import each other by name (`[import JavaNames/]`); imports are not transitive, so every module imports what it uses. Each module can be replaced by a file of the same name in a `--template-path` directory.
+
+**Merge declaration.** A module declares how existing files are merged, for example the Java set declares `[merge ('/**', '*/', '@generated', '@generated NOT', 'braces')/]` in its main module: the comment delimiters of the leading comments, the tag of generated members, the tag of members to keep, and how blocks end. This is how a language states what a hand edit is; the engine knows no language.
+
+**Imports.** `[collect ('imports', ...)/]` records names while a file is written and `[emit ('imports') once]...[/emit]` marks where the collected names are written. Language rules (which names need an import, simple-name conflicts, sorting and grouping) are queries in the set. `JavaImports.mtl` shows the pattern: the unit that is written is collected first, `importedName(qualified)` collects an import and returns the name to write.
+
+**Services.** Templates reach the generator model with the structural features of the generator metamodel (`genPackage.genEnums`, `genClass.genFeatures`, `ecoreEnum`, ...) and with language-neutral services: `allGenFeatures()`, `implementedGenFeatures()`, `featureID(f)`, `featureCount()`, `operationID(o)`, `classifierID()`, `genClassifiers()`, `orderedGenClasses()`, `genPackage()`, `genModel()`, `isMapEntry()`, `labelFeature()`, shortcuts to the Ecore feature (`isContainment()`, `isListType()`, `lowerBound()`, ...), `capName()`, `uncapName()`, `upperName()`, `formatName(separator, prefix, includePrefix)`, `setting('name')` (a setting with the default of the generator metamodel), `documentation()`, `lines()`, `indentLines(prefix)`, `join(separator)` and a few more. Derived navigation is written with parentheses (`element.genPackage()`), because the same name is also a stored reference of the generator metamodel. The DocC article *Template Sets* in the `ModellingGenerators` documentation lists them all.
+
+**Adding a language.** Create `Templates/<language>/` with a `templateset.json`, a main module that writes the files, and whatever query modules and data you need; nothing in Swift changes. To try a set without bundling it, put the directory (with the language name) in a directory and pass that with `--template-path`:
+
+```text
+my-templates/
+    outline/
+        templateset.json
+        main.mtl
+```
+
+```bash
+swift run swift-ecore generate --language outline model/library.genmodel -o out --template-path my-templates
+```
 
 ### Query Command
 

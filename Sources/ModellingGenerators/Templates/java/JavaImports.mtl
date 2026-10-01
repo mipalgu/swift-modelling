@@ -1,0 +1,74 @@
+[comment encoding = UTF-8 /]
+[**
+ * Import handling for Java compilation units.
+ *
+ * A template collects the qualified name of the unit it writes as the first import, names types with
+ * importedName, which registers an import and answers the name to write, and renders the import block
+ * at the position of an emit block with importBlock. The rules follow the way Java names resolve: a simple name is used
+ * for the first type that claims it, for types of java.lang and for types of the unit's own package;
+ * any other type with a claimed simple name is written with its qualified name.
+ **/]
+[module JavaImports('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+
+[**
+ * The set of collected names that holds the imports of the current file.
+ **/]
+[query public importSet() : String = 'imports'/]
+
+[**
+ * Registers an import for a type, unless the language needs none, and writes the name by which the type is known.
+ **/]
+[template public importedName(qualifiedName : String)][if (qualifiedName.contains('.') and not isImplicitType(qualifiedName.importName().shortName()))][collect ('imports', qualifiedName.importName())/][/if][resolvedName(qualifiedName)/][/template]
+
+[**
+ * The part of a qualified name that an import statement names: nested types are imported through their outermost type.
+ **/]
+[query public importName(qualifiedName : String) : String = if qualifiedName.index('$') > 0 then qualifiedName.substring(1, qualifiedName.index('$') - 1) else qualifiedName endif/]
+
+[**
+ * The package of a qualified name.
+ **/]
+[query public packageOf(qualifiedName : String) : String = if qualifiedName.lastIndex('.') > 0 then qualifiedName.substring(1, qualifiedName.lastIndex('.') - 1) else '' endif/]
+
+[**
+ * The simple name of a qualified name, keeping the part after a dollar sign out.
+ **/]
+[query public shortName(qualifiedName : String) : String = qualifiedName.importName().substring(qualifiedName.importName().lastIndex('.') + 1)/]
+
+[**
+ * The name of a qualified type relative to its package: the simple name, with nested types separated by dots.
+ **/]
+[query public baseName(qualifiedName : String) : String = qualifiedName.substring(qualifiedName.lastIndex('.') + 1).substituteAll('$', '.')/]
+
+[**
+ * Whether a simple name belongs to a type that code can use without importing it.
+ **/]
+[query public isImplicitType(simpleName : String) : Boolean = languageTable().implicitTypes->exists(t | t.name = simpleName)/]
+
+[**
+ * The package of the compilation unit that is being written.
+ **/]
+[query public unitPackage() : String = packageOf(collected('imports')->first())/]
+
+[**
+ * The name by which a type is written: the simple name when the type owns it, otherwise the qualified name.
+ **/]
+[query public resolvedName(qualifiedName : String) : String = if not qualifiedName.contains('.') then qualifiedName else (if collected('imports')->select(i | i.shortName() = qualifiedName.shortName())->isEmpty() then (if qualifiedName.importName() = 'java.lang.' + qualifiedName.shortName() or qualifiedName.importName().packageOf() = unitPackage() then qualifiedName.baseName() else qualifiedName.substituteAll('$', '.') endif) else (if collected('imports')->select(i | i.shortName() = qualifiedName.shortName())->first() = qualifiedName.importName() then qualifiedName.baseName() else qualifiedName.substituteAll('$', '.') endif) endif) endif/]
+
+[**
+ * The imports to write: sorted, without the unit's own package. The first name is the unit itself.
+ **/]
+[query public importedTypes(names : OclAny) : OclAny = names->select(n | n.packageOf() <> names->first().packageOf())->sortedBy(n | n)/]
+
+[**
+ * Writes the import statements, with a blank line between packages. Each statement begins on a new line.
+ **/]
+[template public importBlock(names : OclAny)]
+[for (n | importedTypes(names))]
+[if (i > 1 and importedTypes(names)->at(i - 1).packageOf() <> n.packageOf())]
+
+[/if]
+import [n/];
+[/for]
+[/template]

@@ -115,6 +115,39 @@ swift-ecore genmodel model/company.ecore --prefix projects=Proj --jdk-level 21.0
 swift-ecore genmodel model/library.ecore --reload model/library.genmodel
 ```
 
+### generate
+
+Generate source code from models.
+
+```bash
+swift-ecore generate <model> [options]
+```
+
+Languages that have a template set, such as `java`, are generated from a generator model (`.genmodel`); an Ecore model is imported into a temporary generator model first. Swift, C++, C and LLVM are written by the built-in generator from Ecore, XMI or JSON models. A template set is a directory of templates and data files, so a new language needs no Swift code; see the `ModellingGenerators` documentation.
+
+**Options:**
+
+- `-l, --language <name>` - `swift`, `cpp`, `c`, `llvm`, or the name of a template set such as `java` (default: `swift`)
+- `-o, --output <path>` - Directory to write below (default: the current directory)
+- `--template-path <path>` - Directory with template files that replace bundled templates (repeatable)
+- `--force-overwrite` - Replace existing files without merging
+- `--diff` - Write the generated text of existing files beside them as `.<name>.new`
+- `--model-directory` - Write below the model directory of the generator model
+- `-v, --verbose` - Show every progress report
+
+Existing files are merged with the generated code: members tagged `@generated` are regenerated, members tagged `@generated NOT` and members without the tag are kept.
+
+**Examples:**
+
+```bash
+# Generate Java from a generator model
+swift-ecore generate --language java model/library.genmodel --output src-gen
+
+# Customise one template and keep a copy of what would change in existing files
+swift-ecore generate --language java model/library.genmodel -o src-gen \
+    --template-path my-templates --diff
+```
+
 ### inspect
 
 Display information about a metamodel or model.

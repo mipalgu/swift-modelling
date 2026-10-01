@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
+    name="enumerations" nsURI="http://swift-modelling.org/test/enumerations" nsPrefix="enums">
+  <eClassifiers xsi:type="ecore:EEnum" name="Colour">
+    <eLiterals name="Red" literal="red"/>
+    <eLiterals name="Amber" value="1" literal="amber"/>
+    <eLiterals name="Yellow" value="1" literal="yellow"/>
+    <eLiterals name="Green" value="5"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="Mode">
+    <eLiterals name="default"/>
+    <eLiterals name="fastForward" value="1"/>
+    <eLiterals name="HTTPServer" value="2"/>
+    <eLiterals name="_" value="3"/>
+    <eLiterals name="quote" value="4" literal="say &quot;hi&quot;"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="Empty"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Light">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="colour" eType="#//Colour"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="mode" eType="#//Mode"/>
+  </eClassifiers>
+</ecore:EPackage>

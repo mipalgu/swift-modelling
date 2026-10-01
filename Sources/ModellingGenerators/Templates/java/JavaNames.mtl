@@ -1,0 +1,229 @@
+[comment encoding = UTF-8 /]
+[**
+ * Java naming conventions for the elements of a generator model.
+ *
+ * The queries here decide how model names become Java identifiers and packages: reserved word
+ * escaping, package names and their suffixes, interface and implementation class names, accessor
+ * names and the constants generated for enumeration literals. Language independent name formatting
+ * (capitalisation, word splitting) comes from the generator model services.
+ **/]
+[module JavaNames('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+
+[**
+ * The language table that the template set bundles: type mappings, reserved words and implicit types.
+ **/]
+[query public languageTable() : OclAny = templateData('types')->first()/]
+
+[**
+ * Whether a text is missing or empty.
+ **/]
+[query public isBlank(text : OclAny) : Boolean = if text.oclIsUndefined() then true else text.size() = 0 endif/]
+
+[**
+ * Appends a suffix to a package name, separated by a dot, unless the suffix is blank.
+ **/]
+[query public addPackageSuffix(name : OclAny, suffix : OclAny) : String = if isBlank(suffix) then name else name + '.' + suffix endif/]
+
+[**
+ * Prepends a prefix to a name, separated by a dot, unless the prefix is blank.
+ **/]
+[query public addPackagePrefix(prefix : OclAny, name : OclAny) : String = if isBlank(prefix) then name else prefix + '.' + name endif/]
+
+[**
+ * Escapes a name that is a reserved word by appending an underscore.
+ **/]
+[query public safeName(name : String) : String = if languageTable().reservedWords->exists(w | w.word = name) then name + '_' else name endif/]
+
+[**
+ * The compliance level of a generator model as a number, such as 17.0 or 1.4.
+ **/]
+[query public complianceLevel(genModel : GenModel) : Real = genModel.setting('complianceLevel').toReal()/]
+
+[**
+ * Whether the generated code may use generics and annotations (compliance level 5.0 or higher).
+ **/]
+[query public useGenerics(genModel : GenModel) : Boolean = genModel.complianceLevel() >= 5.0/]
+
+[**
+ * Whether methods of classes carry the override annotation (compliance level 5.0 or higher).
+ **/]
+[query public useClassOverrideAnnotation(genModel : GenModel) : Boolean = genModel.complianceLevel() >= 5.0/]
+
+[**
+ * Whether methods of interfaces carry the override annotation (compliance level 6.0 or higher).
+ **/]
+[query public useInterfaceOverrideAnnotation(genModel : GenModel) : Boolean = genModel.complianceLevel() >= 6.0/]
+
+[**
+ * Whether a Boolean setting of a generator element is switched on; a missing setting is off.
+ **/]
+[query public isOn(element : OclAny, setting : String) : Boolean = element.setting(setting) = true/]
+
+[comment Packages /]
+
+[**
+ * The base package of a generator package: its own, otherwise the qualified name of its parent package.
+ **/]
+[query public basePackageName(genPackage : GenPackage) : OclAny = if isBlank(genPackage.setting('basePackage')) then (if genPackage.parentGenPackage().oclIsUndefined() then null else genPackage.parentGenPackage().qualifiedPackageName() endif) else genPackage.setting('basePackage') endif/]
+
+[**
+ * The fully qualified name of a package: base package followed by the safe package name.
+ **/]
+[query public qualifiedPackageName(genPackage : GenPackage) : String = addPackagePrefix(genPackage.basePackageName(), safeName(genPackage.name()))/]
+
+[**
+ * The package that holds the interfaces of a package.
+ **/]
+[query public interfacePackageName(genPackage : GenPackage) : String = addPackageSuffix(genPackage.qualifiedPackageName(), genPackage.setting('interfacePackageSuffix'))/]
+
+[**
+ * The package that holds the implementation classes of a package.
+ **/]
+[query public classPackageName(genPackage : GenPackage) : String = addPackageSuffix(genPackage.qualifiedPackageName(), if genPackage.genModel().isOn('suppressInterfaces') then genPackage.setting('interfacePackageSuffix') else genPackage.setting('classPackageSuffix') endif)/]
+
+[**
+ * The package that holds the utility classes (switches, adapter factories, validators) of a package.
+ **/]
+[query public utilitiesPackageName(genPackage : GenPackage) : String = addPackageSuffix(genPackage.qualifiedPackageName(), genPackage.setting('utilityPackageSuffix'))/]
+
+[**
+ * The package that holds the reflective package interface of a package.
+ **/]
+[query public reflectionPackageName(genPackage : GenPackage) : String = addPackageSuffix(genPackage.qualifiedPackageName(), genPackage.setting('metaDataPackageSuffix'))/]
+
+[**
+ * The package name with the prefix of the package prepended to a name, such as the prefix and Package.
+ **/]
+[query public prefixedName(genPackage : GenPackage, name : String) : String = if isBlank(genPackage.setting('prefix')) then name else genPackage.setting('prefix') + name endif/]
+
+[**
+ * Applies the interface name pattern of the generator model, if it has one, to a name.
+ **/]
+[query public patternedInterfaceName(genModel : GenModel, name : String) : String = if isBlank(genModel.setting('interfaceNamePattern')) then name else genModel.setting('interfaceNamePattern').substituteAll('{0}', name) endif/]
+
+[**
+ * Applies the class name pattern of the generator model to a name; without a pattern the suffix Impl is appended.
+ **/]
+[query public patternedClassName(genModel : GenModel, name : String) : String = if isBlank(genModel.setting('classNamePattern')) then name + 'Impl' else genModel.setting('classNamePattern').substituteAll('{0}', name) endif/]
+
+[**
+ * The name of the package interface of a package.
+ **/]
+[query public packageInterfaceName(genPackage : GenPackage) : String = if genPackage.genModel().isOn('suppressInterfaces') then genPackage.prefixedName('Package') else (if genPackage.genModel().isOn('suppressEMFMetaData') then genPackage.genModel().patternedClassName(genPackage.prefixedName('Package')) else genPackage.genModel().patternedInterfaceName(genPackage.prefixedName('Package')) endif) endif/]
+
+[**
+ * The name of the package implementation class of a package.
+ **/]
+[query public packageClassName(genPackage : GenPackage) : String = if genPackage.genModel().isOn('suppressInterfaces') then genPackage.prefixedName('Package') else genPackage.genModel().patternedClassName(genPackage.prefixedName('Package')) endif/]
+
+[**
+ * The qualified name of the package class of a package.
+ **/]
+[query public qualifiedPackageClassName(genPackage : GenPackage) : String = (if genPackage.genModel().isOn('suppressInterfaces') then genPackage.reflectionPackageName() else genPackage.classPackageName() endif) + '.' + genPackage.packageClassName()/]
+
+[**
+ * The qualified name of the package interface of a package.
+ **/]
+[query public qualifiedPackageInterfaceName(genPackage : GenPackage) : String = if genPackage.genModel().isOn('suppressEMFMetaData') then genPackage.qualifiedPackageClassName() else genPackage.reflectionPackageName() + '.' + genPackage.packageInterfaceName() endif/]
+
+[**
+ * The name of the factory interface of a package.
+ **/]
+[query public factoryInterfaceName(genPackage : GenPackage) : String = if genPackage.genModel().isOn('suppressInterfaces') then genPackage.prefixedName('Factory') else genPackage.genModel().patternedInterfaceName(genPackage.prefixedName('Factory')) endif/]
+
+[**
+ * The name of the factory implementation class of a package.
+ **/]
+[query public factoryClassName(genPackage : GenPackage) : String = if genPackage.genModel().isOn('suppressInterfaces') then genPackage.prefixedName('Factory') else genPackage.genModel().patternedClassName(genPackage.prefixedName('Factory')) endif/]
+
+[comment Classifiers /]
+
+[**
+ * The relative path of the directory that holds the files of a package, with the given package name.
+ **/]
+[query public packagePath(packageName : String) : String = packageName.substituteAll('.', '/')/]
+
+[**
+ * The name of a class or enumeration as it appears in its package interface accessor.
+ **/]
+[query public classifierAccessorName(classifier : OclAny) : String = if classifier.name() = 'Class' or classifier.name() = 'Name' then classifier.name() + '_' else classifier.name() endif/]
+
+[**
+ * The name of the interface of a generator class.
+ **/]
+[query public interfaceName(genClass : GenClass) : String = if genClass.genModel().isOn('suppressInterfaces') then genClass.name() else genClass.genModel().patternedInterfaceName(genClass.name()) endif/]
+
+[**
+ * The name of the implementation class of a generator class.
+ **/]
+[query public className(genClass : GenClass) : String = if genClass.genModel().isOn('suppressInterfaces') then genClass.name() else genClass.genModel().patternedClassName(genClass.name()) endif/]
+
+[**
+ * The qualified name of the interface of a generator class.
+ **/]
+[query public qualifiedInterfaceName(genClass : GenClass) : String = genClass.genPackage().interfacePackageName() + '.' + genClass.interfaceName()/]
+
+[**
+ * The qualified name of the implementation class of a generator class.
+ **/]
+[query public qualifiedClassName(genClass : GenClass) : String = genClass.genPackage().classPackageName() + '.' + genClass.className()/]
+
+[**
+ * The qualified name of the type that a generator enumeration generates.
+ **/]
+[query public qualifiedEnumName(genEnum : GenEnum) : String = genEnum.genPackage().interfacePackageName() + '.' + genEnum.name()/]
+
+[**
+ * The words of a name separated by spaces, with the package prefix left out, for use in documentation.
+ **/]
+[query public formattedClassifierName(classifier : OclAny) : String = classifier.name().formatName(' ', classifier.genPackage().setting('prefix'), false)/]
+
+[comment Features /]
+
+[**
+ * The name of a feature as a local variable, escaped if it is a reserved word.
+ **/]
+[query public safeFeatureName(genFeature : GenFeature) : String = safeName(genFeature.name().uncapPrefixedName())/]
+
+[**
+ * The name of the getter method of a feature.
+ **/]
+[query public getAccessor(genFeature : GenFeature, isBooleanType : Boolean) : String = if isBooleanType then 'is' + genFeature.capName() else 'get' + (if genFeature.capName() = 'Class' then 'Class_' else genFeature.capName() endif) endif/]
+
+[**
+ * The name of the accessor of a feature in the package interface, which joins the class and feature names.
+ **/]
+[query public featureAccessorName(genFeature : GenFeature) : String = genFeature.genClass().name() + '_' + genFeature.capName()/]
+
+[comment Enumeration literals /]
+
+[**
+ * The upper case identifier of an enumeration literal. A literal named with a single underscore
+ * becomes two underscores from compliance level 1.8, because the single underscore is reserved.
+ **/]
+[query public enumLiteralID(genEnumLiteral : GenEnumLiteral) : String = if genEnumLiteral.name() = '_' and genEnumLiteral.genModel().complianceLevel() >= 8.0 then '__' else genEnumLiteral.upperName() endif/]
+
+[**
+ * Whether the constants of an enumeration keep the names that older, type safe enumerations had.
+ **/]
+[query public usesTypeSafeConstants(genEnum : GenEnum) : Boolean = genEnum.genModel().complianceLevel() < 5.0 or genEnum.isOn('typeSafeEnumCompatible')/]
+
+[**
+ * Makes a constant name unique among the identifiers of the literals of an enumeration.
+ **/]
+[query public ensureUniqueness(genEnum : GenEnum, constantName : String) : String = if genEnum.genEnumLiterals->exists(l | l.enumLiteralID() = constantName) then constantName + '_' else constantName endif/]
+
+[**
+ * The name of the constant that holds the literal object of an enumeration literal.
+ **/]
+[query public enumLiteralInstanceConstantName(genEnumLiteral : GenEnumLiteral) : String = if genEnumLiteral.genEnum().usesTypeSafeConstants() then genEnumLiteral.genEnum().ensureUniqueness(genEnumLiteral.enumLiteralID() + '_LITERAL') else genEnumLiteral.enumLiteralID() endif/]
+
+[**
+ * The name of the constant that holds the integer value of an enumeration literal.
+ **/]
+[query public enumLiteralValueConstantName(genEnumLiteral : GenEnumLiteral) : String = if genEnumLiteral.genEnum().usesTypeSafeConstants() then genEnumLiteral.enumLiteralID() else genEnumLiteral.genEnum().ensureUniqueness(genEnumLiteral.enumLiteralID() + '_VALUE') endif/]
+
+[**
+ * The name of an enumeration literal as the model sees it, with the single underscore adjustment.
+ **/]
+[query public enumLiteralName(genEnumLiteral : GenEnumLiteral) : String = if genEnumLiteral.name() = '_' and genEnumLiteral.genModel().complianceLevel() >= 8.0 then '__' else genEnumLiteral.name() endif/]

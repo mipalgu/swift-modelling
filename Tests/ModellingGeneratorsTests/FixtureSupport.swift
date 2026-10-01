@@ -45,8 +45,18 @@ struct FixtureProject {
         let root = scratch.appendingPathComponent(name)
         try FileManager.default.createDirectory(at: scratch, withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: source, to: root)
-        try FileManager.default.removeItem(at: root.appendingPathComponent("expected"))
+        for expectation in ["expected", "expected-java"] {
+            try? FileManager.default.removeItem(at: root.appendingPathComponent(expectation))
+        }
         return FixtureProject(root: root)
+    }
+
+    /// The location of the committed Java expectation for a file.
+    ///
+    /// - Parameter path: The path of the expected file relative to the generated source root.
+    /// - Returns: The location in the bundled fixtures.
+    func javaExpectation(_ path: String) throws -> URL {
+        try Fixtures.url(of: "\(root.lastPathComponent)/expected-java/\(path)")
     }
 
     /// Removes the scratch copy.

@@ -55,7 +55,8 @@ let package = Package(
                 .product(name: "MTL", package: "swift-mtl"),
             ],
             resources: [
-                .copy("Transformations")
+                .copy("Transformations"),
+                .copy("Templates"),
             ],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency")

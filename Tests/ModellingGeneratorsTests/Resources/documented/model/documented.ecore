@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
+    name="documented" nsURI="http://swift-modelling.org/test/documented" nsPrefix="doc">
+  <eClassifiers xsi:type="ecore:EEnum" name="Level">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="The levels of an alarm.&#xA;Higher levels need quicker action."/>
+    </eAnnotations>
+    <eLiterals name="Low"/>
+    <eLiterals name="High" value="1">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="Immediate action.&#xA;Wake somebody."/>
+      </eAnnotations>
+    </eLiterals>
+    <eLiterals name="Old" value="2">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="@deprecated use High"/>
+      </eAnnotations>
+    </eLiterals>
+  </eClassifiers>
+</ecore:EPackage>
