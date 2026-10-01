@@ -96,7 +96,7 @@
 [**
  * Whether the code style of the generator model asks for a clean-up.
  **/]
-[query public factoryHasCodeStyle(genModel : GenModel, style : String) : Boolean = genModel.isSetting('codeStyle') and genModel.setting('codeStyle')->includes(style)/]
+[query public factoryHasCodeStyle(genModel : GenModel, style : String) : Boolean = genModel.isSetting('codeStyle') and genModel.setting('codeStyle').toString().contains(style)/]
 
 [**
  * Whether an element is a generator enumeration.
