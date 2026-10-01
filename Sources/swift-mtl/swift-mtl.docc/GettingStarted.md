@@ -100,6 +100,42 @@ The tool:
 3. Evaluates expressions and loops
 4. Writes files to the output directory
 
+### Using Ecore Metamodels
+
+An Ecore file can take one of two roles on the command line.
+
+Use `--model` when the template should process the metamodel itself, for
+example a template whose main template takes an `EPackage`:
+
+```bash
+swift-mtl generate Ecore2Dot.mtl \
+    --model library.ecore \
+    --output generated/
+```
+
+The metamodel is registered, so that instance models can be parsed against it,
+and its root `EPackage` is passed to the main template as an argument. Like
+every other `--model` file, it is registered under its file name without
+extension, and its argument position follows the command line order.
+
+Use `--metamodel` when an instance model needs its metamodel but the template
+does not want the `EPackage` as an argument. The option can be repeated:
+
+```bash
+swift-mtl generate GenerateBooks.mtl \
+    --metamodel library.ecore \
+    --model books.xmi \
+    --output generated/
+```
+
+Here the template receives only the root object of `books.xmi`. With
+`--verbose`, each Ecore file is announced as either registered only or
+registered and used as an input model.
+
+> Note: Navigating the features of a native `EPackage` inside a template, such
+> as `aPackage.name` or `aPackage.eClassifiers`, requires a swift-ecore release
+> whose native metamodel objects support reflection.
+
 ### Previewing Output
 
 Preview without writing files:

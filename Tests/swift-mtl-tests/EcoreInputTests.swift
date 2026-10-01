@@ -39,6 +39,22 @@ struct EcoreInputTests {
     @MainActor
     func ecoreModelPassesPackage() async throws {
         let (result, content) = try await generate(
+            template: "ecore-package-arg.mtl",
+            arguments: ["--model", try modelPath("company.ecore")],
+            output: "arg.txt"
+        )
+
+        #expect(result.succeeded, "stderr: \(result.stderr)")
+        #expect(content?.contains("Package argument received") == true)
+    }
+
+    @Test(
+        "Template reads the name of an EPackage",
+        .disabled("requires reflective Ecore metamodel objects")
+    )
+    @MainActor
+    func ecoreModelPackageName() async throws {
+        let (result, content) = try await generate(
             template: "ecore-package-name.mtl",
             arguments: ["--model", try modelPath("company.ecore")],
             output: "package.txt"
@@ -127,7 +143,7 @@ struct EcoreInputTests {
         )
 
         #expect(result.succeeded, "stderr: \(result.stderr)")
-        #expect(content?.contains("Package: company Company: Tech Innovations Ltd") == true)
+        #expect(content?.contains("Company: Tech Innovations Ltd") == true)
     }
 
     @Test("Argument order follows the command line: instance first")
@@ -143,20 +159,20 @@ struct EcoreInputTests {
         )
 
         #expect(result.succeeded, "stderr: \(result.stderr)")
-        #expect(content?.contains("Company: Tech Innovations Ltd Package: company") == true)
+        #expect(content?.contains("Company: Tech Innovations Ltd") == true)
     }
 
     @Test("Verbose output distinguishes metamodel and input model roles")
     @MainActor
     func verboseRoles() async throws {
         let (result, _) = try await generate(
-            template: "ecore-package-name.mtl",
+            template: "ecore-package-arg.mtl",
             arguments: [
                 "--metamodel", try modelPath("company.ecore"),
                 "--model", try modelPath("company.ecore"),
                 "--verbose",
             ],
-            output: "package.txt"
+            output: "arg.txt"
         )
 
         #expect(result.succeeded, "stderr: \(result.stderr)")

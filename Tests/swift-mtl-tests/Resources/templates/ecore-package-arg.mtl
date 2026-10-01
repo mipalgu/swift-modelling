@@ -1,0 +1,7 @@
+[module EcorePackageArg('http://www.eclipse.org/emf/2002/Ecore')]
+
+[template main(aPackage : EPackage)]
+[file ('arg.txt', 'overwrite', 'UTF-8')]
+Package argument received
+[/file]
+[/template]

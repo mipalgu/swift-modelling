@@ -236,6 +236,17 @@ swift run swift-mtl generate template.mtl \
   --template generateAll \
   --output generated/
 
+# Ecore model: registered as a metamodel, and its EPackage is passed to the template
+swift run swift-mtl generate ecore2dot.mtl \
+  --model library.ecore \
+  --output generated/
+
+# Register a metamodel only, and pass just the instance model to the template
+swift run swift-mtl generate template.mtl \
+  --metamodel library.ecore \
+  --model books.xmi \
+  --output generated/
+
 # Verbose generation with statistics
 swift run swift-mtl generate template.mtl \
   --model input.xmi \
@@ -243,7 +254,13 @@ swift run swift-mtl generate template.mtl \
   --verbose
 ```
 
-**Input formats:** MTL templates (`.mtl`), XMI models (`.xmi`), JSON models (`.json`)
+**Input formats:** MTL templates (`.mtl`), XMI models (`.xmi`), JSON models (`.json`), Ecore metamodels (`.ecore`)
+
+**Ecore roles:** `--model X.ecore` registers the metamodel and passes its root `EPackage` to the
+main template, in command line order, like any other model. `--metamodel X.ecore` (repeatable)
+only registers the metamodel, so that instance models can be parsed against it without the
+`EPackage` becoming a template argument. Navigating the features of a native `EPackage` inside a
+template requires a swift-ecore release with reflective metamodel objects.
 
 #### Parse Command
 

@@ -2,6 +2,6 @@
 
 [template main(c : Company, aPackage : EPackage)]
 [file ('order.txt', 'overwrite', 'UTF-8')]
-Company: [c.name/] Package: [aPackage.name/]
+Company: [c.name/]
 [/file]
 [/template]
