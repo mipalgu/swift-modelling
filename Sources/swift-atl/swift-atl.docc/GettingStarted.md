@@ -29,8 +29,8 @@ Build the tool:
 swift build -c release
 ```
 
-The executable will be available at:
-`.build/release/swift-atl`
+The executable is built as `swift-atl` in the `release` folder of
+the build directory.
 
 ## Your First Transformation
 
@@ -39,16 +39,15 @@ The executable will be available at:
 Before running a transformation, validate its syntax:
 
 ```bash
-swift-atl validate Families2Persons.atl \
-    --source-metamodel Families.ecore \
-    --target-metamodel Persons.ecore
+swift-atl validate Families2Persons.atl --check-metamodels \
+    --metamodel-path metamodels/
 ```
 
-This checks that:
-- The transformation syntax is correct
-- Referenced metamodel classes exist
-- Helper signatures are valid
-- Rule patterns are well-formed
+This performs syntax checking, semantic analysis and type checking.
+With `--check-metamodels` it also checks metamodel compatibility,
+searching the given directories for the metamodels. Add `--strict`
+for strict validation and `--check-rules` to validate rule
+completeness.
 
 ### Running the Transformation
 
@@ -60,11 +59,11 @@ swift-atl transform Families2Persons.atl \
     --target output-Persons.xmi
 ```
 
-The tool:
-1. Loads the source model
-2. Applies transformation rules
-3. Generates the target model
-4. Writes output to the specified file
+The tool loads the source model, applies the transformation rules
+and writes the target model to the specified file. Models in XMI
+and JSON formats are supported, with the format detected from the
+file extension. Use `--input-format` and `--output-format` to
+override it.
 
 ### Verifying the Output
 
@@ -119,23 +118,18 @@ swift-atl transform Families2Persons.atl \
 
 ## Development Workflow
 
-### Debug Mode
+### Debug Output
 
-Run transformations in debug mode to trace execution:
+Use `--debug` to trace execution in detail, and `--verbose` for
+additional progress output:
 
 ```bash
 swift-atl transform Families2Persons.atl \
     --source families.xmi \
     --target persons.xmi \
-    --mode debug \
+    --debug \
     --verbose
 ```
-
-Debug output shows:
-- Which rules matched which elements
-- Helper evaluation results
-- Binding assignments
-- Warnings and potential issues
 
 ### Iterative Development
 
@@ -147,19 +141,17 @@ vim MyTransformation.atl
 
 # 2. Validate syntax
 swift-atl validate MyTransformation.atl \
-    --source-metamodel Source.ecore \
-    --target-metamodel Target.ecore
+    --metamodel-path metamodels/
 
 # 3. Test with sample data
 swift-atl transform MyTransformation.atl \
     --source sample.xmi \
     --target output.xmi \
-    --mode debug
+    --debug
 
 # 4. Verify output
 swift-ecore validate output.xmi \
     --metamodel Target.ecore
-swift-ecore inspect output.xmi
 ```
 
 ## Advanced Features
@@ -248,72 +240,40 @@ rule Family2Household {
 }
 ```
 
-### Using Libraries
+### Module Parameters
 
-Share helpers across transformations:
-
-```bash
-# helpers.atl - shared helper library
-module helpers;
-helper def: normalise(s: String): String =
-    s.toLower().replaceAll(' ', '_');
-```
-
-Import and use in transformations:
+A transformation can declare parameters in header comments with
+`-- @param name : Type` (optionally `= default`), and read them as
+`thisModule.name`. Supply their values with `--param`:
 
 ```bash
-swift-atl transform MyTransformation.atl \
-    --source input.xmi \
-    --target output.xmi \
-    --library helpers.atl
+swift-atl transform Ecore2GenModel.atl \
+    --source IN=library.ecore \
+    --target OUT=library.genmodel \
+    --param basePackage=org.example \
+    --param prefix=Library
 ```
 
-Reference library helpers:
+## Other Commands
 
-```atl
-to
-    t: Target!Element (
-        name <- thisModule.helpers.normalise(s.name)
-    )
-```
-
-## Production Use
-
-### Compilation
-
-Compile transformations to bytecode for faster execution:
-
-```bash
-swift-atl compile Families2Persons.atl --optimise
-```
-
-This creates `Families2Persons.asm`. Run compiled transformations:
-
-```bash
-swift-atl transform Families2Persons.asm \
-    --source input.xmi \
-    --target output.xmi
-```
-
-Compiled transformations execute significantly faster, ideal for
-processing large models or batch operations.
+Beyond `validate` and `transform`, the tool offers `parse` to
+display the structure of a transformation, `analyze` for
+complexity metrics, `test` to run tests over files or a directory,
+`compile` to compile a transformation, and `generate` to create
+generator models and source code from Ecore models. See
+<doc:swift-atl> for the options of each command.
 
 ### Batch Processing
 
-Transform multiple models efficiently:
+Transform multiple models with the same transformation:
 
 ```bash
 #!/bin/bash
-# Compile once
-swift-atl compile Transform.atl --optimise
-
-# Process many models
 for input in models/*.xmi; do
     output="output/$(basename "$input")"
-    swift-atl transform Transform.asm \
+    swift-atl transform Transform.atl \
         --source "$input" \
-        --target "$output" \
-        --suppress-warnings
+        --target "$output"
 done
 ```
 
@@ -383,7 +343,7 @@ swift-mtl generate GenerateSQL.mtl \
 swift-atl transform MyTransformation.atl \
     --source input.xmi \
     --target output.xmi \
-    --mode debug \
+    --debug \
     --verbose
 ```
 
@@ -397,8 +357,8 @@ Check rule guards - they might be too restrictive.
 
 ```bash
 swift-atl validate MyTransformation.atl \
-    --source-metamodel Source.ecore \
-    --target-metamodel Target.ecore \
+    --metamodel-path metamodels/ \
+    --check-metamodels \
     --strict
 ```
 
@@ -409,17 +369,14 @@ the metamodels.
 
 **Problem**: Transformation takes too long
 
-**Solution**: Compile with optimisation:
+**Solution**: Review helper efficiency and avoid expensive
+operations in frequently-called helpers. Use `--verbose` to see
+progress, and `swift-atl analyze` to find complex rules and
+helpers:
 
 ```bash
-swift-atl compile MyTransformation.atl --optimise
-swift-atl transform MyTransformation.asm \
-    --source large-model.xmi \
-    --target output.xmi
+swift-atl analyze MyTransformation.atl --metrics complexity,helpers
 ```
-
-Also review helper efficiency - avoid expensive operations in
-frequently-called helpers.
 
 ## Next Steps
 

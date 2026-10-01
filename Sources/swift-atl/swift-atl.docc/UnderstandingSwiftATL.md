@@ -325,44 +325,24 @@ Common operations:
 - `reject(condition)` - Exclude matching elements
 - `collect(expression)` - Transform each element
 
-## Compilation and Optimisation
+## Compilation
 
-### Bytecode Compilation
-
-Compile transformations to bytecode:
+The `compile` command parses an ATL file and names its compiled
+module, which defaults to the input file name with a `.atlc`
+extension:
 
 ```bash
 swift-atl compile MyTransformation.atl --optimise
 ```
 
-Creates `MyTransformation.asm` with optimised bytecode.
+Use `swift-atl transform` with the `.atl` source file to run a
+transformation.
 
-**Benefits:**
-- Faster execution (5-10× speedup typical)
-- Parse happens once
-- Type checking cached
-- Optimisation passes applied
+## Execution Output
 
-**Use when:**
-- Running transformations repeatedly
-- Processing large models
-- Production deployments
-- Batch processing
+### Normal Output
 
-### Optimisation Passes
-
-The `--optimise` flag enables:
-- Constant folding
-- Dead code elimination
-- Helper inlining
-- Loop unrolling
-- Common subexpression elimination
-
-## Execution Modes
-
-### Normal Mode
-
-Default mode for production use:
+By default, the tool prints only errors and warnings:
 
 ```bash
 swift-atl transform Transform.atl \
@@ -370,47 +350,20 @@ swift-atl transform Transform.atl \
     --target output.xmi
 ```
 
-Prints only errors and warnings.
+### Verbose and Debug Output
 
-### Debug Mode
-
-Detailed execution tracing:
+`--verbose` enables verbose output, and `--debug` enables detailed
+execution tracing:
 
 ```bash
 swift-atl transform Transform.atl \
     --source input.xmi \
     --target output.xmi \
-    --mode debug \
+    --debug \
     --verbose
 ```
 
-Shows:
-- Rule matching decisions
-- Guard evaluation results
-- Binding assignments
-- Helper calls and returns
-- Trace links
-
 **Use for**: Development, debugging, understanding execution.
-
-### Trace Mode
-
-Maximum detail for deep debugging:
-
-```bash
-swift-atl transform Transform.atl \
-    --source input.xmi \
-    --target output.xmi \
-    --mode trace
-```
-
-Includes everything from debug mode plus:
-- Expression evaluation steps
-- OCL operation details
-- Memory allocation
-- Performance timings
-
-**Use for**: Diagnosing complex issues, performance profiling.
 
 ## Validation
 
@@ -434,16 +387,15 @@ Validate against metamodels:
 
 ```bash
 swift-atl validate MyTransformation.atl \
-    --source-metamodel Source.ecore \
-    --target-metamodel Target.ecore \
+    --metamodel-path metamodels/ \
+    --check-metamodels \
     --strict
 ```
 
-Verifies:
-- Referenced classes exist
-- Attributes and references are valid
-- Type compatibility
-- Cardinality constraints
+`--metamodel-path` names the directories searched for metamodels,
+`--check-metamodels` checks metamodel compatibility, and `--strict`
+enables strict validation. Add `--check-rules` to validate rule
+completeness.
 
 **Always validate** before running transformations on production
 data.
@@ -525,43 +477,6 @@ Use realistic test models:
 - Verify relationships resolve correctly
 - Check cardinality constraints
 
-### Compile for Production
-
-Always compile for production use:
-
-```bash
-# Development
-swift-atl transform Transform.atl --source test.xmi --target out.xmi
-
-# Production
-swift-atl compile Transform.atl --optimise
-swift-atl transform Transform.asm --source prod.xmi --target out.xmi
-```
-
-### Use Libraries for Shared Code
-
-Extract common helpers to libraries:
-
-```atl
--- library: string-utils.atl
-module stringUtils;
-
-helper def: capitalise(s: String): String =
-    s.substring(0, 1).toUpper() + s.substring(1, s.size());
-
-helper def: normalise(s: String): String =
-    s.replaceAll(' ', '_').toLower();
-```
-
-Import in transformations:
-
-```bash
-swift-atl transform MyTransform.atl \
-    --source input.xmi \
-    --target output.xmi \
-    --library string-utils.atl
-```
-
 ## Error Handling
 
 ### Transformation Errors
@@ -590,13 +505,13 @@ Common errors and solutions:
 
 ### Debugging Strategies
 
-**Use debug mode liberally:**
+**Use debug output liberally:**
 
 ```bash
 swift-atl transform Transform.atl \
     --source input.xmi \
     --target output.xmi \
-    --mode debug --verbose 2>&1 | tee debug.log
+    --debug --verbose 2>&1 | tee debug.log
 ```
 
 **Validate intermediate steps:**
@@ -616,7 +531,7 @@ complexity incrementally.
 ```bash
 #!/bin/bash
 echo "Validating input..."
-swift-ecore validate input.xmi --metamodel Source.ecore --strict
+swift-ecore validate input.xmi --metamodel Source.ecore
 
 if [ $? -eq 0 ]; then
     echo "Transforming..."
