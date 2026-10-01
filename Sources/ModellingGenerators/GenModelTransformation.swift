@@ -29,15 +29,47 @@ struct GenModelTransformation {
             subdirectory: GenModelImportConstants.transformationDirectory)
     }
 
-    /// Parses the bundled transformation.
+    /// The file of a transformation that replaces the bundled one.
     ///
-    /// - Parameter generatorMetamodel: The generator metamodel that the transformation targets.
+    /// - Parameter location: A transformation file, or a directory that holds a file named after
+    ///   the bundled transformation.
+    /// - Returns: The file to parse.
+    /// - Throws: ``GenerationError/transformationUnavailable(_:)`` if the location does not exist or
+    ///   a directory lacks the transformation file.
+    static func overrideURL(at location: URL) throws -> URL {
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: location.path, isDirectory: &isDirectory) else {
+            throw GenerationError.transformationUnavailable("\(location.path) does not exist")
+        }
+        guard isDirectory.boolValue else { return location }
+        let file = location.appendingPathComponent(GenModelImportConstants.transformationName)
+            .appendingPathExtension(GenModelImportConstants.transformationExtension)
+        guard FileManager.default.fileExists(atPath: file.path) else {
+            throw GenerationError.transformationUnavailable(
+                "\(location.path) contains no \(file.lastPathComponent)")
+        }
+        return file
+    }
+
+    /// Parses the bundled transformation, or the one that replaces it.
+    ///
+    /// - Parameters:
+    ///   - generatorMetamodel: The generator metamodel that the transformation targets.
+    ///   - replacement: A transformation file or a directory that holds one, used instead of the
+    ///     bundled transformation; `nil` selects the bundled transformation.
     /// - Returns: The parsed transformation.
     /// - Throws: ``GenerationError/transformationUnavailable(_:)`` if the transformation is
-    ///   missing from the bundle or cannot be parsed.
+    ///   missing or cannot be parsed.
     @MainActor
-    static func load(generatorMetamodel: EPackage) async throws -> GenModelTransformation {
-        guard let url = resourceURL else {
+    static func load(generatorMetamodel: EPackage, replacement: URL? = nil) async throws
+        -> GenModelTransformation
+    {
+        let url: URL
+        if let replacement {
+            url = try overrideURL(at: replacement)
+        } else if let bundled = resourceURL {
+            url = bundled
+        } else {
             throw GenerationError.transformationUnavailable("the bundled transformation is missing")
         }
         let registry = ATLMetamodelRegistry(packages: [EcorePackage.instance, generatorMetamodel])

@@ -111,14 +111,7 @@ struct GenModelCommand: AsyncParsableCommand {
     func importOptions() -> GenModelImportOptions {
         var options = GenModelImportOptions()
         options.basePackage = basePackage
-        for entry in prefix {
-            if let separator = entry.firstIndex(of: GenModelImportConstants.assignmentSeparatorCharacter) {
-                let name = String(entry[..<separator])
-                options.packagePrefixes[name] = String(entry[entry.index(after: separator)...])
-            } else {
-                options.prefix = entry
-            }
-        }
+        prefix.forEach { options.addPrefix($0) }
         options.modelProject = modelProject
         options.modelPluginID = modelPluginID
         options.modelDirectory = modelDirectory

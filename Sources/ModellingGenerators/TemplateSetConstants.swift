@@ -34,4 +34,9 @@ public enum TemplateSetConstants {
 
     /// The redirection pattern written for `--diff`: the generated text of an existing file goes beside it.
     public static let diffRedirectionPattern = ".{0}.new"
+
+    /// The name of the pseudo-language that stops after creating the generator model.
+    ///
+    /// It is accepted wherever a language is, and it never names a template set.
+    public static let genModelLanguage = "genmodel"
 }

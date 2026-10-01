@@ -76,7 +76,8 @@ public enum GenerationPipeline {
         }
 
         progress("Loading the transformation")
-        let transformation = try await GenModelTransformation.load(generatorMetamodel: generatorMetamodel)
+        let transformation = try await GenModelTransformation.load(
+            generatorMetamodel: generatorMetamodel, replacement: options.transformation)
 
         var loaded: [(url: URL, resource: Resource, package: EPackage)] = []
         for url in sources {

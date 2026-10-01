@@ -78,6 +78,11 @@ public enum GenerationError: Error, Sendable, Equatable, CustomStringConvertible
     /// The associated value is the offending path.
     case templatePathInvalid(String)
 
+    /// The input file is neither a generator model nor an Ecore model.
+    ///
+    /// The associated value is the offending path.
+    case unsupportedInput(String)
+
     /// A description of the error for display to the user.
     public var errorDescription: String? { description }
 
@@ -114,6 +119,8 @@ public enum GenerationError: Error, Sendable, Equatable, CustomStringConvertible
             return "Generation failed: \(cause)"
         case .templatePathInvalid(let path):
             return "The template path '\(path)' is not a directory"
+        case .unsupportedInput(let path):
+            return "The input '\(path)' is neither a generator model nor an Ecore model"
         }
     }
 }

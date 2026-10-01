@@ -67,6 +67,13 @@ public struct GenModelImportOptions: Sendable, Equatable {
     /// and written beside it.
     public var output: URL?
 
+    /// A transformation that replaces the bundled one; the bundled transformation by default.
+    ///
+    /// The location is either a transformation file, or a directory that holds a file named
+    /// `Ecore2GenModel.atl`. The replacement receives the same parameters as the bundled
+    /// transformation.
+    public var transformation: URL?
+
     /// Whether generated models include operation reflection.
     public var operationReflection: Bool
 
@@ -89,6 +96,7 @@ public struct GenModelImportOptions: Sendable, Equatable {
     ///   - complianceLevel: The compliance level of the generated code.
     ///   - reload: The existing generator model whose settings are kept.
     ///   - output: The generator model file to write.
+    ///   - transformation: A transformation file or directory that replaces the bundled transformation.
     ///   - operationReflection: Whether generated models include operation reflection.
     ///   - rootExtendsClass: The class that generated root objects extend.
     ///   - importOrganizing: Whether the generated code organises its imports.
@@ -103,6 +111,7 @@ public struct GenModelImportOptions: Sendable, Equatable {
         complianceLevel: String? = nil,
         reload: URL? = nil,
         output: URL? = nil,
+        transformation: URL? = nil,
         operationReflection: Bool = GenModelImportConstants.defaultOperationReflection,
         rootExtendsClass: String = GenModelImportConstants.defaultRootExtendsClass,
         importOrganizing: Bool = GenModelImportConstants.defaultImportOrganizing
@@ -117,8 +126,25 @@ public struct GenModelImportOptions: Sendable, Equatable {
         self.complianceLevel = complianceLevel
         self.reload = reload
         self.output = output
+        self.transformation = transformation
         self.operationReflection = operationReflection
         self.rootExtendsClass = rootExtendsClass
         self.importOrganizing = importOrganizing
+    }
+
+    /// Applies a prefix given as text.
+    ///
+    /// The text is either a prefix for the root packages (`Name`) or a prefix for one package
+    /// (`package=Name`, using ``GenModelImportConstants/assignmentSeparator``).
+    ///
+    /// - Parameter argument: The prefix as given on a command line.
+    public mutating func addPrefix(_ argument: String) {
+        guard let separator = argument.firstIndex(of: GenModelImportConstants.assignmentSeparatorCharacter)
+        else {
+            prefix = argument
+            return
+        }
+        let name = String(argument[..<separator])
+        packagePrefixes[name] = String(argument[argument.index(after: separator)...])
     }
 }

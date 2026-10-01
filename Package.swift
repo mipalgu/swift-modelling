@@ -78,6 +78,8 @@ let package = Package(
             dependencies: [
                 .product(name: "ATL", package: "swift-atl"),
                 .product(name: "ECore", package: "swift-ecore"),
+                .product(name: "GenModel", package: "swift-ecore"),
+                "ModellingGenerators",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
             swiftSettings: [
@@ -88,6 +90,7 @@ let package = Package(
             name: "swift-mtl",
             dependencies: [
                 .product(name: "MTL", package: "swift-mtl"),
+                "ModellingGenerators",
                 .product(name: "ECore", package: "swift-ecore"),
                 .product(name: "EMFBase", package: "swift-ecore"),
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
