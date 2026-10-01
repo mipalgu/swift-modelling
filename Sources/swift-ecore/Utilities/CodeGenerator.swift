@@ -17,6 +17,9 @@ import Foundation
 /// For Swift generation, the actor follows a one-file-per-class pattern, organises output
 /// into package-based directory structures, and includes comprehensive DocC documentation.
 actor CodeGenerator {
+    /// The languages that this generator writes itself, without a template set.
+    static let supportedLanguages = ["swift", "cpp", "c", "llvm"]
+
     /// The target language for code generation (e.g., "swift", "cpp").
     let language: String
 
@@ -36,7 +39,7 @@ actor CodeGenerator {
     ///   - outputDirectory: The URL of the directory where code will be generated.
     /// - Throws: `GenerationError.unsupportedLanguage` if the specified language is not supported.
     init(language: String, outputDirectory: URL) throws {
-        guard ["swift", "cpp", "c", "llvm"].contains(language) else {
+        guard Self.supportedLanguages.contains(language) else {
             throw GenerationError.unsupportedLanguage(language)
         }
         self.language = language
