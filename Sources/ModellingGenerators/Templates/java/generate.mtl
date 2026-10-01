@@ -12,6 +12,9 @@
 [import JavaImports/]
 [import JavaTypes/]
 [import EnumClass/]
+[import JavaUtilities/]
+[import SwitchClass/]
+[import AdapterFactoryClass/]
 
 [**
  * Writes the model code of every package of a generator model, nested packages included.
@@ -32,7 +35,11 @@
 [for (genEnum : GenEnum | genPackage.genEnums)]
 [genEnum.generateEnumFile()/]
 [/for]
-[comment TODO: switch and adapter factory (adapter factory with classes), resource factory and resource implementation (resource kind not None). /]
+[if (genPackage.generatesAdapterFactory())]
+[genPackage.generateSwitchFile()/]
+[genPackage.generateAdapterFactoryFile()/]
+[/if]
+[comment TODO: resource factory and resource implementation (resource kind not None). /]
 [/template]
 
 [**
@@ -43,10 +50,24 @@
 [/template]
 
 [**
+ * Writes the file of the switch of one generator package.
+ **/]
+[template public generateSwitchFile(genPackage : GenPackage)]
+[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.switchClassName() + '.java', false, 'UTF-8')][genPackage.switchClass()/][/file]
+[/template]
+
+[**
+ * Writes the file of the adapter factory of one generator package.
+ **/]
+[template public generateAdapterFactoryFile(genPackage : GenPackage)]
+[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.adapterFactoryClassName() + '.java', false, 'UTF-8')][genPackage.adapterFactoryClass()/][/file]
+[/template]
+
+[**
  * The number of files that this module writes for a generator model, used to report progress.
  **/]
 [template public fileCount(genModel : GenModel)]
 [file ('count')]
-[genModel.allGenPackages()->collect(p | p.genEnums->size())->sum()/]
+[genModel.allGenPackages()->collect(p | p.genEnums->size() + (if p.generatesAdapterFactory() then 2 else 0 endif))->sum()/]
 [/file]
 [/template]
