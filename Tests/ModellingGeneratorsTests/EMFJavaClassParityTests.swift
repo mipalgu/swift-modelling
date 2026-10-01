@@ -9,7 +9,7 @@ import Testing
 /// the reference repository; otherwise the tests are reported as skipped. The committed sources of the
 /// reference example were edited after generation, so the comparison states which differences it
 /// accepts and why, in `ReferenceDifferences`.
-@Suite("Parity of generated classes with the Eclipse reference output")
+@Suite("Parity of generated classes with the Eclipse reference output", .serialized)
 struct EMFJavaClassParityTests {
     /// The package of the reference example, as a directory below its source root.
     static let packageDirectory = "org/eclipse/emf/examples/extlibrary"
