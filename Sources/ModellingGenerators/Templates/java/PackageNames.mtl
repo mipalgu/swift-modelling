@@ -550,3 +550,9 @@
  * Whether a feature is a single valued attribute of the primitive boolean type, whose getter starts with is.
  **/]
 [query public isBooleanFeature(genFeature : GenFeature) : Boolean = genFeature.isAttributeType() and not genFeature.isListType() and instanceClassName(genFeature.ecoreFeature.eType) = 'boolean'/]
+
+[**
+ * The number of files that the templates of this module write for a package: the interface and implementation,
+ * and the serialised form of a package that loads its metadata.
+ **/]
+[query public packageFileCount(genPackage : GenPackage) : Integer = if genPackage.hasClassifiers() then 1 + (if genPackage.genModel().isOn('suppressEMFMetaData') or genPackage.genModel().isOn('suppressInterfaces') then 0 else 1 endif) + (if genPackage.isLoadingInitialization() then 1 else 0 endif) else 0 endif/]

@@ -51,7 +51,7 @@
  **/]
 [template public fileCount(genModel : GenModel)]
 [file ('count')]
-[genModel.allGenPackages()->collect(p | p.genEnums->size())->sum()/]
+[genModel.allGenPackages()->collect(p | p.genEnums->size() + p.packageFileCount())->sum()/]
 [/file]
 [/template]
 
