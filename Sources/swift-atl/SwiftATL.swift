@@ -22,7 +22,7 @@ import ArgumentParser
 /// - **analyze**: Analyse ATL transformation files for complexity and metrics
 /// - **compile**: Compile ATL transformation files to executable modules
 /// - **transform**: Execute model transformations using compiled ATL modules
-/// - **generate**: Generate code from models using ATL-based code generators
+/// - **generate**: Create generator models and generate code from Ecore models with the shared pipeline
 ///
 /// ## Example Usage
 ///
@@ -45,6 +45,9 @@ import ArgumentParser
 /// # Execute a transformation
 /// swift-atl transform families2persons.atlc \
 ///   --source families.xmi --target persons.xmi
+///
+/// # Generate Java from an Ecore model
+/// swift-atl generate library.ecore --language java --output src-gen
 /// ```
 @main
 struct SwiftATLCommand: AsyncParsableCommand {
