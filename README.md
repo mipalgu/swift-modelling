@@ -39,6 +39,9 @@ and the [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec
 - **Execution Engine**: Complete ATL virtual machine with expression evaluation
 - **Advanced OCL**: Let expressions, tuple expressions, iterate operations, lambda expressions
 - **Helper Functions**: Context and standalone helper functions
+- **Module Parameters**: Values for `-- @param` declarations with `swift-atl transform --param name=value`
+- **Built-in Metamodels**: The Ecore and generator metamodels resolve from `-- @nsURI` directives without metamodel files
+- **Code Generation**: `swift-atl generate` turns Ecore models into generator models and generated code with the shared pipeline
 
 ### MOFM2T Support
 - **MTL Parser**: Parse MTL templates from text files following the OMG MOFM2T v1.0 specification
@@ -46,7 +49,7 @@ and the [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec
 - **Model Loading**: Load models from XMI and JSON formats for transformation
 - **Expression Language**: Full AQL (Acceleo Query Language) integration for expressions
 - **Advanced Features**: File blocks, protected areas, queries, macros, control flow
-- **CLI Tool**: Generate, parse, and validate MTL templates from the command line
+- **CLI Tool**: Generate, parse, and validate MTL templates from the command line, with template search paths, parameters and merge or diff handling of existing files
 - **Standard Compliance**: Implements OMG MOFM2T v1.0 with compatibility for Acceleo-specific extensions
 
 ## Requirements
@@ -181,7 +184,7 @@ swift run swift-ecore generate Tests/ECoreTests/Resources/xmi/organisation.ecore
 
 **Input formats:** Ecore metamodels (`.ecore`), XMI models (`.xmi`), JSON models (`.json`)
 
-Languages that have a template set, such as `java`, are generated from a generator model; see [Generating Java from a Generator Model](#generating-java-from-a-generator-model).
+Languages that have a template set, such as `java`, are generated from a generator model or an Ecore model by the shared template pipeline; see [Generating Java from a Generator Model](#generating-java-from-a-generator-model). `swift-ecore generate --help` lists the template set languages that exist, including `--template-path` additions, and an unknown language is reported together with every language that can be used. The built-in generator for `swift`, `cpp`, `c` and `llvm` is unchanged.
 
 ### GenModel Command
 
@@ -329,6 +332,52 @@ my-templates/
 swift run swift-ecore generate --language outline model/library.genmodel -o out --template-path my-templates
 ```
 
+### Generating with ATL: `swift-atl generate`
+
+`swift-atl generate` is the ATL entry to the same pipeline. An Ecore model is first transformed into a generator model by the bundled ATL transformation `Ecore2GenModel.atl`; a template language then turns the generator model into source files. The input is an Ecore model or a generator model.
+
+```bash
+# Create library.genmodel beside library.ecore (the language genmodel stops after the transformation)
+swift run swift-atl generate model/library.ecore --language genmodel --base-package org.example
+
+# Generate Java from an Ecore model in one step (no generator model is left behind)
+swift run swift-atl generate model/library.ecore --language java --base-package org.example -o src-gen/
+
+# Generate from an existing generator model, with customised templates and a copy of what would change
+swift run swift-atl generate model/library.genmodel --language java --template-path my-templates --diff -o src-gen/
+
+# Replace the bundled transformation with a file, or with a directory that holds Ecore2GenModel.atl
+swift run swift-atl generate model/library.ecore --language genmodel --transformations my-atl/
+```
+
+**Languages.** `--language` takes `genmodel` (the default) or the name of any template set: the bundled ones (`java`) and the sets that `--template-path` directories add. `swift-atl generate --help` lists what exists, and an unknown name is rejected with that list. There are no other languages.
+
+**Options.** `--base-package`, `--prefix`, `--model-project`, `--model-plugin-id`, `--copyright` and `--jdk-level` mirror `swift-ecore genmodel`. `--template-path` (repeatable), `--force-overwrite`, `--diff` and `--model-directory` mirror `swift-ecore generate`. `-o, --output` is the output directory (default `Generated`); for the language `genmodel` it is the directory or the `.genmodel` file to write, and the default is beside the Ecore model. `--transformations` replaces the bundled transformation with a transformation file or a directory holding `Ecore2GenModel.atl`; the replacement receives the same parameters as the bundled one. A progress bar with counts appears on an interactive terminal; `-v` prints one line for every file.
+
+### ATL Transformations: `swift-atl transform`
+
+```bash
+# Positional source and target, as before
+swift run swift-atl transform Families2Persons.atl --source families.xmi --target persons.xmi
+
+# Values for the parameters a transformation declares with -- @param (repeatable)
+swift run swift-atl transform Ecore2GenModel.atl --source IN=library.ecore --target OUT=library.genmodel \
+  --param basePackage=org.example --param prefix=Library
+```
+
+**Parameters.** `--param name=value` binds a value to a module parameter declared in the transformation with `-- @param name : Type [= default]`. The text is converted to the declared type (`String`, `Integer`, `Real`, `Boolean`); the value is everything after the first `=`, and an undeclared name, a value of the wrong type, a missing required parameter or an argument without `name=` is an error. Inside the transformation a parameter is read as `thisModule.name`.
+
+**Built-in metamodels.** The Ecore metamodel (`http://www.eclipse.org/emf/2002/Ecore`) and the generator metamodel (`http://www.eclipse.org/emf/2002/GenModel`) are built in. A transformation names them with directives, so no metamodel file is needed:
+
+```text
+-- @nsURI Ecore=http://www.eclipse.org/emf/2002/Ecore
+-- @nsURI GenModel=http://www.eclipse.org/emf/2002/GenModel
+module Tiny;
+create OUT : GenModel from IN : Ecore;
+```
+
+**Output layout.** A target that is an instance of a built-in metamodel is written in the layout of the Eclipse Modeling Framework: references to other models are `uri#fragment` attribute values (`ecorePackage="library.ecore#/"`), with relative URIs and name-based fragments, so that the result opens unchanged in the Eclipse tooling. Other targets are written as before.
+
 ### Query Command
 
 Inspect and analyse models with powerful query operations.
@@ -398,12 +447,29 @@ swift run swift-mtl generate template.mtl \
   --model books.xmi \
   --output generated/
 
+# Import modules from extra directories, and pass parameters to the templates
+swift run swift-mtl generate template.mtl \
+  --model input.xmi \
+  --template-path shared/templates \
+  --param package=org.example --param verbose=true \
+  --output generated/
+
+# Keep existing files and write the new text beside them as .<name>.new, or replace them all
+swift run swift-mtl generate template.mtl --model input.xmi --diff --output generated/
+swift run swift-mtl generate template.mtl --model input.xmi --force-overwrite --output generated/
+
 # Verbose generation with statistics
 swift run swift-mtl generate template.mtl \
   --model input.xmi \
   --output generated/ \
   --verbose
 ```
+
+**Template path.** `--template-path <dir>` (repeatable) adds directories in which `[import ...]` looks for modules, after the directory of the template itself. A directory that does not exist is an error.
+
+**Parameters.** `--param name=value` (repeatable) is available to every template through two services: `parameter('name')` returns the value (`null` if it was not given) and `hasParameter('name')` tells whether it was given. A value is a boolean when it reads `true` or `false`, an integer when it is a whole number, and a string otherwise, so `[if (parameter('verbose'))]` and `[parameter('count') + 1/]` work. The value is everything after the first `=`, and a later argument replaces an earlier one of the same name. Parameters are services rather than variables: they are read with parentheses and are not visible as bare names.
+
+**Existing files.** A file that exists is merged with the generated text when the module declares a merge, and replaced otherwise. `--force-overwrite` always replaces it. `--diff` keeps it and writes the generated text beside it as `.<name>.new`; `--force-overwrite` wins when both are given.
 
 **Input formats:** MTL templates (`.mtl`), XMI models (`.xmi`), JSON models (`.json`), Ecore metamodels (`.ecore`)
 
@@ -547,6 +613,8 @@ done
 - [x] Convert command - Convert between XMI and JSON formats  
 - [x] Query command - Query models with info, count, find, list-classes, and tree operations
 - [ ] Generate command - Generate code in Swift, C++, C, and LLVM IR
+- [x] GenModel command - Create generator models from Ecore models
+- [x] Generate command for template sets - Generate Java (and any added template set) from generator models and Ecore models, also through `swift-atl generate`
 
 ## Architecture
 

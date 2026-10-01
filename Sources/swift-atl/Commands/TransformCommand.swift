@@ -9,6 +9,7 @@ import ATL
 import ArgumentParser
 import ECore
 import Foundation
+import GenModel
 import OrderedCollections
 
 /// Command for executing model transformations.
@@ -54,6 +55,18 @@ struct TransformCommand: AsyncParsableCommand {
                   --source departments.xmi \\
                   --target persons.xmi \\
                   --target organisations.xmi
+
+                # Module parameters declared with -- @param in the transformation
+                swift-atl transform Ecore2GenModel.atl \\
+                  --source IN=library.ecore \\
+                  --target OUT=library.genmodel \\
+                  --param basePackage=org.example \\
+                  --param prefix=Library
+
+            The Ecore and generator model metamodels are built in: a transformation can name them \
+            with -- @nsURI directives, without a metamodel file. Targets that are instances of a \
+            built-in metamodel are written in the layout of the Eclipse Modeling Framework, with \
+            references to other models as uri#fragment attribute values.
             """
     )
 
@@ -129,6 +142,15 @@ struct TransformCommand: AsyncParsableCommand {
     ///   `--metamodel-path ~/project/models --metamodel-path /usr/share/ecore`
     @Option(name: .long, help: "Metamodel search path (can be specified multiple times)")
     var metamodelPath: [String] = []
+
+    /// Values for the parameters that the transformation declares with `-- @param`.
+    ///
+    /// Each value is given as `name=value` and converted to the declared type of the parameter.
+    /// The option can be repeated, once per parameter.
+    @Option(
+        name: .long,
+        help: "Value for a module parameter as name=value (can be specified multiple times)")
+    var param: [String] = []
 
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose: Bool = false
@@ -218,7 +240,9 @@ struct TransformCommand: AsyncParsableCommand {
                 atlSource,
                 filename: URL(fileURLWithPath: transformation).path,
                 searchPaths: searchPaths,
-                continueAfterErrors: continueAfterErrors)
+                continueAfterErrors: continueAfterErrors,
+                metamodelRegistry: try await builtInMetamodelRegistry())
+            let parameterValues = try module.parameterValues(fromText: parseParameters(param))
 
             if verbose {
                 print("Transformation module loaded: \(module.name)")
@@ -282,7 +306,9 @@ struct TransformCommand: AsyncParsableCommand {
 
             var targetModels: OrderedDictionary<String, Resource> = [:]
             for (alias, path) in targetMapping {
-                let resource = Resource(uri: "file://\(path)")
+                let builtIn = module.targetMetamodels[alias].map(isBuiltIn) ?? false
+                let resource = Resource(
+                    uri: builtIn ? URL(fileURLWithPath: path).absoluteString : "file://\(path)")
                 targetModels[alias] = resource
 
                 if verbose {
@@ -304,7 +330,8 @@ struct TransformCommand: AsyncParsableCommand {
 
             try await virtualMachine.execute(
                 sources: sourceModels,
-                targets: targetModels
+                targets: targetModels,
+                parameters: parameterValues
             )
 
             // Step 5: Save target models
@@ -319,7 +346,9 @@ struct TransformCommand: AsyncParsableCommand {
                 targetModels,
                 mapping: targetMapping,
                 explicitFormat: outputFormat,
-                verbose: verbose
+                verbose: verbose,
+                emfLayoutAliases: Set(
+                    module.targetMetamodels.filter { isBuiltIn($0.value) }.map(\.key))
             )
 
             // Step 6: Display execution statistics
@@ -341,11 +370,3 @@ struct TransformCommand: AsyncParsableCommand {
         }
     }
 }
-
-// MARK: - Generate Command
-
-/// Command for generating code from models using ATL transformations.
-///
-/// The generate command uses ATL-based code generators to produce source code
-/// from input models. It supports multiple target languages and customizable
-/// generation templates through ATL transformation modules.

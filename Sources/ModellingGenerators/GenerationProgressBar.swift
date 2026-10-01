@@ -1,43 +1,42 @@
 //
 // GenerationProgressBar.swift
-// swift-ecore
+// ModellingGenerators
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
 import Foundation
-import ModellingGenerators
 
 /// Shows the progress of code generation as a text progress bar.
 ///
 /// When the number of files is known the bar fills as files are written; otherwise only the number of
 /// finished files is shown. On an interactive terminal the bar is redrawn in place on standard error;
 /// in verbose mode every report is printed as a line on standard output.
-struct GenerationProgressBar: Sendable {
+public struct GenerationProgressBar: Sendable {
     /// The number of characters between the brackets of the bar.
-    static let width = 24
+    public static let width = 24
 
     /// The character that fills the finished part of the bar.
-    static let fill: Character = "="
+    public static let fill: Character = "="
 
     /// The character that fills the unfinished part of the bar.
-    static let blank: Character = " "
+    public static let blank: Character = " "
 
     /// Whether every report is printed on its own line.
-    let verbose: Bool
+    public let verbose: Bool
 
     /// Whether standard error is an interactive terminal.
-    let interactive: Bool
+    public let interactive: Bool
 
     /// Creates a progress bar for the current terminal.
     ///
     /// - Parameter verbose: Whether every report is printed on its own line.
-    init(verbose: Bool) {
+    public init(verbose: Bool) {
         self.verbose = verbose
         self.interactive = Self.standardErrorIsTerminal
     }
 
     /// Whether standard error is attached to a terminal.
-    static var standardErrorIsTerminal: Bool {
+    public static var standardErrorIsTerminal: Bool {
         #if canImport(Darwin) || canImport(Glibc) || canImport(Musl)
             return isatty(STDERR_FILENO) != 0
         #else
@@ -50,7 +49,7 @@ struct GenerationProgressBar: Sendable {
     /// - Parameter update: The report to show.
     /// - Returns: A bar with the counts and the message, or the count and message alone if the
     ///   total is unknown.
-    static func render(_ update: GenerationProgressUpdate) -> String {
+    public static func render(_ update: GenerationProgressUpdate) -> String {
         guard let total = update.total, let fraction = update.fraction else {
             return "\(update.message) (\(update.completed) files)"
         }
@@ -62,7 +61,7 @@ struct GenerationProgressBar: Sendable {
     /// Shows a progress report.
     ///
     /// - Parameter update: The report to show.
-    func show(_ update: GenerationProgressUpdate) {
+    public func show(_ update: GenerationProgressUpdate) {
         let text = Self.render(update)
         if verbose {
             print(text)
@@ -72,7 +71,15 @@ struct GenerationProgressBar: Sendable {
     }
 
     /// Ends an in-place bar so that later output starts on a fresh line.
-    func finish() {
+    public func finish() {
         if !verbose && interactive { FileHandle.standardError.write(Data("\r\u{1B}[K".utf8)) }
+    }
+
+    /// A progress reporter that shows every report with this bar.
+    ///
+    /// Pass the reporter to ``GenerationPipeline`` functions that take a
+    /// ``GenerationProgressReporter``.
+    public var reporter: GenerationProgressReporter {
+        { update in self.show(update) }
     }
 }

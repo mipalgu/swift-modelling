@@ -8,6 +8,7 @@
 import ATL
 import ECore
 import Foundation
+import GenModel
 import OrderedCollections
 
 // MARK: - Model Format Detection
@@ -258,13 +259,16 @@ func mapFilesToAliases(
 ///   - format: The model format to use for serialisation (can be overridden by explicitFormat).
 ///   - explicitFormat: Optional explicit format string override (e.g., "xmi", "json").
 ///   - verbose: Whether to print verbose output during saving.
+///   - emfLayout: Whether an XMI model is written in the layout of the Eclipse Modeling Framework,
+///     with references to other models as `uri#fragment` attribute values.
 /// - Throws: Serialisation errors if saving fails.
 func saveModel(
     _ resource: Resource,
     to path: String,
     format: ModelFormat,
     explicitFormat: String? = nil,
-    verbose: Bool
+    verbose: Bool,
+    emfLayout: Bool = false
 ) async throws {
     let url = URL(fileURLWithPath: path)
 
@@ -281,6 +285,12 @@ func saveModel(
 
     let content: String
     switch actualFormat {
+    case .xmi where emfLayout:
+        try await GenModelResource.save(resource, to: url)
+        if verbose {
+            print("    Saved successfully")
+        }
+        return
     case .xmi:
         let serializer = XMISerializer()
         content = try await serializer.serialize(resource)
@@ -307,12 +317,15 @@ func saveModel(
 ///   - mapping: Ordered dictionary mapping aliases to output file paths
 ///   - explicitFormat: Optional explicit format override for all models
 ///   - verbose: Whether to print verbose output during saving
+///   - emfLayoutAliases: The aliases of the targets that are written in the layout of the
+///     Eclipse Modeling Framework, because they are instances of a built-in metamodel
 /// - Throws: Serialisation errors if saving fails
 func saveTargetModelsFromMapping(
     _ targets: OrderedDictionary<String, Resource>,
     mapping: OrderedDictionary<String, String>,
     explicitFormat: String? = nil,
-    verbose: Bool
+    verbose: Bool,
+    emfLayoutAliases: Set<String> = []
 ) async throws {
     if verbose && !mapping.isEmpty {
         print("Saving target models...")
@@ -332,7 +345,50 @@ func saveTargetModelsFromMapping(
             to: path,
             format: format,
             explicitFormat: explicitFormat,
-            verbose: verbose
+            verbose: verbose,
+            emfLayout: emfLayoutAliases.contains(alias)
         )
     }
+}
+
+// MARK: - Built-in Metamodels and Parameters
+
+/// The metamodels that the tool provides without a metamodel file.
+///
+/// A transformation names them with `-- @nsURI` directives: the Ecore metamodel by
+/// `http://www.eclipse.org/emf/2002/Ecore` and the generator metamodel by
+/// `http://www.eclipse.org/emf/2002/GenModel`.
+///
+/// - Returns: A registry that holds the built-in metamodels.
+/// - Throws: An error if the generator metamodel cannot be loaded.
+@MainActor
+func builtInMetamodelRegistry() async throws -> ATLMetamodelRegistry {
+    ATLMetamodelRegistry(packages: [EcorePackage.instance, try await GenModelPackage.load()])
+}
+
+/// Reports whether a package is one of the built-in metamodels.
+///
+/// - Parameter package: The package to examine.
+/// - Returns: `true` if the namespace URI of the package is that of the Ecore or generator metamodel.
+func isBuiltIn(_ package: EPackage) -> Bool {
+    [EcorePackage.instance.nsURI, GenModelConstants.nsURI].contains(package.nsURI)
+}
+
+/// Splits `name=value` arguments into module parameter values.
+///
+/// The value is everything after the first `=`, so it can itself contain `=`. A later argument
+/// for the same name replaces an earlier one.
+///
+/// - Parameter arguments: The arguments as given on the command line.
+/// - Returns: The textual values by parameter name.
+/// - Throws: `TransformationError.invalidParameterArgument` if an argument has no name or no `=`.
+func parseParameters(_ arguments: [String]) throws -> [String: String] {
+    var values: [String: String] = [:]
+    for argument in arguments {
+        guard let separator = argument.firstIndex(of: "="), separator != argument.startIndex else {
+            throw TransformationError.invalidParameterArgument(argument)
+        }
+        values[String(argument[..<separator])] = String(argument[argument.index(after: separator)...])
+    }
+    return values
 }

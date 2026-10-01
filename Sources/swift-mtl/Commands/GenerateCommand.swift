@@ -11,6 +11,7 @@ import ECore
 import EMFBase
 import Foundation
 import MTL
+import ModellingGenerators
 
 /// Command for generating text from models using MTL templates.
 ///
@@ -25,6 +26,13 @@ struct GenerateCommand: AsyncParsableCommand {
             Generates text files from models using MTL (Model-to-Text Language) templates.
             Supports generation from models in XMI and JSON formats with automatic
             format detection based on file extensions.
+
+            Modules that the template imports are searched in the directory of the template and \
+            then in the --template-path directories. Each --param name=value is available to the \
+            templates through the services parameter('name') and hasParameter('name'). Existing \
+            files are merged with the generated text when the module declares a merge, and \
+            replaced otherwise; --force-overwrite always replaces them, and --diff keeps them and \
+            writes the generated text beside them.
 
             Examples:
                 # Basic generation
@@ -54,6 +62,16 @@ struct GenerateCommand: AsyncParsableCommand {
                   --metamodel library.ecore \\
                   --model books.xmi \\
                   --output generated/
+
+                # Import modules from extra directories, and pass parameters
+                swift-mtl generate template.mtl \\
+                  --model input.xmi \\
+                  --template-path shared/templates \\
+                  --param package=org.example \\
+                  --output generated/
+
+                # Keep existing files, writing new text beside them as .<name>.new
+                swift-mtl generate template.mtl --model input.xmi --diff --output generated/
 
                 # Verbose output
                 swift-mtl generate template.mtl \\
@@ -93,6 +111,26 @@ struct GenerateCommand: AsyncParsableCommand {
     @Option(name: .shortAndLong, help: "Main template name to execute (auto-detect if not specified)")
     var template: String?
 
+    @Option(
+        name: .customLong("template-path"),
+        help: "A directory to search for imported modules (can be specified multiple times)")
+    var templatePaths: [String] = []
+
+    @Option(
+        name: .long,
+        help: """
+            A parameter for the templates as name=value (can be specified multiple times). \
+            Templates read it with parameter('name') and test for it with hasParameter('name').
+            """
+    )
+    var param: [String] = []
+
+    @Flag(name: .customLong("force-overwrite"), help: "Replace existing files without merging")
+    var forceOverwrite: Bool = false
+
+    @Flag(help: "Write the generated text of existing files beside them as .<name>.new")
+    var diff: Bool = false
+
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose: Bool = false
 
@@ -119,7 +157,17 @@ struct GenerateCommand: AsyncParsableCommand {
             throw ValidationError.fileNotFound(templateFile)
         }
 
-        let parser = MTLParser(enableDebugging: verbose)
+        let searchURLs = templatePaths.map { URL(fileURLWithPath: $0) }
+        for url in searchURLs {
+            var isDirectory: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
+                isDirectory.boolValue
+            else {
+                throw ValidationError.templatePathInvalid(url.path)
+            }
+        }
+        let parameters = try TemplateParameterServices(arguments: param)
+        let parser = MTLParser(enableDebugging: verbose, searchPaths: searchURLs)
         let mtlModule: MTLModule
         do {
             mtlModule = try await parser.parse(templateURL)
@@ -220,8 +268,14 @@ struct GenerateCommand: AsyncParsableCommand {
         }
 
         // Execute generation
-        let strategy = MTLFileSystemStrategy(basePath: output, standardOutput: .capture)
-        let generator = MTLGenerator(module: mtlModule, generationStrategy: strategy)
+        let generatorOptions = MTLGeneratorOptions(
+            forceOverwrite: forceOverwrite,
+            redirectionPattern: diff && !forceOverwrite ? TemplateSetConstants.diffRedirectionPattern : nil,
+            templateSearchPaths: templatePaths)
+        let strategy = MTLFileSystemStrategy(
+            basePath: output, options: generatorOptions, standardOutput: .capture)
+        let generator = MTLGenerator(
+            module: mtlModule, generationStrategy: strategy, serviceProviders: [parameters])
 
         // Template arguments are the root objects of each model in command line order
         let rootObjects: [(any EcoreValue)?] = model.indices.flatMap { index in
@@ -370,6 +424,8 @@ enum ValidationError: Error, CustomStringConvertible {
     case fileNotFound(String)
     case parseFailed(String, String)
     case generationFailed(String)
+    case invalidParameter(String)
+    case templatePathInvalid(String)
 
     var description: String {
         switch self {
@@ -379,6 +435,10 @@ enum ValidationError: Error, CustomStringConvertible {
             return "Failed to parse \(path): \(message)"
         case .generationFailed(let message):
             return "Generation failed: \(message)"
+        case .invalidParameter(let argument):
+            return "Invalid parameter '\(argument)': expected name=value"
+        case .templatePathInvalid(let path):
+            return "The template path '\(path)' is not a directory"
         }
     }
 }

@@ -20,8 +20,7 @@ Swift implementation of the Eclipse ATL
 
 ### transform
 
-Execute an ATL transformation to convert a source model into a
-target model.
+Execute an ATL transformation to convert source models into target models.
 
 ```bash
 swift-atl transform <transformation-file> [options]
@@ -29,15 +28,19 @@ swift-atl transform <transformation-file> [options]
 
 **Options:**
 
-- `--source <path>` - Source model file path (required)
-- `--target <path>` - Target model file path (required)
-- `--source-metamodel <path>` - Source metamodel file (auto-detected from transformation if not specified)
-- `--target-metamodel <path>` - Target metamodel file (auto-detected from transformation if not specified)
-- `--mode <normal|debug|trace>` - Execution mode (default: normal)
+- `--source <[ALIAS=]path>` - Source model file; repeat for several models, matched to the aliases of the `create` statement by order or by alias
+- `--target <[ALIAS=]path>` - Target model file, matched in the same way
+- `--param <name=value>` - Value for a module parameter declared with `-- @param` (repeatable)
+- `--input-format <xmi|json>` - Format of the source models (default: from the file extension)
+- `--output-format <xmi|json>` - Format of the target models (default: from the file extension)
+- `--metamodel-path <directory>` - Directory searched for metamodels named by `-- @path` directives (repeatable)
 - `--verbose` - Enable verbose output
-- `--suppress-warnings` - Suppress warning messages
-- `--library <path>` - Additional ATL library to load
-- `--property <key=value>` - Set transformation property
+- `--debug` - Trace the execution
+- `--continue-after-errors` - Continue after metamodel loading errors
+
+**Module parameters.** A transformation declares a parameter in a header comment, `-- @param name : Type` or `-- @param name : Type = default`, with the types `String`, `Integer`, `Real` and `Boolean`, and reads it as `thisModule.name`. `--param name=value` supplies the value; it is converted to the declared type. A name that the module does not declare, a value of the wrong type, a required parameter without a value, and an argument that is not `name=value` are errors.
+
+**Built-in metamodels.** The Ecore metamodel (`http://www.eclipse.org/emf/2002/Ecore`) and the generator metamodel (`http://www.eclipse.org/emf/2002/GenModel`) are built in, so directives such as `-- @nsURI Ecore=http://www.eclipse.org/emf/2002/Ecore` need no metamodel file. A target that is an instance of a built-in metamodel is written in the layout of the Eclipse Modeling Framework, with references to other models as `uri#fragment` attribute values; other targets keep the usual layout.
 
 **Examples:**
 
@@ -47,27 +50,53 @@ swift-atl transform Families2Persons.atl \
     --source sample-Families.xmi \
     --target output-Persons.xmi
 
-# Transformation with explicit metamodels
+# Explicit aliases and a metamodel directory
 swift-atl transform MyTransformation.atl \
-    --source input.xmi \
-    --target output.xmi \
-    --source-metamodel Source.ecore \
-    --target-metamodel Target.ecore
+    --source IN=input.xmi \
+    --target OUT=output.xmi \
+    --metamodel-path metamodels/
 
-# Debug mode with verbose output
-swift-atl transform Families2Persons.atl \
-    --source sample-Families.xmi \
-    --target output-Persons.xmi \
-    --mode debug \
-    --verbose
+# Parameters for a transformation that declares them with -- @param
+swift-atl transform Library2Report.atl \
+    --source IN=library.xmi \
+    --target OUT=report.xmi \
+    --param title=Catalogue --param limit=10
+```
 
-# Transformation with library and properties
-swift-atl transform Complex.atl \
-    --source input.xmi \
-    --target output.xmi \
-    --library MyHelpers.atl \
-    --property "outputPath=/generated" \
-    --property "encoding=UTF-8"
+### generate
+
+Generate generator models and source code from Ecore models.
+
+```bash
+swift-atl generate <model.ecore | model.genmodel> [options]
+```
+
+The command is the ATL entry to the shared generation pipeline. An Ecore model is transformed into a generator model with the bundled `Ecore2GenModel.atl`; the pseudo-language `genmodel` stops there, and the name of a template set, such as `java`, continues to source files. A generator model is generated from directly.
+
+**Options:**
+
+- `-l, --language <name>` - `genmodel` (default), or the name of a template set; the help lists those that exist, including the ones that `--template-path` adds
+- `-o, --output <path>` - Output directory (default: `Generated`); for `genmodel`, the directory or `.genmodel` file to write (default: beside the Ecore model)
+- `--transformations <path>` - A transformation file, or a directory holding `Ecore2GenModel.atl`, that replaces the bundled transformation
+- `--base-package <name>`, `--prefix <[package=]name>` (repeatable), `--model-project <name>`, `--model-plugin-id <id>`, `--copyright <text>`, `--jdk-level <level>` - Settings of the generator model, as for `swift-ecore genmodel`
+- `--template-path <directory>` - Directory with template files that replace bundled templates (repeatable)
+- `--force-overwrite` - Replace existing files without merging
+- `--diff` - Write the generated text of existing files beside them as `.<name>.new`
+- `--model-directory` - Write below the model directory of the generator model
+- `--verbose` - One line for every file; without it a progress bar with counts appears on an interactive terminal
+
+**Examples:**
+
+```bash
+# Create library.genmodel beside library.ecore
+swift-atl generate model/library.ecore --language genmodel --base-package org.example
+
+# Generate Java in one step
+swift-atl generate model/library.ecore --language java --base-package org.example -o src-gen
+
+# Replace the transformation, customise the templates
+swift-atl generate model/library.ecore --language java --transformations my-atl/ \
+    --template-path my-templates -o src-gen
 ```
 
 ### validate
