@@ -53,7 +53,7 @@
 [**
  * Whether a feature is a reference to a map entry class, which is written as a map.
  **/]
-[query public isMapType(genFeature : GenFeature) : Boolean = genFeature.isListType() and genFeature.isReferenceType() and genFeature.ecoreFeature.eType.genClassifier().isMapEntry()/]
+[query public isMapType(genFeature : GenFeature) : Boolean = if genFeature.isListType() and genFeature.isReferenceType() then (if genFeature.ecoreFeature.eType.genClassifier().oclIsUndefined() then false else genFeature.ecoreFeature.eType.genClassifier().isMapEntry() endif) else false endif/]
 
 [**
  * The qualified Java name of the value type of a feature, before boxing.

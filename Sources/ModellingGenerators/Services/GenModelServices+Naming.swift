@@ -20,7 +20,7 @@ extension GenModelServices {
         let provider = self
         var result: [AQLService] = [
             AQLService(Name.name, receiver: genElementReceiver) { call in
-                try provider.element(of: call).name
+                try await provider.name(of: provider.element(of: call), in: call.context)
             }
         ]
         let formats: [(String, @Sendable (String) -> String)] = [
@@ -32,7 +32,7 @@ extension GenModelServices {
         for (name, format) in formats {
             result.append(
                 AQLService(name, receiver: genElementReceiver) { call in
-                    format(try provider.element(of: call).name)
+                    format(try await provider.name(of: provider.element(of: call), in: call.context))
                 })
             result.append(
                 AQLService(name, receiver: .string) { call in
@@ -44,6 +44,29 @@ extension GenModelServices {
                 try Self.formatName(call)
             })
         return result
+    }
+
+    /// The name of the Ecore element that a generator element describes.
+    ///
+    /// The name comes from the element facade where it can tell it. For operations, parameters and
+    /// type parameters, which the snapshot does not hold as native elements, the referenced Ecore
+    /// element is looked up through the execution context.
+    ///
+    /// - Parameters:
+    ///   - element: The generator element.
+    ///   - context: The execution context to navigate with.
+    /// - Returns: The name, or empty text if the Ecore element cannot be found.
+    @MainActor
+    func name(of element: GenElement, in context: AQLExecutionContext) async -> String {
+        if !element.name.isEmpty { return element.name }
+        for reference in [
+            GenModelConstants.FeatureName.ecoreOperation, GenModelConstants.FeatureName.ecoreParameter,
+            GenModelConstants.FeatureName.ecoreTypeParameter,
+        ] {
+            let target = try? await context.navigate(from: element.object, property: reference)
+            if let named = target as? any ENamedElement { return named.name }
+        }
+        return ""
     }
 
     /// Splits a text into words and joins them again.
