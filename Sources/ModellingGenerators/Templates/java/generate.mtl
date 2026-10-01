@@ -3,11 +3,12 @@
  * The main module of the Java template set.
  *
  * It writes the model code of a generator model, one set of files for each generator package.
- * Files that exist already are merged: members whose documentation comment carries the generated tag
- * are regenerated, members marked as not generated are kept, and members without the tag are kept.
+ * Java files that exist already are merged: members whose documentation comment carries the generated tag
+ * are regenerated, members marked as not generated are kept, and members without the tag are kept. The
+ * project files follow their own rules, described in the ProjectFiles module.
  **/]
 [module generate('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
-[merge ('/**', '*/', '@generated', '@generated NOT', 'braces')/]
+[merge ('/**', '*/', '@generated', '@generated NOT', 'braces', 'files=*.java')/]
 [import JavaNames/]
 [import JavaImports/]
 [import JavaTypes/]

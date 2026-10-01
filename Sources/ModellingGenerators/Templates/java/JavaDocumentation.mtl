@@ -174,3 +174,9 @@
  * Whether any classifier of a list carries a deprecation tag.
  **/]
 [query public anyDeprecated(classifiers : OclAny) : Boolean = classifiers->exists(c | c.hasAPIDeprecatedTag())/]
+
+[**
+ * Escapes a text for a properties file that is written in the ISO-8859-1 character set: every character beyond it
+ * becomes a Unicode escape of four hexadecimal digits.
+ **/]
+[query public propertiesEscape(text : OclAny) : String = if text.oclIsUndefined() then '' else text.characterCodes()->collect(c | if c > 255 then '\\u' + c.toHexString(4) else c.fromCharacterCode() endif)->join('') endif/]

@@ -8,6 +8,7 @@
 [module BuildProperties('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
 [import JavaNames/]
 [import Header/]
+[import JavaDocumentation/]
 [import PluginProperties/]
 [import JavaProject/]
 
@@ -35,7 +36,7 @@ bin.includes = [genModel.pluginClassesLocation()/],\
 [/if]
 jars.compile.order = [genModel.pluginClassesLocation()/]
 [if (genModel.modelSourceFolder().size() > 0)]
-source.[genModel.pluginClassesLocation()/] = [genModel.modelSourceFolder()/]
+source.[genModel.pluginClassesLocation()/] = [genModel.modelSourceFolder().propertiesEscape()/]
 [/if]
 output.[genModel.pluginClassesLocation()/] = bin/
 [/template]

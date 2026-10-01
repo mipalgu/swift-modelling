@@ -22,6 +22,9 @@ actor GenerationProgressStrategy: MTLGenerationStrategy {
     private var targets: [ObjectIdentifier: String] = [:]
     private var finished: [URL] = []
 
+    /// The generator options of the wrapped strategy, which templates read through the file services.
+    nonisolated let generatorOptions: MTLGeneratorOptions
+
     /// The files completed so far, in order.
     var completedFiles: [URL] { finished }
 
@@ -37,6 +40,7 @@ actor GenerationProgressStrategy: MTLGenerationStrategy {
         report: @escaping GenerationProgressReporter
     ) {
         self.base = base
+        self.generatorOptions = base.generatorOptions
         self.outputDirectory = outputDirectory
         self.total = total
         self.report = report
@@ -71,6 +75,15 @@ actor GenerationProgressStrategy: MTLGenerationStrategy {
     @MainActor
     func existingContent(url: String) async -> String? {
         await base.existingContent(url: url)
+    }
+
+    /// Tells whether a file exists, as the wrapped strategy sees it.
+    ///
+    /// - Parameter url: The file URL, relative to the generation base path unless absolute.
+    /// - Returns: `true` if a file exists at the URL, including files written earlier in the run.
+    @MainActor
+    func fileExists(url: String) async -> Bool {
+        await base.fileExists(url: url)
     }
 
     /// The name under which the template engine reports text written outside any file block.

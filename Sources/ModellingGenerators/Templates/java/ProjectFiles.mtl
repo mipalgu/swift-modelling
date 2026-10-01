@@ -7,8 +7,11 @@
  * when it names one, and, if the output location includes the source directory so that the project directory
  * is known, the plugin properties, build properties, bundle manifest and plugin descriptor of the model project.
  *
- * Files that exist already are kept as they are unless generation is forced; the merge of existing plugin
- * descriptors and manifests by plugin key is not supported.
+ * The plugin properties, bundle manifest and plugin descriptor that exist already are kept as they are unless
+ * generation is forced, and the build properties are replaced only while no plugin descriptor exists or generation
+ * is forced; the merge of existing properties, manifests and descriptors by key is not supported. The properties
+ * files are written in the ISO-8859-1 character set with Unicode escapes for the characters beyond it, as the
+ * Eclipse generator writes them. None of these files is merged like Java code.
  **/]
 [module ProjectFiles('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
 [import JavaNames/]
@@ -44,6 +47,17 @@
 [/template]
 
 [**
+ * The mode in which a project file is written: replaced when generation is forced, otherwise written only when absent.
+ **/]
+[query public createUnlessForced() : String = if forceOverwrite() then 'overwrite' else 'create' endif/]
+
+[**
+ * The mode in which the build properties are written. As the Eclipse generator does, an existing file is replaced
+ * while the plugin descriptor does not exist yet, which is the case in a project that has not been generated before.
+ **/]
+[query public buildPropertiesMode(genModel : GenModel) : String = if forceOverwrite() or (genModel.isOn('updateClasspath') and not fileExists(genModel.projectFilePath('plugin.xml'))) then 'overwrite' else 'create' endif/]
+
+[**
  * Writes the plugin class and the project files of a generator model.
  **/]
 [template public generateProjectFiles(genModel : GenModel)]
@@ -51,13 +65,13 @@
 [file (genModel.modelPluginPackageName().packagePath() + '/' + genModel.modelPluginClassName() + '.java', false, 'UTF-8')][genModel.pluginClass()/][/file]
 [/if]
 [if (genModel.hasPluginSupport() and layoutIncludesSourceRoot())]
-[file (genModel.projectFilePath(genModel.modelBundleLocalization() + '.properties'), false, 'UTF-8')][genModel.pluginProperties()/][/file]
-[file (genModel.projectFilePath('build.properties'), false, 'UTF-8')][genModel.buildProperties()/][/file]
+[file (genModel.projectFilePath(genModel.modelBundleLocalization() + '.properties'), createUnlessForced(), 'ISO-8859-1', 'merge=false')][genModel.pluginProperties()/][/file]
+[file (genModel.projectFilePath('build.properties'), genModel.buildPropertiesMode(), 'ISO-8859-1', 'merge=false')][genModel.buildProperties()/][/file]
 [if (genModel.hasManifestFiles() and genModel.isBundleManifest())]
-[file (genModel.projectFilePath('META-INF/MANIFEST.MF'), false, 'UTF-8')][genModel.manifestMF()/][/file]
+[file (genModel.projectFilePath('META-INF/MANIFEST.MF'), createUnlessForced(), 'UTF-8', 'merge=false')][genModel.manifestMF()/][/file]
 [/if]
 [if (genModel.hasManifestFiles() and not genModel.isGWT())]
-[file (genModel.projectFilePath('plugin.xml'), false, 'UTF-8')][genModel.pluginXML()/][/file]
+[file (genModel.projectFilePath('plugin.xml'), createUnlessForced(), 'UTF-8', 'merge=false')][genModel.pluginXML()/][/file]
 [/if]
 [/if]
 [/template]

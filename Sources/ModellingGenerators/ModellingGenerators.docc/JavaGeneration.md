@@ -37,7 +37,9 @@ For every enumeration of every package the set writes the Java enum that impleme
 
 ### Existing files
 
-A file that exists is merged with the generated text. A member whose comment carries `@generated` is regenerated, a member marked `@generated NOT` is kept, and members without the tag are kept. ``GenerationOptions/forceOverwrite`` replaces the file; ``GenerationOptions/diff`` writes the generated text beside it as `.<name>.new`.
+A Java file that exists is merged with the generated text. A member whose comment carries `@generated` is regenerated, a member marked `@generated NOT` is kept, and members without the tag are kept. ``GenerationOptions/forceOverwrite`` replaces the file; ``GenerationOptions/diff`` writes the generated text beside it as `.<name>.new`.
+
+The project files are not merged. An existing plugin descriptor, bundle manifest and plugin properties file stay as they are unless the overwrite is forced, and the build properties are replaced only while there is no plugin descriptor yet or when the overwrite is forced. The properties files are written in ISO-8859-1, with a Unicode escape for every character beyond it.
 
 ### Checking the output
 

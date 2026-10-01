@@ -203,6 +203,68 @@ struct JavaProjectFilesTests {
         #expect(try generated.text(path) != "kept")
     }
 
+    @Test("Existing properties files are kept unless forced, and the build properties follow the plugin descriptor")
+    @MainActor
+    func propertiesFiles() async throws {
+        let golden = JavaProjectCase.all[0]
+        let generated = try await golden.generate()
+        defer { generated.remove() }
+        let plugin = "library/plugin.properties"
+        let build = "library/build.properties"
+        let descriptor = "library/plugin.xml"
+        let regenerate = { (force: Bool) in
+            try await generated.generate(options: GenerationOptions(forceOverwrite: force, includeSourceRoot: true))
+        }
+
+        try "kept plugin".write(to: generated.file(plugin), atomically: true, encoding: .utf8)
+        try "kept build".write(to: generated.file(build), atomically: true, encoding: .utf8)
+        try await regenerate(false)
+        #expect(try generated.text(plugin) == "kept plugin")
+        #expect(try generated.text(build) == "kept build", "the build properties stay once a plugin descriptor exists")
+
+        try FileManager.default.removeItem(at: generated.file(descriptor))
+        try await regenerate(false)
+        #expect(try generated.text(build) != "kept build", "the build properties are replaced without a plugin descriptor")
+        #expect(try generated.text(plugin) == "kept plugin")
+
+        try "kept build".write(to: generated.file(build), atomically: true, encoding: .utf8)
+        try await regenerate(true)
+        #expect(try generated.text(plugin) != "kept plugin")
+        #expect(try generated.text(build) != "kept build")
+    }
+
+    @Test("Properties files are written in ISO-8859-1 with escapes beyond it, other project files in UTF-8")
+    @MainActor
+    func propertiesEncoding() async throws {
+        let golden = JavaProjectCase(
+            name: "encoding", fixture: "library", stem: "library",
+            options: GenModelImportOptions(basePackage: "org.example", copyright: "Copyright \u{A9} 2026 Zo\u{EB} \u{65E5}\u{672C}"),
+            edits: [], files: [])
+        let generated = try await golden.generate()
+        defer { generated.remove() }
+        for name in ["library/plugin.properties", "library/build.properties"] {
+            let bytes = try Data(contentsOf: generated.file(name))
+            let latin1 = try #require(String(data: bytes, encoding: .isoLatin1))
+            #expect(latin1.hasPrefix("# Copyright \u{A9} 2026 Zo\u{EB} \\u65e5\\u672c\n"), "\(name)")
+            #expect(String(data: bytes, encoding: .utf8) == nil, "\(name) is not UTF-8")
+        }
+    }
+
+    @Test("An edited Java file of the project is merged with the generated text")
+    @MainActor
+    func javaIsMerged() async throws {
+        let golden = JavaProjectCase.all[1]
+        let generated = try await golden.generate()
+        defer { generated.remove() }
+        let java = "library/src/org/example/LibraryPlugin.java"
+        var edited = try generated.text(java).trimmingCharacters(in: .whitespacesAndNewlines)
+        edited.removeLast()
+        edited += "\n  public void keptByHand() {}\n}\n"
+        try edited.write(to: generated.file(java), atomically: true, encoding: .utf8)
+        try await generated.generate(options: GenerationOptions(includeSourceRoot: true))
+        #expect(try generated.text(java).contains("keptByHand"), "an edited Java file is merged")
+    }
+
     @Test("The result counts the project files")
     @MainActor
     func counts() async throws {

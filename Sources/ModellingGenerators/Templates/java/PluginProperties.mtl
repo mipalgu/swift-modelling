@@ -8,6 +8,7 @@
 [module PluginProperties('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
 [import JavaNames/]
 [import Header/]
+[import JavaDocumentation/]
 [import JavaResources/]
 [import JavaProject/]
 
@@ -16,7 +17,7 @@
  **/]
 [template public propertiesHeader(genModel : GenModel)]
 [if (not copyrightText(genModel).oclIsUndefined())]
-# [copyrightText(genModel).indentLines('# ')/]
+# [copyrightText(genModel).indentLines('# ').propertiesEscape()/]
 [else]
 #
 [/if]
@@ -28,12 +29,12 @@
 [template public pluginProperties(genModel : GenModel)]
 [genModel.propertiesHeader()/]
 
-pluginName = [genModel.modelBundleName()/]
-providerName = [genModel.modelBundleVendorName()/]
+pluginName = [genModel.modelBundleName().propertiesEscape()/]
+providerName = [genModel.modelBundleVendorName().propertiesEscape()/]
 [for (genPackage : GenPackage | genModel.packagesWithClassifiers()->select(p | p.isContentType()))]
 [if (i = 1)]
 
 [/if]
-_UI_[genPackage.setting('prefix')/]_content_type = [genPackage.setting('prefix')/] File
+_UI_[genPackage.setting('prefix').propertiesEscape()/]_content_type = [genPackage.setting('prefix').propertiesEscape()/] File
 [/for]
 [/template]
