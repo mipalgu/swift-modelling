@@ -151,7 +151,7 @@
 [**
  * The qualified names of the interfaces that the implementation of a class implements.
  **/]
-[query public classImplementsList(genClass : GenClass) : OclAny = (if genClass.isMapEntry() then Sequence{'org.eclipse.emf.common.util.BasicEMap$Entry<' + genClass.mapEntryKeyFeature().objectTypeText() + ',' + genClass.mapEntryValueFeature().objectTypeText() + '>'} else (if genClass.isExternalInterface() or not genClass.genModel().isOn('suppressInterfaces') then Sequence{genClass.internalInterfaceName()} else Sequence{} endif)->union(genClass.rootImplementsList()) endif)/]
+[query public classImplementsList(genClass : GenClass) : OclAny = (if genClass.isMapEntry() then Sequence{'org.eclipse.emf.common.util.BasicEMap$Entry'} else (if genClass.isExternalInterface() or not genClass.genModel().isOn('suppressInterfaces') then Sequence{genClass.internalInterfaceName()} else Sequence{} endif)->union(genClass.rootImplementsList()) endif)/]
 
 [**
  * The root implements interface of a class, if the class needs to name it.
@@ -397,12 +397,17 @@
 [**
  * The name that a feature is known by in accessor methods.
  **/]
-[query public accessorName(genFeature : GenFeature) : String = genFeature.capName()/]
+[query public accessorName(genFeature : GenFeature) : String = if genFeature.isMapEntryFeature() then 'Typed' + genFeature.capName() else genFeature.capName() endif/]
 
 [**
  * The name of the method that gets the value of a feature.
  **/]
-[query public getterName(genFeature : GenFeature) : String = genFeature.getAccessor(genFeature.isBooleanFeature())/]
+[query public getterName(genFeature : GenFeature) : String = if genFeature.isMapEntryFeature() then 'getTyped' + genFeature.capName() else genFeature.getAccessor(genFeature.isBooleanFeature()) endif/]
+
+[**
+ * Whether a feature is the key or the value of a class that stands for the entries of a map.
+ **/]
+[query public isMapEntryFeature(genFeature : GenFeature) : Boolean = genFeature.genClass().isMapEntry() and (genFeature.name() = 'key' or genFeature.name() = 'value')/]
 
 [**
  * The name of a feature as shown in documentation: words separated by spaces.

@@ -292,6 +292,7 @@
 [genClass.structuralFeatureIDMembers()/]
 [genClass.operationReflectionMembers()/]
 [genClass.toStringMember()/]
+[genClass.mapEntryMembers()/]
 [/let]
 [/template]
 
@@ -454,4 +455,122 @@
 
 [/if]
 [/let]
+[/template]
+
+[**
+ * The methods that let an implementation class act as an entry of a map: the hash code, the key and the value.
+ **/]
+[template public mapEntryMembers(genClass : GenClass)]
+[if (genClass.isMapEntry())]
+[let genModel : GenModel = genClass.genModel()]
+[let keyType : String = importedName(objectTypeName(genClass.mapEntryKeyFeature().itemTypeName()))]
+[let valueType : String = importedName(objectTypeName(genClass.mapEntryValueFeature().itemTypeName()))]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  protected int hash = -1;
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useInterfaceOverrideAnnotation())]
+  @Override
+[/if]
+  public int getHash()
+  {
+    if (hash == -1)
+    {
+      [importedName('java.lang.Object')/] theKey = getKey();
+      hash = (theKey == null ? 0 : theKey.hashCode());
+    }
+    return hash;
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useInterfaceOverrideAnnotation())]
+  @Override
+[/if]
+  public void setHash(int hash)
+  {
+    this.hash = hash;
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useInterfaceOverrideAnnotation())]
+  @Override
+[/if]
+  public [keyType/] getKey()
+  {
+    return getTypedKey();
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useInterfaceOverrideAnnotation())]
+  @Override
+[/if]
+  public void setKey([keyType/] key)
+  {
+    setTypedKey(key);
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useInterfaceOverrideAnnotation())]
+  @Override
+[/if]
+  public [valueType/] getValue()
+  {
+    return getTypedValue();
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useInterfaceOverrideAnnotation())]
+  @Override
+[/if]
+  public [valueType/] setValue([valueType/] value)
+  {
+    [valueType/] oldValue = getValue();
+    setTypedValue(value);
+    return oldValue;
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  @SuppressWarnings("unchecked")
+  public [importedName('org.eclipse.emf.common.util.EMap')/]<[keyType/], [valueType/]> getEMap()
+  {
+    [importedName(eObjectTypeName())/] container = eContainer();
+    return container == null ? null : ([importedName('org.eclipse.emf.common.util.EMap')/]<[keyType/], [valueType/]>)container.eGet(eContainmentFeature());
+  }
+
+[/let]
+[/let]
+[/let]
+[/if]
 [/template]

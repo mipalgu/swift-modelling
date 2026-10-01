@@ -79,6 +79,14 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
                 "org/example/shapes/classes/impl/ShapeImpl.java",
             ]),
         JavaGoldenCase(
+            fixture: "maps", stem: "maps",
+            options: GenModelImportOptions(),
+            files: [
+                "maps/Dictionary.java",
+                "maps/impl/DictionaryImpl.java",
+                "maps/impl/StringToIntEntryImpl.java",
+            ]),
+        JavaGoldenCase(
             fixture: "documented", stem: "documented",
             options: GenModelImportOptions(basePackage: "org.example.alarm"),
             files: [

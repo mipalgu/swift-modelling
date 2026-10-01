@@ -208,7 +208,7 @@ public interface [genClass.interfaceName()/][genClass.interfaceExtendsClause()/]
 [**
  * The extends clause of an implementation class declaration.
  **/]
-[template public classImplementsClause(genClass : GenClass)][if (not genClass.classImplementsList()->isEmpty())] implements [for (name : String | genClass.classImplementsList()) separator(', ')][importedName(name)/][/for][/if][/template]
+[template public classImplementsClause(genClass : GenClass)][if (not genClass.classImplementsList()->isEmpty())] implements [for (name : String | genClass.classImplementsList()) separator(', ')][importedName(name)/][if (genClass.isMapEntry() and name.startsWith('org.eclipse.emf.common.util.BasicEMap'))]<[importedName(objectTypeName(genClass.mapEntryKeyFeature().itemTypeName()))/],[importedName(objectTypeName(genClass.mapEntryValueFeature().itemTypeName()))/]>[/if][/for][/if][/template]
 
 [**
  * The extends clause of an interface declaration.
