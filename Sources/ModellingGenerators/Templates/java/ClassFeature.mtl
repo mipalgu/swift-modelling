@@ -82,39 +82,7 @@
 [**
  * The literal of the default value of an attribute in Java.
  **/]
-[template public staticDefaultValue(genFeature : GenFeature)]
-[let literal : OclAny = genFeature.ecoreFeature.defaultValueLiteral]
-[let type : String = genFeature.itemTypeName()]
-[if (genFeature.ecoreFeature.eType.oclIsKindOf(EEnum))]
-[let genEnum : OclAny = genFeature.ecoreFeature.eType.genClassifier()]
-[importedName(genEnum.qualifiedEnumName())/].[genEnum.defaultLiteralConstant(literal)/]
-[/let]
-[elseif (type = 'java.lang.String')]
-[if (literal.oclIsUndefined())]null[else][javaStringLiteral(literal)/][/if]
-[elseif (isBlank(literal))]
-[zeroValue(type)/]
-[elseif (type = 'boolean')]
-[literal.toLowerCase()/]
-[elseif (type = 'long')]
-[literal/]L
-[elseif (type = 'float')]
-[literal/]F
-[elseif (type = 'short')]
-(short)[literal/]
-[elseif (type = 'byte')]
-(byte)[literal/]
-[elseif (type = 'char')]
-'[literal/]'
-[elseif (type = 'double')]
-[if (literal.contains('.') or literal.contains('E') or literal.contains('e'))][literal/][else][literal/].0[/if]
-[elseif (isPrimitiveType(type))]
-[literal/]
-[else]
-[genFeature.genClass().genPackage().qualifiedFactoryInstance()/].createFromString([genFeature.genClass().packageInterface()/].eINSTANCE.get[genFeature.ecoreFeature.eType.name/](), [javaStringLiteral(literal)/])
-[/if]
-[/let]
-[/let]
-[/template]
+[template public staticDefaultValue(genFeature : GenFeature)][let literal : OclAny = genFeature.ecoreFeature.defaultValueLiteral][let type : String = genFeature.itemTypeName()][if (genFeature.ecoreFeature.eType.oclIsKindOf(EEnum))][let genEnum : OclAny = genFeature.ecoreFeature.eType.genClassifier()][importedName(genEnum.qualifiedEnumName())/].[genEnum.defaultLiteralConstant(literal)/][/let][elseif (type = 'java.lang.String')][if (literal.oclIsUndefined())]null[else][javaStringLiteral(literal)/][/if][elseif (isBlank(literal))][zeroValue(type)/][elseif (type = 'boolean')][literal.toLowerCase()/][elseif (type = 'long')][literal/]L[elseif (type = 'float')][literal/]F[elseif (type = 'short')](short)[literal/][elseif (type = 'byte')](byte)[literal/][elseif (type = 'char')]'[literal/]'[elseif (type = 'double')][if (literal.contains('.') or literal.contains('E') or literal.contains('e'))][literal/][else][literal/].0[/if][elseif (isPrimitiveType(type))][literal/][else][genFeature.genClass().genPackage().qualifiedFactoryInstance()/].createFromString([genFeature.genClass().packageInterface()/].eINSTANCE.get[genFeature.ecoreFeature.eType.name/](), [javaStringLiteral(literal)/])[/if][/let][/let][/template]
 
 [**
  * The constant of the enumeration literal that a default value denotes: the literal of that text, otherwise the first one.
@@ -249,31 +217,7 @@
 [**
  * The expression that creates the list that holds the values of a many-valued feature.
  **/]
-[template public listConstructor(genClass : GenClass, genFeature : GenFeature)]
-[let unsettable : String = if genFeature.isUnsettableFeature() then '.Unsettable' else '' endif]
-[if (genFeature.isMapFeature())]
-new [importedName('org.eclipse.emf.ecore.util.EcoreEMap')/][unsettable/]<[importedName(qualifiedTypeName(genFeature.entryFeature('key').eType))/],[importedName(qualifiedTypeName(genFeature.entryFeature('value').eType))/]>([genFeature.ecoreFeature.eType.genClassifier().qualifiedClassifierAccessor()/], [importedName(genFeature.ecoreFeature.eType.genClassifier().qualifiedClassName())/].class, this, [genClass.featureID(genFeature)/][if (genFeature.isBidirectional())], [genFeature.reverseGenFeature().genClass().featureID(genFeature.reverseGenFeature())/][/if])
-[elseif (genFeature.isFeatureMapFeature())]
-new [importedName('org.eclipse.emf.ecore.util.BasicFeatureMap')/](this, [genClass.featureID(genFeature)/])
-[elseif (genClass.genModel().isSuppressNotification())]
-new [importedName('org.eclipse.emf.ecore.util.BasicInternalEList')/]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class)
-[elseif (genFeature.isEffectiveContains())]
-[if (genFeature.isBidirectional())]
-new [importedName('org.eclipse.emf.ecore.util.EObjectContainmentWithInverseEList')/][unsettable/][if (genFeature.resolvesProxies())].Resolving[/if]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureID(genFeature)/], [genFeature.reverseGenFeature().genClass().featureID(genFeature.reverseGenFeature())/])
-[else]
-new [importedName('org.eclipse.emf.ecore.util.EObjectContainmentEList')/][unsettable/][if (genFeature.resolvesProxies())].Resolving[/if]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureID(genFeature)/])
-[/if]
-[elseif (genFeature.isReferenceType())]
-[if (genFeature.isBidirectional())]
-new [importedName('org.eclipse.emf.ecore.util.EObjectWithInverse')/][if (genFeature.resolvesProxies())]Resolving[/if]EList[unsettable/][if (genFeature.reverseGenFeature().isListType())].ManyInverse[/if]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureID(genFeature)/], [genFeature.reverseGenFeature().genClass().featureID(genFeature.reverseGenFeature())/])
-[else]
-new [importedName('org.eclipse.emf.ecore.util.EObject')/][if (genFeature.resolvesProxies())]Resolving[/if]EList[unsettable/]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureID(genFeature)/])
-[/if]
-[else]
-new [importedName('org.eclipse.emf.ecore.util.EDataType')/][if (genFeature.ecoreFeature.unique)]Unique[/if]EList[unsettable/]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureID(genFeature)/])
-[/if]
-[/let]
-[/template]
+[template public listConstructor(genClass : GenClass, genFeature : GenFeature)][let unsettable : String = if genFeature.isUnsettableFeature() then '.Unsettable' else '' endif][if (genFeature.isMapFeature())]new [importedName('org.eclipse.emf.ecore.util.EcoreEMap')/][unsettable/]<[importedName(qualifiedTypeName(genFeature.entryFeature('key').eType))/],[importedName(qualifiedTypeName(genFeature.entryFeature('value').eType))/]>([genFeature.ecoreFeature.eType.genClassifier().qualifiedClassifierAccessor()/], [importedName(genFeature.ecoreFeature.eType.genClassifier().qualifiedClassName())/].class, this, [genClass.featureID(genFeature)/][if (genFeature.isBidirectional())], [genFeature.reverseGenFeature().genClass().featureID(genFeature.reverseGenFeature())/][/if])[elseif (genFeature.isFeatureMapFeature())]new [importedName('org.eclipse.emf.ecore.util.BasicFeatureMap')/](this, [genClass.featureID(genFeature)/])[elseif (genClass.genModel().isSuppressNotification())]new [importedName('org.eclipse.emf.ecore.util.BasicInternalEList')/]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class)[elseif (genFeature.isEffectiveContains())][if (genFeature.isBidirectional())]new [importedName('org.eclipse.emf.ecore.util.EObjectContainmentWithInverseEList')/][unsettable/][if (genFeature.resolvesProxies())].Resolving[/if]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureID(genFeature)/], [genFeature.reverseGenFeature().genClass().featureID(genFeature.reverseGenFeature())/])[else]new [importedName('org.eclipse.emf.ecore.util.EObjectContainmentEList')/][unsettable/][if (genFeature.resolvesProxies())].Resolving[/if]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureID(genFeature)/])[/if][elseif (genFeature.isReferenceType())][if (genFeature.isBidirectional())]new [importedName(if genFeature.resolvesProxies() then 'org.eclipse.emf.ecore.util.EObjectWithInverseResolvingEList' else 'org.eclipse.emf.ecore.util.EObjectWithInverseEList' endif)/][unsettable/][if (genFeature.reverseGenFeature().isListType())].ManyInverse[/if]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureID(genFeature)/], [genFeature.reverseGenFeature().genClass().featureID(genFeature.reverseGenFeature())/])[else]new [importedName(if genFeature.resolvesProxies() then 'org.eclipse.emf.ecore.util.EObjectResolvingEList' else 'org.eclipse.emf.ecore.util.EObjectEList' endif)/][unsettable/]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureID(genFeature)/])[/if][else]new [importedName(if genFeature.ecoreFeature.unique then 'org.eclipse.emf.ecore.util.EDataTypeUniqueEList' else 'org.eclipse.emf.ecore.util.EDataTypeEList' endif)/][unsettable/]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureID(genFeature)/])[/if][/let][/template]
 
 [comment Members /]
 
