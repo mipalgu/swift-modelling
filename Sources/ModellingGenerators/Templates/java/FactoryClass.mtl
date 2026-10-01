@@ -111,6 +111,12 @@
 [comment Data types /]
 
 [**
+ * The source of the annotation in which a model carries the create and convert bodies of a data type.
+ **/]
+[query public factoryAnnotationSource() : String = 'http://www.eclipse.org/emf/2002/GenModel'/]
+
+
+[**
  * The data types of a package that the factory converts: its enumerations, then its other data types.
  **/]
 [query public allGenDataTypes(genPackage : GenPackage) : OclAny = genPackage.genEnums->union(genPackage.genDataTypes)/]
@@ -158,12 +164,12 @@
 [**
  * The code that creates values of a data type from text, taken from the generator model or the model annotation.
  **/]
-[query public factoryCreatorBody(dataType : OclAny) : OclAny = if factoryIsEnum(dataType) then null else (if dataType.isSetting('create') then dataType.setting('create') else dataType.annotationDetail(copyrightSource(), 'create') endif) endif/]
+[query public factoryCreatorBody(dataType : OclAny) : OclAny = if factoryIsEnum(dataType) then null else (if dataType.isSetting('create') then dataType.setting('create') else dataType.annotationDetail(factoryAnnotationSource(), 'create') endif) endif/]
 
 [**
  * The code that converts values of a data type to text, taken from the generator model or the model annotation.
  **/]
-[query public factoryConverterBody(dataType : OclAny) : OclAny = if factoryIsEnum(dataType) then null else (if dataType.isSetting('convert') then dataType.setting('convert') else dataType.annotationDetail(copyrightSource(), 'convert') endif) endif/]
+[query public factoryConverterBody(dataType : OclAny) : OclAny = if factoryIsEnum(dataType) then null else (if dataType.isSetting('convert') then dataType.setting('convert') else dataType.annotationDetail(factoryAnnotationSource(), 'convert') endif) endif/]
 
 [**
  * Whether the factory offers separate create and convert methods for a data type.

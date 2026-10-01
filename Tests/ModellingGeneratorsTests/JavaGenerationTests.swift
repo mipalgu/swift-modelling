@@ -26,24 +26,65 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
             fixture: "library", stem: "library",
             options: GenModelImportOptions(
                 basePackage: "org.example", copyright: "Copyright 2026 Example Pty Ltd"),
-            files: ["org/example/library/BookCategory.java"]),
+            files: [
+                "org/example/library/BookCategory.java",
+                "org/example/library/LibraryFactory.java",
+                "org/example/library/impl/LibraryFactoryImpl.java",
+            ]),
         JavaGoldenCase(
             fixture: "nested", stem: "company",
             options: GenModelImportOptions(
                 basePackage: "org.example.company", packagePrefixes: ["projects": "Proj"]),
-            files: ["org/example/company/company/projects/Status.java"]),
+            files: [
+                "org/example/company/company/CompanyFactory.java",
+                "org/example/company/company/impl/CompanyFactoryImpl.java",
+                "org/example/company/company/people/PeopleFactory.java",
+                "org/example/company/company/people/impl/PeopleFactoryImpl.java",
+                "org/example/company/company/projects/ProjFactory.java",
+                "org/example/company/company/projects/Status.java",
+                "org/example/company/company/projects/archive/ArchiveFactory.java",
+                "org/example/company/company/projects/archive/impl/ArchiveFactoryImpl.java",
+                "org/example/company/company/projects/impl/ProjFactoryImpl.java",
+            ]),
         JavaGoldenCase(
             fixture: "enumerations", stem: "enumerations",
             options: GenModelImportOptions(basePackage: "org.example.traffic"),
             files: [
                 "org/example/traffic/enumerations/Colour.java",
                 "org/example/traffic/enumerations/Empty.java",
+                "org/example/traffic/enumerations/EnumerationsFactory.java",
                 "org/example/traffic/enumerations/Mode.java",
+                "org/example/traffic/enumerations/impl/EnumerationsFactoryImpl.java",
             ]),
         JavaGoldenCase(
             fixture: "documented", stem: "documented",
             options: GenModelImportOptions(basePackage: "org.example.alarm"),
-            files: ["org/example/alarm/documented/Level.java"]),
+            files: [
+                "org/example/alarm/documented/DocumentedFactory.java",
+                "org/example/alarm/documented/Level.java",
+                "org/example/alarm/documented/impl/DocumentedFactoryImpl.java",
+            ]),
+        JavaGoldenCase(
+            fixture: "families", stem: "families",
+            options: GenModelImportOptions(basePackage: "org.example.families"),
+            files: [
+                "org/example/families/Families/FamiliesFactory.java",
+                "org/example/families/Families/impl/FamiliesFactoryImpl.java",
+            ]),
+        JavaGoldenCase(
+            fixture: "organisation", stem: "organisation",
+            options: GenModelImportOptions(basePackage: "org.example.organisation"),
+            files: [
+                "org/example/organisation/organisation/OrganisationFactory.java",
+                "org/example/organisation/organisation/impl/OrganisationFactoryImpl.java",
+            ]),
+        JavaGoldenCase(
+            fixture: "ecoretypes", stem: "bridge",
+            options: GenModelImportOptions(basePackage: "org.example.bridge"),
+            files: [
+                "org/example/bridge/bridge/BridgeFactory.java",
+                "org/example/bridge/bridge/impl/BridgeFactoryImpl.java",
+            ]),
     ]
 }
 
@@ -105,7 +146,10 @@ struct JavaGenerationTests {
         let result = try await generated.generate()
         #expect(result.language == "java")
         #expect(result.packageCount == 1)
-        #expect(result.files.map(\.lastPathComponent) == ["Colour.java", "Mode.java", "Empty.java"])
+        #expect(result.files.map(\.lastPathComponent) == [
+                "EnumerationsFactory.java", "EnumerationsFactoryImpl.java", "Colour.java", "Mode.java",
+                "Empty.java",
+            ])
         #expect(result.outputDirectory.path == generated.output.standardizedFileURL.path)
     }
 
@@ -116,7 +160,12 @@ struct JavaGenerationTests {
             "library", stem: "library", options: GenModelImportOptions(basePackage: "org.example"))
         defer { generated.remove() }
         let result = try await generated.generate(options: GenerationOptions(includeSourceRoot: true))
-        #expect(generated.generatedPaths() == ["library/src/org/example/library/BookCategory.java"])
+        #expect(
+            generated.generatedPaths() == [
+                "library/src/org/example/library/BookCategory.java",
+                "library/src/org/example/library/LibraryFactory.java",
+                "library/src/org/example/library/impl/LibraryFactoryImpl.java",
+            ])
         #expect(result.outputDirectory.lastPathComponent == "src")
     }
 
@@ -131,8 +180,8 @@ struct JavaGenerationTests {
         try await generated.generate(progress: { collector.add($0) })
         let updates = collector.updates
         let fileUpdates = updates.filter { $0.message.hasPrefix("Generated ") }
-        #expect(fileUpdates.map(\.completed) == [1, 2, 3])
-        #expect(fileUpdates.allSatisfy { $0.total == 3 })
+        #expect(fileUpdates.map(\.completed) == [1, 2, 3, 4, 5])
+        #expect(fileUpdates.allSatisfy { $0.total == 5 })
         #expect(fileUpdates.last?.fraction == 1)
         #expect(updates.last?.message == "Done")
         #expect(updates.first?.fraction == nil)
