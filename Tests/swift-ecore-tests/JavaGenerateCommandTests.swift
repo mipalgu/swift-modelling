@@ -52,7 +52,7 @@ struct JavaGenerateCommandTests {
             command: "generate", arguments: ["--language", "java", genModel.path, "-o", output.path])
 
         #expect(result.succeeded)
-        #expect(result.stdout.contains("Generated 1 file in:"))
+        #expect(result.stdout.contains("Generated 3 files in:"))
         #expect(
             try String(contentsOf: output.appendingPathComponent(Self.bookCategory), encoding: .utf8)
                 == expectedBookCategory())
@@ -181,7 +181,7 @@ struct JavaGenerateCommandTests {
             arguments: ["--language", "java", genModel.path, "-o", output.path, "--verbose"])
 
         #expect(result.succeeded)
-        #expect(result.stdout.contains("[========================] 1/1 Generated BookCategory.java"))
+        #expect(result.stdout.contains("[========================] 3/3 Generated BookCategory.java"))
         #expect(result.stdout.contains("Assembling the java templates"))
     }
 
