@@ -15,6 +15,10 @@ struct JavaGenerateCommandTests {
     /// The files that generating the library fixture must at least write, relative to the output directory.
     private static let expectedLibraryFiles = [
         bookCategory,
+        "org/example/library/Book.java",
+        "org/example/library/Library.java",
+        "org/example/library/impl/BookImpl.java",
+        "org/example/library/impl/LibraryImpl.java",
         "org/example/library/LibraryPackage.java",
         "org/example/library/impl/LibraryPackageImpl.java",
         "org/example/library/LibraryFactory.java",

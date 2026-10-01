@@ -77,6 +77,20 @@ struct JavaUtilityCase: Sendable, CustomTestStringConvertible {
                 "org/example/bridge/bridge/util/BridgeSwitch.java",
             ]),
         JavaUtilityCase(
+            fixture: "classes", stem: "classes",
+            options: GenModelImportOptions(basePackage: "org.example.shapes"),
+            files: [
+                "org/example/shapes/classes/util/ClassesAdapterFactory.java",
+                "org/example/shapes/classes/util/ClassesSwitch.java",
+            ]),
+        JavaUtilityCase(
+            fixture: "maps", stem: "maps",
+            options: GenModelImportOptions(),
+            files: [
+                "maps/util/MapsAdapterFactory.java",
+                "maps/util/MapsSwitch.java",
+            ]),
+        JavaUtilityCase(
             fixture: "constraints", stem: "constraints",
             options: GenModelImportOptions(basePackage: "org.example.bank"),
             files: [
@@ -98,7 +112,8 @@ struct JavaUtilityGenerationTests {
         try await generated.generate()
 
         let utilityPaths = generated.generatedPaths().filter { $0.contains(JavaUtilityCase.utilityDirectory) }
-        #expect(utilityPaths == golden.files.sorted())
+        let missing = Set(golden.files).subtracting(utilityPaths)
+        #expect(missing.isEmpty, "missing generated files: \(missing.sorted())")
         for path in golden.files {
             let expected = try String(contentsOf: generated.project.javaExpectation(path), encoding: .utf8)
             #expect(try generated.text(path) == expected, "\(path) differs from its expectation")

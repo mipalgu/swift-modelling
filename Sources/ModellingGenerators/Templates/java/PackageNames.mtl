@@ -21,11 +21,6 @@
 [comment Constants /]
 
 [**
- * The namespace of the Ecore metamodel, whose classifiers are reached through the Ecore package instance.
- **/]
-[query public ecoreNamespace() : String = 'http://www.eclipse.org/emf/2002/Ecore'/]
-
-[**
  * The name of the variable that holds the Ecore package in the initialisation code.
  **/]
 [query public ecorePackageVariable() : String = 'ecorePackage'/]
@@ -48,24 +43,9 @@
 [query public orderedClassifiers(genPackage : GenPackage) : OclAny = genPackage.orderedGenClasses()->union(genPackage.genEnums)->union(genPackage.genDataTypes)/]
 
 [**
- * Whether a package declares any classifier.
- **/]
-[query public hasClassifiers(genPackage : GenPackage) : Boolean = genPackage.allClassifiers()->notEmpty()/]
-
-[**
- * Whether a package is the Ecore package itself.
- **/]
-[query public isEcorePackage(genPackage : GenPackage) : Boolean = genPackage.ecorePackage.nsURI = ecoreNamespace()/]
-
-[**
  * The basic name of a package, which is its prefix followed by Package.
  **/]
 [query public basicPackageName(genPackage : GenPackage) : String = genPackage.prefixedName('Package')/]
-
-[**
- * The name of the factory accessor of a package without its get prefix.
- **/]
-[query public factoryName(genPackage : GenPackage) : String = genPackage.prefixedName('Factory')/]
 
 [**
  * The nested packages that have classifiers, looking through nested packages without classifiers.
@@ -195,17 +175,12 @@
 [**
  * The constant name of a classifier in the package interface.
  **/]
-[query public classifierID(classifier : OclAny) : String = classifier.classifierIDName()/]
+[query public classifierConstant(classifier : OclAny) : String = classifier.classifierIDName()/]
 
 [**
  * Whether a classifier carries a deprecation tag in its documentation.
  **/]
 [query public isDeprecatedClassifier(classifier : OclAny) : Boolean = classifier.hasAPIDeprecatedTag()/]
-
-[**
- * Whether any classifier of a list carries a deprecation tag.
- **/]
-[query public anyDeprecated(classifiers : OclAny) : Boolean = classifiers->exists(c | c.hasAPIDeprecatedTag())/]
 
 [**
  * The qualified name of the interface that a class stands for, or its instance class if the model names one.
@@ -264,11 +239,6 @@
  **/]
 [query public isPrimitiveOrArray(genDataType : OclAny) : Boolean = isPrimitiveType(genDataType.dataTypeInstanceClass()) or genDataType.dataTypeInstanceClass().contains('[')/]
 
-[**
- * Whether the data type is a type of objects, which have no generated array helpers.
- **/]
-[query public isObjectDataType(genDataType : OclAny) : Boolean = genDataType.dataTypeInstanceClass() = 'java.lang.Object'/]
-
 [comment Features /]
 
 [**
@@ -293,19 +263,14 @@
 [query public featureMetaType(genFeature : GenFeature) : String = shortName(genFeature.featureMetaTypeName())/]
 
 [**
- * The name of the formatted feature for documentation: its words capitalised and separated by spaces.
- **/]
-[query public formattedFeatureName(element : OclAny) : String = element.capName().formatName(' ')/]
-
-[**
  * The constant that holds the identifier of a feature of a class.
  **/]
-[query public featureIDName(genClass : GenClass, genFeature : GenFeature) : String = genClass.classifierID() + '__' + genFeature.name().formatName('_').toUpper()/]
+[query public featureIDName(genClass : GenClass, genFeature : GenFeature) : String = genClass.classifierConstant() + '__' + genFeature.name().formatName('_').toUpper()/]
 
 [**
  * The constant that holds the number of features of a class.
  **/]
-[query public featureCountIDName(genClass : GenClass) : String = genClass.classifierID() + '_FEATURE_COUNT'/]
+[query public featureCountIDName(genClass : GenClass) : String = genClass.classifierConstant() + '_FEATURE_COUNT'/]
 
 [**
  * The position of a feature among the features its class declares.
@@ -430,12 +395,12 @@
 [**
  * The constant that holds the identifier of an operation of a class.
  **/]
-[query public operationIDName(genClass : GenClass, genOperation : GenOperation) : String = genClass.classifierID() + '___' + (genOperation.name().formatName('_') + (if genOperation.nativeOperation().eParameters->isEmpty() then '' else genClass.operationUniqueName(genOperation).substring(genClass.operationUniqueName(genOperation).index('__')) endif)).toUpper()/]
+[query public operationIDName(genClass : GenClass, genOperation : GenOperation) : String = genClass.classifierConstant() + '___' + (genOperation.name().formatName('_') + (if genOperation.nativeOperation().eParameters->isEmpty() then '' else genClass.operationUniqueName(genOperation).substring(genClass.operationUniqueName(genOperation).index('__')) endif)).toUpper()/]
 
 [**
  * The constant that holds the number of operations of a class.
  **/]
-[query public operationCountIDName(genClass : GenClass) : String = genClass.classifierID() + '_OPERATION_COUNT'/]
+[query public operationCountIDName(genClass : GenClass) : String = genClass.classifierConstant() + '_OPERATION_COUNT'/]
 
 [**
  * The position of an operation among the operations its class declares.
@@ -494,23 +459,6 @@
 [comment Documentation /]
 
 [**
- * The annotation tags of the documentation of an element that the package writes on classifiers,
- * as the lines of text for a documentation comment.
- **/]
-[query public ownAPITagLines(element : OclAny) : OclAny = Sequence{ownSinceLine(element), ownDeprecatedLine(element), ownNoReferenceLine(element)}->select(l | l.size() > 0)/]
-
-[query ownSinceLine(element : OclAny) : String = if element.hasDocumentationTag('since') and element.documentationTagText('since').size() > 0 then '@since ' + element.documentationTagText('since') else '' endif/]
-
-[query ownDeprecatedLine(element : OclAny) : String = if element.hasDocumentationTag('deprecated') then '@deprecated' + (if element.documentationTagText('deprecated').size() = 0 then '' else ' ' + element.documentationTagText('deprecated') endif) else '' endif/]
-
-[query ownNoReferenceLine(element : OclAny) : String = if element.hasDocumentationTag('noreference') then '@noreference' + (if element.documentationTagText('noreference').size() = 0 then '' else ' ' + element.documentationTagText('noreference') endif) else '' endif/]
-
-[**
- * Whether an element has annotation tags of its own in its documentation.
- **/]
-[query public hasOwnAPITags(element : OclAny) : Boolean = element.ownAPITagLines()->notEmpty()/]
-
-[**
  * Whether an element has annotation tags of its own or of its container.
  **/]
 [query public hasInheritedAPITags(element : OclAny) : Boolean = element.hasOwnAPITags() or element.genContainer().hasOwnAPITags()/]
@@ -544,7 +492,7 @@
 [**
  * Whether a feature is a single valued attribute of the primitive boolean type, whose getter starts with is.
  **/]
-[query public isBooleanFeature(genFeature : GenFeature) : Boolean = genFeature.isAttributeType() and not genFeature.isListType() and instanceClassName(genFeature.ecoreFeature.eType) = 'boolean'/]
+[query public isBooleanAttribute(genFeature : GenFeature) : Boolean = genFeature.isAttributeType() and not genFeature.isListType() and instanceClassName(genFeature.ecoreFeature.eType) = 'boolean'/]
 
 [**
  * The number of files that the templates of this module write for a package: the interface and implementation,

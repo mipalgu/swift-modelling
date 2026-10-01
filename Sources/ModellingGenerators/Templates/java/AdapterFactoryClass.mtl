@@ -156,13 +156,13 @@ public class [genPackage.adapterFactoryClassName()/] extends [importedName('org.
 [for (genClass : GenClass | genPackage.allSwitchGenClasses())]
 
   /**
-   * Creates a new adapter for an object of class '{@link [genClass.qualifiedInterfaceName()/] <em>[genClass.formattedClassifierName()/]</em>}'.
+   * Creates a new adapter for an object of class '{@link [genClass.internalInterfaceName().substituteAll('$', '.')/] <em>[genClass.formattedClassifierName()/]</em>}'.
    * <!-- begin-user-doc -->
    * This default implementation returns null so that we can easily ignore cases;
    * it's useful to ignore a case when inheritance will catch all the cases anyway.
    * <!-- end-user-doc -->
    * @return the new adapter.
-   * @see [genClass.qualifiedInterfaceName()/]
+   * @see [genClass.internalInterfaceName().substituteAll('$', '.')/]
 [if (genClass.hasOwnAPITags())]
 [genClass.apiTagLines('   * ')/]
 [/if]

@@ -91,7 +91,8 @@ struct GeneratedProject {
 struct TemplateHarness {
     /// The imports that every harness module declares.
     static let importedModules = [
-        "JavaNames", "JavaImports", "JavaTypes", "JavaDocumentation", "Header", "EnumClass",
+        "JavaNames", "JavaImports", "JavaTypes", "JavaDocumentation", "Header", "EnumClass", "ClassQueries",
+        "ClassModelInfo", "ClassFeature", "ClassOperation", "PackageNames",
     ]
 
     /// The generator project the templates run against.

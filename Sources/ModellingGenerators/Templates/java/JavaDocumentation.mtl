@@ -152,3 +152,25 @@
  * continuation lines are aligned under the first. Nothing is written if the generator model suppresses model tags.
  **/]
 [query public modelTag(element : OclAny, prefix : String, info : OclAny) : String = if element.genModel().isOn('suppressEMFModelTags') then '' else prefix + '@model' + (if info->isEmpty() then '' else ' ' + info->first() + info->subSequence(2, info->size())->collect(l | '\n' + prefix + '       ' + l)->join('') endif) endif/]
+
+[**
+ * The annotation tags of the documentation of an element that the package writes on classifiers,
+ * as the lines of text for a documentation comment.
+ **/]
+[query public ownAPITagLines(element : OclAny) : OclAny = Sequence{ownSinceLine(element), ownDeprecatedLine(element), ownNoReferenceLine(element)}->select(l | l.size() > 0)/]
+
+[query ownSinceLine(element : OclAny) : String = if element.hasDocumentationTag('since') and element.documentationTagText('since').size() > 0 then '@since ' + element.documentationTagText('since') else '' endif/]
+
+[query ownDeprecatedLine(element : OclAny) : String = if element.hasDocumentationTag('deprecated') then '@deprecated' + (if element.documentationTagText('deprecated').size() = 0 then '' else ' ' + element.documentationTagText('deprecated') endif) else '' endif/]
+
+[query ownNoReferenceLine(element : OclAny) : String = if element.hasDocumentationTag('noreference') then '@noreference' + (if element.documentationTagText('noreference').size() = 0 then '' else ' ' + element.documentationTagText('noreference') endif) else '' endif/]
+
+[**
+ * Whether an element has annotation tags of its own in its documentation.
+ **/]
+[query public hasOwnAPITags(element : OclAny) : Boolean = element.ownAPITagLines()->notEmpty()/]
+
+[**
+ * Whether any classifier of a list carries a deprecation tag.
+ **/]
+[query public anyDeprecated(classifiers : OclAny) : Boolean = classifiers->exists(c | c.hasAPIDeprecatedTag())/]

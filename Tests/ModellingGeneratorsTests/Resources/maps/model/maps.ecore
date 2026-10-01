@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
+    name="maps" nsURI="http://swift-modelling.org/test/maps" nsPrefix="maps">
+  <eClassifiers xsi:type="ecore:EClass" name="Dictionary">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="entries" upperBound="-1"
+        eType="#//StringToIntEntry" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="StringToIntEntry" instanceClassName="java.util.Map$Entry">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="key"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+  </eClassifiers>
+</ecore:EPackage>

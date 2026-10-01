@@ -106,31 +106,9 @@ struct JavaFactoryTemplateTests {
     }
 }
 
-/// Compiles generated factories against stand-ins for the files of the other templates.
+/// Compiles the generated factories together with the rest of the generated model code.
 @Suite("Compiling generated factories")
 struct JavaFactoryCompileTests {
-    /// The package of the data types fixture.
-    static let packageName = "org.example.types.datatypes"
-
-    /// Source of the class interfaces and implementations that the factories need, which no template writes yet.
-    static let stubs: [String: String] = [
-        "Thing": "public interface Thing extends org.eclipse.emf.ecore.EObject {}",
-        "Class": "public interface Class extends org.eclipse.emf.ecore.EObject {}",
-        "Gizmo": "public interface Gizmo extends org.eclipse.emf.ecore.EObject {}",
-        "impl/ThingImpl": implementation("Thing"),
-        "impl/ClassImpl": implementation("Class"),
-        "impl/GizmoImpl": implementation("Gizmo"),
-    ]
-
-    /// Source of a stand-in implementation class.
-    ///
-    /// - Parameter name: The name of the interface it implements.
-    /// - Returns: The source text.
-    static func implementation(_ name: String) -> String {
-        "public class \(name)Impl extends org.eclipse.emf.ecore.impl.MinimalEObjectImpl.Container implements "
-            + "org.example.types.datatypes.\(name) {}"
-    }
-
     @Test(
         "Factories compile for each form of the data types fixture",
         .enabled(
@@ -143,21 +121,9 @@ struct JavaFactoryCompileTests {
         let classPath = try #require(JavaCompileTests.classPath)
         let generated = try await JavaFactoryTemplateTests.generate(variant)
         defer { generated.remove() }
-        let directory = generated.output
-        for (name, body) in Self.stubs {
-            let isImplementation = name.hasPrefix("impl/")
-            let header = "package \(Self.packageName)\(isImplementation ? ".impl" : "");\n"
-            let file = directory.appendingPathComponent("stubs/org/example/types/datatypes/\(name).java")
-            try FileManager.default.createDirectory(
-                at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try (header + body + "\n").write(to: file, atomically: true, encoding: .utf8)
-        }
-        let stubFiles = Self.stubs.keys.map {
-            directory.appendingPathComponent("stubs/org/example/types/datatypes/\($0).java")
-        }
-        let classes = directory.appendingPathComponent("classes")
+        let classes = generated.output.appendingPathComponent("classes")
         try FileManager.default.createDirectory(at: classes, withIntermediateDirectories: true)
-        let files = generated.generatedPaths().map { generated.file($0) } + stubFiles
+        let files = generated.generatedPaths().filter { $0.hasSuffix(".java") }.map { generated.file($0) }
         let (status, text) = try JavaCompileTests.compile(files, into: classes, classPath: classPath)
         #expect(status == 0, "javac failed:\n\(text)")
     }

@@ -229,7 +229,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
 [if (genModel.useGenerics() and genClassifier.hasAPIDeprecatedTag())]
   @Deprecated
 [/if]
-  [modifiers/]int [genClassifier.classifierID()/] = [genClassifier.classifierValue()/];
+  [modifiers/]int [genClassifier.classifierConstant()/] = [genClassifier.classifierValue()/];
 
 [if (genClassifier.oclIsKindOf(GenClass))]
 [for (genFeature : GenFeature | genClassifier.allGenFeatures())]
@@ -390,7 +390,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
 [if (genModel.useGenerics() and genClassifier.hasAPIDeprecatedTag())]
     @Deprecated
 [/if]
-    [modifiers/][importedName(genClassifier.metaTypeName())/] [genClassifier.classifierID()/] = eINSTANCE.get[genClassifier.classifierAccessorName()/]();
+    [modifiers/][importedName(genClassifier.metaTypeName())/] [genClassifier.classifierConstant()/] = eINSTANCE.get[genClassifier.classifierAccessorName()/]();
 
 [if (genClassifier.oclIsKindOf(GenClass))]
 [for (genFeature : GenFeature | genClassifier.genFeatures)]
@@ -584,7 +584,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
 [/for]
 
 [/if]
-[if (genPackage.hasConstraints())]
+[if (genPackage.hasConstraintAnnotations())]
     // Register package validator
     [importedName('org.eclipse.emf.ecore.EValidator')/].Registry.INSTANCE.put
       (the[basic/],
@@ -711,11 +711,11 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
 [for (genFeature : GenFeature | genClassifier.genFeatures)]
 [if (isInterface)]
   /**
-   * Returns the meta object for the [genFeature.metaFeatureKind()/] '{@link [genClassifier.metaQualifiedInterfaceName()/]#[genFeature.getAccessor(genFeature.isBooleanFeature())/] <em>[genFeature.formattedFeatureName()/]</em>}'.
+   * Returns the meta object for the [genFeature.metaFeatureKind()/] '{@link [genClassifier.metaQualifiedInterfaceName()/]#[genFeature.getAccessor(genFeature.isBooleanAttribute())/] <em>[genFeature.formattedFeatureName()/]</em>}'.
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
    * @return the meta object for the [genFeature.metaFeatureKind()/] '<em>[genFeature.formattedFeatureName()/]</em>'.
-   * @see [genClassifier.metaQualifiedInterfaceName()/]#[genFeature.getAccessor(genFeature.isBooleanFeature())/]()
+   * @see [genClassifier.metaQualifiedInterfaceName()/]#[genFeature.getAccessor(genFeature.isBooleanAttribute())/]()
    * @see #get[genClassifier.classifierAccessorName()/]()
 [if (genFeature.hasInheritedAPITags())]
    * [genFeature.implicitAPITagLines()->join('\n   * ')/]
@@ -888,7 +888,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
 
     // Create classes and their features
 [for (genClass : GenClass | genPackage.genClasses)]
-    [genClass.classifierInstanceName()/] = create[genClass.metaType()/]([genClass.classifierID()/]);
+    [genClass.classifierInstanceName()/] = create[genClass.metaType()/]([genClass.classifierConstant()/]);
 [for (genFeature : GenFeature | genClass.genFeatures)]
     create[genFeature.featureMetaType()/]([genClass.classifierInstanceName()/], [genClass.featureIDName(genFeature)/]);
 [/for]
@@ -906,14 +906,14 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
 
     // Create enums
 [for (genEnum : GenEnum | genPackage.genEnums)]
-    [genEnum.classifierInstanceName()/] = createEEnum([genEnum.classifierID()/]);
+    [genEnum.classifierInstanceName()/] = createEEnum([genEnum.classifierConstant()/]);
 [/for]
 [/if]
 [if (genPackage.genDataTypes->notEmpty())]
 
     // Create data types
 [for (genDataType : GenDataType | genPackage.genDataTypes)]
-    [genDataType.classifierInstanceName()/] = createEDataType([genDataType.classifierID()/]);
+    [genDataType.classifierInstanceName()/] = createEDataType([genDataType.classifierConstant()/]);
 [/for]
 [/if]
   }
@@ -1034,7 +1034,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
 [for (genEnum : GenEnum | genPackage.genEnums)]
     initEEnum([genEnum.classifierInstanceName()/], [importedName(genEnum.qualifiedEnumName())/].class, "[genEnum.name()/]");[nonNLS(genModel, 1)/]
 [for (literal : GenEnumLiteral | genEnum.genEnumLiterals)]
-    addEEnumLiteral([genEnum.classifierInstanceName()/], [if (importedName(genEnum.qualifiedEnumName()) = genEnum.classifierID())][genEnum.qualifiedEnumName()/][else][importedName(genEnum.qualifiedEnumName())/][/if].[literal.enumLiteralInstanceConstantName()/]);
+    addEEnumLiteral([genEnum.classifierInstanceName()/], [if (importedName(genEnum.qualifiedEnumName()) = genEnum.classifierConstant())][genEnum.qualifiedEnumName()/][else][importedName(genEnum.qualifiedEnumName())/][/if].[literal.enumLiteralInstanceConstantName()/]);
 [/for]
 [if (i < genPackage.genEnums->size())]
 
@@ -1232,7 +1232,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
       switch (eClassifier.getClassifierID())
       {
 [for (genClass : GenClass | genPackage.genClasses->select(c | c.isOn('dynamic')))]
-        case [genClass.classifierID()/]:
+        case [genClass.classifierConstant()/]:
 [/for]
         {
           break;
@@ -1254,9 +1254,4 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
 [**
  * Whether any classifier of a package has constraints in its annotations.
  **/]
-[query public hasConstraints(genPackage : GenPackage) : Boolean = genPackage.ecorePackage.eClassifiers->exists(c | c.eAnnotations->exists(a | a.source = ecoreNamespace() and a.detailKeys()->includes('constraints')))/]
-
-[**
- * The qualified name of the validator class of a package.
- **/]
-[query public qualifiedValidatorClassName(genPackage : GenPackage) : String = genPackage.utilitiesPackageName() + '.' + genPackage.prefixedName('Validator')/]
+[query public hasConstraintAnnotations(genPackage : GenPackage) : Boolean = genPackage.ecorePackage.eClassifiers->exists(c | c.eAnnotations->exists(a | a.source = ecoreNamespace() and a.detailKeys()->includes('constraints')))/]

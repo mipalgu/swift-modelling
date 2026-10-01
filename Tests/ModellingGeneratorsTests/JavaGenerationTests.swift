@@ -35,14 +35,37 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
             fixture: "library", stem: "library",
             options: GenModelImportOptions(
                 basePackage: "org.example", copyright: "Copyright 2026 Example Pty Ltd"),
-            files: ["org/example/library/BookCategory.java"],
+            files: [
+                "org/example/library/Book.java",
+                "org/example/library/BookCategory.java",
+                "org/example/library/Lendable.java",
+                "org/example/library/Library.java",
+                "org/example/library/Named.java",
+                "org/example/library/Writer.java",
+                "org/example/library/impl/BookImpl.java",
+                "org/example/library/impl/LibraryImpl.java",
+                "org/example/library/impl/NamedImpl.java",
+                "org/example/library/impl/WriterImpl.java",
+            ],
             packageFiles: ["org/example/library/LibraryPackage.java", "org/example/library/impl/LibraryPackageImpl.java"],
             factoryFiles: ["org/example/library/LibraryFactory.java", "org/example/library/impl/LibraryFactoryImpl.java"]),
         JavaGoldenCase(
             fixture: "nested", stem: "company",
             options: GenModelImportOptions(
                 basePackage: "org.example.company", packagePrefixes: ["projects": "Proj"]),
-            files: ["org/example/company/company/projects/Status.java"],
+            files: [
+                "org/example/company/company/Company.java",
+                "org/example/company/company/impl/CompanyImpl.java",
+                "org/example/company/company/people/Employee.java",
+                "org/example/company/company/people/Person.java",
+                "org/example/company/company/people/impl/EmployeeImpl.java",
+                "org/example/company/company/people/impl/PersonImpl.java",
+                "org/example/company/company/projects/Project.java",
+                "org/example/company/company/projects/Status.java",
+                "org/example/company/company/projects/archive/Record.java",
+                "org/example/company/company/projects/archive/impl/RecordImpl.java",
+                "org/example/company/company/projects/impl/ProjectImpl.java",
+            ],
             packageFiles: [
                 "org/example/company/company/CompanyPackage.java",
                 "org/example/company/company/impl/CompanyPackageImpl.java",
@@ -69,7 +92,9 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
             files: [
                 "org/example/traffic/enumerations/Colour.java",
                 "org/example/traffic/enumerations/Empty.java",
+                "org/example/traffic/enumerations/Light.java",
                 "org/example/traffic/enumerations/Mode.java",
+                "org/example/traffic/enumerations/impl/LightImpl.java",
             ],
             packageFiles: [
                 "org/example/traffic/enumerations/EnumerationsPackage.java",
@@ -79,6 +104,37 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
                 "org/example/traffic/enumerations/EnumerationsFactory.java",
                 "org/example/traffic/enumerations/impl/EnumerationsFactoryImpl.java",
             ]),
+        JavaGoldenCase(
+            fixture: "classes", stem: "classes",
+            options: GenModelImportOptions(basePackage: "org.example.shapes"),
+            files: [
+                "org/example/shapes/classes/Canvas.java",
+                "org/example/shapes/classes/Circle.java",
+                "org/example/shapes/classes/Colour.java",
+                "org/example/shapes/classes/Named.java",
+                "org/example/shapes/classes/Shape.java",
+                "org/example/shapes/classes/impl/CanvasImpl.java",
+                "org/example/shapes/classes/impl/CircleImpl.java",
+                "org/example/shapes/classes/impl/ShapeImpl.java",
+            ],
+            packageFiles: [
+                "org/example/shapes/classes/ClassesPackage.java",
+                "org/example/shapes/classes/impl/ClassesPackageImpl.java",
+            ],
+            factoryFiles: [
+                "org/example/shapes/classes/ClassesFactory.java",
+                "org/example/shapes/classes/impl/ClassesFactoryImpl.java",
+            ]),
+        JavaGoldenCase(
+            fixture: "maps", stem: "maps",
+            options: GenModelImportOptions(),
+            files: [
+                "maps/Dictionary.java",
+                "maps/impl/DictionaryImpl.java",
+                "maps/impl/StringToIntEntryImpl.java",
+            ],
+            packageFiles: ["maps/MapsPackage.java", "maps/impl/MapsPackageImpl.java"],
+            factoryFiles: ["maps/MapsFactory.java", "maps/impl/MapsFactoryImpl.java"]),
         JavaGoldenCase(
             fixture: "documented", stem: "documented",
             options: GenModelImportOptions(basePackage: "org.example.alarm"),
@@ -200,7 +256,7 @@ struct JavaGenerationTests {
         let names = result.files.map(\.lastPathComponent)
         let expectedOrder = [
             "EnumerationsPackage.java", "EnumerationsPackageImpl.java", "EnumerationsFactory.java",
-            "EnumerationsFactoryImpl.java", "Colour.java", "Mode.java", "Empty.java",
+            "EnumerationsFactoryImpl.java", "Light.java", "LightImpl.java", "Colour.java", "Mode.java", "Empty.java",
         ]
         #expect(names.isSubsequence(containing: expectedOrder), "unexpected file order: \(names)")
         #expect(result.outputDirectory.path == generated.output.standardizedFileURL.path)

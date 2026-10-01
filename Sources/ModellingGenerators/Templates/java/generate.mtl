@@ -21,6 +21,8 @@
 [import AdapterFactoryClass/]
 [import ValidatorClass/]
 [import ProjectFiles/]
+[import Class/]
+[import ClassQueries/]
 
 [**
  * Writes the model code of every package of a generator model, nested packages included.
@@ -47,7 +49,9 @@
 [if (genPackage.generatesValidator())]
 [genPackage.generateValidatorFile()/]
 [/if]
-[comment TODO: interface and implementation of every class. /]
+[for (genClass : GenClass | genPackage.orderedGenClasses())]
+[genClass.generateClassFiles()/]
+[/for]
 [for (genEnum : GenEnum | genPackage.genEnums)]
 [genEnum.generateEnumFile()/]
 [/for]
@@ -69,6 +73,12 @@
 [query public utilityFileCount(genPackage : GenPackage) : Integer = (if genPackage.generatesAdapterFactory() then 2 else 0 endif) + (if genPackage.generatesValidator() then 1 else 0 endif)/]
 
 [**
+ * The number of files that this module writes for the classes of a generator package: the interface of each class
+ * that has one and the implementation of each class that is not an interface.
+ **/]
+[query public classFileCount(genPackage : GenPackage) : Integer = genPackage.genClasses->select(c | not c.isExternalInterface() and not c.genModel().isOn('suppressInterfaces'))->size() + genPackage.genClasses->reject(c | c.isInterface())->size()/]
+
+[**
  * Writes the file of the factory interface of a package.
  **/]
 [template public generateFactoryInterfaceFile(genPackage : GenPackage)]
@@ -80,6 +90,18 @@
  **/]
 [template public generateFactoryImplementationFile(genPackage : GenPackage)]
 [file (genPackage.factoryClassPackageName().packagePath() + '/' + genPackage.factoryClassName() + '.java', false, 'UTF-8')][genPackage.factoryImplementation()/][/file]
+[/template]
+
+[**
+ * Writes the interface and the implementation of one class, as the Eclipse generator does.
+ **/]
+[template public generateClassFiles(genClass : GenClass)]
+[if (not genClass.isExternalInterface() and not genClass.genModel().isOn('suppressInterfaces'))]
+[file (genClass.genPackage().interfacePackageName().packagePath() + '/' + genClass.interfaceName() + '.java', false, 'UTF-8')][genClass.classInterfaceFile()/][/file]
+[/if]
+[if (not genClass.isInterface())]
+[file (genClass.genPackage().classPackageName().packagePath() + '/' + genClass.className() + '.java', false, 'UTF-8')][genClass.classImplementationFile()/][/file]
+[/if]
 [/template]
 
 [**
@@ -115,7 +137,7 @@
  **/]
 [template public fileCount(genModel : GenModel)]
 [file ('count')]
-[genModel.allGenPackages()->collect(p | p.genEnums->size() + p.packageFileCount() + p.factoryFileCount() + p.utilityFileCount())->sum() + genModel.projectFileCount()/]
+[genModel.allGenPackages()->collect(p | p.genEnums->size() + p.packageFileCount() + p.factoryFileCount() + p.utilityFileCount() + p.classFileCount())->sum() + genModel.projectFileCount()/]
 [/file]
 [/template]
 

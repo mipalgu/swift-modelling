@@ -147,7 +147,7 @@
 [**
  * The package of a qualified class name; empty if the name has no package.
  **/]
-[query public classPackageOf(qualifiedName : OclAny) : String = if isBlank(qualifiedName) or not qualifiedName.contains('.') then '' else qualifiedName.substring(1, qualifiedName.lastIndex('.') - 1) endif/]
+[query public classPackageOf(qualifiedName : OclAny) : String = if isBlank(qualifiedName) then '' else qualifiedName.packageOf() endif/]
 
 [**
  * The package of the model plugin class: the package in the class name, otherwise the plugin identifier in lower case.
@@ -256,7 +256,7 @@
 [**
  * The API tag lines of the documentation of a generator model.
  **/]
-[query public modelTagLines(genModel : GenModel) : OclAny = apiTagLines(genModel.setting('modelDocumentation'), '')/]
+[query public modelTagLines(genModel : GenModel) : OclAny = textAPITagLines(genModel.setting('modelDocumentation'), '')/]
 
 [**
  * Whether the documentation of the generator model carries a deprecation tag.

@@ -211,7 +211,7 @@
 [**
  * Whether a data type maps to the root object type.
  **/]
-[query public isObjectDataType(dataType : OclAny) : Boolean = dataType.ecoreEnum.oclIsUndefined() and dataType.ecoreDataType.instanceClassName() = 'java.lang.Object'/]
+[query public isObjectInstanceDataType(dataType : OclAny) : Boolean = dataType.ecoreEnum.oclIsUndefined() and dataType.ecoreDataType.instanceClassName() = 'java.lang.Object'/]
 
 [**
  * Whether a data type has a type that is compared with compareTo.
@@ -441,7 +441,7 @@ public class [genPackage.validatorClassName()/] extends [importedName('org.eclip
 [if (classifier.isValueType())]
 [if (classifier.isPrimitiveDataType())]
         return validate[classifier.name()/](([importedName(objectTypeName(classifier.dataTypeClassName()))/])value, diagnostics, context);
-[elseif (classifier.isObjectDataType())]
+[elseif (classifier.isObjectInstanceDataType())]
         return validate[classifier.name()/](value, diagnostics, context);
 [else]
         return validate[classifier.name()/](([classifier.valueTypeName()/])value, diagnostics, context);

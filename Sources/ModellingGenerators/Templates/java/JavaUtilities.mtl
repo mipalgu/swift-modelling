@@ -17,11 +17,6 @@
 [comment Runtime and options /]
 
 [**
- * The namespace of the built-in Ecore package.
- **/]
-[query public ecoreNamespace() : String = 'http://www.eclipse.org/emf/2002/Ecore'/]
-
-[**
  * The minor number of the runtime version that the generated code targets, such as 7 for version 2.7.
  * A generator model without a runtime version targets the newest runtime, unless its compliance level
  * is below 5.0, which targets version 2.2.
@@ -51,11 +46,6 @@
 [query public adapterFactoryClassName(genPackage : GenPackage) : String = genPackage.prefixedName('AdapterFactory')/]
 
 [**
- * The name of the validator class of a package.
- **/]
-[query public validatorClassName(genPackage : GenPackage) : String = genPackage.prefixedName('Validator')/]
-
-[**
  * The qualified name of the switch class of a package.
  **/]
 [query public qualifiedSwitchClassName(genPackage : GenPackage) : String = genPackage.utilitiesPackageName() + '.' + genPackage.switchClassName()/]
@@ -64,11 +54,6 @@
  * The qualified name of the adapter factory class of a package.
  **/]
 [query public qualifiedAdapterFactoryClassName(genPackage : GenPackage) : String = genPackage.utilitiesPackageName() + '.' + genPackage.adapterFactoryClassName()/]
-
-[**
- * The qualified name of the validator class of a package.
- **/]
-[query public qualifiedValidatorClassName(genPackage : GenPackage) : String = genPackage.utilitiesPackageName() + '.' + genPackage.validatorClassName()/]
 
 [comment Classes /]
 
@@ -86,11 +71,6 @@
  * Whether the utility classes of a package import the interface package as a whole.
  **/]
 [query public usesInterfaceWildcard(genPackage : GenPackage) : Boolean = not genPackage.hasDefaultPackageConflict() and genPackage.utilitiesPackageName() <> genPackage.interfacePackageName()/]
-
-[**
- * Whether a package has anything to generate: a class, an enumeration or a data type.
- **/]
-[query public hasClassifiers(genPackage : GenPackage) : Boolean = genPackage.genClasses->notEmpty() or genPackage.genEnums->notEmpty() or genPackage.genDataTypes->notEmpty()/]
 
 [**
  * Whether a package generates a switch and an adapter factory: it asks for adapter factories and has classes.
@@ -209,7 +189,7 @@
  * The name of the interface of a class as the utility classes write it: the simple name for a class
  * of the package, which the wildcard import of the interface package supplies, otherwise the imported name.
  **/]
-[template public utilityTypeName(genPackage : GenPackage, genClass : GenClass)][if (genPackage.usesInterfaceWildcard() and genClass.genPackage() = genPackage)][genClass.interfaceName()/][else][importedName(genClass.qualifiedInterfaceName())/][/if][/template]
+[template public utilityTypeName(genPackage : GenPackage, genClass : GenClass)][if (genPackage.usesInterfaceWildcard() and genClass.genPackage() = genPackage and not genClass.isExternalInterface())][genClass.interfaceName()/][else][importedName(genClass.internalInterfaceName())/][/if][/template]
 
 [**
  * The name of the package interface of a package as the utility classes write it.
@@ -219,25 +199,10 @@
 [comment Documentation /]
 
 [**
- * The since, deprecated and no-reference tags of the documentation of an element, as lines of text.
- **/]
-[query public ownAPITags(element : OclAny) : OclAny = Sequence{if element.hasDocumentationTag('since') and element.documentationTagText('since').size() > 0 then '@since ' + element.documentationTagText('since') else '' endif, if element.hasDocumentationTag('deprecated') then (if element.documentationTagText('deprecated').size() > 0 then '@deprecated ' + element.documentationTagText('deprecated') else '@deprecated' endif) else '' endif, if element.hasDocumentationTag('noreference') then (if element.documentationTagText('noreference').size() > 0 then '@noreference ' + element.documentationTagText('noreference') else '@noreference' endif) else '' endif}->select(l | l.size() > 0)/]
-
-[**
- * Whether the documentation of an element has API tags of its own.
- **/]
-[query public hasOwnAPITags(element : OclAny) : Boolean = element.ownAPITags()->notEmpty()/]
-
-[**
- * Whether any element of a collection is deprecated.
- **/]
-[query public anyDeprecated(elements : OclAny) : Boolean = elements->exists(e | e.hasAPIDeprecatedTag())/]
-
-[**
  * Writes the lines of the API tags of an element, each prefixed with the comment margin.
  **/]
 [template public apiTagLines(element : OclAny, margin : String)]
-[for (line | element.ownAPITags())]
+[for (line | element.ownAPITagLines())]
 [margin/][line/]
 [/for]
 [/template]

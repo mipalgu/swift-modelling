@@ -227,3 +227,48 @@
  * The name of an enumeration literal as the model sees it, with the single underscore adjustment.
  **/]
 [query public enumLiteralName(genEnumLiteral : GenEnumLiteral) : String = if genEnumLiteral.name() = '_' and genEnumLiteral.genModel().complianceLevel() >= 8.0 then '__' else genEnumLiteral.name() endif/]
+
+[**
+ * The namespace of the Ecore metamodel, whose classifiers are reached through the Ecore package instance.
+ **/]
+[query public ecoreNamespace() : String = 'http://www.eclipse.org/emf/2002/Ecore'/]
+
+[**
+ * Whether a package has anything to generate: a class, an enumeration or a data type.
+ **/]
+[query public hasClassifiers(genPackage : GenPackage) : Boolean = genPackage.genClasses->notEmpty() or genPackage.genEnums->notEmpty() or genPackage.genDataTypes->notEmpty()/]
+
+[**
+ * Whether a package is the Ecore package itself.
+ **/]
+[query public isEcorePackage(genPackage : GenPackage) : Boolean = genPackage.ecorePackage.nsURI = ecoreNamespace()/]
+
+[**
+ * The name of the factory accessor of a package without its get prefix.
+ **/]
+[query public factoryName(genPackage : GenPackage) : String = genPackage.prefixedName('Factory')/]
+
+[**
+ * The name of the validator class of a package.
+ **/]
+[query public validatorClassName(genPackage : GenPackage) : String = genPackage.prefixedName('Validator')/]
+
+[**
+ * The qualified name of the validator class of a package.
+ **/]
+[query public qualifiedValidatorClassName(genPackage : GenPackage) : String = genPackage.utilitiesPackageName() + '.' + genPackage.validatorClassName()/]
+
+[**
+ * The name of the formatted feature for documentation: its words capitalised and separated by spaces.
+ **/]
+[query public formattedFeatureName(element : OclAny) : String = element.capName().formatName(' ')/]
+
+[**
+ * Whether a class stands for an existing Java interface instead of generating one.
+ **/]
+[query public isExternalInterface(genClass : GenClass) : Boolean = not isBlank(genClass.ecoreClass.instanceClassName)/]
+
+[**
+ * The qualified name of the interface of a class: the instance class that the model names, otherwise the generated interface.
+ **/]
+[query public internalInterfaceName(genClass : GenClass) : String = if genClass.isExternalInterface() then genClass.ecoreClass.instanceClassName else genClass.qualifiedInterfaceName() endif/]

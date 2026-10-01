@@ -23,13 +23,9 @@
 [import JavaTypes/]
 [import Header/]
 [import JavaDocumentation/]
+[import JavaUtilities/]
 
 [comment Names /]
-
-[**
- * The name of the factory of a package without interface or implementation decoration: the prefix and Factory.
- **/]
-[query public factoryName(genPackage : GenPackage) : String = genPackage.prefixedName('Factory')/]
 
 [**
  * The package that holds the factory implementation of a package.
@@ -62,11 +58,6 @@
 [query public factoryVariableName(genClass : GenClass) : String = safeName(genClass.name().uncapPrefixedName())/]
 
 [comment Conditions /]
-
-[**
- * Whether a package has classes, enumerations or data types, which is what makes it produce a factory.
- **/]
-[query public hasClassifiers(genPackage : GenPackage) : Boolean = not genPackage.genClasses->isEmpty() or not genPackage.genEnums->isEmpty() or not genPackage.genDataTypes->isEmpty()/]
 
 [**
  * Whether a package has a class named like the implementation class of another one.
@@ -489,7 +480,7 @@ public class [genPackage.factoryClassName()/] extends [importedName('org.eclipse
   /**
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
-[for (line | genClass.factoryApiTagLines(genPackage.factoryTypeRef(genClass.qualifiedInterfaceName(), wildcard)))]
+[for (line | genClass.factoryApiTagLines(genPackage.factoryTypeRef(genClass.internalInterfaceName(), wildcard)))]
    * [line/]
 [/for]
    * @generated
@@ -500,13 +491,13 @@ public class [genPackage.factoryClassName()/] extends [importedName('org.eclipse
 [if (genModel.useInterfaceOverrideAnnotation() and not genClass.isMapEntry)]
   @Override
 [/if]
-  public [genPackage.factoryTypeRef(genClass.qualifiedInterfaceName(), wildcard)/] create[genClass.name()/]()
+  public [genPackage.factoryTypeRef(genClass.internalInterfaceName(), wildcard)/][genClass.interfaceTypeArguments()/] create[genClass.name()/]()
   {
 [if (genClass.isOn('dynamic'))]
 [if (inlineReturn)]
-    return [if (genClass.factoryNeedsObjectCast())]([genPackage.factoryTypeRef(genClass.qualifiedInterfaceName(), wildcard)/])[/if]super.create([genPackage.factoryClassifierAccessor(genClass, wildcard)/]);
+    return [if (genClass.factoryNeedsObjectCast())]([genPackage.factoryTypeRef(genClass.internalInterfaceName(), wildcard)/][genClass.interfaceTypeArguments()/])[/if]super.create([genPackage.factoryClassifierAccessor(genClass, wildcard)/]);
 [else]
-    [genPackage.factoryTypeRef(genClass.qualifiedInterfaceName(), wildcard)/] [genClass.factoryVariableName()/] = [if (genClass.factoryNeedsObjectCast())]([genPackage.factoryTypeRef(genClass.qualifiedInterfaceName(), wildcard)/])[/if]super.create([genPackage.factoryClassifierAccessor(genClass, wildcard)/]);
+    [genPackage.factoryTypeRef(genClass.internalInterfaceName(), wildcard)/][genClass.interfaceTypeArguments()/] [genClass.factoryVariableName()/] = [if (genClass.factoryNeedsObjectCast())]([genPackage.factoryTypeRef(genClass.internalInterfaceName(), wildcard)/][genClass.interfaceTypeArguments()/])[/if]super.create([genPackage.factoryClassifierAccessor(genClass, wildcard)/]);
     return [genClass.factoryVariableName()/];
 [/if]
 [else]
