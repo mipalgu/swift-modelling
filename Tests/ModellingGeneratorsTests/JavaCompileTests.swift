@@ -29,8 +29,15 @@ struct JavaCompileTests {
             return URL(fileURLWithPath: path)
         }
         let search = ProcessInfo.processInfo.environment["PATH"] ?? ""
-        for directory in search.split(separator: ":") {
-            let candidate = URL(fileURLWithPath: String(directory)).appendingPathComponent("javac")
+        #if os(Windows)
+            let separator: Character = ";"
+            let name = "javac.exe"
+        #else
+            let separator: Character = ":"
+            let name = "javac"
+        #endif
+        for directory in search.split(separator: separator) {
+            let candidate = URL(fileURLWithPath: String(directory)).appendingPathComponent(name)
             if FileManager.default.isExecutableFile(atPath: candidate.path) { return candidate }
         }
         return nil

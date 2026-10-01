@@ -12,7 +12,7 @@ import GenModel
 
 /// Offers the language-neutral facade of a generator model to templates as AQL services.
 ///
-/// The services wrap ``GenElement``: navigation between generator elements, feature and
+/// The services wrap `GenElement`: navigation between generator elements, feature and
 /// classifier numbering, inherited feature lists, shortcuts to the properties of the Ecore
 /// elements that generator elements describe, name formatting and generator settings that fall
 /// back to the defaults of the generator metamodel. Receivers are the objects of the

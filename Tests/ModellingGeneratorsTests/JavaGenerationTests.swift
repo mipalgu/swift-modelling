@@ -66,6 +66,19 @@ struct JavaGenerationTests {
         }
     }
 
+    @Test(
+        "Every fixture generates without error",
+        arguments: JavaGoldenCase.all.map(\.fixture) + ["families", "organisation", "ecoretypes"])
+    @MainActor
+    func everyFixtureGenerates(_ fixture: String) async throws {
+        let stem = ["nested": "company", "ecoretypes": "bridge"][fixture] ?? fixture
+        let generated = try await GeneratedProject.make(fixture, stem: stem)
+        defer { generated.remove() }
+        let result = try await generated.generate()
+        #expect(result.files.count == generated.generatedPaths().count)
+        #expect(result.packageCount >= 1)
+    }
+
     @Test("Generating twice yields identical files")
     @MainActor
     func determinism() async throws {
