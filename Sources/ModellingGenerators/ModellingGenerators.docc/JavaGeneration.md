@@ -31,11 +31,15 @@ For every enumeration of every package the set writes the Java enum that impleme
 - `JavaDocumentation.mtl` writes model tags, API tags from documentation, string literals and escapes.
 - `Header.mtl` writes the copyright comment that opens a file.
 - `EnumClass.mtl` writes the file of an enumeration.
+- `PackageClass.mtl` writes the package interface and the package implementation, and `PackageNames.mtl` holds its queries. Generic types and type parameters in the metamodel, the GWT platform and compliance levels below 5.0 are not supported.
+- `SwitchClass.mtl` and `AdapterFactoryClass.mtl` write the switch and the adapter factory of a package that has classes and asks for adapter factories. `ValidatorClass.mtl` writes the validator of a package that has constraints (annotated constraints, invariant operations and data type facets). `JavaUtilities.mtl` holds what the three share. Classes with type parameters, external interfaces, runtimes older than 2.7 and facets that derive from base, item or member types are not covered.
 - `TypeMapping.ecore` and `java-types.xmi` are the data model with the type table, the reserved words and the types that need no import.
 
 ### Existing files
 
-A file that exists is merged with the generated text. A member whose comment carries `@generated` is regenerated, a member marked `@generated NOT` is kept, and members without the tag are kept. ``GenerationOptions/forceOverwrite`` replaces the file; ``GenerationOptions/diff`` writes the generated text beside it as `.<name>.new`.
+A Java file that exists is merged with the generated text. A member whose comment carries `@generated` is regenerated, a member marked `@generated NOT` is kept, and members without the tag are kept. ``GenerationOptions/forceOverwrite`` replaces the file; ``GenerationOptions/diff`` writes the generated text beside it as `.<name>.new`.
+
+The project files are not merged. An existing plugin descriptor, bundle manifest and plugin properties file stay as they are unless the overwrite is forced, and the build properties are replaced only while there is no plugin descriptor yet or when the overwrite is forced. The properties files are written in ISO-8859-1, with a Unicode escape for every character beyond it.
 
 ### Checking the output
 

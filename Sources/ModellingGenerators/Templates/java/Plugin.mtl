@@ -1,0 +1,164 @@
+[comment encoding = UTF-8 /]
+[**
+ * The Java file of the plugin class of a model project.
+ *
+ * The class is the central singleton of the model plugin. It extends the runtime's plugin base class,
+ * keeps the implementation of the platform plugin, and, for plugins that can run as plain OSGi bundles,
+ * declares the bundle activator.
+ *
+ * This template writes the form for compliance level 5.0 and higher. The web toolkit form omits the
+ * platform plugin implementation, as the Eclipse generator does.
+ **/]
+[module Plugin('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaImports/]
+[import Header/]
+[import JavaDocumentation/]
+[import JavaResources/]
+[import JavaProject/]
+
+[**
+ * The complete text of the file that declares the plugin class of a generator model.
+ **/]
+[template public pluginClass(genModel : GenModel)]
+[collect ('imports', genModel.qualifiedModelPluginClassName())/]
+[collect ('imports', Sequence{'org.eclipse.emf.common.EMFPlugin', 'org.eclipse.emf.common.util.ResourceLocator'})/]
+[header(genModel)/]
+package [genModel.modelPluginPackageName()/];
+
+
+[emit ('imports') once][importBlock(items)/][/emit]
+
+/**
+ * This is the central singleton for the [genModel.setting('modelName')/] model plugin.
+ * <!-- begin-user-doc -->
+ * <!-- end-user-doc -->
+[for (line | genModel.modelTagLines())]
+ * [line/]
+[/for]
+ * @generated
+ */
+[if (genModel.useGenerics() and genModel.isModelDeprecated())]
+@Deprecated
+[/if]
+public final class [genModel.modelPluginClassName()/] extends EMFPlugin
+{
+[if (genModel.hasCopyrightField())]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public static final [importedName('java.lang.String')/] copyright = [genModel.copyrightFieldLiteral()/];[nonNLS(genModel, 1)/]
+
+[/if]
+  /**
+   * Keep track of the singleton.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public static final [genModel.modelPluginClassName()/] INSTANCE = new [genModel.modelPluginClassName()/]();
+
+[if (not genModel.isGWT())]
+  /**
+   * Keep track of the singleton.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  private static Implementation plugin;
+
+[/if]
+  /**
+   * Create the instance.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public [genModel.modelPluginClassName()/]()
+  {
+    super(new ResourceLocator ['['/][']'/] {});
+  }
+
+  /**
+   * Returns the singleton instance of the Eclipse plugin.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @return the singleton instance.
+   * @generated
+   */
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public ResourceLocator getPluginResourceLocator()
+  {
+[if (genModel.isGWT())]
+    return null;
+[else]
+    return plugin;
+[/if]
+  }
+
+[if (not genModel.isGWT())]
+  /**
+   * Returns the singleton instance of the Eclipse plugin.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @return the singleton instance.
+   * @generated
+   */
+  public static Implementation getPlugin()
+  {
+    return plugin;
+  }
+
+  /**
+   * The actual implementation of the Eclipse <b>Plugin</b>.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public static class Implementation extends EclipsePlugin
+  {
+    /**
+     * Creates an instance.
+     * <!-- begin-user-doc -->
+     * <!-- end-user-doc -->
+[if (genModel.needsRuntimeCompatibility())]
+     * @param descriptor the description of the plugin.
+[/if]
+     * @generated
+     */
+    public Implementation([if (genModel.needsRuntimeCompatibility())][importedName('org.eclipse.core.runtime.IPluginDescriptor')/] descriptor[/if])
+    {
+      super([if (genModel.needsRuntimeCompatibility())]descriptor[/if]);
+
+      // Remember the static instance.
+      //
+      plugin = this;
+    }
+[if (genModel.isOSGiCompatible())]
+
+    /**
+     * The actual implementation of the purely OSGi-compatible <b>Bundle Activator</b>.
+     * <!-- begin-user-doc -->
+     * <!-- end-user-doc -->
+     * @generated
+     */
+    public static final class Activator extends [importedName('org.eclipse.emf.common.EMFPlugin')/].OSGiDelegatingBundleActivator
+    {
+[if (genModel.useClassOverrideAnnotation())]
+      @Override
+[/if]
+      protected [importedName('org.osgi.framework.BundleActivator')/] createBundle()
+      {
+        return new Implementation();
+      }
+    }
+[/if]
+  }
+
+[/if]
+}
+[/template]

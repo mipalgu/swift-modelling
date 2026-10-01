@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+
+<!--
+-->
+
+<plugin>
+
+   <extension point="org.eclipse.emf.ecore.generated_package">
+      <package
+            uri="http://swift-modelling.org/test/company"
+            class="org.example.company.company.CompanyPackage"/>
+   </extension>
+
+   <extension point="org.eclipse.emf.ecore.extension_parser">
+      <parser
+            type="company"
+            class="org.example.company.company.util.CompanyResourceFactoryImpl"/>
+   </extension>
+
+   <extension point="org.eclipse.emf.ecore.generated_package">
+      <package
+            uri="http://swift-modelling.org/test/company/people"
+            class="org.example.company.company.people.PeoplePackage"/>
+   </extension>
+
+   <extension point="org.eclipse.emf.ecore.generated_package">
+      <package
+            uri="http://swift-modelling.org/test/company/projects"
+            class="org.example.company.company.projects.ProjPackage"/>
+   </extension>
+
+   <extension point="org.eclipse.emf.ecore.generated_package">
+      <package
+            uri="http://swift-modelling.org/test/company/projects/archive"
+            class="org.example.company.company.projects.archive.ArchivePackage"/>
+   </extension>
+
+</plugin>

@@ -49,14 +49,17 @@ struct JavaCompileTests {
     ///   - files: The files to compile.
     ///   - directory: The directory that receives the class files.
     ///   - classPath: The class path of the runtime.
+    ///   - sourcePath: A directory of sources that the files refer to, compiled on demand.
     /// - Returns: The exit status and the text that the compiler wrote.
-    static func compile(_ files: [URL], into directory: URL, classPath: String) throws -> (Int32, String) {
+    static func compile(
+        _ files: [URL], into directory: URL, classPath: String, sourcePath: String? = nil
+    ) throws -> (Int32, String) {
         guard let compiler else { return (-1, "no Java compiler found") }
         let process = Process()
         process.executableURL = compiler
         process.arguments =
             ["-Xlint:none", "--release", release, "-encoding", "UTF-8", "-cp", classPath, "-d", directory.path]
-            + files.map(\.path)
+            + (sourcePath.map { ["-sourcepath", $0] } ?? []) + files.map(\.path)
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = pipe
@@ -66,8 +69,9 @@ struct JavaCompileTests {
         return (process.terminationStatus, String(decoding: data, as: UTF8.self))
     }
 
+    /// Compiles everything that the Java template set generates for each fixture.
     @Test(
-        "Generated enumerations compile against the EMF runtime",
+        "Generated files compile against the EMF runtime",
         .enabled(if: classPath != nil, "EMF_RUNTIME_CLASSPATH is not set; skipping the compile test"),
         .enabled(if: compiler != nil, "No javac found; skipping the compile test"),
         arguments: JavaGoldenCase.all
@@ -82,13 +86,32 @@ struct JavaCompileTests {
 
         let classes = generated.project.root.appendingPathComponent("classes")
         try FileManager.default.createDirectory(at: classes, withIntermediateDirectories: true)
-        let files = generated.generatedPaths().map { generated.file($0) }
+        let files = generated.generatedPaths().filter { $0.hasSuffix(".java") }.map { generated.file($0) }
         let (status, text) = try Self.compile(files, into: classes, classPath: classPath)
         #expect(status == 0, "javac failed:\n\(text)")
     }
 
     @Test(
-        "The extended library enumeration compiles against the EMF runtime",
+        "Generated plugin and resource classes compile against the EMF runtime",
+        .enabled(if: classPath != nil, "EMF_RUNTIME_CLASSPATH is not set; skipping the compile test"),
+        .enabled(if: compiler != nil, "No javac found; skipping the compile test"),
+        arguments: JavaProjectCase.all
+    )
+    @MainActor
+    func compilesProjectClasses(_ golden: JavaProjectCase) async throws {
+        let classPath = try #require(Self.classPath)
+        let generated = try await golden.generate()
+        defer { generated.remove() }
+        let classes = generated.project.root.appendingPathComponent("classes")
+        try FileManager.default.createDirectory(at: classes, withIntermediateDirectories: true)
+        let files = generated.generatedPaths().filter { $0.hasSuffix(".java") }.map { generated.file($0) }
+        #expect(files.count > 1)
+        let (status, text) = try Self.compile(files, into: classes, classPath: classPath)
+        #expect(status == 0, "javac failed:\n\(text)")
+    }
+
+    @Test(
+        "The extended library files compile against the EMF runtime",
         .enabled(if: classPath != nil, "EMF_RUNTIME_CLASSPATH is not set; skipping the compile test"),
         .enabled(if: compiler != nil, "No javac found; skipping the compile test"),
         .enabled(
@@ -108,7 +131,58 @@ struct JavaCompileTests {
             genModelURL: genModel, language: "java", outputDirectory: output)
         let classes = output.appendingPathComponent("classes")
         try FileManager.default.createDirectory(at: classes, withIntermediateDirectories: true)
-        let (status, text) = try Self.compile(result.files, into: classes, classPath: classPath)
+        let files = result.files.filter { $0.pathExtension == "java" }
+        let (status, text) = try Self.compile(files, into: classes, classPath: classPath)
+        #expect(status == 0, "javac failed:\n\(text)")
+    }
+
+    @Test(
+        "The utility classes of the extended library example compile against the EMF runtime and the reference model",
+        .enabled(if: classPath != nil, "EMF_RUNTIME_CLASSPATH is not set; skipping the compile test"),
+        .enabled(if: compiler != nil, "No javac found; skipping the compile test"),
+        .enabled(
+            if: EMFParityTests.referenceRoot != nil, "EMF_REFERENCE_ROOT is not set; skipping Eclipse parity")
+    )
+    @MainActor
+    func compilesReferenceLibraryUtilities() async throws {
+        let classPath = try #require(Self.classPath)
+        let root = try #require(EMFParityTests.referenceRoot)
+        let directory = root.appendingPathComponent(EMFJavaParityTests.libraryDirectory)
+        let output = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-modelling-java-compile")
+            .appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: output) }
+        let result = try await GenerationPipeline.generate(
+            genModelURL: directory.appendingPathComponent(EMFJavaParityTests.genModelPath), language: "java",
+            outputDirectory: output)
+        let utilities = result.files.filter { $0.path.contains("/util/") }
+        #expect(utilities.count == 2)
+        let classes = output.appendingPathComponent("classes")
+        try FileManager.default.createDirectory(at: classes, withIntermediateDirectories: true)
+        let (status, text) = try Self.compile(
+            utilities, into: classes, classPath: classPath,
+            sourcePath: directory.appendingPathComponent("src").path)
+        #expect(status == 0, "javac failed:\n\(text)")
+    }
+
+    @Test(
+        "The generated validator compiles against the EMF runtime",
+        .enabled(if: classPath != nil, "EMF_RUNTIME_CLASSPATH is not set; skipping the compile test"),
+        .enabled(if: compiler != nil, "No javac found; skipping the compile test")
+    )
+    @MainActor
+    func compilesValidator() async throws {
+        let classPath = try #require(Self.classPath)
+        let golden = try #require(JavaUtilityCase.all.first { $0.fixture == "constraints" })
+        let generated = try await GeneratedProject.make(golden.fixture, stem: golden.stem, options: golden.options)
+        defer { generated.remove() }
+        try await generated.generate()
+
+        #expect(golden.files.contains { $0.hasSuffix("Validator.java") })
+        let files = generated.generatedPaths().filter { $0.hasSuffix(".java") }.map { generated.file($0) }
+        let classes = generated.project.root.appendingPathComponent("classes")
+        try FileManager.default.createDirectory(at: classes, withIntermediateDirectories: true)
+        let (status, text) = try Self.compile(files, into: classes, classPath: classPath)
         #expect(status == 0, "javac failed:\n\(text)")
     }
 }

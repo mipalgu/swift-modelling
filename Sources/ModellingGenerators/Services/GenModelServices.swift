@@ -53,7 +53,7 @@ public struct GenModelServices: AQLServiceProvider {
     /// The services offered to templates.
     public var services: [AQLService] {
         namingServices + navigationServices + classServices + featureServices
-            + settingServices + textServices
+            + settingServices + textServices + serialisationServices
     }
 
     // MARK: - Receivers
@@ -119,7 +119,7 @@ public struct GenModelServices: AQLServiceProvider {
     func ecoreElement(of element: GenElement) -> (any EcoreValue)? {
         element.ecoreClass ?? element.ecoreFeature.flatMap { $0 as? any EcoreValue }
             ?? element.ecoreEnum ?? element.ecoreEnumLiteral ?? element.ecoreDataType
-            ?? element.ecorePackage
+            ?? element.ecoreOperation ?? element.ecoreParameter ?? element.ecorePackage
     }
 
     // MARK: - Service construction

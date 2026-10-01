@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+
+<!--
+-->
+
+<plugin
+      name="%pluginName"
+      id="library"
+      version="1.0.0"
+      provider-name="%providerName">
+
+   <requires>
+      <import plugin="org.eclipse.core.runtime"/>
+      <import plugin="org.eclipse.emf.ecore" export="true"/>
+      <import plugin="org.eclipse.emf.ecore.xmi" export="true"/>
+   </requires>
+
+   <runtime>
+      <library name="library.jar">
+         <export name="*"/>
+      </library>
+   </runtime>
+
+   <extension point="org.eclipse.emf.ecore.generated_package">
+      <!-- @generated library -->
+      <package
+            uri="http://swift-modelling.org/test/library/1.0"
+            class="org.example.library.LibraryPackage"/>
+   </extension>
+
+   <extension point="org.eclipse.emf.ecore.extension_parser">
+      <!-- @generated library -->
+      <parser
+            type="library"
+            class="org.example.library.util.LibraryResourceFactoryImpl"/>
+   </extension>
+
+</plugin>

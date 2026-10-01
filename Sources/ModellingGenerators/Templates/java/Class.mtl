@@ -1,0 +1,258 @@
+[comment encoding = UTF-8 /]
+[**
+ * The Java files of a generator class: its interface and its implementation class.
+ *
+ * One template writes either file, or both in one file, depending on its two flags, like the
+ * class template of the Eclipse generator. The interface lists the features and operations of the
+ * class with documentation. The implementation holds the fields, the accessors, the reflective
+ * methods and the operations.
+ *
+ * Models with generic type parameters, reflective, dynamic or virtual feature delegation, array
+ * accessors, packed enumeration flags, setting delegates, invariant operations with validation
+ * delegates and the Google Web Toolkit platform are not supported.
+ **/]
+[module Class('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaImports/]
+[import JavaTypes/]
+[import Header/]
+[import JavaDocumentation/]
+[import ClassQueries/]
+[import ClassModelInfo/]
+[import ClassFeature/]
+[import ClassOperation/]
+[import ClassReflection/]
+
+[**
+ * The text of the Java file of the interface of a class.
+ **/]
+[template public classInterfaceFile(genClass : GenClass)]
+[genClass.classFile(true, false)/]
+[/template]
+
+[**
+ * The text of the Java file of the implementation of a class.
+ **/]
+[template public classImplementationFile(genClass : GenClass)]
+[genClass.classFile(false, true)/]
+[/template]
+
+[**
+ * The complete text of a Java file for a class.
+ **/]
+[template public classFile(genClass : GenClass, isInterface : Boolean, isImplementation : Boolean)]
+[let genPackage : GenPackage = genClass.genPackage()]
+[let genModel : GenModel = genPackage.genModel()]
+[if (isInterface)]
+[collect ('imports', genPackage.interfacePackageName() + '.' + genClass.interfaceName())/]
+[else]
+[collect ('imports', genPackage.classPackageName() + '.' + genClass.className())/]
+[/if]
+[header(genClass)/]
+package [if (isInterface)][genPackage.interfacePackageName()/][else][genPackage.classPackageName()/][/if];
+
+
+[emit ('imports') once]
+[if (not importedTypes(items)->isEmpty())]
+[importBlock(items)/]
+
+
+[/if]
+[/emit]
+[genClass.classJavadoc(isInterface)/]
+[if (genClass.hasImplicitAPIDeprecatedTag())]
+@Deprecated
+[/if]
+[if (isImplementation)]
+[if (genClass.needsDeprecationSuppression())]
+@SuppressWarnings("deprecation")
+[/if]
+public[if (genClass.isAbstract())] abstract[/if] class [genClass.className()/][if (not genClass.classExtendsName().isBlank())] extends [importedName(genClass.classExtendsName())/][/if][genClass.classImplementsClause()/]
+[else]
+public interface [genClass.interfaceName()/][genClass.interfaceExtendsClause()/]
+[/if]
+{
+[if (genModel.hasCopyrightField())]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  [if (isImplementation)]public static final [/if][importedName('java.lang.String')/] copyright = [genModel.copyrightFieldLiteral()/];[nonNLS(genModel, 1)/]
+
+[/if]
+[if (isImplementation and genClass.isJavaIOSerializable())]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  private static final long serialVersionUID = 1L;
+
+[/if]
+[if (isImplementation and genClass.isModelRoot() and genModel.isBooleanFlagsEnabled() and genModel.reservedFlagBits() = -1)]
+  /**
+   * A set of bit flags representing the values of boolean attributes and whether unsettable features have been set.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   * @ordered
+   */
+  protected int [genModel.settingText('booleanFlagsField')/] = 0;
+
+[/if]
+[if (isImplementation)]
+[for (genFeature : GenFeature | genClass.implementedFeatures())]
+[genClass.fieldDeclarations(genFeature)/]
+[/for]
+[genClass.constructorAndStaticClass()/]
+[/if]
+[for (genFeature : GenFeature | if isImplementation then genClass.implementedFeatures() else genClass.declaredFeatures() endif)]
+[genClass.featureMembers(genFeature, isInterface, isImplementation)/]
+[/for]
+[for (genOperation : GenOperation | if isImplementation then genClass.implementedOperations() else genClass.declaredOperations() endif)]
+[genClass.operationMembers(genOperation, isInterface, isImplementation)/]
+[/for]
+[if (isImplementation)]
+[genClass.reflectiveMembers()/]
+[/if]
+} //[if (isInterface)] [genClass.interfaceName()/][else][genClass.className()/][/if]
+[/let]
+[/let]
+[/template]
+
+[**
+ * The documentation comment above the interface or the class.
+ **/]
+[template public classJavadoc(genClass : GenClass, isInterface : Boolean)]
+[let genModel : GenModel = genClass.genModel()]
+[if (isInterface)]
+/**
+ * <!-- begin-user-doc -->
+ * A representation of the model object '<em><b>[genClass.formattedClassifierName()/]</b></em>'.
+ * <!-- end-user-doc -->
+[if (genClass.hasDocumentation())]
+ *
+ * <!-- begin-model-doc -->
+ * [genClass.documentation().indentLines('* ')/]
+ * <!-- end-model-doc -->
+[/if]
+ *
+[if (not genClass.genFeatures->isEmpty())]
+ * <p>
+ * The following features are supported:
+ * </p>
+ * <ul>
+[for (genFeature : GenFeature | genClass.genFeatures)]
+[if (not genFeature.isSuppressedGetVisibility())]
+ *   <li>{@link [genClass.qualifiedInterfaceName()/]#[genFeature.getterName()/] <em>[genFeature.formattedFeatureName()/]</em>}</li>
+[/if]
+[/for]
+ * </ul>
+[/if]
+ *
+[if (not genModel.isOn('suppressEMFMetaData'))]
+ * @see [genClass.genPackage().qualifiedPackageInterfaceName()/]#get[genClass.classifierAccessorName()/]()
+[/if]
+[if (not genModel.isOn('suppressEMFModelTags'))]
+[genClass.modelTagLines(' * ', genClass.modelInfo())/]
+[/if]
+[if (genClass.needsRootExtendsInterfaceTag())]
+ * @extends [importedName(genModel.rootExtendsInterface())/]
+[/if]
+[if (genClass.implicitAPITagLines()->notEmpty())]
+ * [genClass.implicitAPITagLines()->join('\n * ')/]
+[/if]
+ * @generated
+ */
+[else]
+/**
+ * <!-- begin-user-doc -->
+ * An implementation of the model object '<em><b>[genClass.formattedClassifierName()/]</b></em>'.
+ * <!-- end-user-doc -->
+[if (not genClass.implementedFeatures()->isEmpty())]
+ * <p>
+ * The following features are implemented:
+ * </p>
+ * <ul>
+[for (genFeature : GenFeature | genClass.implementedFeatures())]
+ *   <li>{@link [genClass.qualifiedClassName()/]#[genFeature.getterName()/] <em>[genFeature.formattedFeatureName()/]</em>}</li>
+[/for]
+ * </ul>
+[/if]
+ *
+[let link : String = importedName(genClass.internalInterfaceName())]
+[if (ownAPITags(genClass, link)->union(genClass.implicitAPITagLines())->notEmpty())]
+ * [ownAPITags(genClass, link)->union(genClass.implicitAPITagLines())->join('\n * ')/]
+[/if]
+[/let]
+ * @generated
+ */
+[/if]
+[/let]
+[/template]
+
+
+[**
+ * The name that the package interface uses for the accessor of a class.
+ **/]
+[query public classifierAccessorName(genClass : GenClass) : String = if genClass.name() = 'Class' or genClass.name() = 'Name' then genClass.name() + '_' else genClass.name() endif/]
+
+
+[**
+ * Whether the class needs to suppress deprecation warnings because it uses deprecated features.
+ **/]
+[query public needsDeprecationSuppression(genClass : GenClass) : Boolean = not genClass.hasAPIDeprecatedTag() and genClass.implementedFeatures()->exists(f | f.hasAPIDeprecatedTag())/]
+
+
+[**
+ * The extends clause of an implementation class declaration.
+ **/]
+[template public classImplementsClause(genClass : GenClass)][if (not genClass.classImplementsList()->isEmpty())] implements [for (name : String | genClass.classImplementsList()) separator(', ')][importedName(name)/][if (genClass.isMapEntry() and name.startsWith('org.eclipse.emf.common.util.BasicEMap'))]<[importedName(objectTypeName(genClass.mapEntryKeyFeature().itemTypeName()))/],[importedName(objectTypeName(genClass.mapEntryValueFeature().itemTypeName()))/]>[/if][/for][/if][/template]
+
+[**
+ * The extends clause of an interface declaration.
+ **/]
+[template public interfaceExtendsClause(genClass : GenClass)][if (not genClass.interfaceExtendsList()->isEmpty())] extends [for (name : String | genClass.interfaceExtendsList()) separator(', ')][importedName(name)/][/for][/if][/template]
+
+[**
+ * The field declarations of one feature: the default value constant, the cached value and the set flag.
+ **/]
+[template public fieldDeclarations(genClass : GenClass, genFeature : GenFeature)]
+[genClass.featureFields(genFeature)/]
+[/template]
+
+[**
+ * The constructor and the method that names the class of an implementation.
+ **/]
+[template public constructorAndStaticClass(genClass : GenClass)]
+[let genModel : GenModel = genClass.genModel()]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  [if (genModel.isOn('publicConstructors'))]public[else]protected[/if] [genClass.className()/]()
+  {
+    super();
+[for (genFeature : GenFeature | genClass.flagFeaturesWithDefault())]
+    [genClass.flagsField(genFeature)/] |= [genFeature.featureUpperName()/]_EFLAG;
+[/for]
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  protected [importedName('org.eclipse.emf.ecore.EClass')/] eStaticClass()
+  {
+    return [genClass.qualifiedClassifierAccessor()/];
+  }
+
+[/let]
+[/template]
+

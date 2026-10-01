@@ -1,0 +1,576 @@
+[comment encoding = UTF-8 /]
+[**
+ * The reflective methods of an implementation class.
+ *
+ * The methods here let the runtime read and change features by their identifiers and keep inverse
+ * references in step: eInverseAdd, eInverseRemove, eBasicRemoveFromContainerFeature, eGet, eSet,
+ * eUnset, eIsSet, the mapping between the feature identifiers of mixed in interfaces and those of
+ * the class, the invocation of operations by identifier, and toString.
+ **/]
+[module ClassReflection('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaImports/]
+[import JavaTypes/]
+[import JavaDocumentation/]
+[import ClassQueries/]
+[import ClassFeature/]
+[import ClassOperation/]
+
+[**
+ * The documentation comment above a reflective method.
+ **/]
+[template public reflectiveJavadoc()]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[/template]
+
+[**
+ * Whether a switch needs an explicit default case, as the generator model asks.
+ **/]
+[query public forcesDefaultCase(genClass : GenClass) : Boolean = genClass.genModel().isOn('switchMissingDefaultCase')/]
+
+[**
+ * The statements that close a switch of a reflective method, up to the delegation to the superclass.
+ **/]
+[template public switchTail(genClass : GenClass, method : String, call : String, returns : Boolean)]
+[if (genClass.forcesDefaultCase())]
+      default:
+[if (genClass.genModel().isMinimalReflective())]
+        [if (returns)]return [/if]super.[method/]([call/]);
+[else]
+        [if (returns)]return [/if]eDynamic[method.substring(2)/]([call/]);
+[/if]
+[if (not returns)]
+        return;
+[/if]
+    }
+[else]
+    }
+[if (genClass.genModel().isMinimalReflective())]
+    [if (returns)]return [/if]super.[method/]([call/]);
+[else]
+    [if (returns)]return [/if]eDynamic[method.substring(2)/]([call/]);
+[/if]
+[/if]
+[/template]
+
+[**
+ * The cast that retrieves the list of a feature as an internal list.
+ **/]
+[template public internalListCast(genFeature : GenFeature)](([importedName('org.eclipse.emf.ecore.util.InternalEList')/]<[importedName('org.eclipse.emf.ecore.InternalEObject')/]>)([importedName('org.eclipse.emf.ecore.util.InternalEList')/]<?>)[/template]
+
+[**
+ * All reflective methods of an implementation class, in the order of the Eclipse generator.
+ **/]
+[template public reflectiveMembers(genClass : GenClass)]
+[let genModel : GenModel = genClass.genModel()]
+[if (genClass.implementsAny(genClass.eInverseAddFeatures()))]
+[reflectiveJavadoc()/]
+[if (genClass.eInverseAddFeatures()->exists(f | f.isListType()))]
+  @SuppressWarnings("unchecked")
+[/if]
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public [importedName('org.eclipse.emf.common.notify.NotificationChain')/] eInverseAdd([importedName('org.eclipse.emf.ecore.InternalEObject')/] otherEnd, int featureID, [importedName('org.eclipse.emf.common.notify.NotificationChain')/] msgs)
+  {
+    switch (featureID)
+    {
+[for (genFeature : GenFeature | genClass.eInverseAddFeatures())]
+      case [genClass.featureConstant(genFeature)/]:
+[if (genFeature.isListType())]
+        return [genFeature.internalListCast()/][genFeature.getterName()/]()).basicAdd(otherEnd, msgs);
+[elseif (genFeature.isContainer())]
+        if (eInternalContainer() != null)
+          msgs = eBasicRemoveFromContainer(msgs);
+[if (genFeature.isBasicSet())]
+        return basicSet[genFeature.accessorName()/](([genFeature.featureType()/])otherEnd, msgs);
+[else]
+        return eBasicSetContainer(otherEnd, [genClass.featureConstant(genFeature)/], msgs);
+[/if]
+[else]
+[if (genFeature.isVolatile())]
+        [genFeature.featureType()/] [genFeature.localName()/] = [if (genFeature.resolvesProxies())]basicGet[genFeature.accessorName()/][else][genFeature.getterName()/][/if]();
+[/if]
+        if ([genFeature.localName()/] != null)
+[if (genFeature.isEffectiveContains())]
+          msgs = [genFeature.asInternalEObject(genFeature.localName(), true)/].eInverseRemove(this, EOPPOSITE_FEATURE_BASE - [genClass.featureConstant(genFeature)/], null, msgs);
+[else]
+          msgs = [genFeature.asInternalEObject(genFeature.localName(), true)/].eInverseRemove(this, [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
+[/if]
+        return basicSet[genFeature.accessorName()/](([genFeature.featureType()/])otherEnd, msgs);
+[/if]
+[/for]
+[genClass.switchTail('eInverseAdd', 'otherEnd, featureID, msgs', true)/]
+  }
+
+[/if]
+[if (genClass.implementsAny(genClass.eInverseRemoveFeatures()))]
+[reflectiveJavadoc()/]
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public [importedName('org.eclipse.emf.common.notify.NotificationChain')/] eInverseRemove([importedName('org.eclipse.emf.ecore.InternalEObject')/] otherEnd, int featureID, [importedName('org.eclipse.emf.common.notify.NotificationChain')/] msgs)
+  {
+    switch (featureID)
+    {
+[for (genFeature : GenFeature | genClass.eInverseRemoveFeatures())]
+      case [genClass.featureConstant(genFeature)/]:
+[if (genFeature.isListType() or genFeature.isFeatureMapFeature())]
+        return (([importedName('org.eclipse.emf.ecore.util.InternalEList')/]<?>)[genFeature.getterName()/]()).basicRemove(otherEnd, msgs);
+[elseif (genFeature.isContainer() and not genFeature.isBasicSet())]
+        return eBasicSetContainer(null, [genClass.featureConstant(genFeature)/], msgs);
+[elseif (genFeature.isUnsettableFeature())]
+        return basicUnset[genFeature.accessorName()/](msgs);
+[else]
+        return basicSet[genFeature.accessorName()/](null, msgs);
+[/if]
+[/for]
+[genClass.switchTail('eInverseRemove', 'otherEnd, featureID, msgs', true)/]
+  }
+
+[/if]
+[if (genClass.implementsAny(genClass.eBasicRemoveFromContainerFeatures()))]
+[reflectiveJavadoc()/]
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public [importedName('org.eclipse.emf.common.notify.NotificationChain')/] eBasicRemoveFromContainerFeature([importedName('org.eclipse.emf.common.notify.NotificationChain')/] msgs)
+  {
+    switch (eContainerFeatureID())
+    {
+[for (genFeature : GenFeature | genClass.eBasicRemoveFromContainerFeatures())]
+      case [genClass.featureConstant(genFeature)/]:
+        return eInternalContainer().eInverseRemove(this, [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
+[/for]
+[genClass.switchTail('eBasicRemoveFromContainerFeature', 'msgs', true)/]
+  }
+
+[/if]
+[if (genClass.implementsAny(genClass.reflectiveFeatures()))]
+[reflectiveJavadoc()/]
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public Object eGet(int featureID, boolean resolve, boolean coreType)
+  {
+    switch (featureID)
+    {
+[for (genFeature : GenFeature | genClass.reflectiveFeatures())]
+      case [genClass.featureConstant(genFeature)/]:
+[if (genFeature.isPrimitiveFeature())]
+        return [genFeature.getterName()/]();
+[elseif (genFeature.resolvesProxies() and not genFeature.isListType())]
+        if (resolve) return [genFeature.getterName()/]();
+        return basicGet[genFeature.accessorName()/]();
+[elseif (genFeature.isMapFeature())]
+        if (coreType) return [genFeature.getterName()/]();
+        else return [genFeature.getterName()/]().map();
+[elseif (genFeature.isFeatureMapFeature())]
+        if (coreType) return [genFeature.getterName()/]();
+        return (([importedName(featureMapTypeName())/].Internal)[genFeature.getterName()/]()).getWrapper();
+[else]
+        return [genFeature.getterName()/]();
+[/if]
+[/for]
+[genClass.switchTail('eGet', 'featureID, resolve, coreType', true)/]
+  }
+
+[/if]
+[if (genClass.implementsAny(genClass.eSetFeatures()))]
+[reflectiveJavadoc()/]
+[if (genClass.eSetFeatures()->exists(f | f.isListType() and not f.isFeatureMapFeature() and not f.isMapFeature()))]
+  @SuppressWarnings("unchecked")
+[/if]
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public void eSet(int featureID, Object newValue)
+  {
+    switch (featureID)
+    {
+[for (genFeature : GenFeature | genClass.eSetFeatures())]
+      case [genClass.featureConstant(genFeature)/]:
+[if (genFeature.isFeatureMapFeature())]
+        (([importedName(featureMapTypeName())/].Internal)[genFeature.getterName()/]()).set(newValue);
+[elseif (genFeature.isMapFeature())]
+        (([importedName('org.eclipse.emf.ecore.EStructuralFeature')/].Setting)[genFeature.getterName()/]()).set(newValue);
+[elseif (genFeature.isListType())]
+        [genFeature.getterName()/]().clear();
+        [genFeature.getterName()/]().addAll(([importedName('java.util.Collection')/]<? extends [importedName(genFeature.listItemTypeName())/]>)newValue);
+[else]
+        set[genFeature.accessorName()/]([genFeature.setCast()/]newValue);
+[/if]
+        return;
+[/for]
+[genClass.switchTail('eSet', 'featureID, newValue', false)/]
+  }
+
+[/if]
+[if (genClass.implementsAny(genClass.eSetFeatures()))]
+[reflectiveJavadoc()/]
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public void eUnset(int featureID)
+  {
+    switch (featureID)
+    {
+[for (genFeature : GenFeature | genClass.eSetFeatures())]
+      case [genClass.featureConstant(genFeature)/]:
+[if (genFeature.isListType() and not genFeature.isUnsettableFeature())]
+        [genFeature.getterName()/]().clear();
+[elseif (genFeature.isUnsettableFeature())]
+        unset[genFeature.accessorName()/]();
+[elseif (not genFeature.hasEDefault())]
+        set[genFeature.accessorName()/](([genFeature.featureType()/])null);
+[else]
+        set[genFeature.accessorName()/]([genFeature.eDefaultName()/]);
+[/if]
+        return;
+[/for]
+[genClass.switchTail('eUnset', 'featureID', false)/]
+  }
+
+[/if]
+[if (genClass.implementsAny(genClass.reflectiveFeatures()))]
+[reflectiveJavadoc()/]
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public boolean eIsSet(int featureID)
+  {
+    switch (featureID)
+    {
+[for (genFeature : GenFeature | genClass.reflectiveFeatures())]
+      case [genClass.featureConstant(genFeature)/]:
+[if (genFeature.isListType() and not genFeature.isUnsettableFeature())]
+[if (genClass.isFieldOf(genFeature))]
+        return [genFeature.localName()/] != null && ![genFeature.localName()/].isEmpty();
+[else]
+        return ![genFeature.getterName()/]().isEmpty();
+[/if]
+[elseif (genFeature.isUnsettableFeature())]
+        return isSet[genFeature.accessorName()/]();
+[elseif (genFeature.resolvesProxies())]
+[if (genClass.isFieldOf(genFeature))]
+        return [genFeature.localName()/] != null;
+[else]
+        return basicGet[genFeature.accessorName()/]() != null;
+[/if]
+[elseif (not genFeature.hasEDefault())]
+[if (genClass.isFieldOf(genFeature))]
+        return [genFeature.localName()/] != null;
+[else]
+        return [genFeature.getterName()/]() != null;
+[/if]
+[elseif (genFeature.isPrimitiveFeature() or genFeature.isEnumFeature())]
+[if (genClass.isFieldOf(genFeature))]
+[if (genClass.isFlagOf(genFeature))]
+        return (([genClass.flagsField(genFeature)/] & [genFeature.featureUpperName()/]_EFLAG) != 0) != [genFeature.eDefaultName()/];
+[else]
+        return [genFeature.localName()/] != [genFeature.eDefaultName()/];
+[/if]
+[else]
+        return [genFeature.getterName()/]() != [genFeature.eDefaultName()/];
+[/if]
+[else]
+[if (genClass.isFieldOf(genFeature))]
+        return [genFeature.eDefaultName()/] == null ? [genFeature.localName()/] != null : ![genFeature.eDefaultName()/].equals([genFeature.localName()/]);
+[else]
+        return [genFeature.eDefaultName()/] == null ? [genFeature.getterName()/]() != null : ![genFeature.eDefaultName()/].equals([genFeature.getterName()/]());
+[/if]
+[/if]
+[/for]
+[genClass.switchTail('eIsSet', 'featureID', true)/]
+  }
+
+[/if]
+[genClass.structuralFeatureIDMembers()/]
+[genClass.operationReflectionMembers()/]
+[genClass.toStringMember()/]
+[genClass.mapEntryMembers()/]
+[/let]
+[/template]
+
+[**
+ * The cast of the new value in a reflective setter: to the object type of the feature, except for features of the root Java type.
+ **/]
+[template public setCast(genFeature : GenFeature)][if (genFeature.itemTypeName() <> 'java.lang.Object')]([importedName(objectTypeName(genFeature.itemTypeName()))/])[/if][/template]
+
+[**
+ * The methods that translate feature identifiers between a class and the interfaces that it mixes in.
+ **/]
+[template public structuralFeatureIDMembers(genClass : GenClass)]
+[let genModel : GenModel = genClass.genModel()]
+[if (not genClass.mixinGenClasses()->collect(m | m.genFeatures)->flatten()->isEmpty())]
+[reflectiveJavadoc()/]
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public int eBaseStructuralFeatureID(int derivedFeatureID, Class<?> baseClass)
+  {
+[for (mixin : GenClass | genClass.mixinGenClasses())]
+    if (baseClass == [mixin.rawInterfaceName()/].class)
+    {
+      switch (derivedFeatureID)
+      {
+[for (genFeature : GenFeature | mixin.genFeatures)]
+        case [genClass.featureConstant(genFeature)/]: return [mixin.featureConstant(genFeature)/];
+[/for]
+        default: return -1;
+      }
+    }
+[/for]
+    return super.eBaseStructuralFeatureID(derivedFeatureID, baseClass);
+  }
+
+[reflectiveJavadoc()/]
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public int eDerivedStructuralFeatureID(int baseFeatureID, Class<?> baseClass)
+  {
+[for (mixin : GenClass | genClass.mixinGenClasses())]
+    if (baseClass == [mixin.rawInterfaceName()/].class)
+    {
+      switch (baseFeatureID)
+      {
+[for (genFeature : GenFeature | mixin.genFeatures)]
+        case [mixin.featureConstant(genFeature)/]: return [genClass.featureConstant(genFeature)/];
+[/for]
+        default: return -1;
+      }
+    }
+[/for]
+    return super.eDerivedStructuralFeatureID(baseFeatureID, baseClass);
+  }
+
+[/if]
+[/let]
+[/template]
+
+[**
+ * The methods that call operations by identifier.
+ **/]
+[template public operationReflectionMembers(genClass : GenClass)]
+[let genModel : GenModel = genClass.genModel()]
+[if (genModel.isOperationReflection() and not genClass.mixinOperations()->isEmpty())]
+[reflectiveJavadoc()/]
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public int eDerivedOperationID(int baseOperationID, Class<?> baseClass)
+  {
+[for (mixin : GenClass | genClass.mixinGenClasses())]
+    if (baseClass == [mixin.rawInterfaceName()/].class)
+    {
+      switch (baseOperationID)
+      {
+[for (genOperation : GenOperation | mixin.genOperations)]
+        case [mixin.qualifiedOperationID(genOperation)/]: return [genClass.qualifiedOperationID(genOperation)/];
+[/for]
+        default: return -1;
+      }
+    }
+[/for]
+    return super.eDerivedOperationID(baseOperationID, baseClass);
+  }
+
+[/if]
+[if (genModel.isOperationReflection() and not genClass.implementedOperations()->isEmpty())]
+[reflectiveJavadoc()/]
+[if (genClass.reflectiveOperations()->exists(o | o.genParameters->exists(p | p.ecoreParameter.upperBound > 1 or p.ecoreParameter.upperBound = -1)))]
+  @SuppressWarnings("unchecked")
+[/if]
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public Object eInvoke(int operationID, [importedName('org.eclipse.emf.common.util.EList')/]<?> arguments) throws [importedName('java.lang.reflect.InvocationTargetException')/]
+  {
+    switch (operationID)
+    {
+[for (genOperation : GenOperation | genClass.reflectiveOperations())]
+      case [genClass.qualifiedOperationID(genOperation)/]:
+[if (genOperation.ecoreOperation.eType.oclIsUndefined())]
+        [genOperation.name()/]([genOperation.invocationArguments()/]);
+        return null;
+[else]
+        return [genOperation.name()/]([genOperation.invocationArguments()/]);
+[/if]
+[/for]
+[genClass.switchTail('eInvoke', 'operationID, arguments', true)/]
+  }
+
+[/if]
+[/let]
+[/template]
+
+[**
+ * The arguments of the call of an operation from its reflective invocation: each value taken from the argument list with a cast.
+ **/]
+[template public invocationArguments(genOperation : GenOperation)][for (p : GenParameter | genOperation.genParameters) separator(', ')][if (qualifiedTypeName(p.ecoreParameter.eType) <> 'java.lang.Object' or p.ecoreParameter.upperBound > 1 or p.ecoreParameter.upperBound = -1)]([if (p.ecoreParameter.upperBound > 1 or p.ecoreParameter.upperBound = -1)][p.ecoreParameter.typedElementType()/][else][importedName(objectTypeName(qualifiedTypeName(p.ecoreParameter.eType)))/][/if])[/if]arguments.get([(i - 1).toString()/])[/for][/template]
+
+[**
+ * The text form of an object: the values of its attribute fields.
+ **/]
+[template public toStringMember(genClass : GenClass)]
+[let genModel : GenModel = genClass.genModel()]
+[if (not genClass.implementedOperations()->exists(o | o.name() = 'toString' and o.genParameters->isEmpty()) and not genClass.toStringFeatures()->isEmpty())]
+[reflectiveJavadoc()/]
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public String toString()
+  {
+    if (eIsProxy()) return super.toString();
+
+    StringBuilder result = new StringBuilder(super.toString());
+[for (genFeature : GenFeature | genClass.toStringFeatures())]
+[if (i = 1)]
+    result.append(" ([genFeature.name()/]: ");[nonNLS(genModel, 1)/]
+[else]
+    result.append(", [genFeature.name()/]: ");[nonNLS(genModel, 1)/]
+[/if]
+[if (genFeature.isUnsettableFeature() and not genFeature.isListType())]
+[if (genClass.isFlagOf(genFeature))]
+    if ([if (genClass.isESetFlagOf(genFeature))]([genClass.eSetFlagsField(genFeature)/] & [genFeature.featureUpperName()/]_ESETFLAG) != 0[else][genFeature.uncapName()/]ESet[/if]) result.append(([genClass.flagsField(genFeature)/] & [genFeature.featureUpperName()/]_EFLAG) != 0); else result.append("<unset>");[nonNLS(genModel, 1)/]
+[else]
+    if ([if (genClass.isESetFlagOf(genFeature))]([genClass.eSetFlagsField(genFeature)/] & [genFeature.featureUpperName()/]_ESETFLAG) != 0[else][genFeature.uncapName()/]ESet[/if]) result.append([genFeature.localName()/]); else result.append("<unset>");[nonNLS(genModel, 1)/]
+[/if]
+[else]
+[if (genClass.isFlagOf(genFeature))]
+    result.append(([genClass.flagsField(genFeature)/] & [genFeature.featureUpperName()/]_EFLAG) != 0);
+[else]
+    result.append([genFeature.localName()/]);
+[/if]
+[/if]
+[/for]
+    result.append(')');
+    return result.toString();
+  }
+
+[/if]
+[/let]
+[/template]
+
+[**
+ * The methods that let an implementation class act as an entry of a map: the hash code, the key and the value.
+ **/]
+[template public mapEntryMembers(genClass : GenClass)]
+[if (genClass.isMapEntry())]
+[let genModel : GenModel = genClass.genModel()]
+[let keyType : String = importedName(objectTypeName(genClass.mapEntryKeyFeature().itemTypeName()))]
+[let valueType : String = importedName(objectTypeName(genClass.mapEntryValueFeature().itemTypeName()))]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  protected int hash = -1;
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useInterfaceOverrideAnnotation())]
+  @Override
+[/if]
+  public int getHash()
+  {
+    if (hash == -1)
+    {
+      [importedName('java.lang.Object')/] theKey = getKey();
+      hash = (theKey == null ? 0 : theKey.hashCode());
+    }
+    return hash;
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useInterfaceOverrideAnnotation())]
+  @Override
+[/if]
+  public void setHash(int hash)
+  {
+    this.hash = hash;
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useInterfaceOverrideAnnotation())]
+  @Override
+[/if]
+  public [keyType/] getKey()
+  {
+    return getTypedKey();
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useInterfaceOverrideAnnotation())]
+  @Override
+[/if]
+  public void setKey([keyType/] key)
+  {
+    setTypedKey(key);
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useInterfaceOverrideAnnotation())]
+  @Override
+[/if]
+  public [valueType/] getValue()
+  {
+    return getTypedValue();
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useInterfaceOverrideAnnotation())]
+  @Override
+[/if]
+  public [valueType/] setValue([valueType/] value)
+  {
+    [valueType/] oldValue = getValue();
+    setTypedValue(value);
+    return oldValue;
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  @SuppressWarnings("unchecked")
+  public [importedName('org.eclipse.emf.common.util.EMap')/]<[keyType/], [valueType/]> getEMap()
+  {
+    [importedName(eObjectTypeName())/] container = eContainer();
+    return container == null ? null : ([importedName('org.eclipse.emf.common.util.EMap')/]<[keyType/], [valueType/]>)container.eGet(eContainmentFeature());
+  }
+
+[/let]
+[/let]
+[/let]
+[/if]
+[/template]

@@ -34,12 +34,12 @@
 [**
  * The simple name of a qualified name, keeping the part after a dollar sign out.
  **/]
-[query public shortName(qualifiedName : String) : String = qualifiedName.importName().substring(qualifiedName.importName().lastIndex('.') + 1)/]
+[query public shortName(qualifiedName : String) : String = if qualifiedName.importName().lastIndex('.') > 0 then qualifiedName.importName().substring(qualifiedName.importName().lastIndex('.') + 1) else qualifiedName.importName() endif/]
 
 [**
  * The name of a qualified type relative to its package: the simple name, with nested types separated by dots.
  **/]
-[query public baseName(qualifiedName : String) : String = qualifiedName.substring(qualifiedName.lastIndex('.') + 1).substituteAll('$', '.')/]
+[query public baseName(qualifiedName : String) : String = if qualifiedName.lastIndex('.') > 0 then qualifiedName.substring(qualifiedName.lastIndex('.') + 1).substituteAll('$', '.') else qualifiedName.substituteAll('$', '.') endif/]
 
 [**
  * Whether a simple name belongs to a type that code can use without importing it.

@@ -1,0 +1,42 @@
+[comment encoding = UTF-8 /]
+[**
+ * The build properties of the plugin of a model project.
+ *
+ * The file lists what goes into the binary build, the source folder and the output folder. Its first
+ * line is a comment that carries the copyright text, or is empty.
+ **/]
+[module BuildProperties('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import Header/]
+[import JavaDocumentation/]
+[import PluginProperties/]
+[import JavaProject/]
+
+[**
+ * The complete text of the build properties of a generator model.
+ **/]
+[template public buildProperties(genModel : GenModel)]
+[genModel.propertiesHeader()/]
+
+bin.includes = [genModel.pluginClassesLocation()/],\
+               model/,\
+[if (genModel.sameModelEditProject() or genModel.sameModelEditorProject())]
+               icons/,\
+[/if]
+[if (genModel.isBundleManifest())]
+               META-INF/,\
+[/if]
+[if (not genModel.isGWT())]
+               plugin.xml,\
+[/if]
+[if (genModel.modelBundleLocalization().contains('/'))]
+               [genModel.modelBundleLocalization().substring(1, genModel.modelBundleLocalization().index('/'))/]
+[else]
+               [genModel.modelBundleLocalization()/].properties
+[/if]
+jars.compile.order = [genModel.pluginClassesLocation()/]
+[if (genModel.modelSourceFolder().size() > 0)]
+source.[genModel.pluginClassesLocation()/] = [genModel.modelSourceFolder().propertiesEscape()/]
+[/if]
+output.[genModel.pluginClassesLocation()/] = bin/
+[/template]

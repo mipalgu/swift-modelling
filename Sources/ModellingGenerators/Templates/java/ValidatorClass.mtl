@@ -1,0 +1,837 @@
+[comment encoding = UTF-8 /]
+[**
+ * The Java file of the validator of a generator package.
+ *
+ * A validator is written for a package that has constraints: constraints named in the Ecore
+ * constraints annotation of a classifier, invariant operations of classes, and the facets of data
+ * types. The validator class extends the validator class of the runtime. It dispatches by classifier,
+ * calls the default constraints of the runtime and each named constraint of a class in turn, and
+ * writes a method for each constraint of each classifier.
+ *
+ * A constraint with an expression in the annotation of a validation delegate of the package calls the
+ * delegate with the expression, an invariant operation is called on the object, and any other
+ * constraint becomes a method that carries a to-do body.
+ *
+ * This template writes the form for compliance level 5.0 and higher, for runtime version 2.4 and
+ * later. The facets of data types that it writes are enumeration, pattern, minimum, maximum, lengths,
+ * total digits and fraction digits. Facets that derive from a base type, item type facets and member
+ * type facets of data types, classes that map to external interfaces, and constraints of a model with
+ * a type parameter are not written.
+ **/]
+[module ValidatorClass('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaImports/]
+[import JavaTypes/]
+[import JavaDocumentation/]
+[import JavaUtilities/]
+[import SwitchClass/]
+[import Header/]
+
+[comment Constraints /]
+
+[**
+ * The source of the annotation that carries the constraints of a classifier.
+ **/]
+[query public constraintSource() : String = ecoreNamespace()/]
+
+[**
+ * Whether an operation is an invariant: the annotation says so, or it returns a boolean and takes a diagnostic chain and a map.
+ **/]
+[query public isInvariantOperation(operation : OclAny) : Boolean = if not operation.annotationDetail(ecoreNamespace(), 'invariant').oclIsUndefined() then operation.annotationDetail(ecoreNamespace(), 'invariant') = 'true' else (not operation.eType.oclIsUndefined() and operation.eType.javaClassName() = 'boolean' and operation.eParameters->size() = 2 and operation.eParameters->first().eType.javaClassName() = 'org.eclipse.emf.common.util.DiagnosticChain' and operation.eParameters->last().eType.javaClassName() = 'java.util.Map') endif/]
+
+[**
+ * The Java class of a data type of an operation signature; the map type of the Ecore package stands for the Java map.
+ **/]
+[query public javaClassName(dataType : OclAny) : String = if dataType.oclIsUndefined() then '' else (if dataType.name = 'EMap' then 'java.util.Map' else dataType.instanceClassName() endif) endif/]
+
+[**
+ * The invariant operations that a class declares.
+ **/]
+[query public invariantOperations(genClass : GenClass) : OclAny = genClass.ecoreClass.eOperations->select(o | isInvariantOperation(o))/]
+
+[**
+ * The constraints that the Ecore annotation of a classifier names.
+ **/]
+[query annotatedConstraints(classifier : OclAny) : OclAny = if classifier.annotationDetail(ecoreNamespace(), 'constraints').oclIsUndefined() then Sequence{} else classifier.annotationDetail(ecoreNamespace(), 'constraints').tokenize(' \t\r\n') endif/]
+
+[**
+ * The text of a facet of a data type, or nothing when it has none.
+ **/]
+[query public facet(dataType : OclAny, key : String) : OclAny = dataType.annotationDetail(extendedMetaDataSource(), key)/]
+
+[**
+ * Whether a data type has a facet.
+ **/]
+[query public hasFacet(dataType : OclAny, key : String) : Boolean = not dataType.facet(key).oclIsUndefined()/]
+
+[**
+ * Whether the facet for a total number of digits applies: the digits are positive and the type is a big number.
+ **/]
+[query public hasTotalDigits(dataType : OclAny) : Boolean = dataType.hasFacet('totalDigits') and dataType.facet('totalDigits').toInteger() > 0 and (dataType.dataTypeClassName() = 'java.math.BigDecimal' or dataType.dataTypeClassName() = 'java.math.BigInteger')/]
+
+[**
+ * The constraints that a data type declares itself, in the order in which the facets are checked.
+ **/]
+[query facetConstraints(dataType : OclAny) : OclAny = Sequence{if dataType.hasFacet('enumeration') then 'Enumeration' else '' endif, if dataType.hasFacet('pattern') then 'Pattern' else '' endif, if dataType.hasTotalDigits() then 'TotalDigits' else '' endif, if dataType.hasFacet('fractionDigits') and dataType.dataTypeClassName() = 'java.math.BigDecimal' then 'FractionDigits' else '' endif, if dataType.hasFacet('length') then 'MinLength' else '' endif, if dataType.hasFacet('length') then 'MaxLength' else '' endif, if dataType.hasFacet('minLength') then 'MinLength' else '' endif, if dataType.hasFacet('maxLength') then 'MaxLength' else '' endif, if dataType.hasFacet('minExclusive') or dataType.hasFacet('minInclusive') then 'Min' else '' endif, if dataType.hasFacet('maxExclusive') or dataType.hasFacet('maxInclusive') then 'Max' else '' endif}->select(c | c.size() > 0)->asOrderedSet()/]
+
+[**
+ * The constraints that a classifier declares itself. A class adds its invariant operations to the annotated constraints,
+ * a data type adds the constraints of its facets.
+ **/]
+[query public genConstraints(classifier : OclAny) : OclAny = if classifier.ecoreClass.oclIsUndefined() then (if classifier.ecoreDataType.oclIsUndefined() then annotatedConstraints(classifier) else annotatedConstraints(classifier)->union(facetConstraints(classifier))->asOrderedSet() endif) else annotatedConstraints(classifier)->union(invariantOperations(classifier)->collect(o | o.name))->asOrderedSet() endif/]
+
+[**
+ * The constraints that the runtime checks for every object, for the runtime version of the generator model.
+ **/]
+[query public intrinsicConstraints(genModel : GenModel) : OclAny = Sequence{if genModel.runtimeMinorVersion() >= 5 then 'NoCircularContainment' else '' endif, 'EveryMultiplicityConforms', 'EveryDataValueConforms', 'EveryReferenceIsContained', if genModel.runtimeMinorVersion() >= 6 then 'EveryBidirectionalReferenceIsPaired' else '' endif, 'EveryProxyResolves', 'UniqueID', if genModel.runtimeMinorVersion() > 2 then 'EveryKeyUnique' else '' endif, if genModel.runtimeMinorVersion() > 2 then 'EveryMapEntryUnique' else '' endif}->select(c | c.size() > 0)/]
+
+[**
+ * All constraints that apply to a classifier: those of the runtime and of the base classes first, then its own.
+ **/]
+[query public allGenConstraints(classifier : OclAny) : OclAny = if classifier.ecoreClass.oclIsUndefined() then classifier.genConstraints() else classifier.genModel().intrinsicConstraints()->union(classifier.allBaseGenClasses->collect(b | b.genConstraints())->flatten())->union(classifier.genConstraints())->asOrderedSet() endif/]
+
+[**
+ * The class that implements a constraint for a class: the class itself or the nearest base class that declares it, or nothing for the constraints of the runtime.
+ **/]
+[query public constraintImplementor(classifier : OclAny, constraint : String) : OclAny = if classifier.genConstraints()->includes(constraint) then classifier else (if classifier.ecoreClass.oclIsUndefined() then null else firstImplementor(classifier.baseGenClasses, constraint) endif) endif/]
+
+[query firstImplementor(bases : OclAny, constraint : String) : OclAny = if bases->isEmpty() then null else (if constraintImplementor(bases->first(), constraint).oclIsUndefined() then firstImplementor(bases->drop(1), constraint) else constraintImplementor(bases->first(), constraint) endif) endif/]
+
+[**
+ * The class that a redeclared constraint delegates to: the nearest base class that implements it.
+ **/]
+[query public constraintDelegate(classifier : OclAny, constraint : String) : OclAny = if classifier.ecoreClass.oclIsUndefined() then null else firstImplementor(classifier.baseGenClasses, constraint) endif/]
+
+[**
+ * Whether a class has no constraints beyond those of the runtime.
+ **/]
+[query public hasOnlyDefaultConstraints(classifier : OclAny) : Boolean = not classifier.ecoreClass.oclIsUndefined() and classifier.allGenConstraints()->forAll(c | constraintImplementor(classifier, c).oclIsUndefined())/]
+
+[**
+ * Whether a package has constraints, which means that it has a validator.
+ **/]
+[query public hasConstraints(genPackage : GenPackage) : Boolean = genPackage.genClasses->exists(c | c.genConstraints()->notEmpty()) or genPackage.genEnums->exists(e | e.genConstraints()->notEmpty()) or genPackage.genDataTypes->exists(d | d.genConstraints()->notEmpty())/]
+
+[**
+ * Whether a package generates a validator.
+ **/]
+[query public generatesValidator(genPackage : GenPackage) : Boolean = genPackage.hasClassifiers() and genPackage.hasConstraints()/]
+
+[**
+ * The classifiers of a package: classes, enumerations and data types.
+ **/]
+[query public validatedClassifiers(genPackage : GenPackage) : OclAny = genPackage.genClasses->union(genPackage.genEnums)->union(genPackage.genDataTypes)/]
+
+[comment Validation delegates /]
+
+[**
+ * The validation delegates that a package names in its annotation.
+ **/]
+[query public validationDelegates(genPackage : GenPackage) : OclAny = if genPackage.ecorePackage.annotationDetail(ecoreNamespace(), 'validationDelegates').oclIsUndefined() then Sequence{} else genPackage.ecorePackage.annotationDetail(ecoreNamespace(), 'validationDelegates').tokenize(' \t\r\n') endif/]
+
+[**
+ * The ecore element of a classifier.
+ **/]
+[query public ecoreClassifier(classifier : OclAny) : OclAny = if not classifier.ecoreClass.oclIsUndefined() then classifier.ecoreClass else (if not classifier.ecoreEnum.oclIsUndefined() then classifier.ecoreEnum else classifier.ecoreDataType endif) endif/]
+
+[**
+ * The validation delegate that has an expression for a constraint of a classifier, if the runtime supports expressions.
+ **/]
+[query public constraintDelegateSource(classifier : OclAny, constraint : String) : OclAny = if classifier.genModel().runtimeMinorVersion() < 6 then null else classifier.genPackage().validationDelegates()->select(d | not classifier.ecoreClassifier().annotationDetail(d, constraint).oclIsUndefined())->first() endif/]
+
+[**
+ * Whether a constraint of a classifier has an expression.
+ **/]
+[query public hasConstraintExpression(classifier : OclAny, constraint : String) : Boolean = not classifier.constraintDelegateSource(constraint).oclIsUndefined()/]
+
+[**
+ * The expression of a constraint, as the text of a string literal that continues over the lines of the expression.
+ **/]
+[query public constraintExpression(classifier : OclAny, constraint : String) : String = classifier.ecoreClassifier().annotationDetail(classifier.constraintDelegateSource(constraint), constraint).lines()->join('\\n" +' + nonNLS(classifier.genModel(), 1) + '\n      "')/]
+
+[**
+ * Whether an invariant operation of a class has an expression body.
+ **/]
+[query public hasInvariantExpression(genPackage : GenPackage, operation : OclAny) : Boolean = genPackage.genModel().runtimeMinorVersion() >= 6 and genPackage.validationDelegates()->exists(d | not operation.annotationDetail(d, 'body').oclIsUndefined())/]
+
+[**
+ * Whether any invariant operation of a package has an expression body.
+ **/]
+[query public hasInvariantExpressions(genPackage : GenPackage) : Boolean = genPackage.genClasses->exists(c | invariantOperations(c)->exists(o | genPackage.hasInvariantExpression(o)))/]
+
+[comment Packages that supply base constraints /]
+
+[**
+ * The packages of base classes that have constraints, apart from the package itself, which the validator delegates to.
+ **/]
+[query public validatorBasePackages(genPackage : GenPackage) : OclAny = genPackage.genClasses->reject(c | isEObjectClass(c))->collect(c | c.ecoreClass.eAllSuperTypes->collect(b | b.genClassifier())->select(g | not g.oclIsUndefined() and not isEObjectClass(g) and g.genPackage() <> genPackage and g.genConstraints()->notEmpty())->collect(g | g.genPackage()))->flatten()->asOrderedSet()/]
+
+[**
+ * The name of the field that holds the validator of a base package.
+ **/]
+[query public validatorFieldName(genPackage : GenPackage, basePackage : GenPackage) : String = safeName(basePackage.setting('prefix').uncapPrefixedName() + 'Validator')/]
+
+[**
+ * The prefix that a call of a constraint takes when another package implements it.
+ **/]
+[query public delegatePrefix(genPackage : GenPackage, implementor : OclAny) : String = if implementor.oclIsUndefined() or implementor.genPackage() = genPackage then '' else genPackage.validatorFieldName(implementor.genPackage()) + '.' endif/]
+
+[comment Names /]
+
+[query public safeClassifierName(classifier : OclAny) : String = safeName(classifier.name().uncapPrefixedName())/]
+
+[query resultName(classifier : OclAny) : String = if classifier.safeClassifierName() = 'result' then 'theResult' else 'result' endif/]
+
+[query diagnosticsName(classifier : OclAny) : String = if classifier.safeClassifierName() = 'diagnostics' then 'theDiagnostics' else 'diagnostics' endif/]
+
+[query contextName(classifier : OclAny) : String = if classifier.safeClassifierName() = 'context' then 'theContext' else 'context' endif/]
+
+[query comparisonName(classifier : OclAny) : String = if classifier.safeClassifierName() = 'comparison' then 'theComparison' else 'comparison' endif/]
+
+[**
+ * The name of the constant that belongs to a constraint of a classifier.
+ **/]
+[query public constraintConstant(classifier : OclAny, constraint : String) : String = classifier.classifierIDName() + '__' + constraint.upperName()/]
+
+[**
+ * Whether a classifier is a data type or enumeration rather than a class.
+ **/]
+[query public isValueType(classifier : OclAny) : Boolean = classifier.ecoreClass.oclIsUndefined()/]
+
+[**
+ * The qualified instance class name of a data type.
+ **/]
+[query public dataTypeClassName(dataType : OclAny) : String = if dataType.ecoreEnum.oclIsUndefined() then dataType.ecoreDataType.instanceClassName() else dataType.qualifiedEnumName() endif/]
+
+[**
+ * Whether a data type maps to a primitive type.
+ **/]
+[query public isPrimitiveDataType(dataType : OclAny) : Boolean = dataType.ecoreEnum.oclIsUndefined() and isPrimitiveType(dataType.ecoreDataType.instanceClassName())/]
+
+[**
+ * Whether a data type maps to the root object type.
+ **/]
+[query public isObjectInstanceDataType(dataType : OclAny) : Boolean = dataType.ecoreEnum.oclIsUndefined() and dataType.ecoreDataType.instanceClassName() = 'java.lang.Object'/]
+
+[**
+ * Whether a data type has a type that is compared with compareTo.
+ **/]
+[query public instanceClassNameOf(dataType : OclAny) : String = dataType.dataTypeClassName()/]
+
+[**
+ * The method that gives the length of a value of a data type.
+ **/]
+[query public lengthAccessor(dataType : OclAny) : String = if dataType.dataTypeClassName().contains('[') then 'length' else (if dataType.dataTypeClassName() = 'java.lang.String' then 'length()' else 'size()' endif) endif/]
+
+[comment Values /]
+
+[**
+ * Whether a text has the shape of a floating point number without a point or exponent.
+ **/]
+[query public isWholeNumber(text : String) : Boolean = not text.contains('.') and not text.contains('e') and not text.contains('E')/]
+
+[**
+ * The Java expression that stands for a literal of a data type, for the types that have a literal form.
+ * Types without one are written with a call of the factory.
+ **/]
+[template public staticValue(genPackage : GenPackage, dataType : OclAny, literal : String)][let typeName : String = dataType.dataTypeClassName()][if (typeName = 'java.lang.String')][javaStringLiteral(literal)/][elseif (typeName = 'int' or typeName = 'java.lang.Integer' or typeName = 'boolean' or typeName = 'java.lang.Boolean')][literal/][elseif (typeName = 'long' or typeName = 'java.lang.Long')][literal/]L[elseif (typeName = 'short' or typeName = 'java.lang.Short')](short)[literal/][elseif (typeName = 'byte' or typeName = 'java.lang.Byte')](byte)[literal/][elseif (typeName = 'double' or typeName = 'java.lang.Double')][literal/][if (literal.isWholeNumber())].0[/if][elseif (typeName = 'float' or typeName = 'java.lang.Float')][literal/][if (literal.isWholeNumber())].0[/if]F[elseif (typeName = 'char' or typeName = 'java.lang.Character')]'[literal/]'[elseif (typeName = 'java.math.BigInteger' or typeName = 'java.math.BigDecimal')]new [importedName(typeName)/]("[literal/]")[else][importedName(genPackage.qualifiedFactoryInterfaceName())/].eINSTANCE.createFromString([genPackage.utilityPackageName()/].eINSTANCE.get[dataType.name()/](), [javaStringLiteral(literal)/])[/if][/let][/template]
+
+[**
+ * The qualified name of the factory interface of a package.
+ **/]
+[query public qualifiedFactoryInterfaceName(genPackage : GenPackage) : String = genPackage.reflectionPackageName() + '.' + genPackage.factoryInterfaceName()/]
+
+[**
+ * The accessor of the metadata of a classifier in the package interface.
+ **/]
+[template public classifierAccessor(classifier : OclAny)][let genPackage : GenPackage = classifier.genPackage()][genPackage.utilityPackageName()/][if (genPackage.isOn('literalsInterface'))].Literals.[classifier.classifierIDName()/][else].eINSTANCE.get[classifier.classifierAccessorName()/]()[/if][/let][/template]
+
+[**
+ * The text of a pattern list: each pattern as a string literal of the pattern matcher factory.
+ **/]
+[query public patterns(dataType : OclAny) : OclAny = dataType.facet('pattern').tokenize(' \t\r\n')/]
+
+[**
+ * The literals of the enumeration facet of a data type.
+ **/]
+[query public enumerationLiterals(dataType : OclAny) : OclAny = dataType.facet('enumeration').tokenize(' \t\r\n')/]
+
+[**
+ * The literal of the lower bound of a data type and whether it is inclusive.
+ **/]
+[query public minLiteral(dataType : OclAny) : String = if dataType.hasFacet('minExclusive') then dataType.facet('minExclusive') else dataType.facet('minInclusive') endif/]
+
+[query public isMinInclusive(dataType : OclAny) : Boolean = not dataType.hasFacet('minExclusive')/]
+
+[**
+ * The literal of the upper bound of a data type.
+ **/]
+[query public maxLiteral(dataType : OclAny) : String = if dataType.hasFacet('maxExclusive') then dataType.facet('maxExclusive') else dataType.facet('maxInclusive') endif/]
+
+[query public isMaxInclusive(dataType : OclAny) : Boolean = not dataType.hasFacet('maxExclusive')/]
+
+[**
+ * The smallest length that a data type allows: the minimum length, otherwise the fixed length.
+ **/]
+[query public minLength(dataType : OclAny) : Integer = if dataType.hasFacet('minLength') then dataType.facet('minLength').toInteger() else dataType.facet('length').toInteger() endif/]
+
+[**
+ * The greatest length that a data type allows: the maximum length, otherwise the fixed length.
+ **/]
+[query public maxLength(dataType : OclAny) : Integer = if dataType.hasFacet('maxLength') then dataType.facet('maxLength').toInteger() else dataType.facet('length').toInteger() endif/]
+
+[**
+ * The text of the bound of the total digits, a one followed by as many zeros as there are digits.
+ **/]
+[query public digitBound(digits : Integer) : String = if digits <= 0 then '1' else digitBound(digits - 1) + '0' endif/]
+
+[comment The file /]
+
+[**
+ * The complete text of the file that declares the validator of a generator package.
+ **/]
+[template public validatorClass(genPackage : GenPackage)]
+[let genModel : GenModel = genPackage.genModel()]
+[let mapType : String = 'Map<Object, Object>']
+[collect ('imports', genPackage.qualifiedValidatorClassName())/]
+[collect ('imports', Sequence{'java.util.Map', 'org.eclipse.emf.common.util.DiagnosticChain', 'org.eclipse.emf.ecore.EPackage'})/]
+[if (genPackage.usesInterfaceWildcard())]
+[collect ('imports', genPackage.interfacePackageName() + '.*')/]
+[/if]
+[header(genPackage)/]
+package [genPackage.utilitiesPackageName()/];
+
+
+[emit ('imports') once][importBlock(items)/][/emit]
+
+/**
+ * <!-- begin-user-doc -->
+ * The <b>Validator</b> for the model.
+ * <!-- end-user-doc -->
+ * @see [genPackage.qualifiedPackageInterfaceName()/]
+[if (genPackage.hasOwnAPITags())]
+[genPackage.apiTagLines(' * ')/]
+[/if]
+ * @generated
+ */
+[if (genPackage.hasAPIDeprecatedTag())]
+@Deprecated
+[elseif (anyDeprecated(genPackage.validatedClassifiers()))]
+@SuppressWarnings("deprecation")
+[/if]
+public class [genPackage.validatorClassName()/] extends [importedName('org.eclipse.emf.ecore.util.EObjectValidator')/]
+{
+[if (genModel.hasCopyrightField())]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public static final [importedName('java.lang.String')/] copyright = [genModel.copyrightFieldLiteral()/];[nonNLS(genModel, 1)/]
+
+[/if]
+  /**
+   * The cached model package
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public static final [genPackage.validatorClassName()/] INSTANCE = new [genPackage.validatorClassName()/]();
+
+  /**
+   * A constant for the {@link org.eclipse.emf.common.util.Diagnostic#getSource() source} of diagnostic {@link org.eclipse.emf.common.util.Diagnostic#getCode() codes} from this package.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @see org.eclipse.emf.common.util.Diagnostic#getSource()
+   * @see org.eclipse.emf.common.util.Diagnostic#getCode()
+   * @generated
+   */
+  public static final String DIAGNOSTIC_SOURCE = "[genPackage.interfacePackageName()/]";[nonNLS(genModel, 1)/]
+
+[for (genClass : GenClass | genPackage.genClasses)]
+[for (operation | genClass.invariantOperations())]
+  /**
+   * The {@link org.eclipse.emf.common.util.Diagnostic#getCode() code} for constraint '[operation.name.capName().formatName(' ')/]' of '[genClass.formattedClassifierName()/]'.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public static final int [genClass.classifierIDName()/]__[operation.name.upperName()/] = [invariantsBefore(genPackage.genClasses, genClass) + i/];
+
+[/for]
+[/for]
+  /**
+   * A constant with a fixed name that can be used as the base value for additional hand written constants.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  private static final int GENERATED_DIAGNOSTIC_CODE_COUNT = [genPackage.invariantCount()/];
+
+  /**
+   * A constant with a fixed name that can be used as the base value for additional hand written constants in a derived class.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  protected static final int DIAGNOSTIC_CODE_COUNT = GENERATED_DIAGNOSTIC_CODE_COUNT;
+
+[for (basePackage : GenPackage | genPackage.validatorBasePackages())]
+  /**
+   * The cached base package validator.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  protected [importedName(basePackage.qualifiedValidatorClassName())/] [genPackage.validatorFieldName(basePackage)/];
+
+[/for]
+[if (genPackage.hasInvariantExpressions())]
+  /**
+   * Delegates evaluation of the given invariant expression against the object in the given context.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public static boolean validate([importedName('org.eclipse.emf.ecore.EClass')/] eClass, [importedName('org.eclipse.emf.ecore.EObject')/] eObject, DiagnosticChain diagnostics, [mapType/] context, [importedName('java.lang.String')/] validationDelegate, [importedName('org.eclipse.emf.ecore.EOperation')/] invariant, [importedName('java.lang.String')/] expression, int severity, [importedName('java.lang.String')/] source, int code)
+  {
+    return [importedName('org.eclipse.emf.ecore.util.EObjectValidator')/].validate(eClass, eObject, diagnostics, context, validationDelegate, invariant, expression, severity, source, code);
+  }
+
+[/if]
+  /**
+   * Creates an instance of the switch.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public [genPackage.validatorClassName()/]()
+  {
+    super();
+[for (basePackage : GenPackage | genPackage.validatorBasePackages())]
+    [genPackage.validatorFieldName(basePackage)/] = [importedName(basePackage.qualifiedValidatorClassName())/].INSTANCE;
+[/for]
+  }
+
+  /**
+   * Returns the package of this validator switch.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  @Override
+  protected EPackage getEPackage()
+  {
+    return [genPackage.utilityPackageName()/].eINSTANCE;
+  }
+
+  /**
+   * Calls <code>validateXXX</code> for the corresponding classifier of the model.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  @Override
+  protected boolean validate(int classifierID, Object value, DiagnosticChain diagnostics, [mapType/] context)
+  {
+    switch (classifierID)
+    {
+[for (classifier : OclAny | genPackage.validatedClassifiers())]
+      case [genPackage.utilityPackageName()/].[classifier.classifierIDName()/]:
+[if (classifier.isValueType())]
+[if (classifier.isPrimitiveDataType())]
+        return validate[classifier.name()/](([importedName(objectTypeName(classifier.dataTypeClassName()))/])value, diagnostics, context);
+[elseif (classifier.isObjectInstanceDataType())]
+        return validate[classifier.name()/](value, diagnostics, context);
+[else]
+        return validate[classifier.name()/](([classifier.valueTypeName()/])value, diagnostics, context);
+[/if]
+[else]
+        return validate[classifier.name()/](([genPackage.utilityTypeName(classifier)/][classifier.interfaceWildTypeArguments()/])value, diagnostics, context);
+[/if]
+[/for]
+      default:
+        return true;
+    }
+  }
+
+[for (classifier : OclAny | genPackage.validatedClassifiers())]
+[classifier.validateClassifier(genPackage, mapType)/]
+[/for]
+  /**
+   * Returns the resource locator that will be used to fetch messages for this validator's diagnostics.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  @Override
+  public [importedName('org.eclipse.emf.common.util.ResourceLocator')/] getResourceLocator()
+  {
+[if (not isBlank(genModel.setting('modelPluginClass')))]
+    return [importedName(genModel.setting('modelPluginClass'))/].INSTANCE;
+[else]
+    // TODO
+    // Specialize this to return a resource locator for messages specific to this validator.
+    // Ensure that you remove @generated or mark it @generated NOT
+    return super.getResourceLocator();
+[/if]
+  }
+
+} //[genPackage.validatorClassName()/]
+[/let]
+[/let]
+[/template]
+
+[**
+ * The number of invariant operations of the classes that come before a class in a list.
+ **/]
+[query public invariantsBefore(genClasses : OclAny, genClass : GenClass) : Integer = if genClasses->isEmpty() or genClasses->first() = genClass then 0 else invariantOperations(genClasses->first())->size() + invariantsBefore(genClasses->drop(1), genClass) endif/]
+
+[**
+ * The number of invariant operations of the classes of a package.
+ **/]
+[query public invariantCount(genPackage : GenPackage) : Integer = genPackage.genClasses->collect(c | invariantOperations(c)->size())->sum()/]
+
+[**
+ * The type of the value of a data type or enumeration as the validator writes it.
+ **/]
+[template public valueTypeName(dataType : OclAny)][if (not dataType.ecoreEnum.oclIsUndefined())][importedName(dataType.qualifiedEnumName())/][else][importedName(objectTypeName(dataType.dataTypeClassName()))/][/if][/template]
+
+[**
+ * The type of the parameter of the validate method of a classifier.
+ **/]
+[template public parameterTypeName(classifier : OclAny, genPackage : GenPackage)][if (classifier.isValueType())][if (not classifier.ecoreEnum.oclIsUndefined())][importedName(classifier.qualifiedEnumName())/][else][importedName(classifier.dataTypeClassName())/][/if][else][genPackage.utilityTypeName(classifier)/][classifier.interfaceWildTypeArguments()/][/if][/template]
+
+[**
+ * The methods that validate a classifier: the method that calls its constraints, and a method for each constraint it declares.
+ **/]
+[template public validateClassifier(classifier : OclAny, genPackage : GenPackage, mapType : String)]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[if (classifier.hasOwnAPITags())]
+[classifier.apiTagLines('   * ')/]
+[/if]
+   * @generated
+   */
+[if (classifier.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  public boolean validate[classifier.name()/]([classifier.parameterTypeName(genPackage)/] [classifier.safeClassifierName()/], DiagnosticChain [classifier.diagnosticsName()/], [mapType/] [classifier.contextName()/])
+  {
+[if (classifier.allGenConstraints()->isEmpty())]
+    return true;
+[elseif (classifier.hasOnlyDefaultConstraints())]
+    return validate_EveryDefaultConstraint([classifier.safeClassifierName()/], [classifier.diagnosticsName()/], [classifier.contextName()/]);
+[else]
+[classifier.constraintChain(genPackage)/]
+[/if]
+  }
+
+[for (constraint : String | classifier.genConstraints())]
+[classifier.constraintMethod(genPackage, mapType, constraint)/]
+[/for]
+[/template]
+
+[**
+ * The statements that call each constraint of a classifier in turn.
+ **/]
+[template public constraintChain(classifier : OclAny, genPackage : GenPackage)]
+[let leading : String = classifier.allGenConstraints()->reject(c | c = 'NoCircularContainment')->first()]
+[for (constraint : String | classifier.allGenConstraints())]
+[if (constraint = 'NoCircularContainment')]
+    if (!validate_NoCircularContainment([classifier.safeClassifierName()/], [classifier.diagnosticsName()/], [classifier.contextName()/])) return false;
+[elseif (constraint = leading)]
+    boolean [classifier.resultName()/] = [classifier.constraintCall(genPackage, constraint)/];
+[else]
+    if ([classifier.resultName()/] || [classifier.diagnosticsName()/] != null) [classifier.resultName()/] &= [classifier.constraintCall(genPackage, constraint)/];
+[/if]
+[/for]
+    return [classifier.resultName()/];
+[/let]
+[/template]
+
+[**
+ * The call of one constraint of a classifier: the validator method of the class that implements it.
+ **/]
+[template public constraintCall(classifier : OclAny, genPackage : GenPackage, constraint : String)][let implementor : OclAny = constraintImplementor(classifier, constraint)][genPackage.delegatePrefix(implementor)/]validate[if (not implementor.oclIsUndefined())][implementor.name()/][/if]_[constraint/]([classifier.safeClassifierName()/], [classifier.diagnosticsName()/], [classifier.contextName()/])[/let][/template]
+
+[**
+ * The method that validates one constraint of a classifier, with the constants that it needs.
+ **/]
+[template public constraintMethod(classifier : OclAny, genPackage : GenPackage, mapType : String, constraint : String)]
+[if (classifier.isValueType() and not classifier.ecoreDataType.oclIsUndefined() and classifier.ecoreEnum.oclIsUndefined())]
+[classifier.facetConstants(genPackage, constraint)/]
+[/if]
+[if (classifier.hasConstraintExpression(constraint))]
+  /**
+   * The cached validation expression for the [constraint/] constraint of '<em>[classifier.formattedClassifierName()/]</em>'.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  protected static final [importedName('java.lang.String')/] [classifier.classifierIDName()/]__[constraint.upperName()/]__EEXPRESSION = "[classifier.constraintExpression(constraint)/]";[nonNLS(classifier.genModel(), 1)/]
+
+[/if]
+  /**
+   * Validates the [constraint/] constraint of '<em>[classifier.formattedClassifierName()/]</em>'.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public boolean validate[classifier.name()/]_[constraint/]([classifier.parameterTypeName(genPackage)/] [classifier.safeClassifierName()/], DiagnosticChain [classifier.diagnosticsName()/], [mapType/] [classifier.contextName()/])
+  {
+[if (classifier.isValueType())]
+[classifier.dataTypeConstraintBody(genPackage, constraint)/]
+[else]
+[classifier.classConstraintBody(genPackage, constraint)/]
+[/if]
+  }
+
+[/template]
+
+[**
+ * The constants of a facet constraint of a data type, which the validate method of the constraint uses.
+ **/]
+[template public facetConstants(dataType : OclAny, genPackage : GenPackage, constraint : String)]
+[if (constraint = 'Min' and dataType.hasFacet('minExclusive') or constraint = 'Min' and dataType.hasFacet('minInclusive'))]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   * @see #validate[dataType.name()/]_[constraint/]
+   */
+  public static final [importedName(dataType.dataTypeClassName())/] [dataType.constraintConstant(constraint)/]__VALUE = [genPackage.staticValue(dataType, dataType.minLiteral())/];
+
+[elseif (constraint = 'Max' and dataType.hasFacet('maxExclusive') or constraint = 'Max' and dataType.hasFacet('maxInclusive'))]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   * @see #validate[dataType.name()/]_[constraint/]
+   */
+  public static final [importedName(dataType.dataTypeClassName())/] [dataType.constraintConstant(constraint)/]__VALUE = [genPackage.staticValue(dataType, dataType.maxLiteral())/];
+
+[elseif (constraint = 'TotalDigits' and dataType.hasTotalDigits())]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   * @see #validate[dataType.name()/]_[constraint/]
+   */
+  public static final [importedName(dataType.dataTypeClassName())/] [dataType.constraintConstant(constraint)/]__UPPER_BOUND = [genPackage.staticValue(dataType, digitBound(dataType.facet('totalDigits').toInteger()))/];
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   * @see #validate[dataType.name()/]_[constraint/]
+   */
+  public static final [importedName(dataType.dataTypeClassName())/] [dataType.constraintConstant(constraint)/]__LOWER_BOUND = [genPackage.staticValue(dataType, '-' + digitBound(dataType.facet('totalDigits').toInteger()))/];
+
+[elseif (constraint = 'Pattern' and dataType.hasFacet('pattern'))]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   * @see #validate[dataType.name()/]_[constraint/]
+   */
+  public static final  PatternMatcher ['['/][']'/]['['/][']'/] [dataType.constraintConstant(constraint)/]__VALUES =
+    new PatternMatcher ['['/][']'/]['['/][']'/]
+    {
+      new PatternMatcher ['['/][']'/]
+      {
+[for (pattern : String | dataType.patterns())]
+        [importedName('org.eclipse.emf.ecore.xml.type.util.XMLTypeUtil')/].createPatternMatcher([javaStringLiteral(pattern)/])[if (i < dataType.patterns()->size())],[/if]
+[/for]
+      }
+    };
+
+[elseif (constraint = 'Enumeration' and dataType.hasFacet('enumeration'))]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   * @see #validate[dataType.name()/]_[constraint/]
+   */
+  public static final [importedName('java.util.Collection')/]<Object> [dataType.constraintConstant(constraint)/]__VALUES =
+    wrapEnumerationValues
+      (new Object['['/][']'/]
+       {
+[for (literal : String | dataType.enumerationLiterals())]
+         [genPackage.staticValue(dataType, literal)/][if (i < dataType.enumerationLiterals()->size())],[/if]
+[/for]
+       });
+
+[/if]
+[/template]
+
+[**
+ * The body of the method that validates a constraint of a class.
+ **/]
+[template public classConstraintBody(genClass : OclAny, genPackage : GenPackage, constraint : String)]
+[let delegate : OclAny = constraintDelegate(genClass, constraint)]
+[if (invariantOperations(genClass)->exists(o | o.name = constraint))]
+    return [genClass.safeClassifierName()/].[constraint/]([genClass.diagnosticsName()/], [genClass.contextName()/]);
+[elseif (not delegate.oclIsUndefined())]
+[genClass.overrideStub(genPackage, constraint, 'getObjectLabel(' + genClass.safeClassifierName() + ', ' + genClass.contextName() + ')')/]
+    return [genPackage.delegatePrefix(delegate)/]validate[delegate.name()/]_[constraint/]([genClass.safeClassifierName()/], [genClass.diagnosticsName()/], [genClass.contextName()/]);
+[elseif (genClass.hasConstraintExpression(constraint))]
+[genClass.expressionCall(genPackage, constraint, genClass.safeClassifierName())/]
+[else]
+[genClass.todoStub(genPackage, constraint, 'getObjectLabel(' + genClass.safeClassifierName() + ', ' + genClass.contextName() + ')')/]
+[/if]
+[/let]
+[/template]
+
+[**
+ * The body of the method that validates a constraint of a data type.
+ **/]
+[template public dataTypeConstraintBody(dataType : OclAny, genPackage : GenPackage, constraint : String)]
+[let value : String = dataType.safeClassifierName()]
+[let result : String = dataType.resultName()]
+[let diagnostics : String = dataType.diagnosticsName()]
+[let context : String = dataType.contextName()]
+[let accessor : String = dataType.classifierAccessor()]
+[let constant : String = dataType.constraintConstant(constraint)]
+[let label : String = 'getValueLabel(' + accessor + ', ' + value + ', ' + context + ')']
+[if (constraint = 'Pattern' and dataType.hasFacet('pattern'))]
+    return validatePattern([accessor/], [value/], [constant/]__VALUES, [diagnostics/], [context/]);
+[elseif (constraint = 'Enumeration' and dataType.hasFacet('enumeration'))]
+    boolean [result/] = [constant/]__VALUES.contains([value/]);
+    if (![result/] && [diagnostics/] != null)
+      reportEnumerationViolation([accessor/], [value/], [constant/]__VALUES, [diagnostics/], [context/]);
+    return [result/];
+[elseif (constraint = 'Min' and dataType.hasFacet('minExclusive') or constraint = 'Min' and dataType.hasFacet('minInclusive'))]
+[if (dataType.isPrimitiveDataType())]
+    boolean [result/] = [value/] [if (dataType.isMinInclusive())]>=[else]>[/if] [constant/]__VALUE;
+[else]
+    boolean [result/] = [value/].compareTo([constant/]__VALUE) [if (dataType.isMinInclusive())]>=[else]>[/if] 0;
+[/if]
+    if (![result/] && [diagnostics/] != null)
+      reportMinViolation([accessor/], [value/], [constant/]__VALUE, [if (dataType.isMinInclusive())]true[else]false[/if], [diagnostics/], [context/]);
+    return [result/];
+[elseif (constraint = 'Max' and dataType.hasFacet('maxExclusive') or constraint = 'Max' and dataType.hasFacet('maxInclusive'))]
+[if (dataType.isPrimitiveDataType())]
+    boolean [result/] = [value/] [if (dataType.isMaxInclusive())]<=[else]<[/if] [constant/]__VALUE;
+[else]
+    boolean [result/] = [value/].compareTo([constant/]__VALUE) [if (dataType.isMaxInclusive())]<=[else]<[/if] 0;
+[/if]
+    if (![result/] && [diagnostics/] != null)
+      reportMaxViolation([accessor/], [value/], [constant/]__VALUE, [if (dataType.isMaxInclusive())]true[else]false[/if], [diagnostics/], [context/]);
+    return [result/];
+[elseif (constraint = 'MinLength' and (dataType.hasFacet('minLength') or dataType.hasFacet('length')))]
+    int length = [value/].[dataType.lengthAccessor()/];
+    boolean [result/] = length >= [dataType.minLength()/];
+    if (![result/] && [diagnostics/] != null)
+      reportMinLengthViolation([accessor/], [value/], length, [dataType.minLength()/], [diagnostics/], [context/]);
+    return [result/];
+[elseif (constraint = 'MaxLength' and (dataType.hasFacet('maxLength') or dataType.hasFacet('length')))]
+    int length = [value/].[dataType.lengthAccessor()/];
+    boolean [result/] = length <= [dataType.maxLength()/];
+    if (![result/] && [diagnostics/] != null)
+      reportMaxLengthViolation([accessor/], [value/], length, [dataType.maxLength()/], [diagnostics/], [context/]);
+    return [result/];
+[elseif (constraint = 'TotalDigits' and dataType.hasTotalDigits())]
+[if (dataType.dataTypeClassName() = 'java.math.BigDecimal')]
+    int scale = [value/].scale();
+    int totalDigits = scale < 0 ? [value/].precision() - scale : [value/].precision();
+    boolean [result/] = totalDigits <= [dataType.facet('totalDigits')/];
+    if (![result/] && [diagnostics/] != null)
+      reportTotalDigitsViolation([accessor/], [value/], [dataType.facet('totalDigits')/], [diagnostics/], [context/]);
+[else]
+    boolean [result/] = [value/].compareTo([constant/]__LOWER_BOUND) > 0 && [value/].compareTo([constant/]__UPPER_BOUND) < 0;
+    if (![result/] && [diagnostics/] != null)
+      reportTotalDigitsViolation([accessor/], [value/], [dataType.facet('totalDigits')/], [diagnostics/], [context/]);
+[/if]
+    return [result/];
+[elseif (constraint = 'FractionDigits' and dataType.hasFacet('fractionDigits') and dataType.dataTypeClassName() = 'java.math.BigDecimal')]
+    boolean [result/] = [value/].scale() <= [dataType.facet('fractionDigits')/];
+    if (![result/] && [diagnostics/] != null)
+      reportFractionDigitsViolation([accessor/], [value/], [dataType.facet('fractionDigits')/], [diagnostics/], [context/]);
+    return [result/];
+[elseif (dataType.hasConstraintExpression(constraint))]
+[dataType.expressionCall(genPackage, constraint, value)/]
+[else]
+[dataType.todoStub(genPackage, constraint, label)/]
+[/if]
+[/let]
+[/let]
+[/let]
+[/let]
+[/let]
+[/let]
+[/let]
+[/template]
+
+[**
+ * The call of a validation delegate with the expression of a constraint.
+ **/]
+[template public expressionCall(classifier : OclAny, genPackage : GenPackage, constraint : String, value : String)]
+    return
+      validate
+        ([classifier.classifierAccessor()/],
+         [value/],
+         [classifier.diagnosticsName()/],
+         [classifier.contextName()/],
+         "[classifier.constraintDelegateSource(constraint)/]",[nonNLS(classifier.genModel(), 1)/]
+         "[constraint/]",[nonNLS(classifier.genModel(), 2)/]
+         [classifier.classifierIDName()/]__[constraint.upperName()/]__EEXPRESSION,
+         [importedName('org.eclipse.emf.common.util.Diagnostic')/].ERROR,
+         DIAGNOSTIC_SOURCE,
+         0);
+[/template]
+
+[**
+ * The scaffolding of a constraint whose condition the user writes.
+ **/]
+[template public todoStub(classifier : OclAny, genPackage : GenPackage, constraint : String, label : String)]
+    // TODO implement the constraint
+    // -> specify the condition that violates the constraint
+    // -> verify the diagnostic details, including severity, code, and message
+    // Ensure that you remove @generated or mark it @generated NOT
+    if (false)
+    {
+      if ([classifier.diagnosticsName()/] != null)
+      {
+        [classifier.diagnosticsName()/].add
+[classifier.diagnosticAdd(constraint, label)/]
+      }
+      return false;
+    }
+    return true;
+[/template]
+
+[**
+ * The scaffolding of a constraint that delegates to the constraint of a base type, which the user may override.
+ **/]
+[template public overrideStub(classifier : OclAny, genPackage : GenPackage, constraint : String, label : String)]
+    // TODO override the constraint, if desired
+    // -> uncomment the scaffolding
+    // -> specify the condition that violates the constraint
+    // -> verify the diagnostic details, including severity, code, and message
+    // Ensure that you remove @generated or mark it @generated NOT
+    if (false)
+    {
+      if ([classifier.diagnosticsName()/] != null)
+      {
+        [classifier.diagnosticsName()/].add
+[classifier.diagnosticAdd(constraint, label)/]
+      }
+      return false;
+    }
+[/template]
+
+[**
+ * The creation of the diagnostic that the scaffolding of a constraint adds to the chain.
+ **/]
+[template public diagnosticAdd(classifier : OclAny, constraint : String, label : String)]
+          (createDiagnostic
+            ([importedName('org.eclipse.emf.common.util.Diagnostic')/].ERROR,
+             DIAGNOSTIC_SOURCE,
+             0,
+             "_UI_GenericConstraint_diagnostic",[nonNLS(classifier.genModel(), 1)/]
+             new Object['['/][']'/] { "[constraint/]", [label/] },[nonNLS(classifier.genModel(), 2)/]
+             new Object['['/][']'/] { [classifier.safeClassifierName()/] },
+             context));
+[/template]

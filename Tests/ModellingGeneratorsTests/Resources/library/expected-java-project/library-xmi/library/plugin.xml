@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+
+<!--
+ Copyright 2026 Example Pty Ltd
+-->
+
+<plugin>
+
+   <extension point="org.eclipse.emf.ecore.generated_package">
+      <package
+            uri="http://swift-modelling.org/test/library/1.0"
+            class="org.example.library.LibraryPackage"/>
+   </extension>
+
+   <extension point="org.eclipse.emf.ecore.content_parser">
+      <parser
+            contentTypeIdentifier="lib"
+            class="org.example.library.util.LibraryResourceFactoryImpl"/>
+   </extension>
+
+   <extension point="org.eclipse.core.contenttype.contentTypes">
+      <content-type
+            base-type="org.eclipse.emf.ecore.xmi"
+            file-extensions="lib,library"
+            id="lib"
+            name="%_UI_Library_content_type"
+            priority="normal">
+         <describer class="org.eclipse.emf.ecore.xmi.impl.RootXMLContentHandlerImpl$Describer">
+            <parameter name="namespace" value="http://swift-modelling.org/test/library/1.0"/>
+            <parameter name="kind" value="xmi"/>
+         </describer>
+      </content-type>
+   </extension>
+
+</plugin>

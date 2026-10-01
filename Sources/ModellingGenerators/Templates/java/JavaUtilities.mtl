@@ -1,0 +1,208 @@
+[comment encoding = UTF-8 /]
+[**
+ * Shared queries and templates of the utility classes of a package: switch, adapter factory and validator.
+ *
+ * The utility classes live in the utilities package of a generator package. They name the interfaces
+ * of the model through a wildcard import of the interface package, unless a class of the model has
+ * the name of a type of the language's default package. The queries here decide the classes that a
+ * switch has to cover, give each of them a name that is unique within the switch, and write the
+ * names of types in the way the utility classes need.
+ **/]
+[module JavaUtilities('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaImports/]
+[import JavaTypes/]
+[import JavaDocumentation/]
+
+[comment Runtime and options /]
+
+[**
+ * The minor number of the runtime version that the generated code targets, such as 7 for version 2.7.
+ * A generator model without a runtime version targets the newest runtime, unless its compliance level
+ * is below 5.0, which targets version 2.2.
+ **/]
+[query public runtimeMinorVersion(genModel : GenModel) : Integer = if genModel.isSetting('runtimeVersion') then genModel.setting('runtimeVersion').substring(genModel.setting('runtimeVersion').index('.') + 1).toInteger() else (if genModel.complianceLevel() < 5.0 then 2 else 1000 endif) endif/]
+
+[**
+ * Whether the switches of the generated code extend the switch class of the runtime (runtime version 2.7 or later).
+ **/]
+[query public supportsSwitchComposition(genModel : GenModel) : Boolean = genModel.runtimeMinorVersion() >= 7/]
+
+[**
+ * Whether diagnostics use message keys and a resource locator (runtime version 2.4 or later).
+ **/]
+[query public supportsDiagnosticMessages(genModel : GenModel) : Boolean = genModel.runtimeMinorVersion() >= 4/]
+
+[comment Names /]
+
+[**
+ * The name of the switch class of a package.
+ **/]
+[query public switchClassName(genPackage : GenPackage) : String = genPackage.prefixedName('Switch')/]
+
+[**
+ * The name of the adapter factory class of a package.
+ **/]
+[query public adapterFactoryClassName(genPackage : GenPackage) : String = genPackage.prefixedName('AdapterFactory')/]
+
+[**
+ * The qualified name of the switch class of a package.
+ **/]
+[query public qualifiedSwitchClassName(genPackage : GenPackage) : String = genPackage.utilitiesPackageName() + '.' + genPackage.switchClassName()/]
+
+[**
+ * The qualified name of the adapter factory class of a package.
+ **/]
+[query public qualifiedAdapterFactoryClassName(genPackage : GenPackage) : String = genPackage.utilitiesPackageName() + '.' + genPackage.adapterFactoryClassName()/]
+
+[comment Classes /]
+
+[**
+ * Whether a generator class stands for the root class of all model objects, which the switches handle by their default case.
+ **/]
+[query public isEObjectClass(genClass : OclAny) : Boolean = if genClass.oclIsUndefined() then false else genClass.name() = 'EObject' and genClass.genPackage().ecorePackage.nsURI = ecoreNamespace() endif/]
+
+[**
+ * Whether a package declares a class or an enumeration that has the name of a type of the language's default package.
+ **/]
+[query public hasDefaultPackageConflict(genPackage : GenPackage) : Boolean = genPackage.genClasses->exists(c | isImplicitType(c.name())) or genPackage.genEnums->exists(e | isImplicitType(e.name()))/]
+
+[**
+ * Whether the utility classes of a package import the interface package as a whole.
+ **/]
+[query public usesInterfaceWildcard(genPackage : GenPackage) : Boolean = not genPackage.hasDefaultPackageConflict() and genPackage.utilitiesPackageName() <> genPackage.interfacePackageName()/]
+
+[**
+ * Whether a package generates a switch and an adapter factory: it asks for adapter factories and has classes.
+ **/]
+[query public generatesAdapterFactory(genPackage : GenPackage) : Boolean = genPackage.hasClassifiers() and genPackage.isOn('adapterFactory') and genPackage.genClasses->notEmpty()/]
+
+[comment The classes of a switch /]
+
+[**
+ * The key that identifies an Ecore class across packages.
+ **/]
+[query superTypeKey(eClass : OclAny) : String = eClass.ePackage.nsURI + '#' + eClass.name/]
+
+[**
+ * The key of an entry of the list of super types with their depth.
+ **/]
+[query entryKey(entry : String) : String = entry.substring(entry.index('|') + 1)/]
+
+[**
+ * The depth of an entry of the list of super types with their depth.
+ **/]
+[query entryDepth(entry : String) : Integer = entry.substring(1, entry.index('|') - 1).toInteger()/]
+
+[**
+ * Visits a class at a depth: a class seen for the first time is listed and its super types are visited one level deeper;
+ * a class seen before keeps its place in the list and takes the greater depth.
+ **/]
+[query visitSuperType(entries : OclAny, eClass : OclAny, depth : Integer) : OclAny = if entries->exists(e | entryKey(e) = superTypeKey(eClass)) then (if depth > entryDepth(entries->select(e | entryKey(e) = superTypeKey(eClass))->first()) then entries->collect(e | if entryKey(e) = superTypeKey(eClass) then depth.toString() + '|' + superTypeKey(eClass) else e endif) else entries endif) else visitSuperTypes(entries->including(depth.toString() + '|' + superTypeKey(eClass)), eClass.eSuperTypes, depth + 1) endif/]
+
+[**
+ * Visits a list of classes at one depth, in order.
+ **/]
+[query visitSuperTypes(entries : OclAny, eClasses : OclAny, depth : Integer) : OclAny = if eClasses->isEmpty() then entries else visitSuperTypes(visitSuperType(entries, eClasses->first(), depth), eClasses->drop(1), depth) endif/]
+
+[**
+ * The entries of a list with a given depth, then those of the following depths up to a last depth.
+ **/]
+[query entriesByDepth(entries : OclAny, depth : Integer, lastDepth : Integer) : OclAny = if depth > lastDepth then Sequence{} else entries->select(e | entryDepth(e) = depth)->union(entriesByDepth(entries, depth + 1, lastDepth)) endif/]
+
+[**
+ * The classes that a switch tries after the class itself, in the order of their greatest distance from the class,
+ * nearest first. The root class of all model objects is left out.
+ **/]
+[query public switchGenClasses(genClass : GenClass) : OclAny = switchGenClassesFrom(genClass, visitSuperType(Sequence{}, genClass.ecoreClass, 0)->reject(e | entryDepth(e) = 0))/]
+
+[query switchGenClassesFrom(genClass : GenClass, entries : OclAny) : OclAny = if entries->isEmpty() then Sequence{} else switchGenClassesOf(genClass, entriesByDepth(entries, 1, entries->collect(e | entryDepth(e))->max())) endif/]
+
+[query switchGenClassesOf(genClass : GenClass, entries : OclAny) : OclAny = entries->collect(e | genClass.ecoreClass.eAllSuperTypes->select(s | superTypeKey(s) = entryKey(e))->first().genClassifier())->select(g | not g.oclIsUndefined() and not isEObjectClass(g))/]
+
+[**
+ * All classes that the switch of a package has a case for: the classes of the package, then the classes
+ * they inherit from, in the order in which they are first met.
+ **/]
+[query public allSwitchGenClasses(genPackage : GenPackage) : OclAny = genPackage.genClasses->reject(c | isEObjectClass(c))->union(genPackage.genClasses->reject(c | isEObjectClass(c))->collect(c | c.ecoreClass.eAllSuperTypes->collect(b | b.genClassifier())->select(g | not g.oclIsUndefined() and not isEObjectClass(g)))->flatten())->asOrderedSet()/]
+
+[**
+ * The name that a class takes in a switch when its own name is taken: the package prefix and the name, otherwise the name itself.
+ **/]
+[query alternateName(genClass : GenClass, taken : OclAny) : String = if taken->includes(genClass.name()) then (if taken->includes(genClass.genPackage().setting('prefix') + '_' + genClass.name()) then genClass.name() else genClass.genPackage().setting('prefix') + '_' + genClass.name() endif) else genClass.name() endif/]
+
+[query freeSuffixedName(name : String, taken : OclAny, number : Integer) : String = if taken->includes(name + '_' + number.toString()) then freeSuffixedName(name, taken, number + 1) else name + '_' + number.toString() endif/]
+
+[query uniqueSwitchName(genClass : GenClass, taken : OclAny) : String = if taken->includes(alternateName(genClass, taken)) then freeSuffixedName(alternateName(genClass, taken), taken, 1) else alternateName(genClass, taken) endif/]
+
+[query uniqueSwitchNames(genClasses : OclAny, taken : OclAny) : OclAny = if genClasses->isEmpty() then taken else uniqueSwitchNames(genClasses->drop(1), taken->including(uniqueSwitchName(genClasses->first(), taken))) endif/]
+
+[**
+ * The unique name of a class in a switch, found by naming the classes in order until the class is reached.
+ **/]
+[query switchNameAlong(genClasses : OclAny, genClass : GenClass, taken : OclAny) : String = if genClasses->isEmpty() then genClass.name() else (if genClasses->first() = genClass then uniqueSwitchName(genClass, taken) else switchNameAlong(genClasses->drop(1), genClass, taken->including(uniqueSwitchName(genClasses->first(), taken))) endif) endif/]
+
+[**
+ * Whether a name is taken by a class of a switch, as itself or as a name made unique.
+ **/]
+[query public switchNames(genPackage : GenPackage) : OclAny = uniqueSwitchNames(genPackage.allSwitchGenClasses(), Sequence{})/]
+
+[**
+ * The name that a class has in the case and create methods of a switch and an adapter factory.
+ * The default case, given by a missing class, takes the name EObject, qualified when a class of the model has that name.
+ **/]
+[query public classUniqueName(genPackage : GenPackage, genClass : OclAny) : String = if genClass.oclIsUndefined() then (if genPackage.switchNames()->includes('EObject') then 'Ecore_EObject' else 'EObject' endif) else switchNameAlong(genPackage.allSwitchGenClasses(), genClass, Sequence{}) endif/]
+
+[comment Generic types /]
+
+[**
+ * The type parameters of a class as they are declared, with a space after them, or nothing for a class without any.
+ **/]
+[query public typeParameters(genClass : GenClass) : String = if genClass.genModel().useGenerics() and genClass.genTypeParameters->notEmpty() then '<' + genClass.genTypeParameters->collect(t | t.name())->join(', ') + '> ' else '' endif/]
+
+[**
+ * Whether a class is generic and written with type arguments.
+ **/]
+[query public hasTypeArguments(genClass : GenClass) : Boolean = genClass.genModel().useGenerics() and genClass.genTypeParameters->notEmpty()/]
+
+[**
+ * The wildcard arguments with which a class is written where its type arguments are unknown, such as angle brackets around question marks.
+ **/]
+[query public wildTypeArguments(genClass : GenClass) : String = if genClass.hasTypeArguments() then '<' + genClass.genTypeParameters->collect(t | '?')->join(', ') + '>' else '' endif/]
+
+[**
+ * The type arguments of the interface of a class, which are written for classes with type parameters
+ * and for map entries: the names of the parameters, or the object types of the key and the value.
+ **/]
+[template public interfaceTypeArguments(genClass : GenClass)][if (genClass.hasTypeArguments())]<[genClass.genTypeParameters->collect(t | t.name())->join(', ')/]>[elseif (genClass.genModel().useGenerics() and genClass.isMapEntry)]<[mapEntryTypeName(genClass, 'key')/], [mapEntryTypeName(genClass, 'value')/]>[/if][/template]
+
+[**
+ * The interface type arguments of a class with unknown arguments: wildcards for type parameters, the key and value types for map entries.
+ **/]
+[template public interfaceWildTypeArguments(genClass : GenClass)][if (genClass.hasTypeArguments())][genClass.wildTypeArguments()/][else][genClass.interfaceTypeArguments()/][/if][/template]
+
+[template mapEntryTypeName(genClass : GenClass, featureName : String)][importedName(objectTypeName(qualifiedTypeName(genClass.ecoreClass.eStructuralFeatures->select(f | f.name = featureName)->first().eType)))/][/template]
+
+[comment Type names in utility classes /]
+
+[**
+ * The name of the interface of a class as the utility classes write it: the simple name for a class
+ * of the package, which the wildcard import of the interface package supplies, otherwise the imported name.
+ **/]
+[template public utilityTypeName(genPackage : GenPackage, genClass : GenClass)][if (genPackage.usesInterfaceWildcard() and genClass.genPackage() = genPackage and not genClass.isExternalInterface())][genClass.interfaceName()/][else][importedName(genClass.internalInterfaceName())/][/if][/template]
+
+[**
+ * The name of the package interface of a package as the utility classes write it.
+ **/]
+[template public utilityPackageName(genPackage : GenPackage)][if (genPackage.usesInterfaceWildcard() and genPackage.reflectionPackageName() = genPackage.interfacePackageName())][genPackage.packageInterfaceName()/][else][importedName(genPackage.qualifiedPackageInterfaceName())/][/if][/template]
+
+[comment Documentation /]
+
+[**
+ * Writes the lines of the API tags of an element, each prefixed with the comment margin.
+ **/]
+[template public apiTagLines(element : OclAny, margin : String)]
+[for (line | element.ownAPITagLines())]
+[margin/][line/]
+[/for]
+[/template]

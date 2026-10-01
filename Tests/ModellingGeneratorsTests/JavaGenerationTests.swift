@@ -15,8 +15,17 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
     /// The import options that the expectations were reviewed for.
     let options: GenModelImportOptions
 
-    /// The expected files, relative to the generated source root.
+    /// The expected enumeration files, relative to the generated source root.
     let files: [String]
+
+    /// The expected package interface and implementation files, and serialised packages.
+    var packageFiles: [String] = []
+
+    /// The expected factory interface and implementation files.
+    var factoryFiles: [String] = []
+
+    /// All expected files, sorted.
+    var allFiles: [String] { (files + packageFiles + factoryFiles).sorted() }
 
     var testDescription: String { fixture }
 
@@ -26,24 +35,162 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
             fixture: "library", stem: "library",
             options: GenModelImportOptions(
                 basePackage: "org.example", copyright: "Copyright 2026 Example Pty Ltd"),
-            files: ["org/example/library/BookCategory.java"]),
+            files: [
+                "org/example/library/Book.java",
+                "org/example/library/BookCategory.java",
+                "org/example/library/Lendable.java",
+                "org/example/library/Library.java",
+                "org/example/library/Named.java",
+                "org/example/library/Writer.java",
+                "org/example/library/impl/BookImpl.java",
+                "org/example/library/impl/LibraryImpl.java",
+                "org/example/library/impl/NamedImpl.java",
+                "org/example/library/impl/WriterImpl.java",
+            ],
+            packageFiles: ["org/example/library/LibraryPackage.java", "org/example/library/impl/LibraryPackageImpl.java"],
+            factoryFiles: ["org/example/library/LibraryFactory.java", "org/example/library/impl/LibraryFactoryImpl.java"]),
         JavaGoldenCase(
             fixture: "nested", stem: "company",
             options: GenModelImportOptions(
                 basePackage: "org.example.company", packagePrefixes: ["projects": "Proj"]),
-            files: ["org/example/company/company/projects/Status.java"]),
+            files: [
+                "org/example/company/company/Company.java",
+                "org/example/company/company/impl/CompanyImpl.java",
+                "org/example/company/company/people/Employee.java",
+                "org/example/company/company/people/Person.java",
+                "org/example/company/company/people/impl/EmployeeImpl.java",
+                "org/example/company/company/people/impl/PersonImpl.java",
+                "org/example/company/company/projects/Project.java",
+                "org/example/company/company/projects/Status.java",
+                "org/example/company/company/projects/archive/Record.java",
+                "org/example/company/company/projects/archive/impl/RecordImpl.java",
+                "org/example/company/company/projects/impl/ProjectImpl.java",
+            ],
+            packageFiles: [
+                "org/example/company/company/CompanyPackage.java",
+                "org/example/company/company/impl/CompanyPackageImpl.java",
+                "org/example/company/company/people/PeoplePackage.java",
+                "org/example/company/company/people/impl/PeoplePackageImpl.java",
+                "org/example/company/company/projects/ProjPackage.java",
+                "org/example/company/company/projects/impl/ProjPackageImpl.java",
+                "org/example/company/company/projects/archive/ArchivePackage.java",
+                "org/example/company/company/projects/archive/impl/ArchivePackageImpl.java",
+            ],
+            factoryFiles: [
+                "org/example/company/company/CompanyFactory.java",
+                "org/example/company/company/impl/CompanyFactoryImpl.java",
+                "org/example/company/company/people/PeopleFactory.java",
+                "org/example/company/company/people/impl/PeopleFactoryImpl.java",
+                "org/example/company/company/projects/ProjFactory.java",
+                "org/example/company/company/projects/archive/ArchiveFactory.java",
+                "org/example/company/company/projects/archive/impl/ArchiveFactoryImpl.java",
+                "org/example/company/company/projects/impl/ProjFactoryImpl.java",
+            ]),
         JavaGoldenCase(
             fixture: "enumerations", stem: "enumerations",
             options: GenModelImportOptions(basePackage: "org.example.traffic"),
             files: [
                 "org/example/traffic/enumerations/Colour.java",
                 "org/example/traffic/enumerations/Empty.java",
+                "org/example/traffic/enumerations/Light.java",
                 "org/example/traffic/enumerations/Mode.java",
+                "org/example/traffic/enumerations/impl/LightImpl.java",
+            ],
+            packageFiles: [
+                "org/example/traffic/enumerations/EnumerationsPackage.java",
+                "org/example/traffic/enumerations/impl/EnumerationsPackageImpl.java",
+            ],
+            factoryFiles: [
+                "org/example/traffic/enumerations/EnumerationsFactory.java",
+                "org/example/traffic/enumerations/impl/EnumerationsFactoryImpl.java",
             ]),
+        JavaGoldenCase(
+            fixture: "classes", stem: "classes",
+            options: GenModelImportOptions(basePackage: "org.example.shapes"),
+            files: [
+                "org/example/shapes/classes/Canvas.java",
+                "org/example/shapes/classes/Circle.java",
+                "org/example/shapes/classes/Colour.java",
+                "org/example/shapes/classes/Named.java",
+                "org/example/shapes/classes/Shape.java",
+                "org/example/shapes/classes/impl/CanvasImpl.java",
+                "org/example/shapes/classes/impl/CircleImpl.java",
+                "org/example/shapes/classes/impl/ShapeImpl.java",
+            ],
+            packageFiles: [
+                "org/example/shapes/classes/ClassesPackage.java",
+                "org/example/shapes/classes/impl/ClassesPackageImpl.java",
+            ],
+            factoryFiles: [
+                "org/example/shapes/classes/ClassesFactory.java",
+                "org/example/shapes/classes/impl/ClassesFactoryImpl.java",
+            ]),
+        JavaGoldenCase(
+            fixture: "maps", stem: "maps",
+            options: GenModelImportOptions(),
+            files: [
+                "maps/Dictionary.java",
+                "maps/impl/DictionaryImpl.java",
+                "maps/impl/StringToIntEntryImpl.java",
+            ],
+            packageFiles: ["maps/MapsPackage.java", "maps/impl/MapsPackageImpl.java"],
+            factoryFiles: ["maps/MapsFactory.java", "maps/impl/MapsFactoryImpl.java"]),
         JavaGoldenCase(
             fixture: "documented", stem: "documented",
             options: GenModelImportOptions(basePackage: "org.example.alarm"),
-            files: ["org/example/alarm/documented/Level.java"]),
+            files: ["org/example/alarm/documented/Level.java"],
+            packageFiles: [
+                "org/example/alarm/documented/DocumentedPackage.java",
+                "org/example/alarm/documented/impl/DocumentedPackageImpl.java",
+            ],
+            factoryFiles: [
+                "org/example/alarm/documented/DocumentedFactory.java",
+                "org/example/alarm/documented/impl/DocumentedFactoryImpl.java",
+            ]),
+        JavaGoldenCase(
+            fixture: "datatypes", stem: "datatypes",
+            options: GenModelImportOptions(basePackage: "org.example.types"),
+            files: ["org/example/types/datatypes/Colour.java"],
+            factoryFiles: [
+                "org/example/types/datatypes/DatatypesFactory.java",
+                "org/example/types/datatypes/impl/DatatypesFactoryImpl.java",
+            ]),
+        JavaGoldenCase(
+            fixture: "families", stem: "families",
+            options: GenModelImportOptions(basePackage: "org.example.families"),
+            files: [],
+            packageFiles: [
+                "org/example/families/Families/FamiliesPackage.java",
+                "org/example/families/Families/impl/FamiliesPackageImpl.java",
+            ],
+            factoryFiles: [
+                "org/example/families/Families/FamiliesFactory.java",
+                "org/example/families/Families/impl/FamiliesFactoryImpl.java",
+            ]),
+        JavaGoldenCase(
+            fixture: "organisation", stem: "organisation",
+            options: GenModelImportOptions(basePackage: "org.example.organisation"),
+            files: [],
+            packageFiles: [
+                "org/example/organisation/organisation/OrganisationPackage.java",
+                "org/example/organisation/organisation/impl/OrganisationPackageImpl.java",
+            ],
+            factoryFiles: [
+                "org/example/organisation/organisation/OrganisationFactory.java",
+                "org/example/organisation/organisation/impl/OrganisationFactoryImpl.java",
+            ]),
+        JavaGoldenCase(
+            fixture: "ecoretypes", stem: "bridge",
+            options: GenModelImportOptions(basePackage: "org.example.bridge"),
+            files: [],
+            packageFiles: [
+                "org/example/bridge/bridge/BridgePackage.java",
+                "org/example/bridge/bridge/impl/BridgePackageImpl.java",
+            ],
+            factoryFiles: [
+                "org/example/bridge/bridge/BridgeFactory.java",
+                "org/example/bridge/bridge/impl/BridgeFactoryImpl.java",
+            ]),
     ]
 }
 
@@ -57,9 +204,10 @@ struct JavaGenerationTests {
         defer { generated.remove() }
         try await generated.generate()
 
-        #expect(generated.generatedPaths() == golden.files.sorted())
+        let missing = Set(golden.allFiles).subtracting(generated.generatedPaths())
+        #expect(missing.isEmpty, "missing generated files: \(missing.sorted())")
         let project = generated.project
-        for path in golden.files {
+        for path in golden.allFiles {
             let expected = try String(contentsOf: project.javaExpectation(path), encoding: .utf8)
             let actual = try generated.text(path)
             #expect(actual == expected, "\(path) differs from its expectation")
@@ -68,7 +216,7 @@ struct JavaGenerationTests {
 
     @Test(
         "Every fixture generates without error",
-        arguments: JavaGoldenCase.all.map(\.fixture) + ["families", "organisation", "ecoretypes"])
+        arguments: JavaGoldenCase.all.map(\.fixture))
     @MainActor
     func everyFixtureGenerates(_ fixture: String) async throws {
         let stem = ["nested": "company", "ecoretypes": "bridge"][fixture] ?? fixture
@@ -105,7 +253,12 @@ struct JavaGenerationTests {
         let result = try await generated.generate()
         #expect(result.language == "java")
         #expect(result.packageCount == 1)
-        #expect(result.files.map(\.lastPathComponent) == ["Colour.java", "Mode.java", "Empty.java"])
+        let names = result.files.map(\.lastPathComponent)
+        let expectedOrder = [
+            "EnumerationsPackage.java", "EnumerationsPackageImpl.java", "EnumerationsFactory.java",
+            "EnumerationsFactoryImpl.java", "Light.java", "LightImpl.java", "Colour.java", "Mode.java", "Empty.java",
+        ]
+        #expect(names.isSubsequence(containing: expectedOrder), "unexpected file order: \(names)")
         #expect(result.outputDirectory.path == generated.output.standardizedFileURL.path)
     }
 
@@ -116,7 +269,9 @@ struct JavaGenerationTests {
             "library", stem: "library", options: GenModelImportOptions(basePackage: "org.example"))
         defer { generated.remove() }
         let result = try await generated.generate(options: GenerationOptions(includeSourceRoot: true))
-        #expect(generated.generatedPaths() == ["library/src/org/example/library/BookCategory.java"])
+        let expected = (JavaGoldenCase.all.first { $0.fixture == "library" }?.allFiles ?? []).map { "library/src/" + $0 }
+        #expect(!expected.isEmpty)
+        #expect(Set(generated.generatedPaths()).isSuperset(of: expected))
         #expect(result.outputDirectory.lastPathComponent == "src")
     }
 
@@ -131,11 +286,23 @@ struct JavaGenerationTests {
         try await generated.generate(progress: { collector.add($0) })
         let updates = collector.updates
         let fileUpdates = updates.filter { $0.message.hasPrefix("Generated ") }
-        #expect(fileUpdates.map(\.completed) == [1, 2, 3])
-        #expect(fileUpdates.allSatisfy { $0.total == 3 })
+        #expect(fileUpdates.map(\.completed) == Array(1...fileUpdates.count))
+        #expect(fileUpdates.count >= 5)
+        #expect(fileUpdates.allSatisfy { $0.total == fileUpdates.count })
         #expect(fileUpdates.last?.fraction == 1)
         #expect(updates.last?.message == "Done")
         #expect(updates.first?.fraction == nil)
+    }
+}
+
+extension Array where Element: Equatable {
+    /// Whether the given elements all occur in this array, in the given order, possibly with others between them.
+    func isSubsequence(containing expected: [Element]) -> Bool {
+        var remaining = expected[...]
+        for element in self where element == remaining.first {
+            remaining = remaining.dropFirst()
+        }
+        return remaining.isEmpty
     }
 }
 

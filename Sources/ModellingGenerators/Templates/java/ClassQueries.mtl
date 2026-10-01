@@ -1,0 +1,432 @@
+[comment encoding = UTF-8 /]
+[**
+ * Queries that decide what the Java files of a generator class contain.
+ *
+ * The queries here answer the questions that the class template asks: which interfaces a class
+ * extends and implements, which features it implements itself, which fields and flags hold the
+ * values of features, which kind of list a many-valued feature uses, and how features and operations
+ * are named and typed. They follow the rules of the Eclipse Modeling Framework generator so that the
+ * generated code is the same.
+ *
+ * These queries cover models without generic type parameters, and the delegation styles that keep
+ * values in fields. Reflective, dynamic and virtual feature delegation, array accessors, packed
+ * enumeration flags, setting delegates and the Google Web Toolkit platform are not supported.
+ **/]
+[module ClassQueries('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaImports/]
+[import JavaTypes/]
+[import JavaDocumentation/]
+
+[comment Names of the runtime types that the class template refers to /]
+
+[**
+ * The qualified name of the runtime's base interface for model objects.
+ **/]
+[query public eObjectTypeName() : String = 'org.eclipse.emf.ecore.EObject'/]
+
+[**
+ * The qualified name of the runtime's feature map interface.
+ **/]
+[query public featureMapTypeName() : String = 'org.eclipse.emf.ecore.util.FeatureMap'/]
+
+[**
+ * The source of the annotations that the generator model reads: bodies of operations and getters of features.
+ **/]
+[query public genModelNamespace() : String = 'http://www.eclipse.org/emf/2002/GenModel'/]
+
+[**
+ * The source of the annotations that carry extended metadata.
+ **/]
+[query public extendedMetaDataNamespace() : String = 'http:///org/eclipse/emf/ecore/util/ExtendedMetaData'/]
+
+[comment Generator model settings /]
+
+[**
+ * The text of a setting of a generator model, or an empty text if it is missing.
+ **/]
+[query public settingText(element : OclAny, setting : String) : String = if isBlank(element.setting(setting)) then '' else element.setting(setting).toString() endif/]
+
+[**
+ * Whether the generator model packs Boolean values and set flags into a field of bit flags.
+ **/]
+[query public isBooleanFlagsEnabled(genModel : GenModel) : Boolean = not isBlank(genModel.setting('booleanFlagsField'))/]
+
+[**
+ * The number of bits at the low end of the flags field that the runtime reserves, or minus one if the
+ * root class of the model declares the field itself.
+ **/]
+[query public reservedFlagBits(genModel : GenModel) : Integer = if genModel.setting('booleanFlagsReservedBits').oclIsUndefined() then 0 else genModel.setting('booleanFlagsReservedBits') endif/]
+
+[**
+ * Whether the generator model keeps values in the fields of the implementation classes. This is the case
+ * unless features delegate to reflection, to the dynamic store or to the virtual store.
+ **/]
+[query public usesFields(genModel : GenModel) : Boolean = genModel.settingText('featureDelegation') = 'None' or genModel.settingText('featureDelegation') = ''/]
+
+[**
+ * Whether the generator model asks for reflective operations, which gives every operation an identifier.
+ **/]
+[query public isOperationReflection(genModel : GenModel) : Boolean = genModel.isOn('operationReflection')/]
+
+[**
+ * Whether the reflective methods of a class cover only the features that it implements itself.
+ **/]
+[query public isMinimalReflective(genModel : GenModel) : Boolean = genModel.isOn('minimalReflectiveMethods')/]
+
+[**
+ * Whether the generated code leaves out the notifications of changes.
+ **/]
+[query public isSuppressNotification(genModel : GenModel) : Boolean = genModel.isOn('suppressNotification')/]
+
+[**
+ * The qualified name of the root interface that all model interfaces extend, or an empty text if there is none.
+ **/]
+[query public rootExtendsInterface(genModel : GenModel) : String = genModel.settingText('rootExtendsInterface')/]
+
+[**
+ * The qualified name of the class that all implementation classes extend, or an empty text if there is none.
+ **/]
+[query public rootExtendsClass(genModel : GenModel) : String = genModel.settingText('rootExtendsClass')/]
+
+[**
+ * The qualified name of the interface that all implementation classes implement, or an empty text if there is none.
+ **/]
+[query public rootImplementsInterface(genModel : GenModel) : String = genModel.settingText('rootImplementsInterface')/]
+
+[comment Packages /]
+
+[comment Classes: names and supertypes /]
+
+[**
+ * Whether a class is the root of all model classes, EObject of the Ecore package.
+ **/]
+[query public isEObject(genClass : GenClass) : Boolean = genClass.name() = 'EObject' and genClass.genPackage().isEcorePackage()/]
+
+[**
+ * Whether a class is a model class that extends the root interface of the runtime, directly or through its supertypes.
+ **/]
+[query public isEObjectExtension(genClass : GenClass) : Boolean = if genClass.isMapEntry() or genClass.isExternalInterface() then false else (if genClass.allBaseGenClasses()->exists(b | b.isEObjectExtension()) then true else (genClass.genPackage().isEcorePackage() or genClass.genModel().rootExtendsInterface() = eObjectTypeName()) endif) endif/]
+
+[**
+ * The qualified names of the interfaces that the interface of a class extends.
+ **/]
+[query public interfaceExtendsList(genClass : GenClass) : OclAny = (if genClass.isExternalInterface() then Sequence{} else (if genClass.baseGenClasses->isEmpty() then (if not genClass.isEObject() and not isBlank(genClass.genModel().rootExtendsInterface()) then Sequence{genClass.genModel().rootExtendsInterface()} else Sequence{} endif) else (if genClass.needsRootExtendsInterface() then Sequence{genClass.genModel().rootExtendsInterface()} else Sequence{} endif) endif) endif)->union(genClass.baseGenClasses->select(b | b.isExternalInterface() or b.isInterface() or not b.genModel().isOn('suppressInterfaces'))->collect(b | b.internalInterfaceName()))/]
+
+[**
+ * Whether the interface of a class extends the root interface of the generator model because no supertype does.
+ **/]
+[query public needsRootExtendsInterface(genClass : GenClass) : Boolean = not isBlank(genClass.genModel().rootExtendsInterface()) and not genClass.allBaseGenClasses()->exists(b | not b.isExternalInterface() and b.genModel().rootExtendsInterface() = genClass.genModel().rootExtendsInterface())/]
+
+[**
+ * Whether the documentation of the interface mentions the root interface that it extends.
+ **/]
+[query public needsRootExtendsInterfaceTag(genClass : GenClass) : Boolean = if isBlank(genClass.genModel().rootExtendsInterface()) or (genClass.baseGenClasses->isEmpty() and genClass.genPackage().isEcorePackage()) then false else (if genClass.needsRootExtendsInterface() then genClass.genModel().rootExtendsInterface() <> eObjectTypeName() else false endif) endif/]
+
+[**
+ * The qualified name of the class that the implementation of a class extends, or an empty text if it extends none.
+ **/]
+[query public classExtendsName(genClass : GenClass) : String = if not genClass.classExtendsGenClass().oclIsUndefined() then genClass.classExtendsGenClass().qualifiedClassName() else (if not genClass.isEObject() then genClass.genModel().rootExtendsClass() else '' endif) endif/]
+
+[**
+ * The qualified names of the interfaces that the implementation of a class implements.
+ **/]
+[query public classImplementsList(genClass : GenClass) : OclAny = (if genClass.isMapEntry() then Sequence{'org.eclipse.emf.common.util.BasicEMap$Entry'} else (if genClass.isExternalInterface() or not genClass.genModel().isOn('suppressInterfaces') then Sequence{genClass.internalInterfaceName()} else Sequence{} endif)->union(genClass.rootImplementsList()) endif)/]
+
+[**
+ * The root implements interface of a class, if the class needs to name it.
+ **/]
+[query public rootImplementsList(genClass : GenClass) : OclAny = if not isBlank(genClass.genModel().rootImplementsInterface()) and not genClass.classExtendsGenClass().oclIsUndefined() and genClass.classExtendsGenClass().genModel().rootImplementsInterface() <> genClass.genModel().rootImplementsInterface() then Sequence{genClass.genModel().rootImplementsInterface()} else Sequence{} endif/]
+
+[**
+ * The map entry feature of a class: its key or value feature.
+ **/]
+[query public mapEntryKeyFeature(genClass : GenClass) : OclAny = genClass.genFeatures->select(f | f.name() = 'key')->first()/]
+
+[**
+ * The value feature of a map entry class.
+ **/]
+[query public mapEntryValueFeature(genClass : GenClass) : OclAny = genClass.genFeatures->select(f | f.name() = 'value')->first()/]
+
+[**
+ * The classes whose features an implementation class takes over from interfaces: the supertypes after its base class.
+ **/]
+[query public mixinGenClasses(genClass : GenClass) : OclAny = if genClass.baseGenClasses->isEmpty() or (genClass.baseGenClasses->size() = 1 and not genClass.baseGenClass().isInterface()) then Sequence{} else (if genClass.baseGenClass().isInterface() then genClass.baseGenClass().mixinGenClasses() else Sequence{} endif)->union(genClass.allBaseGenClasses()->subSequence(genClass.allBaseGenClasses()->indexOf(genClass.baseGenClass()) + 1, genClass.allBaseGenClasses()->size())) endif/]
+
+[comment Features of a class /]
+
+[**
+ * The features that the implementation of a class implements: its own and those of its interfaces.
+ **/]
+[query public implementedFeatures(genClass : GenClass) : OclAny = genClass.implementedGenFeatures()/]
+
+[**
+ * The features that the interface of a class declares.
+ **/]
+[query public declaredFeatures(genClass : GenClass) : OclAny = genClass.genFeatures/]
+
+[**
+ * The features that the reflective methods of a class cover.
+ **/]
+[query public reflectiveFeatures(genClass : GenClass) : OclAny = if genClass.genModel().isMinimalReflective() then genClass.implementedGenFeatures() else genClass.allGenFeatures() endif/]
+
+[**
+ * The features that the reflective method that sets a value covers.
+ **/]
+[query public eSetFeatures(genClass : GenClass) : OclAny = genClass.reflectiveFeatures()->select(f | f.isChangeable())/]
+
+[**
+ * The features that the method for inverse adding covers.
+ **/]
+[query public eInverseAddFeatures(genClass : GenClass) : OclAny = genClass.reflectiveFeatures()->select(f | f.isBidirectional() and (not f.isVolatile() or f.hasDelegateFeature()))/]
+
+[**
+ * The features that the method for inverse removing covers.
+ **/]
+[query public eInverseRemoveFeatures(genClass : GenClass) : OclAny = genClass.reflectiveFeatures()->select(f | f.isEffectiveContains() or (f.isBidirectional() and (not f.reverseGenFeature().isVolatile() or f.reverseGenFeature().hasDelegateFeature())) or f.isFeatureMapFeature())/]
+
+[**
+ * The features that the method for removing from the container covers.
+ **/]
+[query public eBasicRemoveFromContainerFeatures(genClass : GenClass) : OclAny = genClass.reflectiveFeatures()->select(f | f.isContainer())/]
+
+[**
+ * The features that appear in the text form of an object: the fields that hold attribute values.
+ **/]
+[query public toStringFeatures(genClass : GenClass) : OclAny = genClass.implementedGenClasses()->collect(c | c.genFeatures)->flatten()->select(f | f.isField() and not f.isReferenceType())/]
+
+[**
+ * Whether the implementation of a class implements any of the given features itself.
+ **/]
+[query public implementsAny(genClass : GenClass, features : OclAny) : Boolean = features->exists(f | genClass.implementedGenFeatures()->includes(f))/]
+
+[**
+ * The generator model that implements a feature for a class: the model of the class that implements it.
+ **/]
+[query public implementingGenModel(genClass : GenClass, genFeature : GenFeature) : OclAny = if genClass.implementedGenFeatures()->includes(genFeature) then genClass.genModel() else (if genClass.classExtendsGenClass().oclIsUndefined() then genFeature.genModel() else genClass.classExtendsGenClass().implementingGenModel(genFeature) endif) endif/]
+
+[**
+ * Whether a class is a root of the classes of its generator model.
+ **/]
+[query public isModelRoot(genClass : GenClass) : Boolean = genClass.classExtendsGenClass().oclIsUndefined() or genClass.classExtendsGenClass().genModel() <> genClass.genModel()/]
+
+[comment Flags and fields /]
+
+[**
+ * Whether the value of a feature lives in a field of the implementation class.
+ **/]
+[query public isFieldOf(genClass : GenClass, genFeature : GenFeature) : Boolean = genClass.implementingGenModel(genFeature).usesFields() and genFeature.isField()/]
+
+[**
+ * Whether the set state of a feature lives in a field of the implementation class.
+ **/]
+[query public isESetFieldOf(genClass : GenClass, genFeature : GenFeature) : Boolean = genClass.implementingGenModel(genFeature).usesFields() and genFeature.isESetFeature()/]
+
+[**
+ * Whether the value of a feature is a bit in the flags field.
+ **/]
+[query public isFlagOf(genClass : GenClass, genFeature : GenFeature) : Boolean = genClass.implementingGenModel(genFeature).isBooleanFlagsEnabled() and not genFeature.isVolatile() and genFeature.isBooleanFeature()/]
+
+[**
+ * Whether the set state of a feature is a bit in the flags field.
+ **/]
+[query public isESetFlagOf(genClass : GenClass, genFeature : GenFeature) : Boolean = genClass.implementingGenModel(genFeature).isBooleanFlagsEnabled() and genFeature.isESetFeature()/]
+
+[**
+ * The number of flag bits that a feature takes: one for its value and one for its set state, where it has them.
+ **/]
+[query public flagBits(genClass : GenClass, genFeature : GenFeature) : Integer = (if genClass.isFlagOf(genFeature) then 1 else 0 endif) + (if genClass.isESetFlagOf(genFeature) then 1 else 0 endif)/]
+
+[**
+ * The index of the bit that holds the value of a feature.
+ **/]
+[query public flagIndex(genClass : GenClass, genFeature : GenFeature) : Integer = (if genClass.implementingGenModel(genFeature).reservedFlagBits() > 0 then genClass.implementingGenModel(genFeature).reservedFlagBits() else 0 endif) + (if genClass.allGenFeatures()->indexOf(genFeature) = 1 then 0 else genClass.allGenFeatures()->subSequence(1, genClass.allGenFeatures()->indexOf(genFeature) - 1)->collect(g | genClass.flagBits(g))->sum() endif)/]
+
+[**
+ * The index of the bit that holds the set state of a feature.
+ **/]
+[query public eSetFlagIndex(genClass : GenClass, genFeature : GenFeature) : Integer = genClass.flagIndex(genFeature) + (if genClass.isFlagOf(genFeature) then 1 else 0 endif)/]
+
+[**
+ * The name of the field that holds the flag of a feature.
+ **/]
+[query public flagsField(genClass : GenClass, genFeature : GenFeature) : String = genClass.implementingGenModel(genFeature).settingText('booleanFlagsField') + (if genClass.flagIndex(genFeature) div 32 > 0 then (genClass.flagIndex(genFeature) div 32).toString() else '' endif)/]
+
+[**
+ * The name of the field that holds the set flag of a feature.
+ **/]
+[query public eSetFlagsField(genClass : GenClass, genFeature : GenFeature) : String = genClass.implementingGenModel(genFeature).settingText('booleanFlagsField') + (if genClass.eSetFlagIndex(genFeature) div 32 > 0 then (genClass.eSetFlagIndex(genFeature) div 32).toString() else '' endif)/]
+
+[**
+ * The features whose flags are set when an object is created because their default value is true.
+ **/]
+[query public flagFeaturesWithDefault(genClass : GenClass) : OclAny = genClass.implementedGenFeatures()->select(f | genClass.isFlagOf(f) and f.hasEDefault() and f.ecoreFeature.defaultValueLiteral = 'true')/]
+
+[comment Feature types /]
+
+[**
+ * Whether a feature holds a feature map.
+ **/]
+[query public isFeatureMapFeature(genFeature : GenFeature) : Boolean = genFeature.isAttributeType() and (genFeature.itemTypeName().endsWith('FeatureMap.Entry') or genFeature.itemTypeName().endsWith('FeatureMap$Entry'))/]
+
+[**
+ * Whether a feature holds several values, as a list, a map or a feature map.
+ **/]
+[query public isMany(genFeature : GenFeature) : Boolean = genFeature.isListType() or genFeature.isFeatureMapFeature()/]
+
+[**
+ * Whether a feature is a list of map entries that the runtime presents as a map.
+ **/]
+[query public isMapFeature(genFeature : GenFeature) : Boolean = genFeature.isContainment() and genFeature.isMapType()/]
+
+[**
+ * Whether a feature holds one value of a primitive type.
+ **/]
+[query public isPrimitiveFeature(genFeature : GenFeature) : Boolean = not genFeature.isMany() and isPrimitiveType(genFeature.itemTypeName())/]
+
+[**
+ * Whether a feature holds one Boolean value of the primitive type.
+ **/]
+[query public isBooleanFeature(genFeature : GenFeature) : Boolean = not genFeature.isMany() and genFeature.itemTypeName() = 'boolean'/]
+
+[**
+ * Whether a feature holds one value of an enumeration.
+ **/]
+[query public isEnumFeature(genFeature : GenFeature) : Boolean = not genFeature.isMany() and genFeature.ecoreFeature.eType.oclIsKindOf(EEnum)/]
+
+[**
+ * The generator class that is the type of a feature, if it is a class.
+ **/]
+[query public typeGenClass(genFeature : GenFeature) : OclAny = if genFeature.ecoreFeature.eType.oclIsKindOf(EClass) then genFeature.ecoreFeature.eType.genClassifier() else null endif/]
+
+[**
+ * Whether the type of a feature is a model class.
+ **/]
+[query public hasClassType(genFeature : GenFeature) : Boolean = not genFeature.typeGenClass().oclIsUndefined()/]
+
+[**
+ * Whether the type of a feature is the root of all classes.
+ **/]
+[query public isEObjectFeature(genFeature : GenFeature) : Boolean = genFeature.isReferenceType() and not genFeature.isMany() and genFeature.itemTypeName() = eObjectTypeName()/]
+
+[**
+ * Whether the type of a feature is a class that extends the runtime's base interface.
+ **/]
+[query public isEObjectExtensionFeature(genFeature : GenFeature) : Boolean = genFeature.isReferenceType() and (if genFeature.hasClassType() then genFeature.typeGenClass().isEObjectExtension() else genFeature.itemTypeName() = eObjectTypeName() endif)/]
+
+[**
+ * The name of the value type of a feature without its imports being registered, written out for model comments.
+ **/]
+[query public objectTypeText(genFeature : GenFeature) : String = genFeature.listItemTypeName()/]
+
+[**
+ * The name of a feature as used for a local variable.
+ **/]
+[query public localName(genFeature : GenFeature) : String = genFeature.safeFeatureName()/]
+
+[**
+ * The upper case name of a feature.
+ **/]
+[query public featureUpperName(genFeature : GenFeature) : String = genFeature.upperName()/]
+
+[**
+ * Whether a feature can be unset: it is unsettable and the generator model has not turned that off.
+ **/]
+[query public isUnsettableFeature(genFeature : GenFeature) : Boolean = not genFeature.genModel().isOn('suppressUnsettable') and genFeature.isUnsettable()/]
+
+[**
+ * Whether a feature keeps track of whether it is set in a separate field.
+ **/]
+[query public isESetFeature(genFeature : GenFeature) : Boolean = genFeature.isUnsettableFeature() and not genFeature.isListType() and not genFeature.isVolatile()/]
+
+[**
+ * Whether the containment of a feature is generated.
+ **/]
+[query public isEffectiveContains(genFeature : GenFeature) : Boolean = genFeature.isContainment() and not genFeature.genModel().isOn('suppressContainment')/]
+
+[**
+ * Whether a feature is a field of its implementation: neither a container nor volatile.
+ **/]
+[query public isField(genFeature : GenFeature) : Boolean = not genFeature.isContainer() and not genFeature.isVolatile()/]
+
+[**
+ * Whether a feature has a default value constant: attributes do.
+ **/]
+[query public hasEDefault(genFeature : GenFeature) : Boolean = genFeature.isAttributeType()/]
+
+[**
+ * Whether a feature resolves proxies, which the generator model can switch off for containments.
+ **/]
+[query public resolvesProxies(genFeature : GenFeature) : Boolean = genFeature.isReferenceType() and genFeature.isResolveProxies() and (not (genFeature.isContainer() or genFeature.isContainment()) or genFeature.genModel().isOn('containmentProxies'))/]
+
+[**
+ * Whether the feature has a method that gets its value without resolving proxies.
+ **/]
+[query public isBasicGet(genFeature : GenFeature) : Boolean = genFeature.resolvesProxies() and not genFeature.isListType()/]
+
+[**
+ * Whether the feature has a method that sets its value and returns the notifications.
+ **/]
+[query public isBasicSet(genFeature : GenFeature) : Boolean = not genFeature.isListType() and (genFeature.isChangeable() or not genFeature.isContainer()) and ((genFeature.isBidirectional() and not genFeature.isVolatile()) or genFeature.isEffectiveContains())/]
+
+[**
+ * Whether the feature has a method that unsets its value and returns the notifications.
+ **/]
+[query public isBasicUnset(genFeature : GenFeature) : Boolean = genFeature.isUnsettableFeature() and genFeature.isChangeable() and not genFeature.isListType() and genFeature.isReferenceType() and (genFeature.isBidirectional() or genFeature.isEffectiveContains())/]
+
+[**
+ * The name that a feature is known by in accessor methods.
+ **/]
+[query public accessorName(genFeature : GenFeature) : String = if genFeature.isMapEntryFeature() then 'Typed' + genFeature.capName() else genFeature.capName() endif/]
+
+[**
+ * The name of the method that gets the value of a feature.
+ **/]
+[query public getterName(genFeature : GenFeature) : String = if genFeature.isMapEntryFeature() then 'getTyped' + genFeature.capName() else genFeature.getAccessor(genFeature.isBooleanFeature()) endif/]
+
+[**
+ * Whether a feature is the key or the value of a class that stands for the entries of a map.
+ **/]
+[query public isMapEntryFeature(genFeature : GenFeature) : Boolean = genFeature.genClass().isMapEntry() and (genFeature.name() = 'key' or genFeature.name() = 'value')/]
+
+[**
+ * The kind of a feature as documentation names it, such as attribute or containment reference list.
+ **/]
+[query public featureKind(genFeature : GenFeature) : String = (if genFeature.isReferenceType() then (if genFeature.isContainment() then (if genFeature.isMapType() then 'map' else 'containment reference' endif) else (if genFeature.isContainer() then 'container reference' else 'reference' endif) endif) else 'attribute' endif) + (if genFeature.isListType() and not (genFeature.isReferenceType() and genFeature.isContainment() and genFeature.isMapType()) then ' list' else '' endif)/]
+
+[**
+ * Whether getting the value of a feature is suppressed from the interface.
+ **/]
+[query public isSuppressedGetVisibility(genFeature : GenFeature) : Boolean = genFeature.isOn('suppressedGetVisibility')/]
+
+[**
+ * Whether setting the value of a feature is suppressed from the interface.
+ **/]
+[query public isSuppressedSetVisibility(genFeature : GenFeature) : Boolean = genFeature.isOn('suppressedSetVisibility')/]
+
+[**
+ * Whether asking if the value of a feature is set is suppressed from the interface.
+ **/]
+[query public isSuppressedIsSetVisibility(genFeature : GenFeature) : Boolean = genFeature.isOn('suppressedIsSetVisibility')/]
+
+[**
+ * Whether unsetting the value of a feature is suppressed from the interface.
+ **/]
+[query public isSuppressedUnsetVisibility(genFeature : GenFeature) : Boolean = genFeature.isOn('suppressedUnsetVisibility')/]
+
+[comment Group and mixed delegation /]
+
+[**
+ * The feature in whose feature map the values of a feature are stored, if the model groups it.
+ **/]
+[query public delegateFeature(genFeature : GenFeature) : OclAny = if genFeature.ecoreFeature.annotationDetail(extendedMetaDataNamespace(), 'group').oclIsUndefined() then null else genFeature.genClass().genFeatures->select(g | '#' + g.name() = genFeature.ecoreFeature.annotationDetail(extendedMetaDataNamespace(), 'group'))->first() endif/]
+
+[**
+ * Whether the values of a feature are stored in a feature map of the same class.
+ **/]
+[query public hasDelegateFeature(genFeature : GenFeature) : Boolean = not genFeature.delegateFeature().oclIsUndefined()/]
+
+[**
+ * Whether the class is serializable because one of its supertypes is the Java interface for serialization.
+ **/]
+[query public isJavaIOSerializable(genClass : GenClass) : Boolean = genClass.allBaseGenClasses()->exists(b | b.internalInterfaceName() = 'java.io.Serializable')/]

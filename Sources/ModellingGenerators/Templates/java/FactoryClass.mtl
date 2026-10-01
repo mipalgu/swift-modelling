@@ -1,0 +1,700 @@
+[comment encoding = UTF-8 /]
+[**
+ * The Java files of the factory of a generator package.
+ *
+ * Two files are written for a package that has classifiers: the factory interface, which declares the
+ * singleton instance, one create method for each concrete class and the accessor of the package, and
+ * the factory implementation, which creates instances of the classes, converts the values of
+ * enumerations and data types to and from text, and finds the factory that is registered for the package.
+ *
+ * Data types are converted by the factory of the runtime unless the generator model supplies create
+ * and convert bodies or switches on data type converters. Both forms are written for compliance level 5.0
+ * and higher.
+ *
+ * Not supported: suppressed interfaces and suppressed reflective metadata, classes with type parameters,
+ * map entry classes and classes that are external interfaces, data types that derive from a base
+ * type, list item type or union member types through extended metadata, data types with array or
+ * parameterised instance types, and the compliance levels below 5.0. A class counts as an extension of
+ * the root object interface when the generator model's root interface is the default one.
+ **/]
+[module FactoryClass('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaImports/]
+[import JavaTypes/]
+[import Header/]
+[import JavaDocumentation/]
+[import JavaUtilities/]
+
+[comment Names /]
+
+[**
+ * The package that holds the factory implementation of a package.
+ **/]
+[query public factoryClassPackageName(genPackage : GenPackage) : String = if genPackage.genModel().isOn('suppressInterfaces') then genPackage.reflectionPackageName() else genPackage.classPackageName() endif/]
+
+[**
+ * The qualified name of the factory interface of a package.
+ **/]
+[query public factoryQualifiedInterfaceName(genPackage : GenPackage) : String = genPackage.reflectionPackageName() + '.' + genPackage.factoryInterfaceName()/]
+
+[**
+ * The qualified name of the factory implementation of a package.
+ **/]
+[query public factoryQualifiedClassName(genPackage : GenPackage) : String = genPackage.factoryClassPackageName() + '.' + genPackage.factoryClassName()/]
+
+[**
+ * The name of the variable that holds the factory registered for a package.
+ **/]
+[query public factoryRegisteredName(genPackage : GenPackage) : String = 'the' + genPackage.factoryName()/]
+
+[**
+ * The name of the accessor of a package in its factory, without the get prefix.
+ **/]
+[query public factoryPackageAccessorName(genPackage : GenPackage) : String = genPackage.prefixedName('Package')/]
+
+[**
+ * The name of the variable of a class in its create method: the uncapitalised name, escaped if reserved.
+ **/]
+[query public factoryVariableName(genClass : GenClass) : String = safeName(genClass.name().uncapPrefixedName())/]
+
+[comment Conditions /]
+
+[**
+ * Whether a package has a class named like the implementation class of another one.
+ **/]
+[query public hasInterfaceImplConflict(genPackage : GenPackage) : Boolean = genPackage.genClasses->exists(c | genPackage.genClasses->exists(d | d.name() = c.name() + 'Impl'))/]
+
+[**
+ * Whether a class or enumeration of a package has the name of a type that code can use without importing it.
+ **/]
+[query public hasJavaLangConflict(genPackage : GenPackage) : Boolean = genPackage.genClasses->exists(c | isImplicitType(c.name())) or genPackage.genEnums->exists(e | isImplicitType(e.name()))/]
+
+[**
+ * Whether the factory implementation imports all types of the interface package with one wildcard import.
+ **/]
+[query public factoryUsesWildcard(genPackage : GenPackage) : Boolean = not genPackage.hasJavaLangConflict() and not genPackage.hasInterfaceImplConflict() and genPackage.classPackageName() <> genPackage.interfacePackageName()/]
+
+[**
+ * Whether the classes that code creates need a cast to the root object interface in the generic create method.
+ **/]
+[query public factoryNeedsObjectCast(genClass : GenClass) : Boolean = not (not genClass.isMapEntry and genClass.genModel().setting('rootExtendsInterface') = 'org.eclipse.emf.ecore.EObject')/]
+
+[**
+ * Whether the factory interface declares a create method for a class.
+ **/]
+[query public hasFactoryInterfaceCreateMethod(genClass : GenClass) : Boolean = not genClass.isAbstract and not genClass.isMapEntry/]
+
+[**
+ * Whether the code style of the generator model asks for a clean-up.
+ **/]
+[query public factoryHasCodeStyle(genModel : GenModel, style : String) : Boolean = genModel.isSetting('codeStyle') and genModel.setting('codeStyle').toString().contains(style)/]
+
+[**
+ * Whether an element is a generator enumeration.
+ **/]
+[query public factoryIsEnum(classifier : OclAny) : Boolean = classifier.oclIsKindOf(GenEnum)/]
+
+[**
+ * Whether the deprecation of a classifier needs to be silenced in the factory implementation.
+ **/]
+[query public factoryNeedsDeprecationSuppression(genPackage : GenPackage) : Boolean = not genPackage.hasAPIDeprecatedTag() and (genPackage.genClasses->exists(c | not c.isAbstract and c.hasAPIDeprecatedTag()) or genPackage.genEnums->exists(e | e.hasAPIDeprecatedTag()) or genPackage.genDataTypes->exists(d | d.hasAPIDeprecatedTag()))/]
+
+[comment Data types /]
+
+[**
+ * The source of the annotation in which a model carries the create and convert bodies of a data type.
+ **/]
+[query public factoryAnnotationSource() : String = 'http://www.eclipse.org/emf/2002/GenModel'/]
+
+
+[**
+ * The data types of a package that the factory converts: its enumerations, then its other data types.
+ **/]
+[query public allGenDataTypes(genPackage : GenPackage) : OclAny = genPackage.genEnums->union(genPackage.genDataTypes)/]
+
+[**
+ * The data types of a package that have a textual form.
+ **/]
+[query public serializableGenDataTypes(genPackage : GenPackage) : OclAny = genPackage.allGenDataTypes()->select(d | factoryIsSerializable(d))/]
+
+[**
+ * Whether values of a data type have a textual form. Enumerations always do.
+ **/]
+[query public factoryIsSerializable(dataType : OclAny) : Boolean = if factoryIsEnum(dataType) then true else dataType.ecoreDataType.serializable endif/]
+
+[**
+ * The qualified name of the Java type of a data type: the enum of an enumeration, otherwise the instance class.
+ **/]
+[query public factoryInstanceName(dataType : OclAny) : String = if factoryIsEnum(dataType) then dataType.qualifiedEnumName() else instanceClassName(dataType.ecoreDataType) endif/]
+
+[**
+ * The qualified name of the reference type of a data type: the wrapper class of a primitive type.
+ **/]
+[query public factoryObjectInstanceName(dataType : OclAny) : String = objectTypeName(factoryInstanceName(dataType))/]
+
+[**
+ * Whether a data type is a Java primitive type.
+ **/]
+[query public factoryIsPrimitive(dataType : OclAny) : Boolean = isPrimitiveType(factoryInstanceName(dataType))/]
+
+[**
+ * Whether the instances of a data type are plain objects, so that no cast is needed.
+ **/]
+[query public factoryIsObjectType(dataType : OclAny) : Boolean = factoryInstanceName(dataType) = 'java.lang.Object'/]
+
+[**
+ * Whether the generator model supplies the code that creates values of a data type from text.
+ **/]
+[query public hasCreatorBody(dataType : OclAny) : Boolean = not factoryCreatorBody(dataType).oclIsUndefined()/]
+
+[**
+ * Whether the generator model supplies the code that converts values of a data type to text.
+ **/]
+[query public hasConverterBody(dataType : OclAny) : Boolean = not factoryConverterBody(dataType).oclIsUndefined()/]
+
+[**
+ * The code that creates values of a data type from text, taken from the generator model or the model annotation.
+ **/]
+[query public factoryCreatorBody(dataType : OclAny) : OclAny = if factoryIsEnum(dataType) then null else (if dataType.isSetting('create') then dataType.setting('create') else dataType.annotationDetail(factoryAnnotationSource(), 'create') endif) endif/]
+
+[**
+ * The code that converts values of a data type to text, taken from the generator model or the model annotation.
+ **/]
+[query public factoryConverterBody(dataType : OclAny) : OclAny = if factoryIsEnum(dataType) then null else (if dataType.isSetting('convert') then dataType.setting('convert') else dataType.annotationDetail(factoryAnnotationSource(), 'convert') endif) endif/]
+
+[**
+ * Whether the factory offers separate create and convert methods for a data type.
+ **/]
+[query public factoryHasConverters(genPackage : GenPackage) : Boolean = genPackage.isOn('dataTypeConverters')/]
+
+[comment Documentation /]
+
+[**
+ * The lines of the API tags that the documentation of an element carries, with a link for tags that have a text.
+ **/]
+[query public factoryApiTagLines(element : OclAny, link : String) : OclAny = Sequence{factoryTagLine(element, 'since', ''), factoryTagLine(element, 'deprecated', link), factoryTagLine(element, 'noreference', link)}->select(l | l.size() > 0)/]
+
+[query factoryTagLine(element : OclAny, tag : String, link : String) : String = if not element.hasDocumentationTag(tag) then '' else (if element.documentationTagText(tag).size() = 0 then (if tag = 'since' then '' else '@' + tag endif) else (if tag = 'since' or link.size() = 0 then '@' + tag + ' ' + element.documentationTagText(tag) else '@' + tag + ' See {@link ' + link + ' model documentation} for details.' endif) endif) endif/]
+
+[**
+ * Writes a type name: a simple name when the factory implementation imports the whole interface
+ * package, otherwise the name that the import handling chooses.
+ **/]
+[template public factoryTypeRef(genPackage : GenPackage, qualifiedName : String, wildcard : Boolean)][if (wildcard and qualifiedName.packageOf() = genPackage.interfacePackageName())][qualifiedName.baseName()/][else][importedName(qualifiedName)/][/if][/template]
+
+[comment Bodies supplied by the model /]
+
+[**
+ * The qualified names that a body names between the markers of an import expression.
+ **/]
+[query public factoryBodyImports(body : String) : OclAny = if body.index('<%') < 1 then Sequence{} else (let rest : String = body.substring(body.index('<%') + 2) in (if rest.index('%>') < 1 then Sequence{} else Sequence{rest.substring(1, rest.index('%>') - 1)}->union(factoryBodyImports(rest.substring(rest.index('%>') + 2))) endif)) endif/]
+
+[**
+ * A body with its import expressions replaced by the names that the file uses for them. The imports must
+ * have been registered with factoryRegisterBodyImports.
+ **/]
+[query public factoryResolveBody(body : String) : String = if body.index('<%') < 1 then body else (let rest : String = body.substring(body.index('<%') + 2) in (if rest.index('%>') < 1 then body else body.substring(1, body.index('<%') - 1) + resolvedName(rest.substring(1, rest.index('%>') - 1)) + factoryResolveBody(rest.substring(rest.index('%>') + 2)) endif)) endif/]
+
+[**
+ * A body with its import expressions resolved; the template engine indents the lines after the first.
+ **/]
+[query public factoryBodyText(body : String) : String = factoryResolveBody(body)/]
+
+[**
+ * Registers the imports that a body names.
+ **/]
+[template public factoryRegisterBodyImports(body : String)]
+[for (n | factoryBodyImports(body))]
+[collect ('imports', n.importName())/]
+[/for]
+[/template]
+
+[comment Interface /]
+
+[**
+ * The complete text of the file that declares the factory interface of a package.
+ **/]
+[template public factoryInterface(genPackage : GenPackage)]
+[let genModel : GenModel = genPackage.genModel()]
+[let hasConverters : Boolean = genPackage.factoryHasConverters()]
+[collect ('imports', genPackage.factoryQualifiedInterfaceName())/]
+[collect ('imports', 'org.eclipse.emf.ecore.EFactory')/]
+[header(genPackage)/]
+package [genPackage.reflectionPackageName()/];
+
+
+[emit ('imports') once][importBlock(items)/][/emit]
+
+/**
+ * <!-- begin-user-doc -->
+ * The <b>Factory</b> for the model.
+ * It provides a create method for each non-abstract class of the model.
+ * <!-- end-user-doc -->
+ * @see [genPackage.qualifiedPackageInterfaceName()/]
+[for (line | genPackage.factoryApiTagLines(genPackage.qualifiedPackageInterfaceName()))]
+ * [line/]
+[/for]
+ * @generated
+ */
+[if (genPackage.hasAPIDeprecatedTag())]
+@Deprecated
+[/if]
+public interface [genPackage.factoryInterfaceName()/] extends [importedName('org.eclipse.emf.ecore.EFactory')/]
+{
+[if (genModel.hasCopyrightField())]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  [importedName('java.lang.String')/] copyright = [genModel.copyrightFieldLiteral()/];[nonNLS(genModel, 1)/]
+
+[/if]
+  /**
+   * The singleton instance of the factory.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  [genPackage.factoryInterfaceName()/] eINSTANCE = [genPackage.factoryQualifiedClassName()/].init();
+
+[for (genClass : GenClass | genPackage.genClasses)]
+[if (genClass.hasFactoryInterfaceCreateMethod())]
+  /**
+   * Returns a new object of class '<em>[genClass.formattedClassifierName()/]</em>'.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @return a new object of class '<em>[genClass.formattedClassifierName()/]</em>'.
+[for (line | genClass.factoryApiTagLines(importedName(genClass.qualifiedInterfaceName())))]
+   * [line/]
+[/for]
+   * @generated
+   */
+[if (genClass.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  [importedName(genClass.qualifiedInterfaceName())/] create[genClass.name()/]();
+
+[/if]
+[/for]
+[if (hasConverters)]
+[for (genDataType | genPackage.serializableGenDataTypes())]
+  /**
+   * Returns an instance of data type '<em>[genDataType.formattedClassifierName()/]</em>' corresponding the given literal.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @param literal a literal of the data type.
+   * @return a new instance value of the data type.
+[for (line | genDataType.factoryApiTagLines(genPackage.qualifiedPackageInterfaceName() + '#get' + genDataType.classifierAccessorName() + '()'))]
+   * [line/]
+[/for]
+   * @generated
+   */
+[if (genDataType.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  [importedName(genDataType.factoryInstanceName())/] create[genDataType.name()](String literal);
+
+  /**
+   * Returns a literal representation of an instance of data type '<em>[genDataType.formattedClassifierName()/]</em>'.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @param instanceValue an instance value of the data type.
+   * @return a literal representation of the instance value.
+[for (line | genDataType.factoryApiTagLines(genPackage.qualifiedPackageInterfaceName() + '#get' + genDataType.classifierAccessorName() + '()'))]
+   * [line/]
+[/for]
+   * @generated
+   */
+[if (genDataType.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  String convert[genDataType.name()]([importedName(genDataType.factoryInstanceName())/] instanceValue);
+
+[/for]
+[/if]
+  /**
+   * Returns the package supported by this factory.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @return the package supported by this factory.
+   * @generated
+   */
+  [genPackage.packageInterfaceName()/] get[genPackage.factoryPackageAccessorName()/]();
+
+} //[genPackage.factoryInterfaceName()/]
+[/let]
+[/let]
+[/template]
+
+[comment Implementation /]
+
+[**
+ * The complete text of the file that declares the factory implementation of a package.
+ **/]
+[template public factoryImplementation(genPackage : GenPackage)]
+[let genModel : GenModel = genPackage.genModel()]
+[let wildcard : Boolean = genPackage.factoryUsesWildcard()]
+[let hasConverters : Boolean = genPackage.factoryHasConverters()]
+[let inlineReturn : Boolean = genModel.factoryHasCodeStyle('UnnecessaryAssignmentBeforeReturn')]
+[let packageRef : String = genPackage.qualifiedPackageInterfaceName()]
+[collect ('imports', genPackage.factoryQualifiedClassName())/]
+[collect ('imports', Sequence{'org.eclipse.emf.ecore.EClass', 'org.eclipse.emf.ecore.EObject'})/]
+[if (wildcard)]
+[collect ('imports', genPackage.interfacePackageName() + '.*')/]
+[/if]
+[header(genPackage)/]
+package [genPackage.factoryClassPackageName()/];
+
+
+[emit ('imports') once][importBlock(items)/][/emit]
+
+/**
+ * <!-- begin-user-doc -->
+ * An implementation of the model <b>Factory</b>.
+ * <!-- end-user-doc -->
+[for (line | genPackage.factoryApiTagLines(packageRef))]
+ * [line/]
+[/for]
+ * @generated
+ */
+[if (genPackage.hasAPIDeprecatedTag())]
+@Deprecated
+[/if]
+[if (genPackage.factoryNeedsDeprecationSuppression())]
+@SuppressWarnings("deprecation")
+[/if]
+public class [genPackage.factoryClassName()/] extends [importedName('org.eclipse.emf.ecore.impl.EFactoryImpl')/] implements [genPackage.factoryTypeRef(genPackage.factoryQualifiedInterfaceName(), wildcard)/]
+{
+[if (genModel.hasCopyrightField())]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  [importedName('java.lang.String')/] copyright = [genModel.copyrightFieldLiteral()/];[nonNLS(genModel, 1)/]
+
+[/if]
+  /**
+   * Creates the default factory implementation.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public static [genPackage.factoryTypeRef(genPackage.factoryQualifiedInterfaceName(), wildcard)/] init()
+  {
+    try
+    {
+      [genPackage.factoryTypeRef(genPackage.factoryQualifiedInterfaceName(), wildcard)/] [genPackage.factoryRegisteredName()/] = ([genPackage.factoryTypeRef(genPackage.factoryQualifiedInterfaceName(), wildcard)/])[importedName('org.eclipse.emf.ecore.EPackage')/].Registry.INSTANCE.getEFactory([genPackage.packageInterfaceName()/].eNS_URI);
+      if ([genPackage.factoryRegisteredName()/] != null)
+      {
+        return [genPackage.factoryRegisteredName()/];
+      }
+    }
+    catch (Exception exception)
+    {
+      [importedName('org.eclipse.emf.ecore.plugin.EcorePlugin')/].INSTANCE.log(exception);
+    }
+    return new [importedName(genPackage.factoryQualifiedClassName())/]();
+  }
+
+  /**
+   * Creates an instance of the factory.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public [genPackage.factoryClassName()/]()
+  {
+    super();
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public EObject create(EClass eClass)
+  {
+    switch (eClass.getClassifierID())
+    {
+[for (genClass : GenClass | genPackage.genClasses)]
+[if (not genClass.isAbstract)]
+      case [genPackage.factoryTypeRef(packageRef, wildcard)/].[genClass.classifierIDName]: return [if (genClass.factoryNeedsObjectCast())](EObject)[/if]create[genClass.name()/]();
+[/if]
+[/for]
+      default:
+        throw new IllegalArgumentException("The class '" + eClass.getName() + "' is not a valid classifier");[nonNLS(genModel, 1)/][nonNLS(genModel, 2)/]
+    }
+  }
+
+[if (not genPackage.allGenDataTypes()->isEmpty())]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public Object createFromString([importedName('org.eclipse.emf.ecore.EDataType')/] eDataType, String initialValue)
+  {
+    switch (eDataType.getClassifierID())
+    {
+[for (genDataType | genPackage.serializableGenDataTypes())]
+      case [genPackage.factoryTypeRef(packageRef, wildcard)/].[genDataType.classifierIDName]:
+        return create[genDataType.name()]FromString(eDataType, initialValue);
+[/for]
+      default:
+        throw new IllegalArgumentException("The datatype '" + eDataType.getName() + "' is not a valid classifier");[nonNLS(genModel, 1)/][nonNLS(genModel, 2)/]
+    }
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useClassOverrideAnnotation())]
+  @Override
+[/if]
+  public String convertToString([importedName('org.eclipse.emf.ecore.EDataType')/] eDataType, Object instanceValue)
+  {
+    switch (eDataType.getClassifierID())
+    {
+[for (genDataType | genPackage.serializableGenDataTypes())]
+      case [genPackage.factoryTypeRef(packageRef, wildcard)/].[genDataType.classifierIDName]:
+        return convert[genDataType.name()]ToString(eDataType, instanceValue);
+[/for]
+      default:
+        throw new IllegalArgumentException("The datatype '" + eDataType.getName() + "' is not a valid classifier");[nonNLS(genModel, 1)/][nonNLS(genModel, 2)/]
+    }
+  }
+
+[/if]
+[for (genClass : GenClass | genPackage.genClasses)]
+[if (not genClass.isAbstract)]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[for (line | genClass.factoryApiTagLines(genPackage.factoryTypeRef(genClass.internalInterfaceName(), wildcard)))]
+   * [line/]
+[/for]
+   * @generated
+   */
+[if (genClass.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+[if (genModel.useInterfaceOverrideAnnotation() and not genClass.isMapEntry)]
+  @Override
+[/if]
+  public [genPackage.factoryTypeRef(genClass.internalInterfaceName(), wildcard)/][genClass.interfaceTypeArguments()/] create[genClass.name()/]()
+  {
+[if (genClass.isOn('dynamic'))]
+[if (inlineReturn)]
+    return [if (genClass.factoryNeedsObjectCast())]([genPackage.factoryTypeRef(genClass.internalInterfaceName(), wildcard)/][genClass.interfaceTypeArguments()/])[/if]super.create([genPackage.factoryClassifierAccessor(genClass, wildcard)/]);
+[else]
+    [genPackage.factoryTypeRef(genClass.internalInterfaceName(), wildcard)/][genClass.interfaceTypeArguments()/] [genClass.factoryVariableName()/] = [if (genClass.factoryNeedsObjectCast())]([genPackage.factoryTypeRef(genClass.internalInterfaceName(), wildcard)/][genClass.interfaceTypeArguments()/])[/if]super.create([genPackage.factoryClassifierAccessor(genClass, wildcard)/]);
+    return [genClass.factoryVariableName()/];
+[/if]
+[else]
+[if (inlineReturn)]
+    return new [importedName(genClass.qualifiedClassName())/]();
+[else]
+    [importedName(genClass.qualifiedClassName())/] [genClass.factoryVariableName()/] = new [importedName(genClass.qualifiedClassName())/]();
+    return [genClass.factoryVariableName()/];
+[/if]
+[/if]
+  }
+
+[/if]
+[/for]
+[for (genDataType | genPackage.serializableGenDataTypes())]
+[genPackage.factoryDataTypeMethods(genDataType, wildcard)/]
+[/for]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+[if (genModel.useInterfaceOverrideAnnotation())]
+  @Override
+[/if]
+  public [genPackage.factoryTypeRef(packageRef, wildcard)/] get[genPackage.factoryPackageAccessorName()/]()
+  {
+    return ([genPackage.factoryTypeRef(packageRef, wildcard)/])getEPackage();
+  }
+
+[if (not genModel.factoryHasCodeStyle('UnnecessaryDeprecatedMethod'))]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @deprecated
+   * @generated
+   */
+[if (genModel.useClassOverrideAnnotation())]
+  @Deprecated
+[/if]
+  public static [genPackage.factoryTypeRef(packageRef, wildcard)/] getPackage()
+  {
+    return [genPackage.factoryTypeRef(packageRef, wildcard)/].eINSTANCE;
+  }
+
+[/if]
+} //[genPackage.factoryClassName()/]
+[/let]
+[/let]
+[/let]
+[/let]
+[/let]
+[/template]
+
+[**
+ * Writes the expression that finds the model element of a class in the package.
+ **/]
+[template public factoryClassifierAccessor(genPackage : GenPackage, classifier : OclAny, wildcard : Boolean)][if (genPackage.isOn('literalsInterface'))][genPackage.factoryTypeRef(genPackage.qualifiedPackageInterfaceName(), wildcard)/].Literals.[classifier.classifierIDName/][else][genPackage.factoryTypeRef(genPackage.qualifiedPackageInterfaceName(), wildcard)/].eINSTANCE.get[classifier.classifierAccessorName()/]()[/if][/template]
+
+[**
+ * Writes the methods that create values of a data type from text and convert them to text.
+ **/]
+[template public factoryDataTypeMethods(genPackage : GenPackage, genDataType : OclAny, wildcard : Boolean)]
+[let genModel : GenModel = genPackage.genModel()]
+[let hasConverters : Boolean = genPackage.factoryHasConverters()]
+[let isEnum : Boolean = genDataType.factoryIsEnum()]
+[let isPrimitive : Boolean = genDataType.factoryIsPrimitive()]
+[let isObject : Boolean = genDataType.factoryIsObjectType()]
+[let accessor : String = genPackage.factoryClassifierAccessor(genDataType, wildcard)]
+[let link : String = genPackage.qualifiedPackageInterfaceName() + '#get' + genDataType.classifierAccessorName() + '()']
+[let overridden : Boolean = hasConverters and genModel.useInterfaceOverrideAnnotation()]
+[if (genDataType.hasCreatorBody())]
+[factoryRegisterBodyImports(genDataType.factoryCreatorBody())/]
+[/if]
+[if (genDataType.hasConverterBody())]
+[factoryRegisterBodyImports(genDataType.factoryConverterBody())/]
+[/if]
+[if (hasConverters or genDataType.hasCreatorBody())]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[for (line | genDataType.factoryApiTagLines(link))]
+   * [line/]
+[/for]
+   * @generated
+   */
+[if (genDataType.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+[if (overridden)]
+  @Override
+[/if]
+  public [genPackage.factoryTypeRef(genDataType.factoryInstanceName(), wildcard)/] create[genDataType.name()]([if (genDataType.hasCreatorBody())]final [/if]String [if (genDataType.hasCreatorBody())]it[else]literal[/if])
+  {
+[if (genDataType.hasCreatorBody())]
+    [factoryBodyText(genDataType.factoryCreatorBody())/]
+[elseif (isEnum)]
+    [genPackage.factoryTypeRef(genDataType.factoryInstanceName(), wildcard)/] result = [genPackage.factoryTypeRef(genDataType.factoryInstanceName(), wildcard)/].get(literal);
+    if (result == null) throw new IllegalArgumentException("The value '" + literal + "' is not a valid enumerator of '" + [accessor/].getName() + "'");[nonNLS(genModel, 1)/][nonNLS(genModel, 2)/][nonNLS(genModel, 3)/]
+    return result;
+[else]
+    return [if (not isObject)]([genPackage.factoryTypeRef(genDataType.factoryObjectInstanceName(), wildcard)/])[/if]super.createFromString([accessor/], literal);
+[/if]
+  }
+
+[/if]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[for (line | genDataType.factoryApiTagLines(link))]
+   * [line/]
+[/for]
+   * @generated
+   */
+[if (genDataType.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  public [genPackage.factoryTypeRef(genDataType.factoryObjectInstanceName(), wildcard)/] create[genDataType.name()]FromString([importedName('org.eclipse.emf.ecore.EDataType')/] eDataType, String initialValue)
+  {
+[if (isEnum)]
+[if (hasConverters or genDataType.hasCreatorBody())]
+    return create[genDataType.name()](initialValue);
+[else]
+    [genPackage.factoryTypeRef(genDataType.factoryInstanceName(), wildcard)/] result = [genPackage.factoryTypeRef(genDataType.factoryInstanceName(), wildcard)/].get(initialValue);
+    if (result == null) throw new IllegalArgumentException("The value '" + initialValue + "' is not a valid enumerator of '" + eDataType.getName() + "'");[nonNLS(genModel, 1)/][nonNLS(genModel, 2)/][nonNLS(genModel, 3)/]
+    return result;
+[/if]
+[elseif (hasConverters or genDataType.hasCreatorBody())]
+    return create[genDataType.name()](initialValue);
+[else]
+    return [if (not isObject)]([genPackage.factoryTypeRef(genDataType.factoryObjectInstanceName(), wildcard)/])[/if]super.createFromString(eDataType, initialValue);
+[/if]
+  }
+
+[if (hasConverters or genDataType.hasConverterBody())]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[for (line | genDataType.factoryApiTagLines(link))]
+   * [line/]
+[/for]
+   * @generated
+   */
+[if (genDataType.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+[if (overridden)]
+  @Override
+[/if]
+  public String convert[genDataType.name()]([if (genDataType.hasCreatorBody())]final [/if][genPackage.factoryTypeRef(genDataType.factoryInstanceName(), wildcard)/] [if (genDataType.hasConverterBody())]it[else]instanceValue[/if])
+  {
+[if (genDataType.hasConverterBody())]
+    [factoryBodyText(genDataType.factoryConverterBody())/]
+[elseif (isEnum)]
+    return instanceValue == null ? null : instanceValue.toString();
+[else]
+    return super.convertToString([accessor/], instanceValue);
+[/if]
+  }
+
+[/if]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[for (line | genDataType.factoryApiTagLines(link))]
+   * [line/]
+[/for]
+   * @generated
+   */
+[if (genDataType.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  public String convert[genDataType.name()]ToString([importedName('org.eclipse.emf.ecore.EDataType')/] eDataType, Object instanceValue)
+  {
+[if (isEnum)]
+[if (hasConverters or genDataType.hasConverterBody())]
+    return convert[genDataType.name()](([genPackage.factoryTypeRef(genDataType.factoryInstanceName(), wildcard)/])instanceValue);
+[else]
+    return instanceValue == null ? null : instanceValue.toString();
+[/if]
+[elseif (hasConverters or genDataType.hasConverterBody())]
+[if (isPrimitive)]
+    return instanceValue == null ? null : convert[genDataType.name()](([genPackage.factoryTypeRef(genDataType.factoryObjectInstanceName(), wildcard)/])instanceValue);
+[else]
+    return convert[genDataType.name()](([genPackage.factoryTypeRef(genDataType.factoryInstanceName(), wildcard)/])instanceValue);
+[/if]
+[else]
+    return super.convertToString(eDataType, instanceValue);
+[/if]
+  }
+
+[/let]
+[/let]
+[/let]
+[/let]
+[/let]
+[/let]
+[/let]
+[/let]
+[/template]

@@ -29,7 +29,7 @@ and the [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec
 - **XPath Reference Resolution**: Same-resource references with XPath-style navigation (//@feature.index)
 - **XMI Serialisation**: Write models to XMI format with full round-trip support
 - **Generator Models**: Create Eclipse-compatible `.genmodel` files from Ecore models with `swift-ecore genmodel`, driven by a bundled ATL transformation
-- **Java Generation**: Generate Java model code from a generator model with `swift-ecore generate --language java`, driven by bundled MTL templates that follow the Eclipse code generator (enumerations so far)
+- **Java Generation**: Generate Java model code from a generator model with `swift-ecore generate --language java`, driven by bundled MTL templates that follow the Eclipse code generator (enumerations and classes so far)
 - **Template Sets**: Languages are directories of templates and data files; a new language needs no Swift code
 
 ### ATL Support
@@ -252,11 +252,11 @@ swift run swift-ecore generate --language java model/library.genmodel -o src-gen
 - `--model-directory` - write below the model directory of the generator model
 - `-v, --verbose` - show every progress report; without it a progress bar appears on an interactive terminal
 
-**Existing files.** A file that exists is treated in this order: `--force-overwrite` replaces it; otherwise `--diff` writes the new text beside it; otherwise the generated members are merged with the file. In a merge, a member whose documentation comment carries `@generated` is regenerated, a member marked `@generated NOT` is kept as it is, and members without the tag (your own) are kept. Imports that you added stay.
+**Existing files.** A file that exists is treated in this order: `--force-overwrite` replaces it; otherwise `--diff` writes the new text beside it; otherwise the generated members are merged with the file. In a merge, a member whose documentation comment carries `@generated` is regenerated, a member marked `@generated NOT` is kept as it is, and members without the tag (your own) are kept. Imports that you added stay. Only Java files are merged; the project files of a model (below) follow their own rules.
 
-**Current coverage.** The Java template set writes one file for every enumeration of every package (the full `EnumClass` template for compliance level 5.0 and higher, `typeSafeEnumCompatible` honoured). The package interface and implementation, factory, classes (interface and implementation), switch, adapter factory, validator, XML processor, resource factory and project files are listed as `TODO` comments in `generate.mtl` and follow.
+**Current coverage.** The Java template set writes the package interface and implementation (with loaded initialisation, literals interface, operation reflection, nested packages and annotations; no generic metamodels), the factory interface and implementation, the XML processor and the resource factory and resource of packages that ask for them, the validator (for packages with constraints), the interface (unless the class names an existing Java interface) and implementation class (unless the class is an interface) of every class, one file for every enumeration (the full `EnumClass` template for compliance level 5.0 and higher, `typeSafeEnumCompatible` honoured), the switch and adapter factory, and, when the output location includes the source directory, the plugin class, plugin properties, build properties, bundle manifest and plugin descriptor of the model project. The `Class` template covers fields, default value constants, accessors with notification, containment and bidirectional references with their inverse methods, many-valued features with the list classes the Eclipse generator chooses, unsettable features, boolean flags (`booleanFlagsField`), group delegation to feature maps, map features and map entry classes, operations with bodies from the `body` annotation, `eGet`/`eSet`/`eUnset`/`eIsSet`, `eBaseStructuralFeatureID`, `eInvoke` (`operationReflection`), minimal or complete reflective methods, and `toString`. It does not cover generic type parameters, compliance levels below 5.0, reflective, dynamic or virtual feature delegation, array accessors, packed enumeration flags, setting delegates, invariant operations with validation delegates, `suppressInterfaces` and the Google Web Toolkit platform.
 
-**Checking the output.** Two optional checks run when their environment variable is set. `EMF_REFERENCE_ROOT` names a checkout of the Eclipse Modeling Framework; the generated `BookCategory.java` of its extended library example is then compared with the committed source. `EMF_RUNTIME_CLASSPATH` names the EMF runtime jars; the generated Java is then compiled with `javac`. `Scripts/fetch-emf-runtime.sh [directory]` downloads the jars from Maven Central and prints the class path:
+**Checking the output.** Two optional checks run when their environment variable is set. `EMF_REFERENCE_ROOT` names a checkout of the Eclipse Modeling Framework; the generated enumeration, interfaces and implementation classes of its extended library example are then compared with the committed sources (`EMFJavaClassParityTests` lists the differences caused by manual edits of those sources). `EMF_RUNTIME_CLASSPATH` names the EMF runtime jars; the generated Java is then compiled with `javac`. `Scripts/fetch-emf-runtime.sh [directory]` downloads the jars from Maven Central and prints the class path:
 
 ```bash
 export EMF_RUNTIME_CLASSPATH="$(Scripts/fetch-emf-runtime.sh)"
@@ -277,6 +277,9 @@ Templates/java/
     JavaImports.mtl      imports and simple-name conflicts
     JavaDocumentation.mtl  documentation tags, literals and escapes
     EnumClass.mtl        the file of an enumeration
+    PackageClass.mtl     the package interface and implementation
+    PackageNames.mtl     queries for the package templates
+    SwitchClass.mtl, AdapterFactoryClass.mtl, ValidatorClass.mtl, JavaUtilities.mtl  the utility classes of a package
     TypeMapping.ecore    a small metamodel for the language data
     java-types.xmi       type table, reserved words and implicit types, an instance of it
 ```
@@ -303,6 +306,7 @@ Templates/java/
 - `dataModels` lists models that the templates read: the metamodel (`.ecore`) and an instance (`.xmi`) in the set. Templates reach the root objects with `templateData('name')`. The Java set keeps its type table, reserved words and implicit types this way, so they change without touching code.
 - `layout` says where files go by default. `sourceRootSetting` names a generator model setting that holds a source directory, such as `modelDirectory`; `includeSourceRoot` states whether it is part of the output location unless `--model-directory` decides otherwise.
 - `options.lineDelimiter` is the line delimiter written to files.
+- Templates can ask `layoutIncludesSourceRoot()` whether the output location is the source directory itself (`false`) or contains it (`true`). The Java set writes the plugin descriptor, bundle manifest, build properties and plugin properties of the model project, which belong to the parent of the source directory, only in the second case (`--model-directory`). An existing `plugin.xml`, `MANIFEST.MF` and plugin properties file is kept unless `--force-overwrite` is given; the build properties are replaced only while no `plugin.xml` exists (or with `--force-overwrite`), as in the Eclipse generator. Properties files are written in ISO-8859-1, with a Unicode escape for every character beyond it. Merging an existing `plugin.xml`, `MANIFEST.MF` or properties file by key is not supported. The templates use the file controls of the template engine for this: `create` mode, the `files=*.java` scope of the `[merge]` declaration, `merge=false`, `fileExists` and `forceOverwrite`.
 
 **Modules.** Modules are written in the Acceleo dialect of MTL that swift-mtl implements. The module header names the metamodels that the templates use (the generator metamodel `http://www.eclipse.org/emf/2002/GenModel` and the namespaces of the data models). Modules import each other by name (`[import JavaNames/]`); imports are not transitive, so every module imports what it uses. Each module can be replaced by a file of the same name in a `--template-path` directory.
 

@@ -1,0 +1,971 @@
+[comment encoding = UTF-8 /]
+[**
+ * The fields and methods of the features of a class.
+ *
+ * The templates here write, for one feature, the declarations of the interface or the fields and
+ * accessor methods of the implementation: getters, setters, the methods that keep inverse references
+ * in step, and the methods for features that can be unset.
+ **/]
+[module ClassFeature('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaImports/]
+[import JavaTypes/]
+[import JavaDocumentation/]
+[import ClassQueries/]
+[import ClassModelInfo/]
+
+[comment Names /]
+
+[**
+ * The text of the type of a feature, registering its imports.
+ **/]
+[template public featureType(genFeature : GenFeature)][if (genFeature.isFeatureMapFeature())][importedName(featureMapTypeName())/][elseif (genFeature.isMapFeature())][importedName('org.eclipse.emf.common.util.EMap')/]<[importedName(objectTypeName(qualifiedTypeName(genFeature.entryFeature('key').eType)))/], [importedName(objectTypeName(qualifiedTypeName(genFeature.entryFeature('value').eType)))/]>[else][genFeature.importedType()/][/if][/template]
+
+[**
+ * The text of the type of a feature for fields: the interface of a map or feature map type.
+ **/]
+[template public internalType(genFeature : GenFeature)][genFeature.featureType()/][/template]
+
+[**
+ * The text of the raw type that appears in a link to a setter: a list type without arguments is not needed here because setters are single valued.
+ **/]
+[template public rawFeatureType(genFeature : GenFeature)][if (genFeature.isMany())][importedName(genFeature.listTypeName())/][else][importedName(genFeature.itemTypeName())/][/if][/template]
+
+[**
+ * The text of the imported package interface name of a class.
+ **/]
+[template public packageInterface(genClass : GenClass)][importedName(genClass.genPackage().qualifiedPackageInterfaceName())/][/template]
+
+[**
+ * The Java constant that identifies a feature in the context of a class.
+ **/]
+[template public featureConstant(genClass : GenClass, genFeature : GenFeature)][genClass.packageInterface()/].[genClass.classifierIDName()/]__[genFeature.featureUpperName()/][/template]
+
+[**
+ * The Java expression that denotes the metaclass of a feature in the package interface.
+ **/]
+[template public featureLiteral(genFeature : GenFeature)][genFeature.genClass().packageInterface()/].Literals.[genFeature.genClass().classifierIDName()/]__[genFeature.featureUpperName()/][/template]
+
+[**
+ * The name of the field that holds the value of a feature, the default constant of a feature, and the flag constants.
+ **/]
+[query public eDefaultName(genFeature : GenFeature) : String = genFeature.featureUpperName() + '_EDEFAULT'/]
+
+[**
+ * The imported name of the interface of a class, without type arguments.
+ **/]
+[template public rawInterfaceName(genClass : GenClass)][importedName(genClass.internalInterfaceName())/][/template]
+
+[**
+ * The text that casts an expression to the runtime's internal object type if the type of the feature is a model class.
+ **/]
+[template public asInternalEObject(genFeature : GenFeature, expression : String, parenthesize : Boolean)][if (genFeature.hasClassType() and not genFeature.typeGenClass().genModel().isOn('suppressInterfaces'))][if (parenthesize)]([/if]([importedName('org.eclipse.emf.ecore.InternalEObject')/])[expression/][if (parenthesize)])[/if][else][expression/][/if][/template]
+
+[**
+ * The name of a feature as an expression of the runtime's base type, for calling eIsProxy.
+ **/]
+[template public safeNameAsEObject(genFeature : GenFeature)][if (genFeature.isEObjectExtensionFeature())][genFeature.localName()/][else](([importedName(eObjectTypeName())/])[genFeature.localName()/])[/if][/template]
+
+[**
+ * The cast to the runtime's base type that an expression needs before it is used as a model object.
+ **/]
+[template public eObjectCast(genFeature : GenFeature)][if (not genFeature.isEObjectExtensionFeature())]([importedName(eObjectTypeName())/])[/if][/template]
+
+[**
+ * The cast of a value to the internal type of the feature.
+ **/]
+[template public nonEObjectTypeCast(genFeature : GenFeature)][if (not genFeature.isEObjectFeature())]([genFeature.featureType()/])[/if][/template]
+
+[comment Default values /]
+
+[**
+ * The literal of the default value of an attribute in Java.
+ **/]
+[template public staticDefaultValue(genFeature : GenFeature)][let literal : OclAny = genFeature.ecoreFeature.defaultValueLiteral][let type : String = genFeature.itemTypeName()][if (genFeature.ecoreFeature.eType.oclIsKindOf(EEnum))][let genEnum : OclAny = genFeature.ecoreFeature.eType.genClassifier()][importedName(genEnum.qualifiedEnumName())/].[genEnum.defaultLiteralConstant(literal)/][/let][elseif (type = 'java.lang.String')][if (literal.oclIsUndefined())]null[else][javaStringLiteral(literal)/][/if][elseif (isBlank(literal))][zeroValue(type)/][elseif (type = 'boolean')][literal.toLowerCase()/][elseif (type = 'long')][literal/]L[elseif (type = 'float')][literal/]F[elseif (type = 'short')](short)[literal/][elseif (type = 'byte')](byte)[literal/][elseif (type = 'char')]'[literal/]'[elseif (type = 'double')][if (literal.contains('.') or literal.contains('E') or literal.contains('e'))][literal/][else][literal/].0[/if][elseif (isPrimitiveType(type))][literal/][else][genFeature.genClass().genPackage().qualifiedFactoryInstance()/].createFromString([genFeature.genClass().packageInterface()/].eINSTANCE.get[genFeature.ecoreFeature.eType.name/](), [javaStringLiteral(literal)/])[/if][/let][/let][/template]
+
+[**
+ * The constant of the enumeration literal that a default value denotes: the literal of that text, otherwise the first one.
+ **/]
+[query public defaultLiteralConstant(genEnum : GenEnum, literal : OclAny) : String = (if genEnum.genEnumLiterals->exists(l | l.ecoreEnumLiteral.literal = literal) then genEnum.genEnumLiterals->select(l | l.ecoreEnumLiteral.literal = literal)->first() else genEnum.genEnumLiterals->first() endif).enumLiteralInstanceConstantName()/]
+
+[**
+ * The expression that reaches the factory instance of a package.
+ **/]
+[query public qualifiedFactoryInstance(genPackage : GenPackage) : String = genPackage.interfacePackageName() + '.' + genPackage.factoryInterfaceName() + '.eINSTANCE'/]
+
+[comment Fields /]
+
+[**
+ * The fields that an implementation declares for a feature.
+ **/]
+[template public featureFields(genClass : GenClass, genFeature : GenFeature)]
+[if (genFeature.isMany() or genFeature.isReferenceType())]
+[if (genClass.isFieldOf(genFeature))]
+  /**
+   * The cached value of the '{@link #[genFeature.getterName()/]() <em>[genFeature.formattedFeatureName()/]</em>}' [genFeature.featureKind()/].
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @see #[genFeature.getterName()/]()
+[genFeature.apiLines('   * ')/]
+   * @generated
+   * @ordered
+   */
+[if (genFeature.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  protected [genFeature.internalType()/] [genFeature.localName()/];
+
+[/if]
+[else]
+[if (genFeature.hasEDefault())]
+  /**
+   * The default value of the '{@link #[genFeature.getterName()/]() <em>[genFeature.formattedFeatureName()/]</em>}' [genFeature.featureKind()/].
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @see #[genFeature.getterName()/]()
+[genFeature.apiLines('   * ')/]
+   * @generated
+   * @ordered
+   */
+[if (genFeature.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  protected static final [genFeature.featureType()/] [genFeature.eDefaultName()/] = [genFeature.staticDefaultValue()/];[nonNLS(genClass.genModel(), 1)/]
+
+[/if]
+[if (genClass.isFieldOf(genFeature))]
+[if (genClass.isFlagOf(genFeature))]
+  /**
+   * The flag representing the value of the '{@link #[genFeature.getterName()/]() <em>[genFeature.formattedFeatureName()/]</em>}' [genFeature.featureKind()/].
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @see #[genFeature.getterName()/]()
+[genFeature.apiLines('   * ')/]
+   * @generated
+   * @ordered
+   */
+[if (genFeature.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  protected static final int [genFeature.featureUpperName()/]_EFLAG = 1 << [(genClass.flagIndex(genFeature) - 32 * (genClass.flagIndex(genFeature) / 32)).toString()/];
+
+[else]
+  /**
+   * The cached value of the '{@link #[genFeature.getterName()/]() <em>[genFeature.formattedFeatureName()/]</em>}' [genFeature.featureKind()/].
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @see #[genFeature.getterName()/]()
+[genFeature.apiLines('   * ')/]
+   * @generated
+   * @ordered
+   */
+[if (genFeature.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  protected [genFeature.featureType()/] [genFeature.localName()/][if (genFeature.hasEDefault())] = [genFeature.eDefaultName()/][/if];
+
+[/if]
+[/if]
+[/if]
+[if (genClass.isESetFieldOf(genFeature))]
+[if (genClass.isESetFlagOf(genFeature))]
+  /**
+   * The flag representing whether the [genFeature.formattedFeatureName()/] [genFeature.featureKind()/] has been set.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[genFeature.apiLines('   * ')/]
+   * @generated
+   * @ordered
+   */
+  protected static final int [genFeature.featureUpperName()/]_ESETFLAG = 1 << [(genClass.eSetFlagIndex(genFeature) - 32 * (genClass.eSetFlagIndex(genFeature) / 32)).toString()/];
+
+[else]
+  /**
+   * This is true if the [genFeature.formattedFeatureName()/] [genFeature.featureKind()/] has been set.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[genFeature.apiLines('   * ')/]
+   * @generated
+   * @ordered
+   */
+[if (genFeature.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  protected boolean [genFeature.uncapName()/]ESet;
+
+[/if]
+[/if]
+[/template]
+
+[**
+ * The API tag lines of a feature for a documentation comment, each starting with the prefix; nothing if there are none.
+ **/]
+[template public apiLines(genFeature : GenFeature, prefix : String)]
+[if (ownAPITags(genFeature, genFeature.apiLink())->notEmpty())]
+[prefix/][ownAPITags(genFeature, genFeature.apiLink())->join('\n' + prefix)/]
+[/if]
+[/template]
+
+[**
+ * The API tag lines of an operation for a documentation comment, each starting with the prefix; nothing if there are none.
+ **/]
+[template public apiLines(genOperation : GenOperation, prefix : String)]
+[if (ownAPITags(genOperation, genOperation.apiLink())->notEmpty())]
+[prefix/][ownAPITags(genOperation, genOperation.apiLink())->join('\n' + prefix)/]
+[/if]
+[/template]
+
+[**
+ * The target of the link that the API tags of a feature point to: its getter.
+ **/]
+[query public apiLink(genFeature : GenFeature) : String = genFeature.genClass().internalInterfaceName().substituteAll('$', '.') + (if genFeature.genClass().isMapEntry() or genFeature.isSuppressedGetVisibility() then '' else '#' + genFeature.getterName() + '()' endif)/]
+
+[**
+ * The target of the link that the API tags of an operation point to: the operation itself.
+ **/]
+[query public apiLink(genOperation : GenOperation) : String = genOperation.genClass().internalInterfaceName().substituteAll('$', '.') + '#' + genOperation.name() + '(' + genOperation.genParameters->collect(p | qualifiedTypeName(p.ecoreParameter.eType))->join(', ') + ')'/]
+
+[**
+ * The API tags that an element's own documentation carries, as lines for a documentation comment: since, deprecated and noreference.
+ * A tag with text points to the link, if there is one, for details.
+ **/]
+[query public ownAPITags(element : OclAny, link : String) : OclAny = Sequence{if element.hasDocumentationTag('since') and element.documentationTagText('since').size() > 0 then '@since ' + element.documentationTagText('since') else '' endif, if element.hasDocumentationTag('deprecated') then '@deprecated' + (if element.documentationTagText('deprecated').size() = 0 then '' else (if link.size() > 0 then ' See {@link ' + link + ' model documentation} for details.' else ' ' + element.documentationTagText('deprecated') endif) endif) else '' endif, if element.hasDocumentationTag('noreference') then '@noreference' + (if element.documentationTagText('noreference').size() = 0 then '' else (if link.size() > 0 then ' See {@link ' + link + ' model documentation} for details.' else ' ' + element.documentationTagText('noreference') endif) endif) else '' endif}->select(l | l.size() > 0)/]
+
+[comment List constructors /]
+
+[**
+ * The expression that creates the list that holds the values of a many-valued feature.
+ **/]
+[template public listConstructor(genClass : GenClass, genFeature : GenFeature)][let unsettable : String = if genFeature.isUnsettableFeature() then '.Unsettable' else '' endif][if (genFeature.isMapFeature())]new [importedName('org.eclipse.emf.ecore.util.EcoreEMap')/][unsettable/]<[importedName(objectTypeName(qualifiedTypeName(genFeature.entryFeature('key').eType)))/],[importedName(objectTypeName(qualifiedTypeName(genFeature.entryFeature('value').eType)))/]>([genFeature.ecoreFeature.eType.genClassifier().qualifiedClassifierAccessor()/], [importedName(genFeature.ecoreFeature.eType.genClassifier().qualifiedClassName())/].class, this, [genClass.featureConstant(genFeature)/][if (genFeature.isBidirectional())], [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/][/if])[elseif (genFeature.isFeatureMapFeature())]new [importedName('org.eclipse.emf.ecore.util.BasicFeatureMap')/](this, [genClass.featureConstant(genFeature)/])[elseif (genClass.genModel().isSuppressNotification())]new [importedName('org.eclipse.emf.ecore.util.BasicInternalEList')/]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class)[elseif (genFeature.isEffectiveContains())][if (genFeature.isBidirectional())]new [importedName('org.eclipse.emf.ecore.util.EObjectContainmentWithInverseEList')/][unsettable/][if (genFeature.resolvesProxies())].Resolving[/if]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureConstant(genFeature)/], [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/])[else]new [importedName('org.eclipse.emf.ecore.util.EObjectContainmentEList')/][unsettable/][if (genFeature.resolvesProxies())].Resolving[/if]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureConstant(genFeature)/])[/if][elseif (genFeature.isReferenceType())][if (genFeature.isBidirectional())]new [importedName(if genFeature.resolvesProxies() then 'org.eclipse.emf.ecore.util.EObjectWithInverseResolvingEList' else 'org.eclipse.emf.ecore.util.EObjectWithInverseEList' endif)/][unsettable/][if (genFeature.reverseGenFeature().isListType())].ManyInverse[/if]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureConstant(genFeature)/], [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/])[else]new [importedName(if genFeature.resolvesProxies() then 'org.eclipse.emf.ecore.util.EObjectResolvingEList' else 'org.eclipse.emf.ecore.util.EObjectEList' endif)/][unsettable/]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureConstant(genFeature)/])[/if][else]new [importedName(if genFeature.ecoreFeature.unique then 'org.eclipse.emf.ecore.util.EDataTypeUniqueEList' else 'org.eclipse.emf.ecore.util.EDataTypeEList' endif)/][unsettable/]<[importedName(genFeature.listItemTypeName())/]>([importedName(genFeature.listItemTypeName())/].class, this, [genClass.featureConstant(genFeature)/])[/if][/let][/template]
+
+[comment Members /]
+
+[**
+ * The text of a notification of a change of a feature.
+ **/]
+[template public notificationClass()][importedName('org.eclipse.emf.ecore.impl.ENotificationImpl')/][/template]
+
+[**
+ * The declarations or methods for one feature.
+ **/]
+[template public featureMembers(genClass : GenClass, genFeature : GenFeature, isInterface : Boolean, isImplementation : Boolean)]
+[if (genFeature.isGetVisible(isImplementation))]
+[genClass.getterMember(genFeature, isInterface, isImplementation)/]
+[/if]
+[if (isImplementation and genFeature.isBasicGet())]
+[genClass.basicGetMember(genFeature)/]
+[/if]
+[if (isImplementation and genFeature.isBasicSet())]
+[genClass.basicSetMember(genFeature)/]
+[/if]
+[if (not genFeature.isMany() and genFeature.isChangeable() and (isImplementation or not genFeature.isSuppressedSetVisibility()))]
+[genClass.setterMember(genFeature, isInterface, isImplementation)/]
+[/if]
+[if (isImplementation and genFeature.isBasicUnset())]
+[genClass.basicUnsetMember(genFeature)/]
+[/if]
+[if (genFeature.isUnsettableFeature() and genFeature.isChangeable() and (isImplementation or not genFeature.isSuppressedUnsetVisibility()))]
+[genClass.unsetMember(genFeature, isInterface, isImplementation)/]
+[/if]
+[if (genFeature.isUnsettableFeature() and (isImplementation or not genFeature.isSuppressedIsSetVisibility()))]
+[genClass.isSetMember(genFeature, isInterface, isImplementation)/]
+[/if]
+[/template]
+
+[**
+ * Whether the getter of a feature is written: it is in the implementation, and in the interface unless suppressed.
+ **/]
+[query public isGetVisible(genFeature : GenFeature, isImplementation : Boolean) : Boolean = isImplementation or not genFeature.isSuppressedGetVisibility()/]
+
+[**
+ * The override annotation of a method, where the compliance level asks for one.
+ **/]
+[template public overrideAnnotation(genClass : GenClass, isInterface : Boolean, isImplementation : Boolean)]
+[if (genClass.genModel().useInterfaceOverrideAnnotation() and not (isInterface and isImplementation) and not genClass.isMapEntry())]
+  @Override
+[/if]
+[/template]
+
+[**
+ * The javadoc of the getter of a feature in an interface.
+ **/]
+[template public getterJavadoc(genClass : GenClass, genFeature : GenFeature)]
+[let genModel : GenModel = genClass.genModel()]
+  /**
+   * Returns the value of the '<em><b>[genFeature.formattedFeatureName()/]</b></em>' [genFeature.featureKind()/].
+[if (genFeature.isMany() and not genFeature.isMapFeature() and not genFeature.isFeatureMapFeature() or genFeature.isFeatureMapFeature())]
+   * The list contents are of type {@link [genFeature.listItemTypeName().substituteAll('$', '.')/]}.
+[elseif (genFeature.isMapFeature())]
+   * The key is of type {@link [qualifiedTypeName(genFeature.entryFeature('key').eType)/]},
+   * and the value is of type {@link [qualifiedTypeName(genFeature.entryFeature('value').eType)/]},
+[elseif (not genFeature.ecoreFeature.defaultValueLiteral.oclIsUndefined())]
+   * The default value is <code>[javaStringLiteral(genFeature.ecoreFeature.defaultValueLiteral)/]</code>.
+[/if]
+[if (genFeature.isEnumFeature())]
+   * The literals are from the enumeration {@link [genFeature.itemTypeName()/]}.
+[/if]
+[if (genFeature.isBidirectional() and not genFeature.reverseGenFeature().genClass().isMapEntry())]
+[if (not genFeature.reverseGenFeature().isSuppressedGetVisibility())]
+   * It is bidirectional and its opposite is '{@link [genFeature.reverseGenFeature().genClass().qualifiedInterfaceName()/]#[genFeature.reverseGenFeature().getterName()/] <em>[genFeature.reverseGenFeature().formattedFeatureName()/]</em>}'.
+[/if]
+[/if]
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[if (genFeature.hasDocumentation())]
+   * <!-- begin-model-doc -->
+   * [genFeature.documentation().indentLines('* ')/]
+   * <!-- end-model-doc -->
+[/if]
+   * @return the value of the '<em>[genFeature.formattedFeatureName()/]</em>' [genFeature.featureKind()/].
+[if (genFeature.isEnumFeature())]
+   * @see [genFeature.itemTypeName()/]
+[/if]
+[if (genFeature.isUnsettableFeature())]
+[if (not genFeature.isSuppressedIsSetVisibility())]
+   * @see #isSet[genFeature.accessorName()/]()
+[/if]
+[if (genFeature.isChangeable() and not genFeature.isSuppressedUnsetVisibility())]
+   * @see #unset[genFeature.accessorName()/]()
+[/if]
+[/if]
+[if (genFeature.isChangeable() and not genFeature.isMany() and not genFeature.isSuppressedSetVisibility())]
+   * @see #set[genFeature.accessorName()/]([genFeature.rawFeatureType()/])
+[/if]
+[if (not genModel.isOn('suppressEMFMetaData'))]
+   * @see [genClass.genPackage().qualifiedPackageInterfaceName()/]#get[genFeature.genClass().name()/]_[genFeature.capName()/]()
+[/if]
+[if (genFeature.isBidirectional() and not genFeature.reverseGenFeature().genClass().isMapEntry())]
+[if (not genFeature.reverseGenFeature().isSuppressedGetVisibility())]
+   * @see [genFeature.reverseGenFeature().genClass().qualifiedInterfaceName()/]#[genFeature.reverseGenFeature().getterName()/]
+[/if]
+[/if]
+[if (not genModel.isOn('suppressEMFModelTags'))]
+[genClass.modelTagLines('   * ', genFeature.modelInfo())/]
+[/if]
+   * @generated
+   */
+[/let]
+[/template]
+
+[**
+ * A plain documentation comment for a method of an implementation.
+ **/]
+[template public plainJavadoc(genFeature : GenFeature)]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[genFeature.apiLines('   * ')/]
+   * @generated
+   */
+[/template]
+
+[**
+ * The getter of a feature, in the interface or the implementation.
+ **/]
+[template public getterMember(genClass : GenClass, genFeature : GenFeature, isInterface : Boolean, isImplementation : Boolean)]
+[if (isInterface)]
+[genClass.getterJavadoc(genFeature)/]
+[else]
+[genFeature.plainJavadoc()/]
+[/if]
+[if (genFeature.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+[if (not isImplementation)]
+  [genFeature.featureType()/] [genFeature.getterName()/]();
+
+[else]
+[if (genClass.genModel().useInterfaceOverrideAnnotation() and not (isInterface and isImplementation) and not genClass.isMapEntry() and not genFeature.isSuppressedGetVisibility())]
+  @Override
+[/if]
+  public [genFeature.featureType()/] [genFeature.getterName()/]()
+  {
+[genClass.getterBody(genFeature)/]
+  }
+
+[/if]
+[/template]
+
+[**
+ * The statements of the body of a getter.
+ **/]
+[template public getterBody(genClass : GenClass, genFeature : GenFeature)]
+[if (not genFeature.isVolatile())]
+[if (genFeature.isMany())]
+    if ([genFeature.localName()/] == null)
+    {
+      [genFeature.localName()/] = [genClass.listConstructor(genFeature)/];
+    }
+    return [genFeature.localName()/];
+[elseif (genFeature.isContainer())]
+    if (eContainerFeatureID() != [genClass.featureConstant(genFeature)/]) return null;
+    return ([genFeature.featureType()/])[if (genFeature.resolvesProxies())]eContainer[else]eInternalContainer[/if]();
+[else]
+[if (genFeature.resolvesProxies())]
+    if ([genFeature.localName()/] != null && [genFeature.safeNameAsEObject()/].eIsProxy())
+    {
+      [importedName('org.eclipse.emf.ecore.InternalEObject')/] old[genFeature.capName()/] = [genFeature.asInternalEObject(genFeature.localName(), false)/];
+      [genFeature.localName()/] = [genFeature.nonEObjectTypeCast()/]eResolveProxy(old[genFeature.capName()/]);
+      if ([genFeature.localName()/] != old[genFeature.capName()/])
+      {
+[if (genFeature.isEffectiveContains())]
+        [importedName('org.eclipse.emf.ecore.InternalEObject')/] new[genFeature.capName()/] = [genFeature.asInternalEObject(genFeature.localName(), false)/];
+[if (not genFeature.isBidirectional())]
+        [importedName('org.eclipse.emf.common.notify.NotificationChain')/] msgs = old[genFeature.capName()/].eInverseRemove(this, EOPPOSITE_FEATURE_BASE - [genClass.featureConstant(genFeature)/], null, null);
+[else]
+        [importedName('org.eclipse.emf.common.notify.NotificationChain')/] msgs =  old[genFeature.capName()/].eInverseRemove(this, [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, null);
+[/if]
+        if (new[genFeature.capName()/].eInternalContainer() == null)
+        {
+[if (not genFeature.isBidirectional())]
+          msgs = new[genFeature.capName()/].eInverseAdd(this, EOPPOSITE_FEATURE_BASE - [genClass.featureConstant(genFeature)/], null, msgs);
+[else]
+          msgs =  new[genFeature.capName()/].eInverseAdd(this, [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
+[/if]
+        }
+        if (msgs != null) msgs.dispatch();
+[/if]
+[if (not genClass.genModel().isSuppressNotification())]
+        if (eNotificationRequired())
+          eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].RESOLVE, [genClass.featureConstant(genFeature)/], old[genFeature.capName()/], [genFeature.localName()/]));
+[/if]
+      }
+    }
+[/if]
+[if (genClass.isFlagOf(genFeature))]
+    return ([genClass.flagsField(genFeature)/] & [genFeature.featureUpperName()/]_EFLAG) != 0;
+[else]
+    return [genFeature.localName()/];
+[/if]
+[/if]
+[else]
+[if (genFeature.resolvesProxies() and not genFeature.isMany())]
+    [genFeature.featureType()/] [genFeature.localName()/] = basicGet[genFeature.accessorName()/]();
+    return [genFeature.localName()/] != null && [genFeature.safeNameAsEObject()/].eIsProxy() ? [genFeature.nonEObjectTypeCast()/]eResolveProxy([genFeature.asInternalEObject(genFeature.localName(), false)/]) : [genFeature.localName()/];
+[elseif (genFeature.hasDelegateFeature())]
+[if (genFeature.isFeatureMapFeature())]
+    return ([importedName(featureMapTypeName())/])get[genFeature.delegateFeature().accessorName()/]().<[importedName(featureMapTypeName())/].Entry>list([genFeature.featureLiteral()/]);
+[elseif (genFeature.isMany())]
+    return get[genFeature.delegateFeature().accessorName()/]().list([genFeature.featureLiteral()/]);
+[else]
+    return [if (not genFeature.ecoreFeature.eType.oclIsKindOf(EDataType) or true)]([genFeature.featureType()/])[/if]get[genFeature.delegateFeature().accessorName()/]().get([genFeature.featureLiteral()/], true);
+[/if]
+[elseif (genFeature.hasGetterBody())]
+    [genFeature.getterBodyText()/]
+[else]
+    // TODO: implement this method to return the '[genFeature.formattedFeatureName()/]' [genFeature.featureKind()/]
+    // Ensure that you remove @generated or mark it @generated NOT
+[if (genFeature.isMany())]
+    // The list is expected to implement org.eclipse.emf.ecore.util.InternalEList and org.eclipse.emf.ecore.EStructuralFeature.Setting
+    // so it's likely that an appropriate subclass of org.eclipse.emf.ecore.util.[if (genFeature.isMapFeature())]EcoreEMap[elseif (genFeature.isFeatureMapFeature())]BasicFeatureMap[else]EcoreEList[/if] should be used.
+[/if]
+    throw new UnsupportedOperationException();
+[/if]
+[/if]
+[/template]
+
+[**
+ * The text of the body that a feature supplies for its getter in the generator model.
+ **/]
+[query public getterBodyText(genFeature : GenFeature) : String = genFeature.genAnnotationText('get')/]
+
+[**
+ * Whether the generator model supplies a body for the getter of a feature.
+ **/]
+[query public hasGetterBody(genFeature : GenFeature) : Boolean = not isBlank(genFeature.genAnnotationText('get'))/]
+
+[**
+ * The text of a detail of the generator model annotation of the feature.
+ **/]
+[query public genAnnotationText(element : OclAny, key : String) : OclAny = element.annotationDetail(genModelNamespace(), key)/]
+
+[**
+ * The method that gets the value without resolving a proxy.
+ **/]
+[template public basicGetMember(genClass : GenClass, genFeature : GenFeature)]
+[genFeature.plainJavadoc()/]
+[if (genFeature.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  public [genFeature.featureType()/] basicGet[genFeature.accessorName()/]()
+  {
+[if (genFeature.isContainer())]
+    if (eContainerFeatureID() != [genClass.featureConstant(genFeature)/]) return null;
+    return ([genFeature.featureType()/])eInternalContainer();
+[elseif (not genFeature.isVolatile())]
+    return [genFeature.localName()/];
+[elseif (genFeature.hasDelegateFeature())]
+    return ([genFeature.featureType()/])get[genFeature.delegateFeature().accessorName()/]().get([genFeature.featureLiteral()/], false);
+[else]
+    // TODO: implement this method to return the '[genFeature.formattedFeatureName()/]' [genFeature.featureKind()/]
+    // -> do not perform proxy resolution
+    // Ensure that you remove @generated or mark it @generated NOT
+    throw new UnsupportedOperationException();
+[/if]
+  }
+
+[/template]
+
+[**
+ * The text that adds a notification to the chain of a basic setter.
+ **/]
+[template public basicSetMember(genClass : GenClass, genFeature : GenFeature)]
+[genFeature.plainJavadoc()/]
+[if (genFeature.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  public [importedName('org.eclipse.emf.common.notify.NotificationChain')/] basicSet[genFeature.accessorName()/]([genFeature.featureType()/] new[genFeature.capName()/], [importedName('org.eclipse.emf.common.notify.NotificationChain')/] msgs)
+  {
+[if (genFeature.isContainer())]
+    msgs = eBasicSetContainer([genFeature.asInternalEObject('new' + genFeature.capName(), false)/], [genClass.featureConstant(genFeature)/], msgs);
+    return msgs;
+[elseif (not genFeature.isVolatile())]
+    [genFeature.featureType()/] old[genFeature.capName()/] = [genFeature.localName()/];
+    [genFeature.localName()/] = new[genFeature.capName()/];
+[if (genFeature.isUnsettableFeature())]
+[if (genClass.isESetFlagOf(genFeature))]
+    boolean old[genFeature.capName()/]ESet = ([genClass.eSetFlagsField(genFeature)/] & [genFeature.featureUpperName()/]_ESETFLAG) != 0;
+[if (not genClass.genModel().isSuppressNotification())]
+    [genClass.eSetFlagsField(genFeature)/] |= [genFeature.featureUpperName()/]_ESETFLAG;
+[/if]
+[else]
+[if (not genClass.genModel().isSuppressNotification())]
+    boolean old[genFeature.capName()/]ESet = [genFeature.uncapName()/]ESet;
+[/if]
+    [genFeature.uncapName()/]ESet = true;
+[/if]
+[/if]
+[if (not genClass.genModel().isSuppressNotification())]
+    if (eNotificationRequired())
+    {
+[if (genFeature.isUnsettableFeature())]
+      [notificationClass()/] notification = new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureConstant(genFeature)/], old[genFeature.capName()/], new[genFeature.capName()/], !old[genFeature.capName()/]ESet);
+[else]
+      [notificationClass()/] notification = new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureConstant(genFeature)/], old[genFeature.capName()/], new[genFeature.capName()/]);
+[/if]
+      if (msgs == null) msgs = notification; else msgs.add(notification);
+    }
+[/if]
+    return msgs;
+[elseif (genFeature.hasDelegateFeature())]
+    return (([importedName(featureMapTypeName())/].Internal)get[genFeature.delegateFeature().accessorName()/]()).basicAdd([genFeature.featureLiteral()/], new[genFeature.capName()/], msgs);
+[else]
+    // TODO: implement this method to set the contained '[genFeature.formattedFeatureName()/]' [genFeature.featureKind()/]
+    // -> this method is automatically invoked to keep the containment relationship in synch
+    // -> do not modify other features
+    // -> return msgs, after adding any generated Notification to it (if it is null, a NotificationChain object must be created first)
+    // Ensure that you remove @generated or mark it @generated NOT
+    throw new UnsupportedOperationException();
+[/if]
+  }
+
+[/template]
+
+[**
+ * The notification statement of a set change.
+ **/]
+[template public setNotification(genClass : GenClass, genFeature : GenFeature, oldValue : String, newValue : String, extra : String)]
+[if (not genClass.genModel().isSuppressNotification())]
+    if (eNotificationRequired())
+      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureConstant(genFeature)/], [oldValue/], [newValue/][extra/]));
+[/if]
+[/template]
+
+[**
+ * The setter of a feature, in the interface or the implementation.
+ **/]
+[template public setterMember(genClass : GenClass, genFeature : GenFeature, isInterface : Boolean, isImplementation : Boolean)]
+[if (isInterface)]
+  /**
+   * Sets the value of the '{@link [genClass.qualifiedInterfaceName()/]#[genFeature.getterName()/] <em>[genFeature.formattedFeatureName()/]</em>}' [genFeature.featureKind()/].
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @param [if (isImplementation)]new[genFeature.capName()/][else]value[/if] the new value of the '<em>[genFeature.formattedFeatureName()/]</em>' [genFeature.featureKind()/].
+[if (genFeature.isEnumFeature())]
+   * @see [genFeature.itemTypeName()/]
+[/if]
+[if (genFeature.isUnsettableFeature())]
+[if (not genFeature.isSuppressedIsSetVisibility())]
+   * @see #isSet[genFeature.accessorName()/]()
+[/if]
+[if (not genFeature.isSuppressedUnsetVisibility())]
+   * @see #unset[genFeature.accessorName()/]()
+[/if]
+[/if]
+   * @see #[genFeature.getterName()/]()
+[genFeature.apiLines('   * ')/]
+   * @generated
+   */
+[else]
+[genFeature.plainJavadoc()/]
+[/if]
+[if (genFeature.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+[if (not isImplementation)]
+  void set[genFeature.accessorName()/]([genFeature.featureType()/] value);
+
+[else]
+[if (genClass.genModel().useInterfaceOverrideAnnotation() and not (isInterface and isImplementation) and not genClass.isMapEntry() and not genFeature.isSuppressedSetVisibility())]
+  @Override
+[/if]
+  public void set[genFeature.accessorName()/]([genFeature.featureType()/] new[genFeature.capName()/])
+  {
+[genClass.setterBody(genFeature)/]
+  }
+
+[/if]
+[/template]
+
+[**
+ * The statements of the body of a setter.
+ **/]
+[template public setterBody(genClass : GenClass, genFeature : GenFeature)]
+[let capName : String = genFeature.capName()]
+[let field : String = genFeature.localName()]
+[let newName : String = 'new' + genFeature.capName()]
+[if (not genFeature.isVolatile())]
+[if (genFeature.isContainer())]
+    if ([newName/] != eInternalContainer() || (eContainerFeatureID() != [genClass.featureConstant(genFeature)/] && [newName/] != null))
+    {
+      if ([importedName('org.eclipse.emf.ecore.util.EcoreUtil')/].isAncestor(this, [genFeature.eObjectCast()/][newName/]))
+        throw new [importedName('java.lang.IllegalArgumentException')/]("Recursive containment not allowed for " + toString());[nonNLS(genClass.genModel(), 1)/]
+      [importedName('org.eclipse.emf.common.notify.NotificationChain')/] msgs = null;
+      if (eInternalContainer() != null)
+        msgs = eBasicRemoveFromContainer(msgs);
+      if ([newName/] != null)
+        msgs = [genFeature.asInternalEObject(newName, true)/].eInverseAdd(this, [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
+      msgs = basicSet[genFeature.accessorName()/]([newName/], msgs);
+      if (msgs != null) msgs.dispatch();
+    }
+[if (not genClass.genModel().isSuppressNotification())]
+    else if (eNotificationRequired())
+      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureConstant(genFeature)/], [newName/], [newName/]));
+[/if]
+[elseif (genFeature.isBidirectional() or genFeature.isEffectiveContains())]
+    if ([newName/] != [field/])
+    {
+      [importedName('org.eclipse.emf.common.notify.NotificationChain')/] msgs = null;
+      if ([field/] != null)
+[if (not genFeature.isBidirectional())]
+        msgs = [genFeature.asInternalEObject(field, true)/].eInverseRemove(this, EOPPOSITE_FEATURE_BASE - [genClass.featureConstant(genFeature)/], null, msgs);
+      if ([newName/] != null)
+        msgs = [genFeature.asInternalEObject(newName, true)/].eInverseAdd(this, EOPPOSITE_FEATURE_BASE - [genClass.featureConstant(genFeature)/], null, msgs);
+[else]
+        msgs = [genFeature.asInternalEObject(field, true)/].eInverseRemove(this, [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
+      if ([newName/] != null)
+        msgs = [genFeature.asInternalEObject(newName, true)/].eInverseAdd(this, [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
+[/if]
+      msgs = basicSet[genFeature.accessorName()/]([newName/], msgs);
+      if (msgs != null) msgs.dispatch();
+    }
+[if (genFeature.isUnsettableFeature())]
+    else
+    {
+[if (genClass.isESetFlagOf(genFeature))]
+[if (not genClass.genModel().isSuppressNotification())]
+      boolean old[capName/]ESet = ([genClass.eSetFlagsField(genFeature)/] & [genFeature.featureUpperName()/]_ESETFLAG) != 0;
+[/if]
+      [genClass.eSetFlagsField(genFeature)/] |= [genFeature.featureUpperName()/]_ESETFLAG;
+[else]
+[if (not genClass.genModel().isSuppressNotification())]
+      boolean old[capName/]ESet = [genFeature.uncapName()/]ESet;
+[/if]
+      [genFeature.uncapName()/]ESet = true;
+[/if]
+[if (not genClass.genModel().isSuppressNotification())]
+      if (eNotificationRequired())
+        eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureConstant(genFeature)/], [newName/], [newName/], !old[capName/]ESet));
+[/if]
+    }
+[elseif (not genClass.genModel().isSuppressNotification())]
+    else if (eNotificationRequired())
+      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureConstant(genFeature)/], [newName/], [newName/]));
+[/if]
+[else]
+[if (genClass.isFlagOf(genFeature))]
+[if (not genClass.genModel().isSuppressNotification())]
+    [genFeature.featureType()/] old[capName/] = ([genClass.flagsField(genFeature)/] & [genFeature.featureUpperName()/]_EFLAG) != 0;
+[/if]
+    if ([newName/]) [genClass.flagsField(genFeature)/] |= [genFeature.featureUpperName()/]_EFLAG; else [genClass.flagsField(genFeature)/] &= ~[genFeature.featureUpperName()/]_EFLAG;
+[else]
+[if (not genClass.genModel().isSuppressNotification())]
+    [genFeature.featureType()/] old[capName/] = [field/];
+[/if]
+[if (genFeature.isEnumFeature())]
+    [field/] = [newName/] == null ? [genFeature.eDefaultName()/] : [newName/];
+[else]
+    [field/] = [newName/];
+[/if]
+[/if]
+[if (genFeature.isUnsettableFeature())]
+[if (genClass.isESetFlagOf(genFeature))]
+[if (not genClass.genModel().isSuppressNotification())]
+    boolean old[capName/]ESet = ([genClass.eSetFlagsField(genFeature)/] & [genFeature.featureUpperName()/]_ESETFLAG) != 0;
+[/if]
+    [genClass.eSetFlagsField(genFeature)/] |= [genFeature.featureUpperName()/]_ESETFLAG;
+[else]
+[if (not genClass.genModel().isSuppressNotification())]
+    boolean old[capName/]ESet = [genFeature.uncapName()/]ESet;
+[/if]
+    [genFeature.uncapName()/]ESet = true;
+[/if]
+[if (not genClass.genModel().isSuppressNotification())]
+    if (eNotificationRequired())
+      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureConstant(genFeature)/], old[capName/], [if (genClass.isFlagOf(genFeature))][newName/][else][field/][/if], !old[capName/]ESet));
+[/if]
+[elseif (not genClass.genModel().isSuppressNotification())]
+    if (eNotificationRequired())
+      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].SET, [genClass.featureConstant(genFeature)/], old[capName/], [if (genClass.isFlagOf(genFeature))][newName/][else][field/][/if]));
+[/if]
+[/if]
+[elseif (genFeature.hasDelegateFeature())]
+    (([importedName(featureMapTypeName())/].Internal)get[genFeature.delegateFeature().accessorName()/]()).set([genFeature.featureLiteral()/], [newName/]);
+[else]
+    // TODO: implement this method to set the '[genFeature.formattedFeatureName()/]' [genFeature.featureKind()/]
+    // Ensure that you remove @generated or mark it @generated NOT
+    throw new UnsupportedOperationException();
+[/if]
+[/let]
+[/let]
+[/let]
+[/template]
+
+[**
+ * The method that unsets a reference and returns the notifications.
+ **/]
+[template public basicUnsetMember(genClass : GenClass, genFeature : GenFeature)]
+[genFeature.plainJavadoc()/]
+[if (genFeature.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  public [importedName('org.eclipse.emf.common.notify.NotificationChain')/] basicUnset[genFeature.accessorName()/]([importedName('org.eclipse.emf.common.notify.NotificationChain')/] msgs)
+  {
+[if (not genFeature.isVolatile())]
+[if (not genClass.genModel().isSuppressNotification())]
+    [genFeature.featureType()/] old[genFeature.capName()/] = [genFeature.localName()/];
+[/if]
+    [genFeature.localName()/] = null;
+[if (genClass.isESetFlagOf(genFeature))]
+[if (not genClass.genModel().isSuppressNotification())]
+    boolean old[genFeature.capName()/]ESet = ([genClass.eSetFlagsField(genFeature)/] & [genFeature.featureUpperName()/]_ESETFLAG) != 0;
+[/if]
+    [genClass.eSetFlagsField(genFeature)/] &= ~[genFeature.featureUpperName()/]_ESETFLAG;
+[else]
+[if (not genClass.genModel().isSuppressNotification())]
+    boolean old[genFeature.capName()/]ESet = [genFeature.uncapName()/]ESet;
+[/if]
+    [genFeature.uncapName()/]ESet = false;
+[/if]
+[if (not genClass.genModel().isSuppressNotification())]
+    if (eNotificationRequired())
+    {
+      [notificationClass()/] notification = new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].UNSET, [genClass.featureConstant(genFeature)/], old[genFeature.capName()/], null, old[genFeature.capName()/]ESet);
+      if (msgs == null) msgs = notification; else msgs.add(notification);
+    }
+    return msgs;
+[/if]
+[else]
+    // TODO: implement this method to unset the contained '[genFeature.formattedFeatureName()/]' [genFeature.featureKind()/]
+    // -> this method is automatically invoked to keep the containment relationship in synch
+    // -> do not modify other features
+    // -> return msgs, after adding any generated Notification to it (if it is null, a NotificationChain object must be created first)
+    // Ensure that you remove @generated or mark it @generated NOT
+    throw new UnsupportedOperationException();
+[/if]
+  }
+
+[/template]
+
+[**
+ * The method that unsets a feature, in the interface or the implementation.
+ **/]
+[template public unsetMember(genClass : GenClass, genFeature : GenFeature, isInterface : Boolean, isImplementation : Boolean)]
+[if (isInterface)]
+  /**
+   * Unsets the value of the '{@link [genClass.qualifiedInterfaceName()/]#[genFeature.getterName()/] <em>[genFeature.formattedFeatureName()/]</em>}' [genFeature.featureKind()/].
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+[if (not genFeature.isSuppressedIsSetVisibility())]
+   * @see #isSet[genFeature.accessorName()/]()
+[/if]
+   * @see #[genFeature.getterName()/]()
+[if (not genFeature.isMany() and not genFeature.isSuppressedSetVisibility())]
+   * @see #set[genFeature.accessorName()/]([genFeature.rawFeatureType()/])
+[/if]
+[genFeature.apiLines('   * ')/]
+   * @generated
+   */
+[else]
+[genFeature.plainJavadoc()/]
+[/if]
+[if (genFeature.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+[if (not isImplementation)]
+  void unset[genFeature.accessorName()/]();
+
+[else]
+[if (genClass.genModel().useInterfaceOverrideAnnotation() and not (isInterface and isImplementation) and not genClass.isMapEntry() and not genFeature.isSuppressedUnsetVisibility())]
+  @Override
+[/if]
+  public void unset[genFeature.accessorName()/]()
+  {
+[genClass.unsetBody(genFeature)/]
+  }
+
+[/if]
+[/template]
+
+[**
+ * The statements of the body of an unset method.
+ **/]
+[template public unsetBody(genClass : GenClass, genFeature : GenFeature)]
+[let capName : String = genFeature.capName()]
+[let field : String = genFeature.localName()]
+[if (not genFeature.isVolatile())]
+[if (genFeature.isMany())]
+    if ([field/] != null) (([importedName('org.eclipse.emf.ecore.util.InternalEList')/].Unsettable<?>)[field/]).unset();
+[elseif (genFeature.isBidirectional() or genFeature.isEffectiveContains())]
+    if ([field/] != null)
+    {
+      [importedName('org.eclipse.emf.common.notify.NotificationChain')/] msgs = null;
+[if (not genFeature.isBidirectional())]
+      msgs = [genFeature.asInternalEObject(field, true)/].eInverseRemove(this, EOPPOSITE_FEATURE_BASE - [genClass.featureConstant(genFeature)/], null, msgs);
+[else]
+      msgs = [genFeature.asInternalEObject(field, true)/].eInverseRemove(this, [genFeature.reverseGenFeature().genClass().featureConstant(genFeature.reverseGenFeature())/], [genFeature.reverseGenFeature().genClass().rawInterfaceName()/].class, msgs);
+[/if]
+      msgs = basicUnset[genFeature.accessorName()/](msgs);
+      if (msgs != null) msgs.dispatch();
+    }
+    else
+    {
+[if (genClass.isESetFlagOf(genFeature))]
+[if (not genClass.genModel().isSuppressNotification())]
+      boolean old[capName/]ESet = ([genClass.eSetFlagsField(genFeature)/] & [genFeature.featureUpperName()/]_ESETFLAG) != 0;
+[/if]
+      [genClass.eSetFlagsField(genFeature)/] &= ~[genFeature.featureUpperName()/]_ESETFLAG;
+[else]
+[if (not genClass.genModel().isSuppressNotification())]
+      boolean old[capName/]ESet = [genFeature.uncapName()/]ESet;
+[/if]
+      [genFeature.uncapName()/]ESet = false;
+[/if]
+[if (not genClass.genModel().isSuppressNotification())]
+      if (eNotificationRequired())
+        eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].UNSET, [genClass.featureConstant(genFeature)/], null, null, old[capName/]ESet));
+[/if]
+    }
+[else]
+[if (genClass.isFlagOf(genFeature))]
+[if (not genClass.genModel().isSuppressNotification())]
+    [genFeature.featureType()/] old[capName/] = ([genClass.flagsField(genFeature)/] & [genFeature.featureUpperName()/]_EFLAG) != 0;
+[/if]
+[elseif (not genClass.genModel().isSuppressNotification())]
+    [genFeature.featureType()/] old[capName/] = [field/];
+[/if]
+[if (not genClass.genModel().isSuppressNotification())]
+[if (genClass.isESetFlagOf(genFeature))]
+    boolean old[capName/]ESet = ([genClass.eSetFlagsField(genFeature)/] & [genFeature.featureUpperName()/]_ESETFLAG) != 0;
+[else]
+    boolean old[capName/]ESet = [genFeature.uncapName()/]ESet;
+[/if]
+[/if]
+[if (genFeature.isReferenceType())]
+    [field/] = null;
+[if (genClass.isESetFlagOf(genFeature))]
+    [genClass.eSetFlagsField(genFeature)/] &= ~[genFeature.featureUpperName()/]_ESETFLAG;
+[else]
+    [genFeature.uncapName()/]ESet = false;
+[/if]
+[if (not genClass.genModel().isSuppressNotification())]
+    if (eNotificationRequired())
+      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].UNSET, [genClass.featureConstant(genFeature)/], old[capName/], null, old[capName/]ESet));
+[/if]
+[else]
+[if (genClass.isFlagOf(genFeature))]
+    if ([genFeature.eDefaultName()/]) [genClass.flagsField(genFeature)/] |= [genFeature.featureUpperName()/]_EFLAG; else [genClass.flagsField(genFeature)/] &= ~[genFeature.featureUpperName()/]_EFLAG;
+[else]
+    [field/] = [genFeature.eDefaultName()/];
+[/if]
+[if (genClass.isESetFlagOf(genFeature))]
+    [genClass.eSetFlagsField(genFeature)/] &= ~[genFeature.featureUpperName()/]_ESETFLAG;
+[else]
+    [genFeature.uncapName()/]ESet = false;
+[/if]
+[if (not genClass.genModel().isSuppressNotification())]
+    if (eNotificationRequired())
+      eNotify(new [notificationClass()/](this, [importedName('org.eclipse.emf.common.notify.Notification')/].UNSET, [genClass.featureConstant(genFeature)/], old[capName/], [genFeature.eDefaultName()/], old[capName/]ESet));
+[/if]
+[/if]
+[/if]
+[elseif (genFeature.hasDelegateFeature())]
+    (([importedName(featureMapTypeName())/].Internal)get[genFeature.delegateFeature().accessorName()/]()).clear([genFeature.featureLiteral()/]);
+[else]
+    // TODO: implement this method to unset the '[genFeature.formattedFeatureName()/]' [genFeature.featureKind()/]
+    // Ensure that you remove @generated or mark it @generated NOT
+    throw new UnsupportedOperationException();
+[/if]
+[/let]
+[/let]
+[/template]
+
+[**
+ * The method that tells whether a feature is set, in the interface or the implementation.
+ **/]
+[template public isSetMember(genClass : GenClass, genFeature : GenFeature, isInterface : Boolean, isImplementation : Boolean)]
+[if (isInterface)]
+  /**
+   * Returns whether the value of the '{@link [genClass.qualifiedInterfaceName()/]#[genFeature.getterName()/] <em>[genFeature.formattedFeatureName()/]</em>}' [genFeature.featureKind()/] is set.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @return whether the value of the '<em>[genFeature.formattedFeatureName()/]</em>' [genFeature.featureKind()/] is set.
+[if (genFeature.isChangeable() and not genFeature.isSuppressedUnsetVisibility())]
+   * @see #unset[genFeature.accessorName()/]()
+[/if]
+   * @see #[genFeature.getterName()/]()
+[if (not genFeature.isMany() and genFeature.isChangeable() and not genFeature.isSuppressedSetVisibility())]
+   * @see #set[genFeature.accessorName()/]([genFeature.rawFeatureType()/])
+[/if]
+[genFeature.apiLines('   * ')/]
+   * @generated
+   */
+[else]
+[genFeature.plainJavadoc()/]
+[/if]
+[if (genFeature.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+[if (not isImplementation)]
+  boolean isSet[genFeature.accessorName()/]();
+
+[else]
+[if (genClass.genModel().useInterfaceOverrideAnnotation() and not (isInterface and isImplementation) and not genClass.isMapEntry() and not genFeature.isSuppressedIsSetVisibility())]
+  @Override
+[/if]
+  public boolean isSet[genFeature.accessorName()/]()
+  {
+[if (not genFeature.isVolatile())]
+[if (genFeature.isMany())]
+    return [genFeature.localName()/] != null && (([importedName('org.eclipse.emf.ecore.util.InternalEList')/].Unsettable<?>)[genFeature.localName()/]).isSet();
+[elseif (genClass.isESetFlagOf(genFeature))]
+    return ([genClass.eSetFlagsField(genFeature)/] & [genFeature.featureUpperName()/]_ESETFLAG) != 0;
+[else]
+    return [genFeature.uncapName()/]ESet;
+[/if]
+[elseif (genFeature.hasDelegateFeature())]
+    return !(([importedName(featureMapTypeName())/].Internal)get[genFeature.delegateFeature().accessorName()/]()).isEmpty([genFeature.featureLiteral()/]);
+[else]
+    // TODO: implement this method to return whether the '[genFeature.formattedFeatureName()/]' [genFeature.featureKind()/] is set
+    // Ensure that you remove @generated or mark it @generated NOT
+    throw new UnsupportedOperationException();
+[/if]
+  }
+
+[/if]
+[/template]
+
+[**
+ * The Java expression that denotes the metaclass of a class in the package interface.
+ **/]
+[template public qualifiedClassifierAccessor(genClass : GenClass)][genClass.packageInterface()/].Literals.[genClass.classifierIDName()/][/template]

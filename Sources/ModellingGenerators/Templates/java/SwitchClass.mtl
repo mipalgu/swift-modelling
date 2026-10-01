@@ -1,0 +1,203 @@
+[comment encoding = UTF-8 /]
+[**
+ * The Java file of the switch of a generator package.
+ *
+ * The switch class extends the switch class of the runtime and is generic in its result type. It offers
+ * one case method for each class that the package declares or inherits, and calls the case methods of
+ * a class and of all its super types, nearest first, until one returns a result.
+ *
+ * This template writes the form for the runtime versions that have the switch class of the runtime
+ * (2.7 and later) at any compliance level, and the generic form from compliance level 5.0.
+ * Classes that map to external interfaces and generic super types with bounds are not specialised.
+ **/]
+[module SwitchClass('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaImports/]
+[import JavaTypes/]
+[import JavaDocumentation/]
+[import JavaUtilities/]
+[import Header/]
+
+[**
+ * The name of the type parameter of a switch: T, or T followed by a number if a class or an enumeration of the package already uses it.
+ **/]
+[query public switchTypeParameterName(genPackage : GenPackage) : String = if genPackage.genModel().useGenerics() then freeTypeParameterName(genPackage, 'T', 0) else '' endif/]
+
+[query freeTypeParameterName(genPackage : GenPackage, candidate : String, number : Integer) : String = if usedSwitchNames(genPackage)->includes(candidate) then freeTypeParameterName(genPackage, 'T' + (number + 1).toString(), number + 1) else candidate endif/]
+
+[query usedSwitchNames(genPackage : GenPackage) : OclAny = genPackage.genEnums->collect(e | e.name())->union(genPackage.allSwitchGenClasses()->collect(c | c.name()))->union(genPackage.allSwitchGenClasses()->collect(c | c.genTypeParameters->collect(t | t.name()))->flatten())/]
+
+[**
+ * The complete text of the file that declares the switch of a generator package.
+ **/]
+[template public switchClass(genPackage : GenPackage)]
+[let genModel : GenModel = genPackage.genModel()]
+[let parameter : String = genPackage.switchTypeParameterName()]
+[let parameters : String = if genModel.useGenerics() then '<' + parameter + '>' else '' endif]
+[let returnType : String = if genModel.useGenerics() then parameter else 'Object' endif]
+[collect ('imports', genPackage.qualifiedSwitchClassName())/]
+[collect ('imports', Sequence{'org.eclipse.emf.ecore.EObject', 'org.eclipse.emf.ecore.EPackage', 'org.eclipse.emf.ecore.util.Switch'})/]
+[if (genPackage.usesInterfaceWildcard())]
+[collect ('imports', genPackage.interfacePackageName() + '.*')/]
+[/if]
+[header(genPackage)/]
+package [genPackage.utilitiesPackageName()/];
+
+
+[emit ('imports') once][importBlock(items)/][/emit]
+
+/**
+ * <!-- begin-user-doc -->
+ * The <b>Switch</b> for the model's inheritance hierarchy.
+ * It supports the call {@link #doSwitch(EObject) doSwitch(object)}
+ * to invoke the <code>caseXXX</code> method for each class of the model,
+ * starting with the actual class of the object
+ * and proceeding up the inheritance hierarchy
+ * until a non-null result is returned,
+ * which is the result of the switch.
+ * <!-- end-user-doc -->
+ * @see [genPackage.qualifiedPackageInterfaceName()/]
+[if (genPackage.hasOwnAPITags())]
+[genPackage.apiTagLines(' * ')/]
+[/if]
+ * @generated
+ */
+[if (genModel.complianceLevel() >= 5.0 and genPackage.hasAPIDeprecatedTag())]
+@Deprecated
+[elseif (genModel.complianceLevel() >= 5.0 and anyDeprecated(genPackage.genClasses))]
+@SuppressWarnings("deprecation")
+[/if]
+public class [genPackage.switchClassName()/][parameters/] extends [importedName('org.eclipse.emf.ecore.util.Switch')/][parameters/]
+{
+[if (genModel.hasCopyrightField())]
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public static final [importedName('java.lang.String')/] copyright = [genModel.copyrightFieldLiteral()/];[nonNLS(genModel, 1)/]
+
+[/if]
+  /**
+   * The cached model package
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  protected static [genPackage.utilityPackageName()/] modelPackage;
+
+  /**
+   * Creates an instance of the switch.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public [genPackage.switchClassName()/]()
+  {
+    if (modelPackage == null)
+    {
+      modelPackage = [genPackage.utilityPackageName()/].eINSTANCE;
+    }
+  }
+
+  /**
+   * Checks whether this is a switch for the given package.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @param ePackage the package in question.
+   * @return whether this is a switch for the given package.
+   * @generated
+   */
+  @Override
+  protected boolean isSwitchFor([importedName('org.eclipse.emf.ecore.EPackage')/] ePackage)
+  {
+    return ePackage == modelPackage;
+  }
+
+  /**
+   * Calls <code>caseXXX</code> for each class of the model until one returns a non null result; it yields that result.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @return the first non-null result returned by a <code>caseXXX</code> call.
+   * @generated
+   */
+  @Override
+  protected [returnType/] doSwitch(int classifierID, [importedName('org.eclipse.emf.ecore.EObject')/] theEObject)
+  {
+    switch (classifierID)
+    {
+[for (genClass : GenClass | genPackage.genClasses)]
+[if (not isEObjectClass(genClass))]
+      case [genPackage.utilityPackageName()/].[genClass.classifierIDName()/]:
+      {
+        [if (genClass.isMapEntry and genModel.complianceLevel() >= 5.0)]@SuppressWarnings("unchecked") [/if][genPackage.utilityTypeName(genClass)/][genClass.interfaceWildTypeArguments()/] [genClass.safeInstanceName()/] = ([genPackage.utilityTypeName(genClass)/][genClass.interfaceWildTypeArguments()/])theEObject;
+        [returnType/] [genClass.switchResultName()/] = case[genPackage.classUniqueName(genClass)/]([genClass.safeInstanceName()/]);
+[for (baseGenClass : GenClass | genClass.switchGenClasses())]
+        if ([genClass.switchResultName()/] == null) [genClass.switchResultName()/] = case[genPackage.classUniqueName(baseGenClass)/]([if (genClass.isMapEntry)]([genPackage.utilityTypeName(baseGenClass)/][baseGenClass.interfaceTypeArguments()/])[/if][genClass.safeInstanceName()/]);
+[/for]
+        if ([genClass.switchResultName()/] == null) [genClass.switchResultName()/] = defaultCase(theEObject);
+        return [genClass.switchResultName()/];
+      }
+[/if]
+[/for]
+      default: return defaultCase(theEObject);
+    }
+  }
+[for (genClass : GenClass | genPackage.allSwitchGenClasses())]
+
+  /**
+   * Returns the result of interpreting the object as an instance of '<em>[genClass.formattedClassifierName()/]</em>'.
+   * <!-- begin-user-doc -->
+   * This implementation returns null;
+   * returning a non-null result will terminate the switch.
+   * <!-- end-user-doc -->
+   * @param object the target of the switch.
+   * @return the result of interpreting the object as an instance of '<em>[genClass.formattedClassifierName()/]</em>'.
+   * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
+[if (genClass.hasOwnAPITags())]
+[genClass.apiTagLines('   * ')/]
+[/if]
+   * @generated
+   */
+[if (genModel.complianceLevel() >= 5.0 and genClass.hasAPIDeprecatedTag())]
+  @Deprecated
+[/if]
+  public [genClass.typeParameters()/][returnType/] case[genPackage.classUniqueName(genClass)/]([genPackage.utilityTypeName(genClass)/][genClass.interfaceTypeArguments()/] object)
+  {
+    return null;
+  }
+[/for]
+
+  /**
+   * Returns the result of interpreting the object as an instance of '<em>EObject</em>'.
+   * <!-- begin-user-doc -->
+   * This implementation returns null;
+   * returning a non-null result will terminate the switch, but this is the last case anyway.
+   * <!-- end-user-doc -->
+   * @param object the target of the switch.
+   * @return the result of interpreting the object as an instance of '<em>EObject</em>'.
+   * @see #doSwitch(org.eclipse.emf.ecore.EObject)
+   * @generated
+   */
+  @Override
+  public [returnType/] defaultCase([importedName('org.eclipse.emf.ecore.EObject')/] object)
+  {
+    return null;
+  }
+
+} //[genPackage.switchClassName()/]
+[/let]
+[/let]
+[/let]
+[/let]
+[/template]
+
+[**
+ * The name of the local variable that holds an object cast to its class: the uncapitalised class name, escaped where it is a reserved word.
+ **/]
+[query public safeInstanceName(genClass : GenClass) : String = safeName(genClass.name().uncapPrefixedName())/]
+
+[**
+ * The name of the local variable that holds the result of a case chain; it differs from the variable of the object.
+ **/]
+[query public switchResultName(genClass : GenClass) : String = if genClass.safeInstanceName() = 'result' then 'theResult' else 'result' endif/]

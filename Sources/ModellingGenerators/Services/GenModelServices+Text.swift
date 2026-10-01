@@ -42,7 +42,7 @@ extension GenModelServices {
             },
             AQLService(Name.detailKeys, receiver: .custom { $0 is EAnnotation }) { call in
                 let annotation = call.receiver as? EAnnotation
-                return AQLValues.collection((annotation?.details.keys.sorted() ?? []).map { $0 })
+                return AQLValues.collection((annotation.map { Array($0.details.keys) } ?? []).map { $0 })
             },
             AQLService(Name.detailValue, receiver: .custom { $0 is EAnnotation }, arity: 1) { call in
                 (call.receiver as? EAnnotation)?.details[try call.string(0)]

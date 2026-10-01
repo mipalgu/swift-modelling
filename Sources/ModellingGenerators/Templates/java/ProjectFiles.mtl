@@ -1,0 +1,82 @@
+[comment encoding = UTF-8 /]
+[**
+ * Writes the resource classes of packages and the project files of a generator model.
+ *
+ * Packages write their XML processor (resource kind XML and classifiers present), resource factory and
+ * resource (resource kind not None) into the utilities package. A generator model writes its plugin class
+ * when it names one, and, if the output location includes the source directory so that the project directory
+ * is known, the plugin properties, build properties, bundle manifest and plugin descriptor of the model project.
+ *
+ * The plugin properties, bundle manifest and plugin descriptor that exist already are kept as they are unless
+ * generation is forced, and the build properties are replaced only while no plugin descriptor exists or generation
+ * is forced; the merge of existing properties, manifests and descriptors by key is not supported. The properties
+ * files are written in the ISO-8859-1 character set with Unicode escapes for the characters beyond it, as the
+ * Eclipse generator writes them. None of these files is merged like Java code.
+ **/]
+[module ProjectFiles('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaImports/]
+[import JavaResources/]
+[import JavaProject/]
+[import ResourceFactoryClass/]
+[import ResourceClass/]
+[import XMLProcessorClass/]
+[import Plugin/]
+[import PluginXML/]
+[import ManifestMF/]
+[import BuildProperties/]
+[import PluginProperties/]
+
+[**
+ * Writes the XML processor of a package, if it generates one.
+ **/]
+[template public generateXMLProcessorFile(genPackage : GenPackage)]
+[if (genPackage.hasXMLProcessor())]
+[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.xmlProcessorClassName() + '.java', false, 'UTF-8')][genPackage.xmlProcessorClass()/][/file]
+[/if]
+[/template]
+
+[**
+ * Writes the resource factory and the resource of a package, if it generates them.
+ **/]
+[template public generateResourceFiles(genPackage : GenPackage)]
+[if (genPackage.hasResource())]
+[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.resourceFactoryClassName() + '.java', false, 'UTF-8')][genPackage.resourceFactoryClass()/][/file]
+[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.resourceClassName() + '.java', false, 'UTF-8')][genPackage.resourceClass()/][/file]
+[/if]
+[/template]
+
+[**
+ * The mode in which a project file is written: replaced when generation is forced, otherwise written only when absent.
+ **/]
+[query public createUnlessForced() : String = if forceOverwrite() then 'overwrite' else 'create' endif/]
+
+[**
+ * The mode in which the build properties are written. As the Eclipse generator does, an existing file is replaced
+ * while the plugin descriptor does not exist yet, which is the case in a project that has not been generated before.
+ **/]
+[query public buildPropertiesMode(genModel : GenModel) : String = if forceOverwrite() or (genModel.isOn('updateClasspath') and not fileExists(genModel.projectFilePath('plugin.xml'))) then 'overwrite' else 'create' endif/]
+
+[**
+ * Writes the plugin class and the project files of a generator model.
+ **/]
+[template public generateProjectFiles(genModel : GenModel)]
+[if (genModel.hasModelPluginClass())]
+[file (genModel.modelPluginPackageName().packagePath() + '/' + genModel.modelPluginClassName() + '.java', false, 'UTF-8')][genModel.pluginClass()/][/file]
+[/if]
+[if (genModel.hasPluginSupport() and layoutIncludesSourceRoot())]
+[file (genModel.projectFilePath(genModel.modelBundleLocalization() + '.properties'), createUnlessForced(), 'ISO-8859-1', 'merge=false')][genModel.pluginProperties()/][/file]
+[file (genModel.projectFilePath('build.properties'), genModel.buildPropertiesMode(), 'ISO-8859-1', 'merge=false')][genModel.buildProperties()/][/file]
+[if (genModel.hasManifestFiles() and genModel.isBundleManifest())]
+[file (genModel.projectFilePath('META-INF/MANIFEST.MF'), createUnlessForced(), 'UTF-8', 'merge=false')][genModel.manifestMF()/][/file]
+[/if]
+[if (genModel.hasManifestFiles() and not genModel.isGWT())]
+[file (genModel.projectFilePath('plugin.xml'), createUnlessForced(), 'UTF-8', 'merge=false')][genModel.pluginXML()/][/file]
+[/if]
+[/if]
+[/template]
+
+[**
+ * The number of files that a generator model writes for its packages' resources and for the project.
+ **/]
+[query public projectFileCount(genModel : GenModel) : Integer = genModel.allGenPackages()->collect(p | (if p.hasResource() then 2 else 0 endif) + (if p.hasXMLProcessor() then 1 else 0 endif))->sum() + (if genModel.hasModelPluginClass() then 1 else 0 endif) + (if genModel.hasPluginSupport() and layoutIncludesSourceRoot() then 2 + (if genModel.hasManifestFiles() and genModel.isBundleManifest() then 1 else 0 endif) + (if genModel.hasManifestFiles() and not genModel.isGWT() then 1 else 0 endif) else 0 endif)/]

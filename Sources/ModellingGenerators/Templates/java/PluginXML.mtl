@@ -1,0 +1,116 @@
+[comment encoding = UTF-8 /]
+[**
+ * The plugin descriptor of a model project.
+ *
+ * The descriptor registers the generated package of every package with classifiers, and either the
+ * content type or the file extension parser of the package, depending on its settings. Each extension
+ * carries a comment with the plugin key when the generator model has one.
+ *
+ * An existing descriptor is not merged with the generated one: the descriptor that exists is kept
+ * unless generation is forced. A descriptor that points to the generator model file is not written
+ * either, as the Eclipse generator does not write it without a workspace.
+ **/]
+[module PluginXML('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import Header/]
+[import JavaResources/]
+[import JavaProject/]
+
+[**
+ * The comment that carries the plugin key of a generator model, if it has one.
+ **/]
+[template keyComment(genModel : GenModel)]
+[if (not isBlank(genModel.setting('pluginKey')))]
+      <!-- @generated [genModel.setting('pluginKey')/] -->
+[/if]
+[/template]
+
+[**
+ * The complete text of the plugin descriptor of a generator model.
+ **/]
+[template public pluginXML(genModel : GenModel)]
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+
+<!--
+[if (not copyrightText(genModel).oclIsUndefined())]
+ [copyrightText(genModel)/]
+[/if]
+-->
+
+[if (genModel.isBundleManifest())]
+<plugin>
+[else]
+<plugin
+      name="%pluginName"
+      id="[genModel.modelPluginID()/]"
+      version="1.0.0"
+[if (genModel.hasModelPluginClass())]
+      provider-name="%providerName"
+      class="[genModel.qualifiedModelPluginClassName()/]$Implementation">
+[else]
+      provider-name="%providerName">
+[/if]
+
+   <requires>
+[for (pluginID | genModel.modelRequiredPlugins())]
+      <import plugin="[pluginID/]"[if (not pluginID.startsWith('org.eclipse.core.runtime'))] export="true"[/if]/>
+[/for]
+   </requires>
+
+   <runtime>
+      <library name="[genModel.pluginClassesLocation()/]">
+         <export name="*"/>
+      </library>
+   </runtime>
+[/if]
+[for (genPackage : GenPackage | genModel.packagesWithClassifiers())]
+
+   <extension point="org.eclipse.emf.ecore.generated_package">
+[genModel.keyComment()/]
+      <package
+            uri="[genPackage.ecorePackage.nsURI/]"
+            class="[genPackage.qualifiedPackageInterfaceName()/]"/>
+   </extension>
+[if (genPackage.isContentType())]
+
+   <extension point="org.eclipse.emf.ecore.content_parser">
+[genModel.keyComment()/]
+      <parser
+            contentTypeIdentifier="[genPackage.setting('contentTypeIdentifier')/]"
+            class="[genPackage.qualifiedEffectiveResourceFactoryClassName()/]"/>
+   </extension>
+
+   <extension point="org.eclipse.core.contenttype.contentTypes">
+[genModel.keyComment()/]
+      <content-type
+            base-type="[if (genPackage.isXMIResource())]org.eclipse.emf.ecore.xmi[else]org.eclipse.core.runtime.xml[/if]"
+            file-extensions="[genPackage.fileExtensions()/]"
+            id="[genPackage.setting('contentTypeIdentifier')/]"
+            name="%_UI_[genPackage.setting('prefix')/]_content_type"
+            priority="normal">
+         <describer class="org.eclipse.emf.ecore.xmi.impl.RootXMLContentHandlerImpl$Describer">
+[if (genPackage.hasTargetNamespace())]
+            <parameter name="namespace" value="[genPackage.ecorePackage.nsURI/]"/>
+[/if]
+[if (genPackage.isXMIResource())]
+            <parameter name="kind" value="xmi"/>
+[/if]
+         </describer>
+      </content-type>
+   </extension>
+[elseif (genPackage.hasResource())]
+
+   <extension point="org.eclipse.emf.ecore.extension_parser">
+[genModel.keyComment()/]
+[for (fileExtension | genPackage.fileExtensionList())]
+      <parser
+            type="[fileExtension/]"
+            class="[genPackage.qualifiedResourceFactoryClassName()/]"/>
+[/for]
+   </extension>
+[/if]
+[/for]
+
+</plugin>
+[/template]

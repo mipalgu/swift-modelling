@@ -1,0 +1,136 @@
+[comment encoding = UTF-8 /]
+[**
+ * The model information that documentation comments carry in their model tag.
+ *
+ * Every class, feature, operation and parameter documents the model settings that differ from the
+ * defaults: opposite references, containment, multiplicities, default values and annotations. The
+ * queries here collect those settings as text lines, in the order in which the Eclipse generator
+ * writes them, for the model tag writer of JavaDocumentation.
+ **/]
+[module ClassModelInfo('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import JavaNames/]
+[import JavaTypes/]
+[import JavaDocumentation/]
+[import ClassQueries/]
+
+[comment Building blocks /]
+
+[**
+ * One model setting written as a name and a quoted value; an empty text if the value is missing.
+ **/]
+[query public modelSetting(name : String, value : OclAny) : String = if value.oclIsUndefined() then '' else name + '="' + xmlEscape(value.toString()) + '"' endif/]
+
+[**
+ * One model setting whose name is prefixed with the name of the element that it belongs to, as the settings of parameters are.
+ **/]
+[query public qualifiedModelSetting(qualifier : OclAny, name : String, value : OclAny) : String = if isBlank(qualifier) then modelSetting(name, value) else modelSetting(qualifier.toString() + name.capName(), value) endif/]
+
+[**
+ * Whether a setting of a boolean is written only when it is switched on.
+ **/]
+[query public switchedSetting(qualifier : OclAny, name : String, on : Boolean) : String = if on then qualifiedModelSetting(qualifier, name, 'true') else '' endif/]
+
+[**
+ * Whether a detail of an annotation is left out of the model tag of a feature: the visibility settings are written as their own part.
+ **/]
+[query public isHiddenFeatureDetail(source : String, key : String) : Boolean = isHiddenDetail(source, key) or (source = genModelNamespace() and (key = 'suppressedGetVisibility' or key = 'suppressedSetVisibility' or key = 'suppressedIsSetVisibility' or key = 'suppressedUnsetVisibility'))/]
+
+[**
+ * The description of an annotation of a feature or operation for a model tag.
+ **/]
+[query public featureAnnotationInfo(annotation : OclAny) : String = if annotation.source.oclIsUndefined() then '' else (if annotation.detailKeys()->isEmpty() then escapeText(annotation.source, ' =') else (if annotation.detailKeys()->reject(k | isHiddenFeatureDetail(annotation.source, k))->isEmpty() then '' else escapeText(annotation.source, ' =') + annotation.detailKeys()->reject(k | isHiddenFeatureDetail(annotation.source, k))->collect(k | ' ' + escapeText(k, ' =') + '=\'' + escapeText(annotation.detailValue(k), '') + '\'')->join('') endif) endif) endif/]
+
+[**
+ * The annotations of a model element as model tag settings, one for each annotation.
+ **/]
+[query public featureAnnotationSettings(modelElement : OclAny) : OclAny = if modelElement.oclIsUndefined() then Sequence{} else modelElement.eAnnotations->collect(a | featureAnnotationInfo(a))->select(info | info.size() > 0)->collect(info | annotationSetting(info)) endif/]
+
+[**
+ * The name of a classifier as the model information spells it: its package and its name.
+ **/]
+[query public ecoreTypeName(classifier : OclAny) : String = if classifier.oclIsUndefined() then '' else (if classifier.genClassifier().oclIsUndefined() then (if typeMapping(classifier).oclIsUndefined() then classifier.name else 'org.eclipse.emf.ecore.' + classifier.name endif) else classifier.genClassifier().genPackage().interfacePackageName() + '.' + classifier.name endif) endif/]
+
+[**
+ * Whether a classifier names an existing Java type itself, so that the model information has to say which model type it is.
+ **/]
+[query public hasInstanceClassSetting(classifier : OclAny) : Boolean = if classifier.oclIsUndefined() then false else (if classifier.oclIsKindOf(EEnum) then false else not isBlank(classifier.instanceClassName) and typeMapping(classifier).oclIsUndefined() endif) endif/]
+
+[**
+ * The multiplicity settings of a typed element: lower and upper bounds, and whether it is many.
+ **/]
+[query public multiplicitySettings(typedElement : OclAny, qualifier : OclAny, isFeatureMap : Boolean) : OclAny = Sequence{if typedElement.lowerBound = 1 then qualifiedModelSetting(qualifier, 'required', 'true') else (if typedElement.lowerBound > 1 then qualifiedModelSetting(qualifier, 'lower', typedElement.lowerBound) else '' endif) endif, if typedElement.upperBound > 1 or typedElement.upperBound < -1 then qualifiedModelSetting(qualifier, 'upper', typedElement.upperBound) else (if typedElement.upperBound = 1 then (if isFeatureMap then qualifiedModelSetting(qualifier, 'many', 'false') else '' endif) else (if (not isBlank(qualifier) or isFeatureMap) and typedElement.upperBound = -1 then qualifiedModelSetting(qualifier, 'many', 'true') else '' endif) endif) endif}/]
+
+[**
+ * Joins the settings that are not empty into one line.
+ **/]
+[query public settingsLine(settings : OclAny) : String = settings->select(s | s.size() > 0)->join(' ')/]
+
+[**
+ * The settings of a line followed by the annotation lines, without empty lines.
+ **/]
+[query public infoLines(settings : OclAny, annotations : OclAny) : OclAny = Sequence{settingsLine(settings)}->union(annotations)->select(s | s.size() > 0)/]
+
+[comment Classes /]
+
+[**
+ * The lines of the model tag of a class.
+ **/]
+[query public modelInfo(genClass : GenClass) : OclAny = infoLines(Sequence{if genClass.isMapEntry() then '' else (if genClass.isExternalInterface() then modelSetting('instanceClass', genClass.ecoreClass.instanceClassName) else (if genClass.genModel().isOn('suppressInterfaces') then modelSetting('kind', 'class') else '' endif) endif) endif, if genClass.isMapEntry() or genClass.isExternalInterface() then '' else switchedSetting(null, 'interface', genClass.isInterface()) endif, if genClass.isMapEntry() or genClass.isExternalInterface() then '' else switchedSetting(null, 'abstract', genClass.isAbstract()) endif}, featureAnnotationSettings(genClass.ecoreClass))/]
+
+[comment Features /]
+
+[**
+ * The model setting that names the map type of a feature that holds a map.
+ **/]
+[query public mapModelSetting(genFeature : GenFeature) : String = if genFeature.isMapFeature() then modelSetting('mapType', genFeature.ecoreFeature.eType.genClassifier().genPackage().interfacePackageName() + '.' + genFeature.ecoreFeature.eType.name + '<' + ecoreTypeName(genFeature.entryFeature('key').eType) + ', ' + ecoreTypeName(genFeature.entryFeature('value').eType) + '>') else '' endif/]
+
+[**
+ * The settings that describe the type and kind of a reference.
+ **/]
+[query public referenceSettings(genFeature : GenFeature) : OclAny = Sequence{if not genFeature.ecoreFeature.eType.oclIsUndefined() and not isBlank(genFeature.ecoreFeature.eType.instanceClassName) then modelSetting('type', ecoreTypeName(genFeature.ecoreFeature.eType)) else '' endif, if genFeature.isBidirectional() then modelSetting('opposite', genFeature.reverseGenFeature().name()) else '' endif, if genFeature.isContainment() then modelSetting('containment', 'true') else '' endif, if genFeature.isContainment() then (if genFeature.isResolveProxies() and genFeature.genModel().isOn('containmentProxies') then modelSetting('resolveProxies', 'true') else '' endif) else (if genFeature.ecoreFeature.resolveProxies then '' else modelSetting('resolveProxies', 'false') endif) endif, switchedSetting(null, 'unsettable', genFeature.ecoreFeature.unsettable), if genFeature.ecoreFeature.eKeys->isEmpty() then '' else modelSetting('keys', genFeature.ecoreFeature.eKeys->collect(k | k.name)->join(' ')) endif}/]
+
+[**
+ * The settings that describe the type and kind of an attribute.
+ **/]
+[query public attributeSettings(genFeature : GenFeature) : OclAny = Sequence{if isBlank(genFeature.ecoreFeature.defaultValueLiteral) then '' else modelSetting('default', javaStringLiteral(genFeature.ecoreFeature.defaultValueLiteral).substring(2, javaStringLiteral(genFeature.ecoreFeature.defaultValueLiteral).size() - 1)) endif, if genFeature.ecoreFeature.unique then '' else modelSetting('unique', 'false') endif, switchedSetting(null, 'unsettable', genFeature.ecoreFeature.unsettable), switchedSetting(null, 'id', genFeature.ecoreFeature.iD), if genFeature.ecoreFeature.eType.hasInstanceClassSetting() or genFeature.isFeatureMapFeature() then modelSetting('dataType', ecoreTypeName(genFeature.ecoreFeature.eType)) else '' endif}/]
+
+[**
+ * The lines of the model tag of a feature.
+ **/]
+[query public modelInfo(genFeature : GenFeature) : OclAny = infoLines(Sequence{if genFeature.isMapFeature() then mapModelSetting(genFeature) else '' endif}->union(if genFeature.isMapFeature() then Sequence{} else (if genFeature.isReferenceType() then genFeature.referenceSettings() else genFeature.attributeSettings() endif)->union(multiplicitySettings(genFeature.ecoreFeature, null, genFeature.isFeatureMapFeature())) endif)->union(Sequence{if genFeature.ecoreFeature.transient then (if genFeature.isContainer() then '' else modelSetting('transient', 'true') endif) else (if genFeature.isContainer() then modelSetting('transient', 'false') else '' endif) endif, if genFeature.ecoreFeature.changeable then '' else modelSetting('changeable', 'false') endif, switchedSetting(null, 'volatile', genFeature.ecoreFeature.volatile), switchedSetting(null, 'derived', genFeature.ecoreFeature.derived), if genFeature.ecoreFeature.ordered then '' else modelSetting('ordered', 'false') endif, switchedSetting(null, 'suppressedGetVisibility', genFeature.isSuppressedGetVisibility()), switchedSetting(null, 'suppressedSetVisibility', genFeature.isSuppressedSetVisibility()), switchedSetting(null, 'suppressedIsSetVisibility', genFeature.isSuppressedIsSetVisibility()), switchedSetting(null, 'suppressedUnsetVisibility', genFeature.isSuppressedUnsetVisibility())}), featureAnnotationSettings(genFeature.ecoreFeature))/]
+
+[comment Operations /]
+
+[**
+ * Whether an operation looks like the getter of a feature, so that its model information says that it is an operation.
+ **/]
+[query public looksLikeGetter(genOperation : GenOperation) : Boolean = genOperation.genParameters->isEmpty() and ((genOperation.name().startsWith('get') and genOperation.name().size() > 3 and genOperation.name().substring(4, 4).matches('[A-Z]')) or (genOperation.name().startsWith('is') and genOperation.name().size() > 2 and genOperation.name().substring(3, 3).matches('[A-Z]')))/]
+
+[**
+ * The settings of one parameter of an operation, with their names prefixed by the parameter name.
+ **/]
+[query public parameterSettings(genParameter : GenParameter) : OclAny = Sequence{if not genParameter.ecoreParameter.eType.oclIsUndefined() and genParameter.ecoreParameter.eType.oclIsKindOf(EClass) then (if isBlank(genParameter.ecoreParameter.eType.instanceClassName) then '' else qualifiedModelSetting(genParameter.ecoreParameter.name, 'type', ecoreTypeName(genParameter.ecoreParameter.eType)) endif) else (if genParameter.ecoreParameter.eType.hasInstanceClassSetting() then qualifiedModelSetting(genParameter.ecoreParameter.name, 'dataType', ecoreTypeName(genParameter.ecoreParameter.eType)) else '' endif) endif, if genParameter.ecoreParameter.unique then '' else qualifiedModelSetting(genParameter.ecoreParameter.name, 'unique', 'false') endif}->union(multiplicitySettings(genParameter.ecoreParameter, genParameter.ecoreParameter.name, false))->union(Sequence{if genParameter.ecoreParameter.ordered then '' else qualifiedModelSetting(genParameter.ecoreParameter.name, 'ordered', 'false') endif})/]
+
+[**
+ * The settings that describe the result type of an operation.
+ **/]
+[query public operationResultSettings(genOperation : GenOperation) : OclAny = if genOperation.ecoreOperation.eType.oclIsUndefined() then Sequence{} else Sequence{if genOperation.ecoreOperation.eType.oclIsKindOf(EClass) then (if isBlank(genOperation.ecoreOperation.eType.instanceClassName) then '' else modelSetting('type', ecoreTypeName(genOperation.ecoreOperation.eType)) endif) else (if genOperation.ecoreOperation.eType.hasInstanceClassSetting() then modelSetting('dataType', ecoreTypeName(genOperation.ecoreOperation.eType)) else '' endif) endif, if genOperation.ecoreOperation.unique then '' else modelSetting('unique', 'false') endif}->union(multiplicitySettings(genOperation.ecoreOperation, null, false))->union(Sequence{if genOperation.ecoreOperation.ordered then '' else modelSetting('ordered', 'false') endif}) endif/]
+
+[**
+ * The lines of the model tag of an operation.
+ **/]
+[query public modelInfo(genOperation : GenOperation) : OclAny = infoLines(Sequence{if genOperation.looksLikeGetter() then modelSetting('kind', 'operation') else '' endif}->union(genOperation.operationResultSettings())->union(Sequence{if genOperation.ecoreOperation.eExceptions->isEmpty() then '' else modelSetting('exceptions', genOperation.ecoreOperation.eExceptions->collect(e | ecoreTypeName(e))->join(' ')) endif})->union(genOperation.genParameters->collect(p | p.parameterSettings())->flatten()), featureAnnotationSettings(genOperation.ecoreOperation))/]
+
+[**
+ * The lines of the model tag, each starting with the prefix and the continuation lines aligned under the first.
+ **/]
+[template public modelTagLines(element : OclAny, prefix : String, info : OclAny)]
+[if (info->isEmpty())]
+[prefix/]@model
+[else]
+[prefix/]@model [info->first()/]
+[for (line : String | info->subSequence(2, info->size()))]
+[prefix/]       [line/]
+[/for]
+[/if]
+[/template]

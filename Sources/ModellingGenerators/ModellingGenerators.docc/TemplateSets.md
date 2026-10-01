@@ -60,7 +60,8 @@ A set can bundle small models for the templates to read, such as a table that ma
 | `setting('name')`, `isSetting('name')` | A setting of the generator model with the default of the metamodel; whether it is set explicitly. |
 | `documentation()`, `hasDocumentation()`, `annotationDetail(source, key)` | Model documentation and annotation details. |
 | `lines()`, `indentLines(prefix)`, `join(separator)`, `characterCodes()`, `fromCharacterCode()`, `toHexString(width)`, `toOctalString(width)` | Text helpers that the AQL library lacks. |
-| `detailKeys()`, `detailValue(key)` | The details of an annotation. |
+| `detailKeys()`, `detailValue(key)` | The details of an annotation, in the order the model lists them. |
+| `serialisedEcore()`, `serialisedEcore(source)` | The Ecore model of a generator package as `.ecore` text, optionally without the annotations of one source. |
 | `templateData('name')` | The root objects of a data model of the set. |
 
 Services with parentheses win over stored references of the same name, so derived navigation is written `element.genPackage()`; `element.genPackage` would read the stored reference of the generator metamodel.
