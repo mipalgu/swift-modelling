@@ -190,18 +190,18 @@
 [**
  * The qualified names that a body names between the markers of an import expression.
  **/]
-[query public factoryBodyImports(body : String) : OclAny = if body.index('<%') = 0 then Sequence{} else (let rest : String = body.substring(body.index('<%') + 2) in (if rest.index('%>') = 0 then Sequence{} else Sequence{rest.substring(1, rest.index('%>') - 1)}->union(factoryBodyImports(rest.substring(rest.index('%>') + 2))) endif)) endif/]
+[query public factoryBodyImports(body : String) : OclAny = if body.index('<%') < 1 then Sequence{} else (let rest : String = body.substring(body.index('<%') + 2) in (if rest.index('%>') < 1 then Sequence{} else Sequence{rest.substring(1, rest.index('%>') - 1)}->union(factoryBodyImports(rest.substring(rest.index('%>') + 2))) endif)) endif/]
 
 [**
  * A body with its import expressions replaced by the names that the file uses for them. The imports must
  * have been registered with factoryRegisterBodyImports.
  **/]
-[query public factoryResolveBody(body : String) : String = if body.index('<%') = 0 then body else (let rest : String = body.substring(body.index('<%') + 2) in (if rest.index('%>') = 0 then body else body.substring(1, body.index('<%') - 1) + resolvedName(rest.substring(1, rest.index('%>') - 1)) + factoryResolveBody(rest.substring(rest.index('%>') + 2)) endif)) endif/]
+[query public factoryResolveBody(body : String) : String = if body.index('<%') < 1 then body else (let rest : String = body.substring(body.index('<%') + 2) in (if rest.index('%>') < 1 then body else body.substring(1, body.index('<%') - 1) + resolvedName(rest.substring(1, rest.index('%>') - 1)) + factoryResolveBody(rest.substring(rest.index('%>') + 2)) endif)) endif/]
 
 [**
- * A body with its import expressions resolved and every line after the first indented.
+ * A body with its import expressions resolved; the template engine indents the lines after the first.
  **/]
-[query public factoryBodyText(body : String, indentation : String) : String = factoryResolveBody(body).indentLines(indentation)/]
+[query public factoryBodyText(body : String) : String = factoryResolveBody(body)/]
 
 [**
  * Registers the imports that a body names.
@@ -596,7 +596,7 @@ public class [genPackage.factoryClassName()/] extends [importedName('org.eclipse
   public [genPackage.factoryTypeRef(genDataType.factoryInstanceName(), wildcard)/] create[genDataType.name()]([if (genDataType.hasCreatorBody())]final [/if]String [if (genDataType.hasCreatorBody())]it[else]literal[/if])
   {
 [if (genDataType.hasCreatorBody())]
-    [factoryBodyText(genDataType.factoryCreatorBody(), '    ')/]
+    [factoryBodyText(genDataType.factoryCreatorBody())/]
 [elseif (isEnum)]
     [genPackage.factoryTypeRef(genDataType.factoryInstanceName(), wildcard)/] result = [genPackage.factoryTypeRef(genDataType.factoryInstanceName(), wildcard)/].get(literal);
     if (result == null) throw new IllegalArgumentException("The value '" + literal + "' is not a valid enumerator of '" + [accessor/].getName() + "'");[nonNLS(genModel, 1)/][nonNLS(genModel, 2)/][nonNLS(genModel, 3)/]
@@ -653,7 +653,7 @@ public class [genPackage.factoryClassName()/] extends [importedName('org.eclipse
   public String convert[genDataType.name()]([if (genDataType.hasCreatorBody())]final [/if][genPackage.factoryTypeRef(genDataType.factoryInstanceName(), wildcard)/] [if (genDataType.hasConverterBody())]it[else]instanceValue[/if])
   {
 [if (genDataType.hasConverterBody())]
-    [factoryBodyText(genDataType.factoryConverterBody(), '    ')/]
+    [factoryBodyText(genDataType.factoryConverterBody())/]
 [elseif (isEnum)]
     return instanceValue == null ? null : instanceValue.toString();
 [else]
@@ -691,6 +691,7 @@ public class [genPackage.factoryClassName()/] extends [importedName('org.eclipse
     return super.convertToString(eDataType, instanceValue);
 [/if]
   }
+
 [/let]
 [/let]
 [/let]
