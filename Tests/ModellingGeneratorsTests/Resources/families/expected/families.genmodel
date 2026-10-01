@@ -3,18 +3,18 @@
   <foreignModel>families.ecore</foreignModel>
   <genPackages prefix="Families" disposableProviderFactory="true" ecorePackage="families.ecore#/">
     <genClasses ecoreClass="families.ecore#//Family">
-      <genFeatures ecoreFeature="ecore:EAttribute families.ecore#//Family/lastName"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute families.ecore#//Family/lastName"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference families.ecore#//Family/father"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference families.ecore#//Family/mother"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference families.ecore#//Family/sons"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference families.ecore#//Family/daughters"/>
     </genClasses>
     <genClasses ecoreClass="families.ecore#//Member">
-      <genFeatures ecoreFeature="ecore:EAttribute families.ecore#//Member/firstName"/>
-      <genFeatures property="None" notify="false" ecoreFeature="ecore:EReference families.ecore#//Member/familyFather"/>
-      <genFeatures property="None" notify="false" ecoreFeature="ecore:EReference families.ecore#//Member/familyMother"/>
-      <genFeatures property="None" notify="false" ecoreFeature="ecore:EReference families.ecore#//Member/familySon"/>
-      <genFeatures property="None" notify="false" ecoreFeature="ecore:EReference families.ecore#//Member/familyDaughter"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute families.ecore#//Member/firstName"/>
+      <genFeatures property="None" notify="false" createChild="false" ecoreFeature="ecore:EReference families.ecore#//Member/familyFather"/>
+      <genFeatures property="None" notify="false" createChild="false" ecoreFeature="ecore:EReference families.ecore#//Member/familyMother"/>
+      <genFeatures property="None" notify="false" createChild="false" ecoreFeature="ecore:EReference families.ecore#//Member/familySon"/>
+      <genFeatures property="None" notify="false" createChild="false" ecoreFeature="ecore:EReference families.ecore#//Member/familyDaughter"/>
     </genClasses>
   </genPackages>
 </genmodel:GenModel>

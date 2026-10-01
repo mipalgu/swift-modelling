@@ -3,11 +3,11 @@
   <foreignModel>bridge.ecore</foreignModel>
   <genPackages prefix="Bridge" disposableProviderFactory="true" ecorePackage="bridge.ecore#/">
     <genClasses ecoreClass="bridge.ecore#//Span">
-      <genFeatures ecoreFeature="ecore:EAttribute bridge.ecore#//Span/label"/>
-      <genFeatures ecoreFeature="ecore:EAttribute bridge.ecore#//Span/length"/>
-      <genFeatures ecoreFeature="ecore:EAttribute bridge.ecore#//Span/payload"/>
-      <genFeatures notify="false" propertySortChoices="true" ecoreFeature="ecore:EReference bridge.ecore#//Span/supports"/>
-      <genFeatures notify="false" propertySortChoices="true" ecoreFeature="ecore:EReference bridge.ecore#//Span/next"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute bridge.ecore#//Span/label"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute bridge.ecore#//Span/length"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute bridge.ecore#//Span/payload"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference bridge.ecore#//Span/supports"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference bridge.ecore#//Span/next"/>
     </genClasses>
   </genPackages>
 </genmodel:GenModel>
