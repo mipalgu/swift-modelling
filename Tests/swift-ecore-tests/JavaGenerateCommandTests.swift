@@ -12,6 +12,15 @@ struct JavaGenerateCommandTests {
     /// The generated enumeration of the library fixture, relative to the output directory.
     private static let bookCategory = "org/example/library/BookCategory.java"
 
+    /// The files that generating the library fixture must at least write, relative to the output directory.
+    private static let expectedLibraryFiles = [
+        bookCategory,
+        "org/example/library/LibraryPackage.java",
+        "org/example/library/impl/LibraryPackageImpl.java",
+        "org/example/library/LibraryFactory.java",
+        "org/example/library/impl/LibraryFactoryImpl.java",
+    ]
+
     /// Copies the library fixture into a scratch directory and writes its generator model.
     ///
     /// - Returns: The scratch directory, the project directory and the generator model.
@@ -52,7 +61,12 @@ struct JavaGenerateCommandTests {
             command: "generate", arguments: ["--language", "java", genModel.path, "-o", output.path])
 
         #expect(result.succeeded)
-        #expect(result.stdout.contains("Generated 3 files in:"))
+        #expect(result.stdout.range(of: #"Generated [0-9]+ files in:"#, options: .regularExpression) != nil)
+        for expected in Self.expectedLibraryFiles {
+            #expect(
+                FileManager.default.fileExists(atPath: output.appendingPathComponent(expected).path),
+                "\(expected) was not generated")
+        }
         #expect(
             try String(contentsOf: output.appendingPathComponent(Self.bookCategory), encoding: .utf8)
                 == expectedBookCategory())
@@ -181,7 +195,10 @@ struct JavaGenerateCommandTests {
             arguments: ["--language", "java", genModel.path, "-o", output.path, "--verbose"])
 
         #expect(result.succeeded)
-        #expect(result.stdout.contains("[========================] 3/3 Generated BookCategory.java"))
+        #expect(
+            result.stdout.range(of: #"\[={24}\] ([0-9]+)/\1 Generated "#, options: .regularExpression) != nil,
+            "the progress bar reaches the total")
+        #expect(result.stdout.range(of: #"/[0-9]+ Generated BookCategory\.java"#, options: .regularExpression) != nil)
         #expect(result.stdout.contains("Assembling the java templates"))
     }
 

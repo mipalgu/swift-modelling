@@ -15,6 +15,7 @@
 [import PackageClass/]
 [import PackageNames/]
 [import Header/]
+[import FactoryClass/]
 
 [**
  * Writes the model code of every package of a generator model, nested packages included.
@@ -30,13 +31,37 @@
  **/]
 [template public generatePackage(genPackage : GenPackage)]
 [genPackage.generatePackageClasses()/]
-[comment TODO: factory interface and implementation. /]
+[if (genPackage.hasClassifiers())]
+[if (not genPackage.genModel().isOn('suppressInterfaces'))]
+[genPackage.generateFactoryInterfaceFile()/]
+[/if]
+[genPackage.generateFactoryImplementationFile()/]
+[/if]
 [comment TODO: XML processor (resource kind XML), validator (constraints). /]
 [comment TODO: interface and implementation of every class. /]
 [for (genEnum : GenEnum | genPackage.genEnums)]
 [genEnum.generateEnumFile()/]
 [/for]
 [comment TODO: switch and adapter factory (adapter factory with classes), resource factory and resource implementation (resource kind not None). /]
+[/template]
+
+[**
+ * The number of files that this module writes for the factory of a generator package.
+ **/]
+[query public factoryFileCount(genPackage : GenPackage) : Integer = if genPackage.hasClassifiers() then (if genPackage.genModel().isOn('suppressInterfaces') then 1 else 2 endif) else 0 endif/]
+
+[**
+ * Writes the file of the factory interface of a package.
+ **/]
+[template public generateFactoryInterfaceFile(genPackage : GenPackage)]
+[file (genPackage.reflectionPackageName().packagePath() + '/' + genPackage.factoryInterfaceName() + '.java', false, 'UTF-8')][genPackage.factoryInterface()/][/file]
+[/template]
+
+[**
+ * Writes the file of the factory implementation of a package.
+ **/]
+[template public generateFactoryImplementationFile(genPackage : GenPackage)]
+[file (genPackage.factoryClassPackageName().packagePath() + '/' + genPackage.factoryClassName() + '.java', false, 'UTF-8')][genPackage.factoryImplementation()/][/file]
 [/template]
 
 [**
@@ -51,7 +76,7 @@
  **/]
 [template public fileCount(genModel : GenModel)]
 [file ('count')]
-[genModel.allGenPackages()->collect(p | p.genEnums->size() + p.packageFileCount())->sum()/]
+[genModel.allGenPackages()->collect(p | p.genEnums->size() + p.packageFileCount() + p.factoryFileCount())->sum()/]
 [/file]
 [/template]
 

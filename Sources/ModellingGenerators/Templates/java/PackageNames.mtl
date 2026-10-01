@@ -516,11 +516,6 @@
 [query public hasInheritedAPITags(element : OclAny) : Boolean = element.hasOwnAPITags() or element.genContainer().hasOwnAPITags()/]
 
 [**
- * Writes the lines of annotation tags of an element behind the prefix of a documentation line.
- **/]
-[query public apiTagText(lines : OclAny, prefix : String) : String = lines->join('\n' + prefix)/]
-
-[**
  * The lines of the model tag of a data type: its instance class if the model gives one, whether its values are not
  * serialisable, and its annotations.
  **/]

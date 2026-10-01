@@ -66,14 +66,13 @@ struct JavaCompileTests {
         return (process.terminationStatus, String(decoding: data, as: UTF8.self))
     }
 
-
     /// The prefixes of the packages that the runtime provides, whose types need no stand-ins.
     static let runtimePrefixes = ["java.", "javax.", "org.eclipse.emf.ecore.", "org.eclipse.emf.common."]
 
     /// Writes stand-ins for the model types that the generated files refer to but that no template has written yet.
     ///
-    /// Package files refer to the interface of every class and to the factory. While those are written by other
-    /// templates, the stand-ins let the package files be compiled alone. A notice names every stand-in. The stand-ins
+    /// Package and factory files refer to the interface and the implementation of every class. While those are
+    /// written by other templates, the stand-ins let the generated files be compiled alone. A notice names every stand-in. The stand-ins
     /// are written below the given directory only, never to the generated output.
     ///
     /// - Parameters:
@@ -97,16 +96,25 @@ struct JavaCompileTests {
             for match in text.matches(of: /\b(\w+Factory) get\w+\(\);/) {
                 wanted[package + "." + String(match.output.1)] = true
             }
+            for match in text.matches(of: /\bnew (\w+Impl)\(\)/) {
+                wanted[package + "." + String(match.output.1)] = false
+            }
         }
         var written: [URL] = []
         for (name, isFactory) in wanted.sorted(by: { $0.key < $1.key }) where !generated.contains(name) {
             let parts = name.split(separator: ".")
             let simple = String(parts.last ?? "")
             let package = parts.dropLast().joined(separator: ".")
-            let body =
-                isFactory
-                ? "public interface \(simple) extends org.eclipse.emf.ecore.EFactory { \(simple) eINSTANCE = null; }"
-                : "public interface \(simple) extends org.eclipse.emf.ecore.EObject { }"
+            let body: String
+            if isFactory {
+                body = "public interface \(simple) extends org.eclipse.emf.ecore.EFactory { \(simple) eINSTANCE = null; }"
+            } else if simple.hasSuffix("Impl") && package.hasSuffix(".impl") {
+                body =
+                    "public class \(simple) extends org.eclipse.emf.ecore.impl.MinimalEObjectImpl.Container "
+                    + "implements \(package.dropLast(".impl".count)).\(simple.dropLast("Impl".count)) { }"
+            } else {
+                body = "public interface \(simple) extends org.eclipse.emf.ecore.EObject { }"
+            }
             let url = directory.appendingPathComponent(name.replacingOccurrences(of: ".", with: "/") + ".java")
             try FileManager.default.createDirectory(
                 at: url.deletingLastPathComponent(), withIntermediateDirectories: true)

@@ -82,7 +82,7 @@ package [if (isImplementation and not genModel.isOn('suppressInterfaces'))][genP
  * An implementation of the model <b>Package</b>.
  * <!-- end-user-doc -->
 [if (genPackage.hasOwnAPITags())]
- * [genPackage.ownAPITagLines()->apiTagText('* ')/]
+ * [genPackage.ownAPITagLines()->join('\n * ')/]
 [/if]
  * @generated
  */
@@ -222,7 +222,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
 [/if]
    * @see [genPackage.qualifiedPackageClassName()/]#get[genClassifier.classifierAccessorName()/]()
 [if (genClassifier.hasOwnAPITags())]
-   * [genClassifier.ownAPITagLines()->apiTagText('* ')/]
+   * [genClassifier.ownAPITagLines()->join('\n   * ')/]
 [/if]
    * @generated
    */
@@ -238,7 +238,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
 [if (genFeature.hasInheritedAPITags())]
-   * [genFeature.implicitAPITagLines()->apiTagText('* ')/]
+   * [genFeature.implicitAPITagLines()->join('\n   * ')/]
 [/if]
    * @generated
    * @ordered
@@ -254,7 +254,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
 [if (genClassifier.hasOwnAPITags())]
-   * [genClassifier.ownAPITagLines()->apiTagText('* ')/]
+   * [genClassifier.ownAPITagLines()->join('\n   * ')/]
 [/if]
    * @generated
    * @ordered
@@ -271,7 +271,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
 [if (genOperation.hasInheritedAPITags())]
-   * [genOperation.implicitAPITagLines()->apiTagText('* ')/]
+   * [genOperation.implicitAPITagLines()->join('\n   * ')/]
 [/if]
    * @generated
    * @ordered
@@ -287,7 +287,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
 [if (genClassifier.hasOwnAPITags())]
-   * [genClassifier.ownAPITagLines()->apiTagText('* ')/]
+   * [genClassifier.ownAPITagLines()->join('\n   * ')/]
 [/if]
    * @generated
    * @ordered
@@ -383,7 +383,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
 [/if]
      * @see [genPackage.qualifiedPackageClassName()/]#get[genClassifier.classifierAccessorName()/]()
 [if (genClassifier.hasOwnAPITags())]
-     * [genClassifier.ownAPITagLines()->apiTagText('* ')/]
+     * [genClassifier.ownAPITagLines()->join('\n     * ')/]
 [/if]
      * @generated
      */
@@ -399,7 +399,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
      * <!-- begin-user-doc -->
      * <!-- end-user-doc -->
 [if (genFeature.hasInheritedAPITags())]
-     * [genFeature.implicitAPITagLines()->apiTagText('* ')/]
+     * [genFeature.implicitAPITagLines()->join('\n     * ')/]
 [/if]
      * @generated
      */
@@ -416,7 +416,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
      * <!-- begin-user-doc -->
      * <!-- end-user-doc -->
 [if (genOperation.hasInheritedAPITags())]
-     * [genOperation.implicitAPITagLines()->apiTagText('* ')/]
+     * [genOperation.implicitAPITagLines()->join('\n     * ')/]
 [/if]
      * @generated
      */
@@ -461,7 +461,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
 [if (genClassifier.hasOwnPublicAPITags())]
-   * [genClassifier.ownPublicAPITagLines()->apiTagText('* ')/]
+   * [genClassifier.ownPublicAPITagLines()->join('\n   * ')/]
 [/if]
    * @generated
    */
@@ -671,7 +671,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
 [genClassifier.modelTag(' * ', genClassifier.dataTypeModelInfo())/]
 [/if]
 [if ((genClassifier.oclIsKindOf(GenClass) or genClassifier.oclIsKindOf(GenEnum)) and genClassifier.hasOwnAPITags())]
-   * [genClassifier.ownAPITagLines()->apiTagText('* ')/]
+   * [genClassifier.ownAPITagLines()->join('\n   * ')/]
 [/if]
    * @generated
    */
@@ -680,7 +680,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
 [if (genClassifier.hasOwnAPITags())]
-   * [genClassifier.ownAPITagLines()->apiTagText('* ')/]
+   * [genClassifier.ownAPITagLines()->join('\n   * ')/]
 [/if]
    * @generated
    */
@@ -718,7 +718,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
    * @see [genClassifier.metaQualifiedInterfaceName()/]#[genFeature.getAccessor(genFeature.isBooleanFeature())/]()
    * @see #get[genClassifier.classifierAccessorName()/]()
 [if (genFeature.hasInheritedAPITags())]
-   * [genFeature.implicitAPITagLines()->apiTagText('* ')/]
+   * [genFeature.implicitAPITagLines()->join('\n   * ')/]
 [/if]
    * @generated
    */
@@ -727,7 +727,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
 [if (genFeature.hasInheritedAPITags())]
-   * [genFeature.implicitAPITagLines()->apiTagText('* ')/]
+   * [genFeature.implicitAPITagLines()->join('\n   * ')/]
 [/if]
    * @generated
    */
@@ -762,7 +762,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
    * @return the meta object for the '<em>[genOperation.formattedOperationName()/]</em>' operation.
    * @see [genClassifier.metaQualifiedInterfaceName()/]#[genOperation.name()/]([genOperation.parameterTypes()/])
 [if (genOperation.hasInheritedAPITags())]
-   * [genOperation.implicitAPITagLines()->apiTagText('* ')/]
+   * [genOperation.implicitAPITagLines()->join('\n   * ')/]
 [/if]
    * @generated
    */
@@ -771,7 +771,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
 [if (genOperation.hasInheritedAPITags())]
-   * [genOperation.implicitAPITagLines()->apiTagText('* ')/]
+   * [genOperation.implicitAPITagLines()->join('\n   * ')/]
 [/if]
    * @generated
    */

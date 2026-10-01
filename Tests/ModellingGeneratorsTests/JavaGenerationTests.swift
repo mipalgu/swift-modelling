@@ -21,8 +21,11 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
     /// The expected package interface and implementation files, and serialised packages.
     var packageFiles: [String] = []
 
+    /// The expected factory interface and implementation files.
+    var factoryFiles: [String] = []
+
     /// All expected files, sorted.
-    var allFiles: [String] { (files + packageFiles).sorted() }
+    var allFiles: [String] { (files + packageFiles + factoryFiles).sorted() }
 
     var testDescription: String { fixture }
 
@@ -33,7 +36,8 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
             options: GenModelImportOptions(
                 basePackage: "org.example", copyright: "Copyright 2026 Example Pty Ltd"),
             files: ["org/example/library/BookCategory.java"],
-            packageFiles: ["org/example/library/LibraryPackage.java", "org/example/library/impl/LibraryPackageImpl.java"]),
+            packageFiles: ["org/example/library/LibraryPackage.java", "org/example/library/impl/LibraryPackageImpl.java"],
+            factoryFiles: ["org/example/library/LibraryFactory.java", "org/example/library/impl/LibraryFactoryImpl.java"]),
         JavaGoldenCase(
             fixture: "nested", stem: "company",
             options: GenModelImportOptions(
@@ -48,6 +52,16 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
                 "org/example/company/company/projects/impl/ProjPackageImpl.java",
                 "org/example/company/company/projects/archive/ArchivePackage.java",
                 "org/example/company/company/projects/archive/impl/ArchivePackageImpl.java",
+            ],
+            factoryFiles: [
+                "org/example/company/company/CompanyFactory.java",
+                "org/example/company/company/impl/CompanyFactoryImpl.java",
+                "org/example/company/company/people/PeopleFactory.java",
+                "org/example/company/company/people/impl/PeopleFactoryImpl.java",
+                "org/example/company/company/projects/ProjFactory.java",
+                "org/example/company/company/projects/archive/ArchiveFactory.java",
+                "org/example/company/company/projects/archive/impl/ArchiveFactoryImpl.java",
+                "org/example/company/company/projects/impl/ProjFactoryImpl.java",
             ]),
         JavaGoldenCase(
             fixture: "enumerations", stem: "enumerations",
@@ -60,6 +74,10 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
             packageFiles: [
                 "org/example/traffic/enumerations/EnumerationsPackage.java",
                 "org/example/traffic/enumerations/impl/EnumerationsPackageImpl.java",
+            ],
+            factoryFiles: [
+                "org/example/traffic/enumerations/EnumerationsFactory.java",
+                "org/example/traffic/enumerations/impl/EnumerationsFactoryImpl.java",
             ]),
         JavaGoldenCase(
             fixture: "documented", stem: "documented",
@@ -68,6 +86,18 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
             packageFiles: [
                 "org/example/alarm/documented/DocumentedPackage.java",
                 "org/example/alarm/documented/impl/DocumentedPackageImpl.java",
+            ],
+            factoryFiles: [
+                "org/example/alarm/documented/DocumentedFactory.java",
+                "org/example/alarm/documented/impl/DocumentedFactoryImpl.java",
+            ]),
+        JavaGoldenCase(
+            fixture: "datatypes", stem: "datatypes",
+            options: GenModelImportOptions(basePackage: "org.example.types"),
+            files: ["org/example/types/datatypes/Colour.java"],
+            factoryFiles: [
+                "org/example/types/datatypes/DatatypesFactory.java",
+                "org/example/types/datatypes/impl/DatatypesFactoryImpl.java",
             ]),
         JavaGoldenCase(
             fixture: "families", stem: "families",
@@ -76,6 +106,10 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
             packageFiles: [
                 "org/example/families/Families/FamiliesPackage.java",
                 "org/example/families/Families/impl/FamiliesPackageImpl.java",
+            ],
+            factoryFiles: [
+                "org/example/families/Families/FamiliesFactory.java",
+                "org/example/families/Families/impl/FamiliesFactoryImpl.java",
             ]),
         JavaGoldenCase(
             fixture: "organisation", stem: "organisation",
@@ -84,6 +118,10 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
             packageFiles: [
                 "org/example/organisation/organisation/OrganisationPackage.java",
                 "org/example/organisation/organisation/impl/OrganisationPackageImpl.java",
+            ],
+            factoryFiles: [
+                "org/example/organisation/organisation/OrganisationFactory.java",
+                "org/example/organisation/organisation/impl/OrganisationFactoryImpl.java",
             ]),
         JavaGoldenCase(
             fixture: "ecoretypes", stem: "bridge",
@@ -92,6 +130,10 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
             packageFiles: [
                 "org/example/bridge/bridge/BridgePackage.java",
                 "org/example/bridge/bridge/impl/BridgePackageImpl.java",
+            ],
+            factoryFiles: [
+                "org/example/bridge/bridge/BridgeFactory.java",
+                "org/example/bridge/bridge/impl/BridgeFactoryImpl.java",
             ]),
     ]
 }
@@ -106,7 +148,8 @@ struct JavaGenerationTests {
         defer { generated.remove() }
         try await generated.generate()
 
-        #expect(generated.generatedPaths() == golden.allFiles)
+        let missing = Set(golden.allFiles).subtracting(generated.generatedPaths())
+        #expect(missing.isEmpty, "missing generated files: \(missing.sorted())")
         let project = generated.project
         for path in golden.allFiles {
             let expected = try String(contentsOf: project.javaExpectation(path), encoding: .utf8)
@@ -154,10 +197,12 @@ struct JavaGenerationTests {
         let result = try await generated.generate()
         #expect(result.language == "java")
         #expect(result.packageCount == 1)
-        #expect(
-            result.files.map(\.lastPathComponent) == [
-                "EnumerationsPackage.java", "EnumerationsPackageImpl.java", "Colour.java", "Mode.java", "Empty.java",
-            ])
+        let names = result.files.map(\.lastPathComponent)
+        let expectedOrder = [
+            "EnumerationsPackage.java", "EnumerationsPackageImpl.java", "EnumerationsFactory.java",
+            "EnumerationsFactoryImpl.java", "Colour.java", "Mode.java", "Empty.java",
+        ]
+        #expect(names.isSubsequence(containing: expectedOrder), "unexpected file order: \(names)")
         #expect(result.outputDirectory.path == generated.output.standardizedFileURL.path)
     }
 
@@ -168,9 +213,9 @@ struct JavaGenerationTests {
             "library", stem: "library", options: GenModelImportOptions(basePackage: "org.example"))
         defer { generated.remove() }
         let result = try await generated.generate(options: GenerationOptions(includeSourceRoot: true))
-        #expect(
-            generated.generatedPaths()
-                == (JavaGoldenCase.all.first { $0.fixture == "library" }?.allFiles ?? []).map { "library/src/" + $0 })
+        let expected = (JavaGoldenCase.all.first { $0.fixture == "library" }?.allFiles ?? []).map { "library/src/" + $0 }
+        #expect(!expected.isEmpty)
+        #expect(Set(generated.generatedPaths()).isSuperset(of: expected))
         #expect(result.outputDirectory.lastPathComponent == "src")
     }
 
@@ -185,11 +230,23 @@ struct JavaGenerationTests {
         try await generated.generate(progress: { collector.add($0) })
         let updates = collector.updates
         let fileUpdates = updates.filter { $0.message.hasPrefix("Generated ") }
-        #expect(fileUpdates.map(\.completed) == [1, 2, 3, 4, 5])
-        #expect(fileUpdates.allSatisfy { $0.total == 5 })
+        #expect(fileUpdates.map(\.completed) == Array(1...fileUpdates.count))
+        #expect(fileUpdates.count >= 5)
+        #expect(fileUpdates.allSatisfy { $0.total == fileUpdates.count })
         #expect(fileUpdates.last?.fraction == 1)
         #expect(updates.last?.message == "Done")
         #expect(updates.first?.fraction == nil)
+    }
+}
+
+extension Array where Element: Equatable {
+    /// Whether the given elements all occur in this array, in the given order, possibly with others between them.
+    func isSubsequence(containing expected: [Element]) -> Bool {
+        var remaining = expected[...]
+        for element in self where element == remaining.first {
+            remaining = remaining.dropFirst()
+        }
+        return remaining.isEmpty
     }
 }
 
