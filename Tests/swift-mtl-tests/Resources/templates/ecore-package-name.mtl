@@ -1,0 +1,7 @@
+[module EcorePackageName('http://www.eclipse.org/emf/2002/Ecore')]
+
+[template main(aPackage : EPackage)]
+[file ('package.txt', 'overwrite', 'UTF-8')]
+Package: [aPackage.name/]
+[/file]
+[/template]

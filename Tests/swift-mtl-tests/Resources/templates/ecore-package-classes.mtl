@@ -1,0 +1,10 @@
+[module EcorePackageClasses('http://www.eclipse.org/emf/2002/Ecore')]
+
+[template main(aPackage : EPackage)]
+[file ('classes.txt', 'overwrite', 'UTF-8')]
+Package: [aPackage.name/]
+[for (c : EClass in aPackage.eClassifiers)]
+Class: [c.name/]
+[/for]
+[/file]
+[/template]
