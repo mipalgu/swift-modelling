@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
+    name="datatypes" nsURI="http://swift-modelling.org/test/datatypes" nsPrefix="dt">
+  <eClassifiers xsi:type="ecore:EClass" name="Thing"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Class"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Gizmo">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="Old.&#xA;@deprecated Use Thing&#xA;@since 2.0"/>
+    </eAnnotations>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="Colour">
+    <eLiterals name="Red"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EDataType" name="Count" instanceClassName="int"/>
+  <eClassifiers xsi:type="ecore:EDataType" name="Anything" instanceClassName="java.lang.Object"/>
+  <eClassifiers xsi:type="ecore:EDataType" name="Stamp" instanceClassName="java.util.Date">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="create" value="return new &lt;%java.util.Date%>(Long.parseLong(it));&#xA;// done"/>
+      <details key="convert" value="return Long.toString(it.getTime());"/>
+    </eAnnotations>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EDataType" name="Hidden" instanceClassName="java.lang.String" serializable="false"/>
+</ecore:EPackage>

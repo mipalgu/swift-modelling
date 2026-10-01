@@ -65,6 +65,14 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
                 "org/example/alarm/documented/impl/DocumentedFactoryImpl.java",
             ]),
         JavaGoldenCase(
+            fixture: "datatypes", stem: "datatypes",
+            options: GenModelImportOptions(basePackage: "org.example.types"),
+            files: [
+                "org/example/types/datatypes/Colour.java",
+                "org/example/types/datatypes/DatatypesFactory.java",
+                "org/example/types/datatypes/impl/DatatypesFactoryImpl.java",
+            ]),
+        JavaGoldenCase(
             fixture: "families", stem: "families",
             options: GenModelImportOptions(basePackage: "org.example.families"),
             files: [
