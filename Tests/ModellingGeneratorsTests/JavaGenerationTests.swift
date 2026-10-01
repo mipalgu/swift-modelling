@@ -26,24 +26,64 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
             fixture: "library", stem: "library",
             options: GenModelImportOptions(
                 basePackage: "org.example", copyright: "Copyright 2026 Example Pty Ltd"),
-            files: ["org/example/library/BookCategory.java"]),
+            files: [
+                "org/example/library/Book.java",
+                "org/example/library/BookCategory.java",
+                "org/example/library/Lendable.java",
+                "org/example/library/Library.java",
+                "org/example/library/Named.java",
+                "org/example/library/Writer.java",
+                "org/example/library/impl/BookImpl.java",
+                "org/example/library/impl/LibraryImpl.java",
+                "org/example/library/impl/NamedImpl.java",
+                "org/example/library/impl/WriterImpl.java",
+            ]),
         JavaGoldenCase(
             fixture: "nested", stem: "company",
             options: GenModelImportOptions(
                 basePackage: "org.example.company", packagePrefixes: ["projects": "Proj"]),
-            files: ["org/example/company/company/projects/Status.java"]),
+            files: [
+                "org/example/company/company/Company.java",
+                "org/example/company/company/impl/CompanyImpl.java",
+                "org/example/company/company/people/Employee.java",
+                "org/example/company/company/people/Person.java",
+                "org/example/company/company/people/impl/EmployeeImpl.java",
+                "org/example/company/company/people/impl/PersonImpl.java",
+                "org/example/company/company/projects/Project.java",
+                "org/example/company/company/projects/Status.java",
+                "org/example/company/company/projects/archive/Record.java",
+                "org/example/company/company/projects/archive/impl/RecordImpl.java",
+                "org/example/company/company/projects/impl/ProjectImpl.java",
+            ]),
         JavaGoldenCase(
             fixture: "enumerations", stem: "enumerations",
             options: GenModelImportOptions(basePackage: "org.example.traffic"),
             files: [
                 "org/example/traffic/enumerations/Colour.java",
                 "org/example/traffic/enumerations/Empty.java",
+                "org/example/traffic/enumerations/Light.java",
                 "org/example/traffic/enumerations/Mode.java",
+                "org/example/traffic/enumerations/impl/LightImpl.java",
+            ]),
+        JavaGoldenCase(
+            fixture: "classes", stem: "classes",
+            options: GenModelImportOptions(basePackage: "org.example.shapes"),
+            files: [
+                "org/example/shapes/classes/Canvas.java",
+                "org/example/shapes/classes/Circle.java",
+                "org/example/shapes/classes/Colour.java",
+                "org/example/shapes/classes/Named.java",
+                "org/example/shapes/classes/Shape.java",
+                "org/example/shapes/classes/impl/CanvasImpl.java",
+                "org/example/shapes/classes/impl/CircleImpl.java",
+                "org/example/shapes/classes/impl/ShapeImpl.java",
             ]),
         JavaGoldenCase(
             fixture: "documented", stem: "documented",
             options: GenModelImportOptions(basePackage: "org.example.alarm"),
-            files: ["org/example/alarm/documented/Level.java"]),
+            files: [
+                "org/example/alarm/documented/Level.java",
+            ]),
     ]
 }
 

@@ -63,6 +63,6 @@
  **/]
 [template public fileCount(genModel : GenModel)]
 [file ('count')]
-[genModel.allGenPackages()->collect(p | p.genEnums->size())->sum()/]
+[genModel.allGenPackages()->collect(p | p.genEnums->size() + p.genClasses->select(c | not c.isExternalInterface() and not c.genModel().isOn('suppressInterfaces'))->size() + p.genClasses->reject(c | c.isInterface())->size())->sum()/]
 [/file]
 [/template]

@@ -201,16 +201,36 @@
 [**
  * The API tag lines of a feature for a documentation comment, each starting with the prefix; nothing if there are none.
  **/]
-[template public apiLines(element : OclAny, prefix : String)]
-[if (element.apiTagLines()->notEmpty())]
-[prefix/][element.apiTagLines()->join('\n' + prefix)/]
+[template public apiLines(genFeature : GenFeature, prefix : String)]
+[if (ownAPITags(genFeature, genFeature.apiLink())->notEmpty())]
+[prefix/][ownAPITags(genFeature, genFeature.apiLink())->join('\n' + prefix)/]
 [/if]
 [/template]
 
 [**
- * The API tag lines of an element.
+ * The API tag lines of an operation for a documentation comment, each starting with the prefix; nothing if there are none.
  **/]
-[query public apiTagLines(element : OclAny) : OclAny = Sequence{if element.hasDocumentationTag('since') then '@since ' + element.documentationTagText('since') else '' endif, if element.hasDocumentationTag('deprecated') then (if element.documentationTagText('deprecated').size() = 0 then '@deprecated' else '@deprecated ' + element.documentationTagText('deprecated') endif) else '' endif, if element.hasDocumentationTag('noreference') then (if element.documentationTagText('noreference').size() = 0 then '@noreference' else '@noreference ' + element.documentationTagText('noreference') endif) else '' endif}->select(l | l.size() > 0)/]
+[template public apiLines(genOperation : GenOperation, prefix : String)]
+[if (ownAPITags(genOperation, genOperation.apiLink())->notEmpty())]
+[prefix/][ownAPITags(genOperation, genOperation.apiLink())->join('\n' + prefix)/]
+[/if]
+[/template]
+
+[**
+ * The target of the link that the API tags of a feature point to: its getter.
+ **/]
+[query public apiLink(genFeature : GenFeature) : String = genFeature.genClass().internalInterfaceName().substituteAll('$', '.') + (if genFeature.genClass().isMapEntry() or genFeature.isSuppressedGetVisibility() then '' else '#' + genFeature.getterName() + '()' endif)/]
+
+[**
+ * The target of the link that the API tags of an operation point to: the operation itself.
+ **/]
+[query public apiLink(genOperation : GenOperation) : String = genOperation.genClass().internalInterfaceName().substituteAll('$', '.') + '#' + genOperation.name() + '(' + genOperation.genParameters->collect(p | qualifiedTypeName(p.ecoreParameter.eType))->join(', ') + ')'/]
+
+[**
+ * The API tags that an element's own documentation carries, as lines for a documentation comment: since, deprecated and noreference.
+ * A tag with text points to the link, if there is one, for details.
+ **/]
+[query public ownAPITags(element : OclAny, link : String) : OclAny = Sequence{if element.hasDocumentationTag('since') and element.documentationTagText('since').size() > 0 then '@since ' + element.documentationTagText('since') else '' endif, if element.hasDocumentationTag('deprecated') then '@deprecated' + (if element.documentationTagText('deprecated').size() = 0 then '' else (if link.size() > 0 then ' See {@link ' + link + ' model documentation} for details.' else ' ' + element.documentationTagText('deprecated') endif) endif) else '' endif, if element.hasDocumentationTag('noreference') then '@noreference' + (if element.documentationTagText('noreference').size() = 0 then '' else (if link.size() > 0 then ' See {@link ' + link + ' model documentation} for details.' else ' ' + element.documentationTagText('noreference') endif) endif) else '' endif}->select(l | l.size() > 0)/]
 
 [comment List constructors /]
 

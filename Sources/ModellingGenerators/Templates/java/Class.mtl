@@ -160,8 +160,8 @@ public interface [genClass.interfaceName()/][genClass.interfaceExtendsClause()/]
 [if (genClass.needsRootExtendsInterfaceTag())]
  * @extends [importedName(genModel.rootExtendsInterface())/]
 [/if]
-[if (genClass.apiTagLines()->notEmpty())]
- * [genClass.apiTagLines()->join('\n * ')/]
+[if (genClass.implicitAPITagLines()->notEmpty())]
+ * [genClass.implicitAPITagLines()->join('\n * ')/]
 [/if]
  * @generated
  */
@@ -181,9 +181,11 @@ public interface [genClass.interfaceName()/][genClass.interfaceExtendsClause()/]
  * </ul>
 [/if]
  *
-[if (genClass.apiTagLines()->notEmpty())]
- * [genClass.apiTagLines()->join('\n * ')/]
+[let link : String = importedName(genClass.internalInterfaceName())]
+[if (ownAPITags(genClass, link)->union(genClass.implicitAPITagLines())->notEmpty())]
+ * [ownAPITags(genClass, link)->union(genClass.implicitAPITagLines())->join('\n * ')/]
 [/if]
+[/let]
  * @generated
  */
 [/if]
