@@ -29,7 +29,8 @@ struct GenerateCommand: AsyncParsableCommand {
 
             Modules that the template imports are searched in the directory of the template and \
             then in the --template-path directories. Each --param name=value is available to the \
-            templates through the services parameter('name') and hasParameter('name'). Existing \
+            templates as the variable [name/] and through the services parameter('name') and \
+            hasParameter('name'); a name must be an identifier and not a reserved keyword. Existing \
             files are merged with the generated text when the module declares a merge, and \
             replaced otherwise; --force-overwrite always replaces them, and --diff keeps them and \
             writes the generated text beside them.
@@ -120,7 +121,9 @@ struct GenerateCommand: AsyncParsableCommand {
         name: .long,
         help: """
             A parameter for the templates as name=value (can be specified multiple times). \
-            Templates read it with parameter('name') and test for it with hasParameter('name').
+            Templates read it as the variable [name/] or with parameter('name'), and test for \
+            it with hasParameter('name'). The name must be an identifier that is not a reserved \
+            keyword.
             """
     )
     var param: [String] = []
@@ -276,6 +279,7 @@ struct GenerateCommand: AsyncParsableCommand {
             basePath: output, options: generatorOptions, standardOutput: .capture)
         let generator = MTLGenerator(
             module: mtlModule, generationStrategy: strategy, serviceProviders: [parameters])
+        parameters.bind(to: generator)
 
         // Template arguments are the root objects of each model in command line order
         let rootObjects: [(any EcoreValue)?] = model.indices.flatMap { index in
@@ -425,6 +429,8 @@ enum ValidationError: Error, CustomStringConvertible {
     case parseFailed(String, String)
     case generationFailed(String)
     case invalidParameter(String)
+    case invalidParameterName(String)
+    case reservedParameterName(String)
     case templatePathInvalid(String)
 
     var description: String {
@@ -437,6 +443,10 @@ enum ValidationError: Error, CustomStringConvertible {
             return "Generation failed: \(message)"
         case .invalidParameter(let argument):
             return "Invalid parameter '\(argument)': expected name=value"
+        case .invalidParameterName(let name):
+            return "Invalid parameter name '\(name)': it is not a valid identifier"
+        case .reservedParameterName(let name):
+            return "Invalid parameter name '\(name)': it is a reserved keyword of MTL or AQL"
         case .templatePathInvalid(let path):
             return "The template path '\(path)' is not a directory"
         }
