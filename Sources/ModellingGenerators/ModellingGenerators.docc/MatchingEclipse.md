@@ -31,7 +31,7 @@ The three settings can be overridden individually, on top of either mode, on the
 
 An override always wins over the preset: `--defaults wizard --no-operation-reflection` gives the wizard settings without operation reflection. Switching operation reflection off removes both the operation count constants of the package interface and the `eInvoke` method of the implementation classes.
 
-With import organising off, the factory implementation, the switch and the adapter factory import the interface package of the model with a wildcard (`import org.example.extlibrary.*;`), and the other imports are grouped by package with a blank line between groups, as Eclipse writes them. With it on, they import each type that they use explicitly, sorted, in the groups `java`, `javax`, `org`, `com` and then everything else, with a blank line between groups.
+With import organising off, the factory implementation, the switch, the adapter factory and the validator import the interface package of the model with a wildcard (`import org.example.extlibrary.*;`), and the other imports are grouped by package with a blank line between groups, as Eclipse writes them. With it on, they import each type that they use explicitly, sorted, in the groups `java`, `javax`, `org`, `com` and then everything else, with a blank line between groups.
 
 When you reload an existing generator model with `swift-ecore genmodel --reload`, its settings are kept unless you say otherwise: with no flag the three settings keep their values, `--defaults` replaces all three with the preset (a `headless` reload removes values that a `wizard` model had written), and an individual flag is applied after that.
 
@@ -58,7 +58,7 @@ The generated Java depends only on the settings in the generator model, so none 
 | `eclipse` (the default) | Tabs | On the same line | What Eclipse writes into a workspace that has the default Java formatter preferences. |
 | `emf` | Two spaces | On its own line | The layout of EMF's own sources. |
 
-A code style is not a feature of the tool. It is defined by the template set: the styles that exist are the ones the set provides, and `swift-ecore generate --help` is the authority for the set you have. A template set that you add with `--template-path` defines its own styles or none.
+Code styles are defined by the template set: the styles that exist are the ones the set provides, and `swift-ecore generate --help` lists the styles of the bundled sets. A template set that you add with `--template-path` defines its own styles or none. An unknown name is rejected with the available styles. See <doc:TemplateSets> for the descriptor and <doc:JavaGeneration> for the shared blank-line layout and preservation of hand-written members when switching styles.
 
 ### What is not reproduced
 

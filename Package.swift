@@ -168,6 +168,7 @@ let package = Package(
         .testTarget(
             name: "TutorialTests",
             dependencies: [
+                "SwiftModelling",
                 .product(name: "Subprocess", package: "swift-subprocess"),
                 .product(name: "ECore", package: "swift-ecore"),
                 .product(name: "ATL", package: "swift-atl"),

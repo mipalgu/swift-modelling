@@ -25,6 +25,20 @@ private var runtimeClassPath: String? {
     ProcessInfo.processInfo.environment["EMF_RUNTIME_CLASSPATH"].flatMap { $0.isEmpty ? nil : $0 }
 }
 
+/// Whether a declaration line has the selected signature in either tutorial code style.
+///
+/// Matching uses the complete signature after removing surrounding whitespace. A brace
+/// on the declaration line is optional, so both layouts select the same member.
+///
+/// - Parameters:
+///   - line: The source line, with optional indentation and opening brace.
+///   - signature: The complete member signature without indentation or an opening brace.
+/// - Returns: Whether the line matches the signature exactly, with an optional same-line brace.
+private func matchesMemberSignature(_ line: String, signature: String) -> Bool {
+    let declaration = line.trimmingCharacters(in: .whitespaces)
+    return declaration == signature || declaration == signature + " {"
+}
+
 /// Replaces the text of a Java member, from the start of its documentation comment to its closing brace.
 ///
 /// - Parameters:
@@ -34,7 +48,7 @@ private var runtimeClassPath: String? {
 /// - Returns: The source with the member replaced, or nil if the member was not found.
 private func replacingMember(in text: String, signature: String, with replacement: String) -> String? {
     var lines = text.components(separatedBy: "\n")
-    guard let signatureIndex = lines.firstIndex(where: { $0.trimmingCharacters(in: .whitespaces) == signature }),
+    guard let signatureIndex = lines.firstIndex(where: { matchesMemberSignature($0, signature: signature) }),
         let start = lines[..<signatureIndex].lastIndex(where: {
             $0.trimmingCharacters(in: .whitespaces).hasPrefix("/**")
         }),
@@ -55,7 +69,7 @@ private func replacingMember(in text: String, signature: String, with replacemen
 /// - Returns: The edited source, or nil if the member was not found.
 private func editing(_ text: String, signature: String, marker: String, keep: Bool) -> String? {
     var lines = text.components(separatedBy: "\n")
-    guard let signatureIndex = lines.firstIndex(where: { $0.trimmingCharacters(in: .whitespaces) == signature }),
+    guard let signatureIndex = lines.firstIndex(where: { matchesMemberSignature($0, signature: signature) }),
         let brace = lines[signatureIndex...].firstIndex(where: { $0.contains("{") })
     else { return nil }
     lines.insert("// \(marker)", at: brace + 1)
@@ -66,6 +80,66 @@ private func editing(_ text: String, signature: String, marker: String, keep: Bo
         lines[tag] = lines[tag] + " NOT"
     }
     return lines.joined(separator: "\n")
+}
+
+@Suite("Java tutorial member editing")
+/// Checks the declaration selection used by the Java tutorial editing examples.
+///
+/// Both documented brace layouts must select the same complete signature and leave
+/// unrelated overloads untouched.
+struct JavaTutorialMemberEditingTests {
+    /// The declaration that the editing examples select.
+    ///
+    /// The brace and indentation belong to the layout rather than the signature.
+    private static let signature = "public int getQuantity()"
+
+    /// A neighbouring declaration that must not match the selected signature.
+    ///
+    /// Its parameter distinguishes the overload from the selected member.
+    private static let otherSignature = "public int getQuantity(int adjustment)"
+
+    /// The marker used to identify a preserved body.
+    ///
+    /// The editing example inserts it as a comment inside the selected member.
+    private static let marker = "custom quantity"
+
+    /// Creates a small generated member in one of the documented brace layouts.
+    ///
+    /// The member provides the leading tag and body needed by both editing helpers.
+    ///
+    /// - Parameter opening: The whitespace and opening brace after the declaration.
+    /// - Returns: Source with a leading generated tag and a simple method body.
+    private func source(opening: String) -> String {
+        "/**\n * @generated\n */\n\(Self.signature)\(opening)\n    return 1;\n}\n"
+    }
+
+    @Test("editing preserves the selected member in either brace layout", arguments: [" {", "\n{"])
+    /// Checks that the editing example marks and preserves the selected body.
+    ///
+    /// An overload with a different parameter list must remain unmatched.
+    ///
+    /// - Parameter opening: The whitespace and opening brace after the declaration.
+    func editingBothLayouts(_ opening: String) throws {
+        let text = source(opening: opening)
+        let edited = try #require(editing(text, signature: Self.signature, marker: Self.marker, keep: true))
+        #expect(edited.contains("@generated NOT"))
+        #expect(edited.contains("// \(Self.marker)"))
+        #expect(edited.contains("return 1;"))
+        #expect(editing(text, signature: Self.otherSignature, marker: Self.marker, keep: true) == nil)
+    }
+
+    @Test("replacement selects only the exact declaration in either brace layout", arguments: [" {", "\n{"])
+    /// Checks that replacement changes only the member with the complete signature.
+    ///
+    /// Each layout must preserve the surrounding source and reject another overload.
+    ///
+    /// - Parameter opening: The whitespace and opening brace after the declaration.
+    func replacingBothLayouts(_ opening: String) throws {
+        let text = source(opening: opening)
+        let replacement = source(opening: opening).replacingOccurrences(of: "return 1;", with: "return 2;")
+        #expect(replacingMember(in: text, signature: Self.signature, with: replacement) == replacement)
+        #expect(replacingMember(in: text, signature: Self.otherSignature, with: replacement) == nil)
+    }
 }
 
 @Suite("Tutorial Java-01: From Ecore to a Generator Model", .enabled(if: JavaTutorial.shellAvailable, Comment(rawValue: shellReason)))
@@ -342,6 +416,9 @@ struct JavaTutorialExtendedLibraryTests {
 
         let book = JavaTutorial.normalised(try workspace.read("src/\(directory)/Book.java"))
         #expect(book.contains(JavaTutorial.normalised(try JavaTutorial.text(2, 5))))
+        #expect(
+            try workspace.read("src/\(directory)/Book.java").contains(try JavaTutorial.text(2, 5)),
+            "the interface excerpt uses the exact default Eclipse layout")
         let bookImpl = JavaTutorial.normalised(try workspace.read("src/\(directory)/impl/BookImpl.java"))
         #expect(bookImpl.contains(JavaTutorial.normalised(try JavaTutorial.text(2, 6))))
 

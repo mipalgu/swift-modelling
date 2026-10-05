@@ -10,7 +10,7 @@ import GenModel
 ///
 /// The names of the transformation parameters, the default settings of a freshly
 /// imported model and the conventions for locating projects live here. The names of the
-/// generator metamodel's own classes and features come from ``GenModelConstants``.
+/// generator metamodel's own classes and features come from `GenModelConstants`.
 public enum GenModelImportConstants {
     /// The identifier that marks a generator model as produced by the Ecore importer.
     public static let importerID = "org.eclipse.emf.importer.ecore"

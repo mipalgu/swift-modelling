@@ -2,11 +2,10 @@
     @Intro(title: "From Ecore to a Generator Model") {
         Take a real Ecore model, the extended library example of the Eclipse Modeling Framework, and create the generator model that decides how Java is generated for it.
 
-        A generator model (`.genmodel`) records the settings of the code generator: the base package, the prefixes of the generated classes, the Java compliance level, the copyright text and many more. You will create one with `swift-ecore genmodel`, learn which settings you can choose on the command line, and keep your own edits when the Ecore model changes.
+        A generator model (.genmodel) records the settings of the code generator: the base package, the prefixes of the generated classes, the Java compliance level, the copyright text and many more. You will create one with swift-ecore genmodel, learn which settings you can choose on the command line, and keep your own edits when the Ecore model changes.
 
-        The tutorial assumes that `swift-ecore` and `swift-atl` are on your search path. The next tutorial turns the generator model into Java.
+        The tutorial assumes that swift-ecore and swift-atl are on your search path. The next tutorial turns the generator model into Java.
 
-        @Image(source: "mtl-code-generation.svg", alt: "Code generation from a generator model")
     }
 
     @Section(title: "The Extended Library Model") {

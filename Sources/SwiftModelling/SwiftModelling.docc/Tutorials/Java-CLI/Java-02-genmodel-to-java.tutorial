@@ -2,9 +2,8 @@
     @Intro(title: "From a Generator Model to Java") {
         Generate Java for the Eclipse Modeling Framework from the generator model of the extended library example, keep your own code when you generate again, and change how the generated code looks.
 
-        You will use the files from <doc:Java-01-ecore-to-genmodel>: `extlibrary.ecore`, `extlibrary.genmodel`, and the generator model with its own settings in `generated/extlibrary.genmodel`. The last section compiles the result, which needs a Java development kit.
+        You will use the files from <doc:Java-01-ecore-to-genmodel>: extlibrary.ecore, extlibrary.genmodel, and the generator model with its own settings in generated/extlibrary.genmodel. The last section compiles the result, which needs a Java development kit.
 
-        @Image(source: "mtl-code-generation.svg", alt: "Code generation from a generator model")
     }
 
     @Section(title: "Generating Java") {
@@ -130,7 +129,7 @@
 
                 @Code(name: "Terminal", file: java-02-step-14-ecore-input.sh)
 
-                This imports the model with the default settings and no base package, so the package directory is `extlibrary`. Create the generator model first when you want to choose the settings.
+                This imports the model with the headless defaults and no base package, so the package directory is `extlibrary`. You can choose a preset or override individual settings here, as the Code Style section shows. Create the generator model first when you want to edit and keep all its settings.
             }
         }
     }
@@ -161,7 +160,7 @@
 
     @Section(title: "Code Style") {
         @ContentAndMedia {
-            Generated code can follow two layouts. Choose the one that matches your project, so that regenerating does not reformat files that you edited.
+            The Java template set offers two code styles: `eclipse`, the default, and `emf`. They differ only in whitespace and share the blank-line layout of Eclipse output. Regenerated members follow the chosen style; members marked `@generated NOT` and your own members keep their layout.
         }
 
         @Steps {
@@ -184,7 +183,7 @@
 
                 @Code(name: "Terminal", file: java-02-step-18-code-style-eclipse.sh)
 
-                `--code-style eclipse` is the default. It indents with tabs and keeps the opening brace on the line of its declaration, which is what a default Eclipse workspace writes when it formats Java.
+                `--code-style eclipse` is the default. It indents with tabs and keeps the opening brace on the line of its declaration, which matches the Eclipse generator in a workspace with the default Java formatter preferences. This option chooses a fixed layout; it does not run Eclipse's optional JDT formatter pass.
             }
 
             @Step {
@@ -192,7 +191,7 @@
 
                 @Code(name: "BookImpl.java (eclipse style)", file: java-02-step-20-style-eclipse.java)
 
-                Choose `eclipse` for a project that you format with Eclipse or a formatter with its defaults. Choose `emf` when your code sits beside EMF's own sources, or when you compare your output with them. Switching styles on an existing tree changes the whitespace of regenerated members, so decide once.
+                Choose `eclipse` for a project that you format with Eclipse or a formatter with its defaults. Choose `emf` when your code sits beside EMF's own sources, or when you compare your output with them. Switching styles on an existing tree reformats regenerated members and preserves the layout of members that you marked `@generated NOT` or wrote yourself.
             }
 
             @Step {
@@ -200,7 +199,7 @@
 
                 @Code(name: "Terminal", file: java-02-step-21-preset-in-one-step.sh)
 
-                `--defaults`, `--root-extends-class`, `--operation-reflection`, `--import-organizing` and their negations, which <doc:Java-01-ecore-to-genmodel> describes, work on `swift-ecore genmodel`, on `swift-ecore generate` with an Ecore model, and on `swift-atl generate`.
+                `--defaults` and `--root-extends-class` choose generator model settings. `--operation-reflection` and `--import-organizing` can also be negated with `--no-operation-reflection` and `--no-import-organizing`. As <doc:Java-01-ecore-to-genmodel> describes, these options work on `swift-ecore genmodel`, on `swift-ecore generate` with an Ecore model, and on `swift-atl generate` with an Ecore model. An existing `.genmodel` supplies its own settings, so the commands reject preset and setting options for that input.
             }
         }
     }

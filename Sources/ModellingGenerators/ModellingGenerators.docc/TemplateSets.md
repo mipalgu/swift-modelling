@@ -25,6 +25,8 @@ The descriptor, `templateset.json`, is read into a ``TemplateSetDescriptor``. On
 
 The main template runs with the generator model as its only argument and writes files with `[file (...)]` blocks. The optional file count template writes the number of files that the main template will write; the pipeline runs it first so that progress reports can show a bar.
 
+`layout.sourceRootSetting` names the generator model setting that holds the source directory, and `layout.includeSourceRoot` decides whether that directory is included in the output path by default. ``GenerationOptions/includeSourceRoot`` (`--model-directory` on the command line) overrides that choice. Templates can call `layoutIncludesSourceRoot()` to decide whether to write files beside the source directory, such as project metadata. `options.lineDelimiter` chooses the line delimiter of generated files. See <doc:JavaGeneration> for the Java source and project layout.
+
 ### Code styles
 
 A template set writes its text in one layout. The optional `styles` member of the descriptor names other layouts as data, and `defaultStyle` names the one that applies when the caller does not choose, so the generator needs no knowledge of the target language:

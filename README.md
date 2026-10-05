@@ -305,59 +305,9 @@ swift test --filter JavaCompileTests
 
 ### Template Sets
 
-A template set generates code for one language. It is a directory named after the language that holds a descriptor, template modules and, optionally, data models. The bundled sets live in `Sources/ModellingGenerators/Templates/<language>/`. Nothing about a language is written in Swift: the Swift side provides the engines, the generator model, a set of language-neutral services and the pipeline.
+A template set is a directory named after a language, containing a descriptor (`templateset.json`), Model-to-Text modules and optional data models. The bundled sets live in `Sources/ModellingGenerators/Templates/<language>/`. The descriptor names the main module and template, and can declare progress totals, output layout and code styles. Language rules live in the templates and data; the Swift libraries provide the engines, generator model, services and pipeline.
 
-```text
-Templates/java/
-    templateset.json     descriptor
-    generate.mtl         main module: for each package, which files to write
-    Header.mtl           file header comment
-    JavaNames.mtl        names of packages, classes, accessors and constants
-    JavaTypes.mtl        type mapping and container types
-    JavaImports.mtl      imports and simple-name conflicts
-    JavaDocumentation.mtl  documentation tags, literals and escapes
-    EnumClass.mtl        the file of an enumeration
-    PackageClass.mtl     the package interface and implementation
-    PackageNames.mtl     queries for the package templates
-    SwitchClass.mtl, AdapterFactoryClass.mtl, ValidatorClass.mtl, JavaUtilities.mtl  the utility classes of a package
-    TypeMapping.ecore    a small metamodel for the language data
-    java-types.xmi       type table, reserved words and implicit types, an instance of it
-```
-
-**Descriptor (`templateset.json`).** Only `name`, `mainModule` and `mainTemplate` are required.
-
-```json
-{
-  "name": "java",
-  "summary": "Java model code for the Eclipse Modeling Framework runtime",
-  "mainModule": "generate",
-  "mainTemplate": "generate",
-  "fileCountTemplate": "fileCount",
-  "dataModels": [
-    { "name": "types", "metamodel": "TypeMapping.ecore", "model": "java-types.xmi" }
-  ],
-  "layout": { "sourceRootSetting": "modelDirectory", "includeSourceRoot": false },
-  "options": { "lineDelimiter": "\n" }
-}
-```
-
-- `mainModule` and `mainTemplate` name the template that runs with the generator model (`GenModel`) as its only argument. It writes files with `[file (...)]` blocks; file names are relative to the output directory.
-- `fileCountTemplate` (optional) names a template of the main module that writes the number of files the main template will write as the only content of one file. The pipeline runs it first, without touching the disk, so that progress reports can carry a total for a progress bar.
-- `dataModels` lists models that the templates read: the metamodel (`.ecore`) and an instance (`.xmi`) in the set. Templates reach the root objects with `templateData('name')`. The Java set keeps its type table, reserved words and implicit types this way, so they change without touching code.
-- `layout` says where files go by default. `sourceRootSetting` names a generator model setting that holds a source directory, such as `modelDirectory`; `includeSourceRoot` states whether it is part of the output location unless `--model-directory` decides otherwise.
-- `options.lineDelimiter` is the line delimiter written to files.
-- `styles` and `defaultStyle` (optional) declare the code styles that `--code-style` chooses from, as data: each style names the indentation unit that the templates write (`sourceIndent`), the unit to produce (`targetIndent`), whether a block opener stays on its own line (`openerPlacement`: `ownLine` or `sameLine`) and the `files` it applies to. `defaultStyle` applies when no style is chosen. The Java set declares `eclipse` (the default) and `emf`; a set without `styles` rejects `--code-style`.
-- Templates can ask `layoutIncludesSourceRoot()` whether the output location is the source directory itself (`false`) or contains it (`true`). The Java set writes the plugin descriptor, bundle manifest, build properties and plugin properties of the model project, which belong to the parent of the source directory, only in the second case (`--model-directory`). An existing `plugin.xml`, `MANIFEST.MF` and plugin properties file is kept unless `--force-overwrite` is given; the build properties are replaced only while no `plugin.xml` exists (or with `--force-overwrite`), as in the Eclipse generator. Properties files are written in ISO-8859-1, with a Unicode escape for every character beyond it. Merging an existing `plugin.xml`, `MANIFEST.MF` or properties file by key is not supported. The templates use the file controls of the template engine for this: `create` mode, the `files=*.java` scope of the `[merge]` declaration, `merge=false`, `fileExists` and `forceOverwrite`.
-
-**Modules.** Modules are written in the Acceleo dialect of MTL that swift-mtl implements. The module header names the metamodels that the templates use (the generator metamodel `http://www.eclipse.org/emf/2002/GenModel` and the namespaces of the data models). Modules import each other by name (`[import JavaNames/]`); imports are not transitive, so every module imports what it uses. Each module can be replaced by a file of the same name in a `--template-path` directory.
-
-**Merge declaration.** A module declares how existing files are merged, for example the Java set declares `[merge ('/**', '*/', '@generated', '@generated NOT', 'braces')/]` in its main module: the comment delimiters of the leading comments, the tag of generated members, the tag of members to keep, and how blocks end. This is how a language states what a hand edit is; the engine knows no language.
-
-**Imports.** `[collect ('imports', ...)/]` records names while a file is written and `[emit ('imports') once]...[/emit]` marks where the collected names are written. Language rules (which names need an import, simple-name conflicts, sorting and grouping) are queries in the set. `JavaImports.mtl` shows the pattern: the unit that is written is collected first, `importedName(qualified)` collects an import and returns the name to write.
-
-**Services.** Templates reach the generator model with the structural features of the generator metamodel (`genPackage.genEnums`, `genClass.genFeatures`, `ecoreEnum`, ...) and with language-neutral services: `allGenFeatures()`, `implementedGenFeatures()`, `featureID(f)`, `featureCount()`, `operationID(o)`, `classifierID()`, `genClassifiers()`, `orderedGenClasses()`, `genPackage()`, `genModel()`, `isMapEntry()`, `labelFeature()`, shortcuts to the Ecore feature (`isContainment()`, `isListType()`, `lowerBound()`, ...), `capName()`, `uncapName()`, `upperName()`, `formatName(separator, prefix, includePrefix)`, `setting('name')` (a setting with the default of the generator metamodel), `documentation()`, `lines()`, `indentLines(prefix)`, `join(separator)` and a few more. Derived navigation is written with parentheses (`element.genPackage()`), because the same name is also a stored reference of the generator metamodel. The DocC article *Template Sets* in the `ModellingGenerators` documentation lists them all.
-
-**Adding a language.** Create `Templates/<language>/` with a `templateset.json`, a main module that writes the files, and whatever query modules and data you need; nothing in Swift changes. To try a set without bundling it, put the directory (with the language name) in a directory and pass that with `--template-path`:
+To try another language, put its directory below `my-templates` and pass that directory to the generator:
 
 ```text
 my-templates/
@@ -369,6 +319,8 @@ my-templates/
 ```bash
 swift run swift-ecore generate --language outline model/library.genmodel -o out --template-path my-templates
 ```
+
+A file in a template path replaces the bundled file of the same relative name. Later paths take precedence, so individual modules can be customised without copying the whole set. The [Template Sets article](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/templatesets/index.html) is the reference for descriptors, code styles, merge declarations, data models and services. [Java Generation](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/javageneration/index.html) describes the bundled Java modules and project files.
 
 ### Generating with ATL: `swift-atl generate`
 
