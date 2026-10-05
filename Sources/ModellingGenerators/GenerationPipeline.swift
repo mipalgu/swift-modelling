@@ -52,10 +52,10 @@ public enum GenerationPipeline {
         progress: GenerationProgress = { _ in }
     ) async throws -> GenModelResult {
         guard let first = ecoreURLs.first else { throw GenerationError.noSourceModels }
-        let sources = ecoreURLs.map(FileLocations.canonical)
-        for url in sources where !FileManager.default.fileExists(atPath: url.path) {
+        for url in ecoreURLs where !FileManager.default.fileExists(atPath: url.path) {
             throw GenerationError.sourceModelNotFound(url.path)
         }
+        let sources = ecoreURLs.map(FileLocations.canonical)
         let output = FileLocations.canonical(options.output ?? defaultOutput(for: first))
 
         let resourceSet = ResourceSet()

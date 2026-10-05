@@ -59,6 +59,21 @@ struct GenModelSymbolicLinkTests {
         #expect(!text.contains(".."))
     }
 
+    /// Verifies that a missing model is reported at the location supplied by the caller.
+    ///
+    /// A symbolic link gives the missing file a different location from the fixture's real directory.
+    /// The reported path must retain that supplied location so the caller can identify the input.
+    @Test("A missing source reached through a link is reported at its supplied location")
+    @MainActor
+    func missingSourceThroughLink() async throws {
+        let linked = try Linked.make("families")
+        defer { linked.remove() }
+        let url = linked.viaLink(UUID().uuidString)
+        await #expect(throws: GenerationError.sourceModelNotFound(url.path)) {
+            _ = try await GenerationPipeline.ecoreToGenModel(ecoreURLs: [url])
+        }
+    }
+
     @Test("The output and the source may reach the same directory by different paths")
     @MainActor
     func mixedPaths() async throws {
