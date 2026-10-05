@@ -41,6 +41,12 @@ A Java file that exists is merged with the generated text. A member whose commen
 
 The project files are not merged. An existing plugin descriptor, bundle manifest and plugin properties file stay as they are unless the overwrite is forced, and the build properties are replaced only while there is no plugin descriptor yet or when the overwrite is forced. The properties files are written in ISO-8859-1, with a Unicode escape for every character beyond it.
 
+### Code styles
+
+The templates write the layout of the Eclipse Modeling Framework repository sources: two-space indentation and the opening brace on its own line. The descriptor of the set declares two code styles that convert it, chosen with ``GenerationOptions/codeStyle``. `eclipse`, the default, indents with tabs and writes the opening brace at the end of the preceding line, as the Eclipse generator leaves the files in a workspace with the default Java formatter preferences. `emf` keeps the layout of the templates. Both styles share the blank lines of the Eclipse output: one blank line before and after the import block, or two blank lines between the package statement and the first comment when there are no imports; two blank lines between the identifier constants and the accessors of a package interface; and none between the constructor of a package implementation and the comment that follows it. Only `*.java` files are converted.
+
+Switching the style of an existing tree is safe: generated members are regenerated in the new style, while members that you marked `@generated NOT` or wrote yourself keep their layout, so a mixture remains until the overwrite is forced.
+
 ### Checking the output
 
 Setting `EMF_REFERENCE_ROOT` to a checkout of the Eclipse Modeling Framework compares the generated `BookCategory.java` of its extended library example with the committed source. Setting `EMF_RUNTIME_CLASSPATH` to the runtime jars compiles the generated Java with `javac`; `Scripts/fetch-emf-runtime.sh` downloads the jars and prints the class path.

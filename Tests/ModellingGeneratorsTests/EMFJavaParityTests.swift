@@ -50,6 +50,37 @@ struct EMFJavaParityTests {
         text.replacingOccurrences(of: importGapPattern, with: "$1", options: .regularExpression)
     }
 
+    /// Gives the blank lines around the package statement and the import block the form of fresh output.
+    ///
+    /// The committed reference sources were written by an older generator release, which left two blank
+    /// lines on each side of the import block. A current generator writes one blank line on each side, or
+    /// two between the package statement and the first comment when there are no imports, so the gaps
+    /// are reduced to one blank line in both texts.
+    ///
+    /// - Parameter text: The text of a Java file without its header.
+    /// - Returns: The text with one blank line after the package statement and after the imports.
+    static func withoutHeadGaps(_ text: String) -> String {
+        text.replacingOccurrences(of: #"(package [^\n]*;\n)\n+"#, with: "$1\n", options: .regularExpression)
+            .replacingOccurrences(of: #"(import [^\n]*;\n)\n+(?=/\*\*)"#, with: "$1\n", options: .regularExpression)
+    }
+
+    /// Removes the differences in blank lines that the older reference package files have from fresh output.
+    ///
+    /// The committed package files predate two changes of the generator: a package interface now has two
+    /// blank lines between its constants and its first accessor, and a package implementation has no blank
+    /// line between its constructor and the comment that follows. Both texts are brought to one form.
+    ///
+    /// - Parameter text: The text of a package interface or implementation.
+    /// - Returns: The text with one blank line before the first accessor and one after the constructor.
+    static func withoutPackageGaps(_ text: String) -> String {
+        withoutHeadGaps(text)
+            .replacingOccurrences(
+                of: #"\n\n\n+(?=  /\*\*\n   \* Returns the meta object for )"#, with: "\n\n", options: .regularExpression)
+            .replacingOccurrences(
+                of: #"((?:private|public) \w+\(\)\n  \{\n    super\([^\n]*\);\n  \}\n)\n(?=  /\*\*)"#, with: "$1",
+                options: .regularExpression)
+    }
+
     /// Converts line endings to line feeds.
     ///
     /// - Parameter text: The text to normalise.
@@ -74,7 +105,7 @@ struct EMFJavaParityTests {
 
         let result = try await GenerationPipeline.generate(
             genModelURL: directory.appendingPathComponent(Self.genModelPath), language: "java",
-            outputDirectory: output)
+            outputDirectory: output, options: EMFParityTests.repositoryOptions)
         #expect(result.files.contains { $0.path.hasSuffix(Self.generatedBookCategory) })
 
         let expected = Self.normalisingLineEndings(
@@ -88,8 +119,9 @@ struct EMFJavaParityTests {
             of: Self.nonNLSPattern, with: "", options: .regularExpression)
         #expect(actual != actualWithoutMarkers, "the generator model asks for string markers")
         #expect(
-            Self.withoutHeader(actualWithoutMarkers) == Self.withoutHeader(expected),
-            "BookCategory.java differs from the reference beyond header and string markers")
+            Self.withoutHeadGaps(Self.withoutHeader(actualWithoutMarkers))
+                == Self.withoutHeadGaps(Self.withoutHeader(expected)),
+            "BookCategory.java differs from the reference beyond header, string markers and head spacing")
     }
 
     /// The generated package interface of the reference library example, relative to its directory.
@@ -134,7 +166,7 @@ struct EMFJavaParityTests {
 
         _ = try await GenerationPipeline.generate(
             genModelURL: directory.appendingPathComponent(Self.genModelPath), language: "java",
-            outputDirectory: output)
+            outputDirectory: output, options: EMFParityTests.repositoryOptions)
 
         let expected = Self.withoutOlderReleaseLines(
             Self.normalisingLineEndings(
@@ -143,8 +175,9 @@ struct EMFJavaParityTests {
         let actual = Self.normalisingLineEndings(
             try String(contentsOf: output.appendingPathComponent(generatedPath), encoding: .utf8))
         #expect(
-            Self.withoutHeader(actual) == Self.withoutHeader(expected),
-            "\(generatedPath) differs from the reference beyond its header")
+            Self.withoutPackageGaps(Self.withoutHeader(actual))
+                == Self.withoutPackageGaps(Self.withoutHeader(expected)),
+            "\(generatedPath) differs from the reference beyond its header and the known blank lines")
     }
 
     @Test(
@@ -164,7 +197,7 @@ struct EMFJavaParityTests {
 
         let result = try await GenerationPipeline.generate(
             genModelURL: directory.appendingPathComponent(Self.genModelPath), language: "java",
-            outputDirectory: output)
+            outputDirectory: output, options: EMFParityTests.repositoryOptions)
         #expect(result.files.contains { $0.path.hasSuffix(path) })
 
         let expected = Self.normalisingLineEndings(
@@ -178,8 +211,8 @@ struct EMFJavaParityTests {
         let expectedWithoutMarkers = expected.replacingOccurrences(
             of: Self.nonNLSPattern, with: "", options: .regularExpression)
         #expect(
-            Self.withoutImportGaps(Self.withoutHeader(actualWithoutMarkers))
-                == Self.withoutImportGaps(Self.withoutHeader(expectedWithoutMarkers)),
+            Self.withoutImportGaps(Self.withoutHeadGaps(Self.withoutHeader(actualWithoutMarkers)))
+                == Self.withoutImportGaps(Self.withoutHeadGaps(Self.withoutHeader(expectedWithoutMarkers))),
             "\(path) differs from the reference beyond header, string markers and import spacing")
     }
 
@@ -233,7 +266,7 @@ struct EMFJavaParityTests {
 
         _ = try await GenerationPipeline.generate(
             genModelURL: directory.appendingPathComponent(Self.genModelPath), language: "java",
-            outputDirectory: output)
+            outputDirectory: output, options: EMFParityTests.repositoryOptions)
         let generatedPath = String(path.dropFirst("src/".count))
         let expected = try String(contentsOf: directory.appendingPathComponent(path), encoding: .utf8)
         let actual = try String(contentsOf: output.appendingPathComponent(generatedPath), encoding: .utf8)
@@ -276,7 +309,8 @@ struct EMFJavaParityTests {
         try text.replacingOccurrences(of: marker, with: marker + #" importOrganizing="true""#)
             .write(to: genModel, atomically: true, encoding: .utf8)
         _ = try await GenerationPipeline.generate(
-            genModelURL: genModel, language: "java", outputDirectory: output.appendingPathComponent("java"))
+            genModelURL: genModel, language: "java", outputDirectory: output.appendingPathComponent("java"),
+            options: EMFParityTests.repositoryOptions)
         for path in Self.switchPaths {
             let generatedPath = String(path.dropFirst("tests/org.eclipse.emf.test.common/src/".count))
             let expected = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
@@ -336,7 +370,7 @@ extension EMFJavaParityTests {
         defer { try? FileManager.default.removeItem(at: output) }
         _ = try await GenerationPipeline.generate(
             genModelURL: directory.appendingPathComponent(Self.genModelPath), language: "java",
-            outputDirectory: output, options: GenerationOptions(includeSourceRoot: true))
+            outputDirectory: output, options: EMFParityTests.repositoryGeneration(includeSourceRoot: true))
         func read(_ base: URL, _ path: String) throws -> String {
             try String(contentsOf: base.appendingPathComponent(path), encoding: .utf8)
         }

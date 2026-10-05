@@ -39,6 +39,8 @@ struct GenerateCommand: AsyncParsableCommand {
             defaults of the headless Eclipse generator. --defaults wizard gives the settings of \
             the interactive Eclipse wizard instead, and --root-extends-class, --operation-reflection \
             and --import-organizing (or their --no- forms) override single settings.
+
+            Code styles of the template sets (--code-style): \(CodeStyleOptions.bundledStyleList())
             """
     )
 
@@ -73,6 +75,10 @@ struct GenerateCommand: AsyncParsableCommand {
     /// The preset and the overrides of the generator model defaults.
     @OptionGroup(title: "Generator model defaults")
     var genModelDefaults: GenModelDefaultsOptions
+
+    /// The code style of the generated text.
+    @OptionGroup(title: "Code style")
+    var codeStyle: CodeStyleOptions
 
     /// Directories whose template files replace the bundled templates.
     @Option(
@@ -133,6 +139,10 @@ struct GenerateCommand: AsyncParsableCommand {
             guard CodeGenerator.supportedLanguages.contains(language) else {
                 throw templateLanguageError(templateLanguages)
             }
+            if codeStyle.isGiven {
+                throw ArgumentParser.ValidationError(
+                    "--code-style only applies to a language with a template set, not to \(language)")
+            }
             try await generateWithBuiltInGenerator(inputURL)
         }
     }
@@ -152,6 +162,7 @@ struct GenerateCommand: AsyncParsableCommand {
         var options = GenerationOptions(
             templatePaths: templateURLs, forceOverwrite: forceOverwrite, diff: diff)
         if useModelDirectory { options.includeSourceRoot = true }
+        codeStyle.apply(to: &options)
         var importOptions = GenModelImportOptions()
         genModelDefaults.apply(to: &importOptions)
         let bar = GenerationProgressBar(verbose: verbose)

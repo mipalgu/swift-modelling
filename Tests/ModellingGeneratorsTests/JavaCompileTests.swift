@@ -74,15 +74,15 @@ struct JavaCompileTests {
         "Generated files compile against the EMF runtime",
         .enabled(if: classPath != nil, "EMF_RUNTIME_CLASSPATH is not set; skipping the compile test"),
         .enabled(if: compiler != nil, "No javac found; skipping the compile test"),
-        arguments: JavaGoldenCase.all
+        arguments: JavaGoldenCase.all, JavaCodeStyleTests.styleNames
     )
     @MainActor
-    func compiles(_ golden: JavaGoldenCase) async throws {
+    func compiles(_ golden: JavaGoldenCase, style: String) async throws {
         let classPath = try #require(Self.classPath)
         let generated = try await GeneratedProject.make(
             golden.fixture, stem: golden.stem, options: golden.options)
         defer { generated.remove() }
-        try await generated.generate()
+        try await generated.generate(options: GenerationOptions(codeStyle: style))
 
         let classes = generated.project.root.appendingPathComponent("classes")
         try FileManager.default.createDirectory(at: classes, withIntermediateDirectories: true)
@@ -95,12 +95,13 @@ struct JavaCompileTests {
         "Generated plugin and resource classes compile against the EMF runtime",
         .enabled(if: classPath != nil, "EMF_RUNTIME_CLASSPATH is not set; skipping the compile test"),
         .enabled(if: compiler != nil, "No javac found; skipping the compile test"),
-        arguments: JavaProjectCase.all
+        arguments: JavaProjectCase.all, JavaCodeStyleTests.styleNames
     )
     @MainActor
-    func compilesProjectClasses(_ golden: JavaProjectCase) async throws {
+    func compilesProjectClasses(_ golden: JavaProjectCase, style: String) async throws {
         let classPath = try #require(Self.classPath)
-        let generated = try await golden.generate()
+        let generated = try await golden.generate(
+            options: GenerationOptions(includeSourceRoot: true, codeStyle: style))
         defer { generated.remove() }
         let classes = generated.project.root.appendingPathComponent("classes")
         try FileManager.default.createDirectory(at: classes, withIntermediateDirectories: true)
@@ -115,10 +116,11 @@ struct JavaCompileTests {
         .enabled(if: classPath != nil, "EMF_RUNTIME_CLASSPATH is not set; skipping the compile test"),
         .enabled(if: compiler != nil, "No javac found; skipping the compile test"),
         .enabled(
-            if: EMFParityTests.referenceRoot != nil, "EMF_REFERENCE_ROOT is not set; skipping Eclipse parity")
+            if: EMFParityTests.referenceRoot != nil, "EMF_REFERENCE_ROOT is not set; skipping Eclipse parity"),
+        arguments: JavaCodeStyleTests.styleNames
     )
     @MainActor
-    func compilesReferenceLibrary() async throws {
+    func compilesReferenceLibrary(style: String) async throws {
         let classPath = try #require(Self.classPath)
         let root = try #require(EMFParityTests.referenceRoot)
         let genModel = root.appendingPathComponent(EMFJavaParityTests.libraryDirectory)
@@ -128,7 +130,8 @@ struct JavaCompileTests {
             .appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: output) }
         let result = try await GenerationPipeline.generate(
-            genModelURL: genModel, language: "java", outputDirectory: output)
+            genModelURL: genModel, language: "java", outputDirectory: output,
+            options: GenerationOptions(codeStyle: style))
         let classes = output.appendingPathComponent("classes")
         try FileManager.default.createDirectory(at: classes, withIntermediateDirectories: true)
         let files = result.files.filter { $0.pathExtension == "java" }
@@ -141,10 +144,11 @@ struct JavaCompileTests {
         .enabled(if: classPath != nil, "EMF_RUNTIME_CLASSPATH is not set; skipping the compile test"),
         .enabled(if: compiler != nil, "No javac found; skipping the compile test"),
         .enabled(
-            if: EMFParityTests.referenceRoot != nil, "EMF_REFERENCE_ROOT is not set; skipping Eclipse parity")
+            if: EMFParityTests.referenceRoot != nil, "EMF_REFERENCE_ROOT is not set; skipping Eclipse parity"),
+        arguments: JavaCodeStyleTests.styleNames
     )
     @MainActor
-    func compilesReferenceLibraryUtilities() async throws {
+    func compilesReferenceLibraryUtilities(style: String) async throws {
         let classPath = try #require(Self.classPath)
         let root = try #require(EMFParityTests.referenceRoot)
         let directory = root.appendingPathComponent(EMFJavaParityTests.libraryDirectory)
@@ -154,7 +158,7 @@ struct JavaCompileTests {
         defer { try? FileManager.default.removeItem(at: output) }
         let result = try await GenerationPipeline.generate(
             genModelURL: directory.appendingPathComponent(EMFJavaParityTests.genModelPath), language: "java",
-            outputDirectory: output)
+            outputDirectory: output, options: GenerationOptions(codeStyle: style))
         let utilities = result.files.filter { $0.path.contains("/util/") }
         #expect(utilities.count == 2)
         let classes = output.appendingPathComponent("classes")
@@ -168,15 +172,16 @@ struct JavaCompileTests {
     @Test(
         "The generated validator compiles against the EMF runtime",
         .enabled(if: classPath != nil, "EMF_RUNTIME_CLASSPATH is not set; skipping the compile test"),
-        .enabled(if: compiler != nil, "No javac found; skipping the compile test")
+        .enabled(if: compiler != nil, "No javac found; skipping the compile test"),
+        arguments: JavaCodeStyleTests.styleNames
     )
     @MainActor
-    func compilesValidator() async throws {
+    func compilesValidator(style: String) async throws {
         let classPath = try #require(Self.classPath)
         let golden = try #require(JavaUtilityCase.all.first { $0.fixture == "constraints" })
         let generated = try await GeneratedProject.make(golden.fixture, stem: golden.stem, options: golden.options)
         defer { generated.remove() }
-        try await generated.generate()
+        try await generated.generate(options: GenerationOptions(codeStyle: style))
 
         #expect(golden.files.contains { $0.hasSuffix("Validator.java") })
         let files = generated.generatedPaths().filter { $0.hasSuffix(".java") }.map { generated.file($0) }

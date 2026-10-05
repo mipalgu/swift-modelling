@@ -42,6 +42,10 @@ struct GenerateCommand: AsyncParsableCommand {
             their --no- forms) override single settings. They do not apply to a generator model that \
             is generated from directly.
 
+            --code-style chooses the layout of the generated text from the styles that the \
+            template set offers (\(CodeStyleOptions.bundledStyleList())); the language genmodel \
+            has none.
+
             Bundled languages: \(availableLanguageList()). A directory that holds a template set and \
             is given with --template-path adds its language.
 
@@ -111,6 +115,10 @@ struct GenerateCommand: AsyncParsableCommand {
     @OptionGroup(title: "Generator model defaults")
     var genModelDefaults: GenModelDefaultsOptions
 
+    /// The code style of the generated text.
+    @OptionGroup(title: "Code style")
+    var codeStyle: CodeStyleOptions
+
     /// Directories whose template files replace the bundled templates.
     @Option(
         name: .customLong("template-path"),
@@ -167,6 +175,10 @@ struct GenerateCommand: AsyncParsableCommand {
         }
         guard FileManager.default.fileExists(atPath: inputModel) else {
             throw ValidationError("The model '\(inputModel)' does not exist")
+        }
+        if codeStyle.isGiven && language == TemplateSetConstants.genModelLanguage {
+            throw ValidationError(
+                "--code-style only applies to a language with a template set, not to \(language)")
         }
         if genModelDefaults.isGiven
             && inputURL.pathExtension.lowercased() != TemplateSetConstants.metamodelFileExtension
@@ -253,6 +265,7 @@ struct GenerateCommand: AsyncParsableCommand {
         var options = GenerationOptions(
             templatePaths: templateURLs, forceOverwrite: forceOverwrite, diff: diff)
         if useModelDirectory { options.includeSourceRoot = true }
+        codeStyle.apply(to: &options)
         let directory = URL(fileURLWithPath: output ?? Self.defaultOutputDirectory)
         if verbose {
             print("Generating \(language) code from: \(inputURL.path)")

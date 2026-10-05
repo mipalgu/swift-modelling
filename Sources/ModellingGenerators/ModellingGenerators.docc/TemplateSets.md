@@ -25,6 +25,35 @@ The descriptor, `templateset.json`, is read into a ``TemplateSetDescriptor``. On
 
 The main template runs with the generator model as its only argument and writes files with `[file (...)]` blocks. The optional file count template writes the number of files that the main template will write; the pipeline runs it first so that progress reports can show a bar.
 
+### Code styles
+
+A template set writes its text in one layout. The optional `styles` member of the descriptor names other layouts as data, and `defaultStyle` names the one that applies when the caller does not choose, so the generator needs no knowledge of the target language:
+
+```json
+{
+  "styles": {
+    "tabs": {
+      "summary": "Tabs, with the opening brace at the end of the preceding line",
+      "sourceIndent": "  ",
+      "targetIndent": "\t",
+      "openerPlacement": "sameLine",
+      "files": ["*.java"]
+    },
+    "spaces": { "sourceIndent": "  ", "targetIndent": "  ", "files": ["*.java"] }
+  },
+  "defaultStyle": "tabs"
+}
+```
+
+Each style is a ``TemplateSetDescriptor/Style``. All members are optional:
+
+- `sourceIndent` and `targetIndent` - the indentation unit that the templates write and the unit to produce (a tab if left out). Every unit at the start of a line is replaced; text after the first character that is not a unit is left alone.
+- `openerPlacement` - `ownLine` leaves the text as the templates write it, `sameLine` moves a block opener that stands alone on its line to the end of the preceding line, unless that line ends in a statement terminator or a comment, or is itself an opener.
+- `files` - glob patterns of the files that the style applies to; without patterns it applies to every file. A `[file]` block that passes `'layout=false'` is never converted.
+- `openerToken`, `lineComments`, `blockComments` (a list of `{ "start": ..., "end": ... }`), `quotes` and `terminators` - the lexical conventions that tell code from comments and literals, with the brace conventions as the default.
+
+A style with equal indentation units and `ownLine` selects the layout that the templates write. ``GenerationOptions/codeStyle`` chooses a style by name (`--code-style` on the command line); a name that the descriptor does not declare is rejected with ``GenerationError/unknownCodeStyle(_:_:_:)``, which lists the styles that exist, and so is any name for a set that declares none. A `defaultStyle` must be one of the declared styles. The conversion happens before the generated text is merged with an existing file, so kept members keep their layout.
+
 ### Overriding templates
 
 ``GenerationOptions/templatePaths`` lists directories that are searched before the bundled set. A file in such a directory replaces the bundled file of the same relative path. A directory either holds a directory named after the language, or the files of the set itself. Later directories win over earlier ones. ``TemplateSet/assemble(language:templatePaths:)`` copies the bundled files and the overrides into a scratch directory, so that modules import each other with the replacements in place.

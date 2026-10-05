@@ -47,10 +47,10 @@ struct JavaGenerateCommandTests {
         return (scratch, project, project.appendingPathComponent("model/library.genmodel"))
     }
 
-    private func expectedBookCategory() throws -> String {
+    private func expectedBookCategory(folder: String = "expected-java") throws -> String {
         try String(
             contentsOf: Self.fixtureRoot.appendingPathComponent(
-                "library/expected-java/\(Self.bookCategory)"),
+                "library/\(folder)/\(Self.bookCategory)"),
             encoding: .utf8)
     }
 
@@ -219,6 +219,78 @@ struct JavaGenerateCommandTests {
         #expect(!result.succeeded)
         #expect(result.stderr.contains("cobol"))
         #expect(result.stderr.contains("java"))
+    }
+
+    // MARK: - Code styles
+
+    @Test("writes the eclipse style by default and each style on request")
+    @MainActor
+    func codeStyles() async throws {
+        let (scratch, _, genModel) = try await libraryProject()
+        defer { cleanupTemporaryDirectory(scratch) }
+        let styles: [(arguments: [String], folder: String)] = [
+            ([], "expected-java"), (["--code-style", "eclipse"], "expected-java"),
+            (["--code-style", "emf"], "expected-java-emf"),
+        ]
+        for (index, style) in styles.enumerated() {
+            let output = scratch.appendingPathComponent("java\(index)")
+            let result = try await executeSwiftEcore(
+                command: "generate",
+                arguments: ["--language", "java", genModel.path, "-o", output.path] + style.arguments)
+            #expect(result.succeeded, "\(result.stderr)")
+            let text = try String(contentsOf: output.appendingPathComponent(Self.bookCategory), encoding: .utf8)
+            #expect(text == (try expectedBookCategory(folder: style.folder)), "\(style.arguments)")
+        }
+        let tabs = try expectedBookCategory()
+        let spaces = try expectedBookCategory(folder: "expected-java-emf")
+        #expect(tabs != spaces)
+        #expect(tabs.contains("\n\t/**") && !spaces.contains("\t"))
+    }
+
+    @Test("rejects an unknown code style with the styles that exist")
+    @MainActor
+    func unknownCodeStyle() async throws {
+        let (scratch, _, genModel) = try await libraryProject()
+        defer { cleanupTemporaryDirectory(scratch) }
+        let output = scratch.appendingPathComponent("java")
+
+        let result = try await executeSwiftEcore(
+            command: "generate",
+            arguments: ["--language", "java", genModel.path, "-o", output.path, "--code-style", "tabs"])
+
+        #expect(!result.succeeded)
+        #expect(result.stderr.contains("tabs"))
+        #expect(result.stderr.contains("eclipse, emf"))
+        #expect(!FileManager.default.fileExists(atPath: output.path))
+    }
+
+    @Test("rejects a code style for the built-in languages")
+    @MainActor
+    func codeStyleForBuiltInLanguage() async throws {
+        let (scratch, project, _) = try await libraryProject()
+        defer { cleanupTemporaryDirectory(scratch) }
+        let output = scratch.appendingPathComponent("swift")
+
+        let result = try await executeSwiftEcore(
+            command: "generate",
+            arguments: [
+                "--language", "swift", project.appendingPathComponent("model/library.ecore").path,
+                "-o", output.path, "--code-style", "emf",
+            ])
+
+        #expect(!result.succeeded)
+        #expect(result.stderr.contains("--code-style only applies to a language with a template set"))
+        #expect(!FileManager.default.fileExists(atPath: output.path))
+    }
+
+    @Test("lists the code styles in the help")
+    @MainActor
+    func helpListsCodeStyles() async throws {
+        let result = try await executeSwiftEcore(command: "generate", arguments: ["--help"])
+
+        #expect(result.succeeded)
+        #expect(result.stdout.contains("--code-style"))
+        #expect(result.stdout.contains("java: eclipse (default), emf"))
     }
 
     @Test("asks for a generator model when a built-in language is given one")

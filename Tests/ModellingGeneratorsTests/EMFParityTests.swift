@@ -16,6 +16,18 @@ struct EMFParityTests {
     static let referenceRoot: URL? = ProcessInfo.processInfo.environment[referenceRootVariable]
         .flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0) }
 
+    /// The generation options that match the layout of the reference sources: the code style of the
+    /// repository.
+    static var repositoryOptions: GenerationOptions { repositoryGeneration(includeSourceRoot: nil) }
+
+    /// The generation options that match the layout of the reference sources.
+    ///
+    /// - Parameter includeSourceRoot: Whether the source directory is part of the output location.
+    /// - Returns: The options, with the code style of the repository.
+    static func repositoryGeneration(includeSourceRoot: Bool?) -> GenerationOptions {
+        GenerationOptions(includeSourceRoot: includeSourceRoot, codeStyle: JavaCodeStyleTests.repositoryStyle)
+    }
+
     /// The directory of the reference library example, relative to the reference checkout.
     static let libraryDirectory =
         "tests/org.eclipse.emf.test.tools/data/ant.expected/models/5.0/creation/library.ecore/emf"

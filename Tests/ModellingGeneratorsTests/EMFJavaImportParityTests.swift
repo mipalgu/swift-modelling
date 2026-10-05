@@ -68,7 +68,7 @@ struct EMFJavaImportParityTests {
 
         _ = try await GenerationPipeline.generate(
             genModelURL: directory.appendingPathComponent(Self.genModelPath), language: "java",
-            outputDirectory: output)
+            outputDirectory: output, options: EMFParityTests.repositoryOptions)
 
         let expected = try String(contentsOf: directory.appendingPathComponent(path), encoding: .utf8)
         let actual = try String(

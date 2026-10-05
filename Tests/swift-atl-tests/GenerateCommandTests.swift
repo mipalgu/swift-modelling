@@ -258,6 +258,72 @@ struct GenerateCommandTests {
         try Self.expectGoldenTree(in: fixture.output)
     }
 
+    // MARK: - Code styles
+
+    @Test("writes the eclipse style by default and each style on request")
+    @MainActor
+    func codeStyles() async throws {
+        let fixture = try LibraryFixture.make()
+        defer { fixture.remove() }
+        let styles: [(arguments: [String], folder: String)] = [
+            ([], "expected-java"), (["--code-style", "eclipse"], "expected-java"),
+            (["--code-style", "emf"], "expected-java-emf"),
+        ]
+        for style in styles {
+            try? FileManager.default.removeItem(at: fixture.output)
+            let result = try await executeSwiftATL(
+                command: "generate", arguments: Self.javaArguments(fixture, style.arguments))
+            #expect(result.succeeded, "\(result.stderr)")
+            let text = try String(
+                contentsOf: fixture.output.appendingPathComponent(Self.bookCategory), encoding: .utf8)
+            let expected = try String(
+                contentsOf: LibraryFixture.fixtureRoot.appendingPathComponent(
+                    "library/\(style.folder)/\(Self.bookCategory)"),
+                encoding: .utf8)
+            #expect(text == expected, "\(style.arguments)")
+        }
+    }
+
+    @Test("rejects an unknown code style with the styles that exist")
+    @MainActor
+    func unknownCodeStyle() async throws {
+        let fixture = try LibraryFixture.make()
+        defer { fixture.remove() }
+
+        let result = try await executeSwiftATL(
+            command: "generate", arguments: Self.javaArguments(fixture, ["--code-style", "tabs"]))
+
+        #expect(!result.succeeded)
+        #expect(result.stderr.contains("tabs"))
+        #expect(result.stderr.contains("eclipse, emf"))
+        #expect(!FileManager.default.fileExists(atPath: fixture.output.path))
+    }
+
+    @Test("rejects a code style for the language genmodel")
+    @MainActor
+    func codeStyleForGenModel() async throws {
+        let fixture = try LibraryFixture.make()
+        defer { fixture.remove() }
+
+        let result = try await executeSwiftATL(
+            command: "generate",
+            arguments: [fixture.ecore.path, "--language", "genmodel", "--code-style", "emf"])
+
+        #expect(!result.succeeded)
+        #expect(result.stderr.contains("--code-style only applies to a language with a template set"))
+        #expect(!FileManager.default.fileExists(atPath: fixture.genModel.path))
+    }
+
+    @Test("lists the code styles in the help")
+    @MainActor
+    func helpListsCodeStyles() async throws {
+        let result = try await executeSwiftATL(command: "generate", arguments: ["--help"])
+
+        #expect(result.succeeded)
+        #expect(result.stdout.contains("--code-style"))
+        #expect(result.stdout.contains("java: eclipse (default), emf"))
+    }
+
     @Test("keeps a method marked as not generated when the code is generated again")
     @MainActor
     func keepsHandEdits() async throws {

@@ -52,6 +52,10 @@ public struct GenerationOptions: Sendable, Equatable {
     /// The line delimiter written to files; `nil` follows the template set.
     public var lineDelimiter: String?
 
+    /// The name of the code style to write, one of the styles of the template set; `nil` follows
+    /// the default style of the template set.
+    public var codeStyle: String?
+
     /// Creates a set of options.
     ///
     /// - Parameters:
@@ -61,10 +65,11 @@ public struct GenerationOptions: Sendable, Equatable {
     ///   - redirectionPattern: The name pattern for files written beside existing files.
     ///   - includeSourceRoot: Whether the source directory is part of the output location.
     ///   - lineDelimiter: The line delimiter to write.
+    ///   - codeStyle: The name of the code style to write.
     public init(
         templatePaths: [URL] = [], forceOverwrite: Bool = false, diff: Bool = false,
         redirectionPattern: String? = nil, includeSourceRoot: Bool? = nil,
-        lineDelimiter: String? = nil
+        lineDelimiter: String? = nil, codeStyle: String? = nil
     ) {
         self.templatePaths = templatePaths
         self.forceOverwrite = forceOverwrite
@@ -72,6 +77,7 @@ public struct GenerationOptions: Sendable, Equatable {
         self.redirectionPattern = redirectionPattern
         self.includeSourceRoot = includeSourceRoot
         self.lineDelimiter = lineDelimiter
+        self.codeStyle = codeStyle
     }
 
     /// The redirection pattern that applies, if any.
