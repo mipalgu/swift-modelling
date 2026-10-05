@@ -30,6 +30,12 @@ struct ReleaseWorkflowTests {
     /// The mapping key that declares prerequisite jobs.
     private static let dependencyKey = "needs:"
 
+    /// The mapping key that declares workflow triggers.
+    private static let triggerKey = "on:"
+
+    /// The line endings commonly used in checked-out workflow files.
+    private static let lineEndings = ["\n", "\r\n", "\r"]
+
     /// Reads a workflow from the repository.
     ///
     /// - Parameter name: The workflow's file name.
@@ -51,7 +57,7 @@ struct ReleaseWorkflowTests {
     /// - Returns: The lines belonging to the mapping key.
     /// - Throws: A test failure if the mapping key is absent.
     private static func section(_ heading: String, in text: String) throws -> [String] {
-        let lines = text.components(separatedBy: "\n")
+        let lines = text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline).map(String.init)
         let start = try #require(lines.firstIndex(of: heading), "Missing workflow section: \(heading)")
         let indentation = heading.prefix { $0 == " " }.count
         return Array(lines.dropFirst(start + 1).prefix { line in
@@ -66,12 +72,34 @@ struct ReleaseWorkflowTests {
     /// - Returns: The names of the events that can start the workflow.
     /// - Throws: A test failure if the trigger mapping is absent.
     private static func events(in text: String) throws -> Set<String> {
-        Set(try section("on:", in: text).compactMap { line in
+        Set(try section(triggerKey, in: text).compactMap { line in
             guard line.prefix(2) == "  ", line.dropFirst(2).first != " ", line.hasSuffix(":") else {
                 return nil
             }
             return String(line.dropFirst(2).dropLast())
         })
+    }
+
+    /// Checks that workflow mappings retain their meaning with each common line ending.
+    ///
+    /// The trigger and job mappings use the same reader as the release contract checks.
+    ///
+    /// - Parameter lineEnding: The separator between the workflow's lines.
+    @Test("Workflow mappings accept LF, CRLF and CR line endings", arguments: Self.lineEndings)
+    func commonLineEndings(_ lineEnding: String) throws {
+        let dependency = "    \(Self.dependencyKey) [\(Self.bottleJob)]"
+        let workflow = [
+            Self.triggerKey,
+            "  \(Self.manualEvent):",
+            "  \(Self.callableEvent):",
+            "jobs:",
+            "  \(Self.formulaJob):",
+            dependency,
+        ].joined(separator: lineEnding)
+        let events = try Self.events(in: workflow)
+        let formula = try Self.section("  \(Self.formulaJob):", in: workflow)
+        #expect(events == [Self.manualEvent, Self.callableEvent])
+        #expect(formula == [dependency])
     }
 
     /// Checks that the release owner invokes one reusable bottle workflow.
