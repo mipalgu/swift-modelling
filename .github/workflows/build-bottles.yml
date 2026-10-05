@@ -51,6 +51,14 @@ jobs:
           Copy-Item .build/release/swift-ecore.exe bottle/
           Copy-Item .build/release/swift-atl.exe bottle/
           Copy-Item .build/release/swift-mtl.exe bottle/
+          # Resource bundles (templates, transformations, metamodels) must sit next to the executables
+          Get-ChildItem .build/release -Directory -Filter *.resources |
+            Where-Object { $_.Name -notmatch '(Tests|-tests)\.resources$' } |
+            ForEach-Object { Copy-Item $_.FullName bottle/ -Recurse }
+          if (-not (Get-ChildItem bottle -Directory -Filter *.resources)) {
+            Write-Error "No resource bundles found in .build/release"
+            exit 1
+          }
           Compress-Archive -Path bottle/* -DestinationPath "swift-modelling-${TAG}-windows-${{ env.ARCH }}.zip"
 
       - name: Upload to release
@@ -96,11 +104,8 @@ jobs:
 
       - name: Create Homebrew bottle
         run: |
-          # Create Homebrew bottle directory structure
-          mkdir -p swift-modelling/${{ env.VERSION }}/bin
-          cp .build/release/swift-ecore swift-modelling/${{ env.VERSION }}/bin/
-          cp .build/release/swift-atl swift-modelling/${{ env.VERSION }}/bin/
-          cp .build/release/swift-mtl swift-modelling/${{ env.VERSION }}/bin/
+          # Create the keg: launchers in bin, executables and resource bundles in libexec
+          Scripts/package-bottle.sh .build/release swift-modelling/${{ env.VERSION }}
           # Create bottle tarball with Homebrew naming convention
           tar czf swift-modelling-${{ env.VERSION }}.${{ env.PLATFORM }}.bottle.tar.gz swift-modelling
 
@@ -143,11 +148,8 @@ jobs:
 
       - name: Create Homebrew bottle
         run: |
-          # Create Homebrew bottle directory structure
-          mkdir -p swift-modelling/${{ env.VERSION }}/bin
-          cp .build/release/swift-ecore swift-modelling/${{ env.VERSION }}/bin/
-          cp .build/release/swift-atl swift-modelling/${{ env.VERSION }}/bin/
-          cp .build/release/swift-mtl swift-modelling/${{ env.VERSION }}/bin/
+          # Create the keg: launchers in bin, executables and resource bundles in libexec
+          Scripts/package-bottle.sh .build/release swift-modelling/${{ env.VERSION }}
           # Create bottle tarball with Homebrew naming convention
           tar czf swift-modelling-${{ env.VERSION }}.${{ env.PLATFORM }}.bottle.tar.gz swift-modelling
 
