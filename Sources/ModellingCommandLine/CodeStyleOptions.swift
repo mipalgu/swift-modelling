@@ -25,9 +25,8 @@ public struct CodeStyleOptions: ParsableArguments, Sendable {
             discussion: """
                 The code styles of the bundled template sets are listed in the discussion of the \
                 command. A template set without code styles rejects the option. Existing files are \
-                merged in the style that is chosen: members that are kept keep their layout, so \
-                changing the style of an existing tree leaves a mixture until the files are \
-                regenerated with --force-overwrite.
+                merged in the style that is chosen: every generated member takes the new style, \
+                while members marked @generated NOT and members you wrote keep their layout.
                 """,
             valueName: "style"))
     public var codeStyle: String?

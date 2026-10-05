@@ -103,7 +103,9 @@ The input is an Ecore model or a generator model. For an Ecore model the bundled
 | `--import-organizing`, `--no-import-organizing` | Switch import organising on or off, overriding the preset. |
 | `--reload <file.genmodel>` | An existing generator model whose settings are kept; see below. |
 | `-o, --output <file>` | The generator model to write (default: beside the first Ecore model). |
-| `-v, --verbose` | Show progress and a summary. |
+| `-v, --verbose` | Enable verbose output: progress and a summary. |
+| `--version` | Show the version. |
+| `-h, --help` | Show help information. |
 
 #### swift-ecore generate
 
@@ -118,11 +120,13 @@ The input is an Ecore model or a generator model. For an Ecore model the bundled
 | `--diff` | Leave existing files alone and write the generated text beside them as `.<name>.new`. |
 | `--model-directory` | Write below the model directory of the generator model, and write the project files. |
 | `--code-style eclipse\|emf` | The code style of the generated Java; see <doc:MatchingEclipse>. The default is `eclipse`. |
-| `--defaults headless\|wizard` | The Eclipse defaults of the temporary generator model. |
+| `--defaults headless\|wizard` | The Eclipse defaults of the temporary generator model. The default is `headless`. |
 | `--root-extends-class <name>`, `--operation-reflection`, `--no-operation-reflection`, `--import-organizing`, `--no-import-organizing` | The same overrides as for `genmodel`. |
+| `-v, --verbose` | Enable verbose output: report every file. |
+| `--version` | Show the version. |
+| `-h, --help` | Show help information. |
 
 The `--defaults` option and the overrides apply only when an Ecore model is imported. Giving them with a `.genmodel` input, or with a built-in language, is an error.
-| `-v, --verbose` | Report every file. |
 
 #### swift-atl generate
 
@@ -136,7 +140,9 @@ The `--defaults` option and the overrides apply only when an Ecore model is impo
 | `--base-package`, `--prefix`, `--model-project`, `--model-plugin-id`, `--copyright`, `--jdk-level` | As for `swift-ecore genmodel`. |
 | `--defaults`, `--root-extends-class`, `--operation-reflection`, `--no-operation-reflection`, `--import-organizing`, `--no-import-organizing` | As for `swift-ecore genmodel`; see <doc:MatchingEclipse>. |
 | `--template-path`, `--force-overwrite`, `--diff`, `--model-directory`, `--code-style` | As for `swift-ecore generate`. |
-| `-v, --verbose` | Report every file. |
+| `-v, --verbose` | Enable verbose output: report every file. |
+| `--version` | Show the version. |
+| `-h, --help` | Show help information. |
 
 `swift-atl generate` has no `--reload`: to keep the settings of an existing generator model, use `swift-ecore genmodel --reload`, or give the generator model itself as input.
 

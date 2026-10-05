@@ -16,12 +16,6 @@ struct JavaCodeStyleTests {
     /// The names of both styles, for tests that run in each.
     static let styleNames = [defaultStyle, repositoryStyle]
 
-    /// Files of the library whose members are all regenerated when the style changes.
-    static let unmixedFiles = [
-        "org/example/library/LibraryFactory.java", "org/example/library/impl/LibraryFactoryImpl.java",
-        "org/example/library/impl/BookImpl.java", "org/example/library/Book.java",
-    ]
-
     /// The fixtures with expectations in both styles.
     static let bothStyleFixtures = ["library", "families", "enumerations"]
 
@@ -403,7 +397,7 @@ struct JavaCodeStyleTests {
     }
 
     @Test(
-        "Switching the style of an existing tree regenerates generated members and keeps the others as they are",
+        "Switching the style of an existing tree regenerates every generated member and keeps only the others as they are",
         arguments: [(defaultStyle, repositoryStyle), (repositoryStyle, defaultStyle)])
     @MainActor
     func switchingStyles(from: String, to: String) async throws {
@@ -428,11 +422,9 @@ struct JavaCodeStyleTests {
         let fromIndent = to == Self.defaultStyle ? "    " : "\t"
         #expect(switched[lineStart...].hasPrefix(fromIndent), "the kept member is still in the old style")
 
-        // Files that were not edited take the new style, and none loses or duplicates a member.
+        // Files that were not edited take the new style throughout, including the closing brace of a
+        // nested type and the body of an operation that has no implementation.
         for path in reference.generatedPaths() where path.hasSuffix(".java") && path != Self.bookCategory {
-            #expect(Self.tokens(try generated.text(path)) == Self.tokens(try reference.text(path)), "\(path)")
-        }
-        for path in Self.unmixedFiles {
             #expect(try generated.text(path) == (try reference.text(path)), "\(path) takes the new style")
         }
     }
