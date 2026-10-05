@@ -3,6 +3,13 @@
 -- Transforms Ecore packages into a generator model with the settings that the
 -- Ecore importer gives to a model it imports for the first time.
 --
+-- The settings that the Eclipse tools write differently for headless and interactive
+-- use come from the preset named by the `defaults` parameter: `headless` (the default)
+-- leaves them at the defaults of the generator metamodel, `wizard` gives the values
+-- that the interactive generator model wizard writes. The `...Override` parameters
+-- replace single values of the preset; empty text leaves the value to the preset, and
+-- the boolean overrides are `true` or `false`.
+--
 -- Every generator element is created by a lazy or called rule, so that source
 -- elements are never replaced by their transformed counterparts when they are
 -- bound to the `ecore...` references of the generator model.
@@ -10,9 +17,10 @@
 -- @nsURI Ecore=http://www.eclipse.org/emf/2002/Ecore
 -- @nsURI GenModel=http://www.eclipse.org/emf/2002/GenModel
 -- @param importerID : String
--- @param rootExtendsClass : String
--- @param operationReflection : Boolean
--- @param importOrganizing : Boolean
+-- @param defaults : String
+-- @param rootExtendsClassOverride : String
+-- @param operationReflectionOverride : String
+-- @param importOrganizingOverride : String
 -- @param copyrightFields : Boolean
 -- @param bigModelThreshold : Integer
 -- @param basePackage : String
@@ -51,6 +59,27 @@ helper def : nonEmpty(text : String) : String =
 
 helper def : entries(text : String) : Sequence(String) =
     text.split(thisModule.listSeparator)->select(e | e.size() > 0);
+
+-- Presets
+
+helper def : isWizard : Boolean = thisModule.defaults = 'wizard';
+
+helper def : presetRootExtendsClass : String =
+    if thisModule.isWizard then 'org.eclipse.emf.ecore.impl.MinimalEObjectImpl$Container' else OclUndefined endif;
+
+helper def : presetOperationReflection : Boolean = thisModule.isWizard;
+
+helper def : presetImportOrganizing : Boolean = thisModule.isWizard;
+
+helper def : rootExtendsClassSetting : String =
+    if thisModule.rootExtendsClassOverride.size() > 0 then
+        thisModule.rootExtendsClassOverride
+    else
+        thisModule.presetRootExtendsClass
+    endif;
+
+helper def : booleanSetting(override : String, preset : Boolean) : Boolean =
+    if override = 'true' then true else if override = 'false' then false else preset endif endif;
 
 -- Package settings
 
@@ -161,9 +190,11 @@ entrypoint rule GenModel() {
             else
                 thisModule.capName(thisModule.rootPackages->first().name)
             endif,
-        operationReflection <- thisModule.operationReflection,
-        rootExtendsClass <- thisModule.rootExtendsClass,
-        importOrganizing <- thisModule.importOrganizing,
+        operationReflection <- thisModule.booleanSetting(
+            thisModule.operationReflectionOverride, thisModule.presetOperationReflection),
+        rootExtendsClass <- thisModule.rootExtendsClassSetting,
+        importOrganizing <- thisModule.booleanSetting(
+            thisModule.importOrganizingOverride, thisModule.presetImportOrganizing),
         foreignModel <- thisModule.entries(thisModule.foreignModels),
         genPackages <- thisModule.rootPackages->collect(p | thisModule.Package(p))
     )

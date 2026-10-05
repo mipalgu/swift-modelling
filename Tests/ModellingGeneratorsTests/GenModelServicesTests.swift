@@ -159,7 +159,7 @@ struct GenModelServicesTests {
             "p.setting('prefix')", "p.setting('literalsInterface')",
         ])
         #expect(values == [
-            "Library", "17.0", "false", "true", "false", "Copyright 2026 Example Pty Ltd", "true", "true", "false",
+            "Library", "17.0", "false", "false", "false", "Copyright 2026 Example Pty Ltd", "true", "true", "false",
             "false", "true", "impl", "Library", "true",
         ])
     }

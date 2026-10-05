@@ -16,6 +16,8 @@ swift-ecore genmodel library/model/library.ecore --base-package org.example
 
 The generator model is written beside the Ecore model as `library.genmodel`. Edit it to change settings, for example the model directory or the compliance level; it opens unchanged in the Eclipse tooling. Running the command again with `--reload library/model/library.genmodel` keeps your settings while the structure follows the Ecore model.
 
+Operation reflection, the root class and import organising are left at the defaults of the generator metamodel, as the headless Eclipse generator does. `--defaults wizard` gives the settings of the interactive Eclipse wizard instead, and `--root-extends-class`, `--operation-reflection` and `--import-organizing` (or their `--no-` forms) override single settings. In code, these are ``GenModelImportOptions/defaults`` (a ``GenModelDefaults``) and the options of the same names.
+
 To use your own transformation, give `swift-atl generate --transformations` a file, or a directory that holds `Ecore2GenModel.atl`. The replacement receives the same parameters as the bundled one (see ``GenModelImportConstants/Parameter``).
 
 ### From the generator model to Java
@@ -94,7 +96,7 @@ The command line tools are thin layers over ``GenerationPipeline``:
 let model = URL(fileURLWithPath: "library/model/library.ecore")
 
 // Ecore to generator model
-var importing = GenModelImportOptions(basePackage: "org.example")
+var importing = GenModelImportOptions(basePackage: "org.example", defaults: .wizard)
 let created = try await GenerationPipeline.ecoreToGenModel(ecoreURLs: [model], options: importing)
 
 // Generator model, or Ecore model, to Java

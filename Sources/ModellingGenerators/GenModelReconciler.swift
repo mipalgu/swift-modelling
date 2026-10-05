@@ -80,6 +80,10 @@ enum GenModelReconciler {
         private var skippedModelSettings: Set<String> {
             typealias Name = GenModelImportConstants.Setting
             var skipped = Name.derivedFromSources
+            if options.defaults != nil { skipped.formUnion(Name.presetSettings) }
+            if options.rootExtendsClass != nil { skipped.insert(Name.rootExtendsClass) }
+            if options.operationReflection != nil { skipped.insert(Name.operationReflection) }
+            if options.importOrganizing != nil { skipped.insert(Name.importOrganizing) }
             if options.complianceLevel != nil { skipped.insert(Name.complianceLevel) }
             if options.copyright != nil { skipped.insert(Name.copyrightText) }
             if options.modelPluginID != nil { skipped.insert(Name.modelPluginID) }

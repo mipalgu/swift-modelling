@@ -33,6 +33,7 @@ print(result.files.count)
 
 - ``GenerationPipeline``
 - ``GenModelImportOptions``
+- ``GenModelDefaults``
 - ``GenModelResult``
 
 ### Generating code

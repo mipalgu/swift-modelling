@@ -66,7 +66,7 @@ struct GenModelImportTests {
         let generated = try await generate(fixture)
         defer { generated.project.remove() }
         let expected = try String(
-            contentsOf: generated.project.expectation(fixture.genModelFileName), encoding: .utf8)
+            contentsOf: generated.project.expectation(fixture.expectationFileName), encoding: .utf8)
         #expect(generated.text == expected)
     }
 
@@ -105,9 +105,9 @@ struct GenModelImportTests {
         #expect(text.contains(#"modelPluginID="families""#))
         #expect(text.contains(#"modelName="Families""#))
         #expect(text.contains(#"copyrightFields="false""#))
-        #expect(text.contains(#"operationReflection="true""#))
-        #expect(text.contains(#"importOrganizing="true""#))
-        #expect(text.contains(#"rootExtendsClass="org.eclipse.emf.ecore.impl.MinimalEObjectImpl$Container""#))
+        #expect(!text.contains("operationReflection"))
+        #expect(!text.contains("importOrganizing"))
+        #expect(!text.contains("rootExtendsClass"))
         #expect(text.contains("<foreignModel>families.ecore</foreignModel>"))
         #expect(!text.contains("copyrightText"))
         #expect(!text.contains("usedGenPackages"))
