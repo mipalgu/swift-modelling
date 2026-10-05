@@ -28,7 +28,7 @@ struct SwiftEcoreCommand: AsyncParsableCommand {
             Eclipse Ecore meta-models while providing enhanced performance through Swift's concurrent
             execution model and type safety.
             """,
-        version: "0.1.8",
+        version: "0.2.0",
         subcommands: [
             InfoCommand.self,
             ValidateCommand.self,
