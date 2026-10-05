@@ -1,0 +1,6 @@
+* text=auto
+Sources/ModellingGenerators/Templates/** -text
+Sources/ModellingGenerators/Transformations/** -text
+Tests/**/Resources/** -text
+Tests/**/Fixtures/** -text
+*.sh text eol=lf
