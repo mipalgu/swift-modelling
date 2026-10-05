@@ -32,21 +32,25 @@ struct EMFParityTests {
     static let libraryDirectory =
         "tests/org.eclipse.emf.test.tools/data/ant.expected/models/5.0/creation/library.ecore/emf"
 
-    /// Splits a generator model into tokens that do not depend on layout.
+    /// Splits a generator model into lines, replacing the values that legitimately differ.
     ///
-    /// The values of `modelDirectory` and of `foreignModel` are replaced by fixed markers
-    /// and all whitespace, including attribute line wrapping, is collapsed.
+    /// The layout is compared exactly, including attribute wrapping and indentation. Only two values are
+    /// replaced by fixed markers, because they depend on where the model is written rather than on the
+    /// generator: `modelDirectory` (the reference names a build-system placeholder, whereas the importer
+    /// derives the directory from the project name) and `foreignModel` (the reference stores a path
+    /// relative to a different project layout). The model name also differs only when the output file
+    /// name differs, which this test avoids by writing `library.genmodel`.
     ///
     /// - Parameter text: The text of a generator model.
-    /// - Returns: The whitespace-separated tokens of the normalised text.
-    static func tokens(of text: String) -> [String] {
+    /// - Returns: The lines of the normalised text.
+    static func lines(of text: String) -> [String] {
         let marker = #"modelDirectory="<normalised>""#
         let normalised = text.replacingOccurrences(
             of: #"modelDirectory="[^"]*""#, with: marker, options: .regularExpression
         ).replacingOccurrences(
             of: #"<foreignModel>[^<]*</foreignModel>"#, with: "<foreignModel>normalised</foreignModel>",
             options: .regularExpression)
-        return normalised.split(whereSeparator: \.isWhitespace).map(String.init)
+        return normalised.components(separatedBy: "\n")
     }
 
     /// Imports the reference library model and compares the result with the generator model of the reference.
@@ -79,16 +83,16 @@ struct EMFParityTests {
         let result = try await GenerationPipeline.ecoreToGenModel(ecoreURLs: [ecore], options: options)
 
         let actual = try String(contentsOf: result.url, encoding: .utf8)
-        let expectedTokens = Self.tokens(of: expected)
-        let actualTokens = Self.tokens(of: actual)
-        let differences = zip(expectedTokens, actualTokens).enumerated()
+        let expectedLines = Self.lines(of: expected)
+        let actualLines = Self.lines(of: actual)
+        let differences = zip(expectedLines, actualLines).enumerated()
             .filter { $0.element.0 != $0.element.1 }
-            .map { "token \($0.offset): expected \($0.element.0) but found \($0.element.1)" }
+            .map { "line \($0.offset + 1): expected \($0.element.0) but found \($0.element.1)" }
         #expect(
-            expectedTokens == actualTokens,
+            expectedLines == actualLines,
             """
             \(differences.joined(separator: "\n"))
-            expected \(expectedTokens.count) tokens, found \(actualTokens.count)
+            expected \(expectedLines.count) lines, found \(actualLines.count)
             """)
     }
 
