@@ -2,14 +2,12 @@
  */
 package org.example.bare.impl;
 
-
 import org.eclipse.emf.ecore.EClass;
 
 import org.eclipse.emf.ecore.impl.EObjectImpl;
 
 import org.example.bare.BarePackage;
 import org.example.bare.Thing;
-
 
 /**
  * <!-- begin-user-doc -->
@@ -18,27 +16,24 @@ import org.example.bare.Thing;
  *
  * @generated
  */
-public class ThingImpl extends EObjectImpl implements Thing
-{
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  protected ThingImpl()
-  {
-    super();
-  }
+public class ThingImpl extends EObjectImpl implements Thing {
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	protected ThingImpl() {
+		super();
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  protected EClass eStaticClass()
-  {
-    return BarePackage.Literals.THING;
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	protected EClass eStaticClass() {
+		return BarePackage.Literals.THING;
+	}
 
 } //ThingImpl

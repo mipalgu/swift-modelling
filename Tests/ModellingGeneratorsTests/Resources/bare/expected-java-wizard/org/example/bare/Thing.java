@@ -2,9 +2,7 @@
  */
 package org.example.bare;
 
-
 import org.eclipse.emf.ecore.EObject;
-
 
 /**
  * <!-- begin-user-doc -->
@@ -16,6 +14,5 @@ import org.eclipse.emf.ecore.EObject;
  * @model
  * @generated
  */
-public interface Thing extends EObject
-{
+public interface Thing extends EObject {
 } // Thing

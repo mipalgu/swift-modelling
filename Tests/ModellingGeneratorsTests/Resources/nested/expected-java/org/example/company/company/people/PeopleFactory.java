@@ -2,9 +2,7 @@
  */
 package org.example.company.company.people;
 
-
 import org.eclipse.emf.ecore.EFactory;
-
 
 /**
  * <!-- begin-user-doc -->
@@ -14,32 +12,31 @@ import org.eclipse.emf.ecore.EFactory;
  * @see org.example.company.company.people.PeoplePackage
  * @generated
  */
-public interface PeopleFactory extends EFactory
-{
-  /**
-   * The singleton instance of the factory.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  PeopleFactory eINSTANCE = org.example.company.company.people.impl.PeopleFactoryImpl.init();
+public interface PeopleFactory extends EFactory {
+	/**
+	 * The singleton instance of the factory.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	PeopleFactory eINSTANCE = org.example.company.company.people.impl.PeopleFactoryImpl.init();
 
-  /**
-   * Returns a new object of class '<em>Employee</em>'.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @return a new object of class '<em>Employee</em>'.
-   * @generated
-   */
-  Employee createEmployee();
+	/**
+	 * Returns a new object of class '<em>Employee</em>'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return a new object of class '<em>Employee</em>'.
+	 * @generated
+	 */
+	Employee createEmployee();
 
-  /**
-   * Returns the package supported by this factory.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @return the package supported by this factory.
-   * @generated
-   */
-  PeoplePackage getPeoplePackage();
+	/**
+	 * Returns the package supported by this factory.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the package supported by this factory.
+	 * @generated
+	 */
+	PeoplePackage getPeoplePackage();
 
 } //PeopleFactory

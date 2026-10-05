@@ -2,9 +2,7 @@
  */
 package org.example.company.company;
 
-
 import org.eclipse.emf.ecore.EFactory;
-
 
 /**
  * <!-- begin-user-doc -->
@@ -14,32 +12,31 @@ import org.eclipse.emf.ecore.EFactory;
  * @see org.example.company.company.CompanyPackage
  * @generated
  */
-public interface CompanyFactory extends EFactory
-{
-  /**
-   * The singleton instance of the factory.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  CompanyFactory eINSTANCE = org.example.company.company.impl.CompanyFactoryImpl.init();
+public interface CompanyFactory extends EFactory {
+	/**
+	 * The singleton instance of the factory.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	CompanyFactory eINSTANCE = org.example.company.company.impl.CompanyFactoryImpl.init();
 
-  /**
-   * Returns a new object of class '<em>Company</em>'.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @return a new object of class '<em>Company</em>'.
-   * @generated
-   */
-  Company createCompany();
+	/**
+	 * Returns a new object of class '<em>Company</em>'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return a new object of class '<em>Company</em>'.
+	 * @generated
+	 */
+	Company createCompany();
 
-  /**
-   * Returns the package supported by this factory.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @return the package supported by this factory.
-   * @generated
-   */
-  CompanyPackage getCompanyPackage();
+	/**
+	 * Returns the package supported by this factory.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the package supported by this factory.
+	 * @generated
+	 */
+	CompanyPackage getCompanyPackage();
 
 } //CompanyFactory

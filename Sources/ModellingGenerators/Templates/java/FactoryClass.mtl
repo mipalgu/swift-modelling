@@ -223,9 +223,7 @@
 [header(genPackage)/]
 package [genPackage.reflectionPackageName()/];
 
-
 [emit ('imports') once][importBlockFor(items, genModel)/][/emit]
-
 /**
  * <!-- begin-user-doc -->
  * The <b>Factory</b> for the model.
@@ -347,9 +345,7 @@ public interface [genPackage.factoryInterfaceName()/] extends [importedName('org
 [header(genPackage)/]
 package [genPackage.factoryClassPackageName()/];
 
-
 [emit ('imports') once][importBlockFor(items, genModel)/][/emit]
-
 /**
  * <!-- begin-user-doc -->
  * An implementation of the model <b>Factory</b>.

@@ -34,9 +34,7 @@
 [header(genPackage)/]
 package [genPackage.utilitiesPackageName()/];
 
-
 [emit ('imports') once][importBlockFor(items, genModel)/][/emit]
-
 /**
  * <!-- begin-user-doc -->
  * The <b>Adapter Factory</b> for the model.

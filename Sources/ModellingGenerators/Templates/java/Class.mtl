@@ -51,14 +51,7 @@
 [header(genClass)/]
 package [if (isInterface)][genPackage.interfacePackageName()/][else][genPackage.classPackageName()/][/if];
 
-
-[emit ('imports') once]
-[if (not importedTypes(items)->isEmpty())]
-[importBlockFor(items, genModel)/]
-
-
-[/if]
-[/emit]
+[emit ('imports') once][importBlockFor(items, genModel)/][/emit]
 [genClass.classJavadoc(isInterface)/]
 [if (genClass.hasImplicitAPIDeprecatedTag())]
 @Deprecated

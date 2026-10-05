@@ -49,9 +49,7 @@
 [header(genPackage)/]
 package [if (isImplementation and not genModel.isOn('suppressInterfaces'))][genPackage.classPackageName()/][else][genPackage.reflectionPackageName()/][/if];
 
-
 [emit ('imports') once][importBlockFor(items, genModel)/][/emit]
-
 [if (isInterface)]
 /**
  * <!-- begin-user-doc -->
@@ -113,6 +111,9 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
 [/if]
 [if (isImplementation)]
 [genPackage.packageImplementationHead()/]
+[/if]
+[if (isInterface)]
+
 [/if]
 [genPackage.packageAccessors(isInterface, isImplementation)/]
 [if (isImplementation)]
@@ -491,15 +492,14 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
     super(eNS_URI, [genPackage.factoryInstanceAccessor()/]);
   }
 [if (not familyMember)]
-
   /**
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
    * @generated
    */
   private static boolean isInited = false;
-[/if]
 
+[/if]
   /**
    * Creates, registers, and initializes the <b>Package</b> for this model, and for any others upon which it depends.
    *

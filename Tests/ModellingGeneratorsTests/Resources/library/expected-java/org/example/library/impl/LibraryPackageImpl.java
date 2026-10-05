@@ -3,7 +3,6 @@
  */
 package org.example.library.impl;
 
-
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EDataType;
@@ -21,480 +20,452 @@ import org.example.library.LibraryPackage;
 import org.example.library.Named;
 import org.example.library.Writer;
 
-
 /**
  * <!-- begin-user-doc -->
  * An implementation of the model <b>Package</b>.
  * <!-- end-user-doc -->
  * @generated
  */
-public class LibraryPackageImpl extends EPackageImpl implements LibraryPackage
-{
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  private EClass namedEClass = null;
+public class LibraryPackageImpl extends EPackageImpl implements LibraryPackage {
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	private EClass namedEClass = null;
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  private EClass lendableEClass = null;
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	private EClass lendableEClass = null;
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  private EClass bookEClass = null;
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	private EClass bookEClass = null;
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  private EClass writerEClass = null;
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	private EClass writerEClass = null;
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  private EClass libraryEClass = null;
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	private EClass libraryEClass = null;
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  private EEnum bookCategoryEEnum = null;
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	private EEnum bookCategoryEEnum = null;
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  private EDataType isbnEDataType = null;
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	private EDataType isbnEDataType = null;
 
-  /**
-   * Creates an instance of the model <b>Package</b>, registered with
-   * {@link org.eclipse.emf.ecore.EPackage.Registry EPackage.Registry} by the package
-   * package URI value.
-   * <p>Note: the correct way to create the package is via the static
-   * factory method {@link #init init()}, which also performs
-   * initialization of the package, or returns the registered package,
-   * if one already exists.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @see org.eclipse.emf.ecore.EPackage.Registry
-   * @see org.example.library.LibraryPackage#eNS_URI
-   * @see #init()
-   * @generated
-   */
-  private LibraryPackageImpl()
-  {
-    super(eNS_URI, LibraryFactory.eINSTANCE);
-  }
+	/**
+	 * Creates an instance of the model <b>Package</b>, registered with
+	 * {@link org.eclipse.emf.ecore.EPackage.Registry EPackage.Registry} by the package
+	 * package URI value.
+	 * <p>Note: the correct way to create the package is via the static
+	 * factory method {@link #init init()}, which also performs
+	 * initialization of the package, or returns the registered package,
+	 * if one already exists.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see org.eclipse.emf.ecore.EPackage.Registry
+	 * @see org.example.library.LibraryPackage#eNS_URI
+	 * @see #init()
+	 * @generated
+	 */
+	private LibraryPackageImpl() {
+		super(eNS_URI, LibraryFactory.eINSTANCE);
+	}
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	private static boolean isInited = false;
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  private static boolean isInited = false;
+	/**
+	 * Creates, registers, and initializes the <b>Package</b> for this model, and for any others upon which it depends.
+	 *
+	 * <p>This method is used to initialize {@link LibraryPackage#eINSTANCE} when that field is accessed.
+	 * Clients should not invoke it directly. Instead, they should simply access that field to obtain the package.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see #eNS_URI
+	 * @see #createPackageContents()
+	 * @see #initializePackageContents()
+	 * @generated
+	 */
+	public static LibraryPackage init() {
+		if (isInited) return (LibraryPackage)EPackage.Registry.INSTANCE.getEPackage(LibraryPackage.eNS_URI);
 
-  /**
-   * Creates, registers, and initializes the <b>Package</b> for this model, and for any others upon which it depends.
-   *
-   * <p>This method is used to initialize {@link LibraryPackage#eINSTANCE} when that field is accessed.
-   * Clients should not invoke it directly. Instead, they should simply access that field to obtain the package.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @see #eNS_URI
-   * @see #createPackageContents()
-   * @see #initializePackageContents()
-   * @generated
-   */
-  public static LibraryPackage init()
-  {
-    if (isInited) return (LibraryPackage)EPackage.Registry.INSTANCE.getEPackage(LibraryPackage.eNS_URI);
+		// Obtain or create and register package
+		Object registeredLibraryPackage = EPackage.Registry.INSTANCE.get(eNS_URI);
+		LibraryPackageImpl theLibraryPackage = registeredLibraryPackage instanceof LibraryPackageImpl ? (LibraryPackageImpl)registeredLibraryPackage : new LibraryPackageImpl();
 
-    // Obtain or create and register package
-    Object registeredLibraryPackage = EPackage.Registry.INSTANCE.get(eNS_URI);
-    LibraryPackageImpl theLibraryPackage = registeredLibraryPackage instanceof LibraryPackageImpl ? (LibraryPackageImpl)registeredLibraryPackage : new LibraryPackageImpl();
+		isInited = true;
 
-    isInited = true;
+		// Create package meta-data objects
+		theLibraryPackage.createPackageContents();
 
-    // Create package meta-data objects
-    theLibraryPackage.createPackageContents();
+		// Initialize created meta-data
+		theLibraryPackage.initializePackageContents();
 
-    // Initialize created meta-data
-    theLibraryPackage.initializePackageContents();
+		// Mark meta-data to indicate it can't be changed
+		theLibraryPackage.freeze();
 
-    // Mark meta-data to indicate it can't be changed
-    theLibraryPackage.freeze();
+		// Update the registry and return the package
+		EPackage.Registry.INSTANCE.put(LibraryPackage.eNS_URI, theLibraryPackage);
+		return theLibraryPackage;
+	}
 
-    // Update the registry and return the package
-    EPackage.Registry.INSTANCE.put(LibraryPackage.eNS_URI, theLibraryPackage);
-    return theLibraryPackage;
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EClass getNamed() {
+		return namedEClass;
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public EClass getNamed()
-  {
-    return namedEClass;
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EAttribute getNamed_Name() {
+		return (EAttribute)namedEClass.getEStructuralFeatures().get(0);
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public EAttribute getNamed_Name()
-  {
-    return (EAttribute)namedEClass.getEStructuralFeatures().get(0);
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EClass getLendable() {
+		return lendableEClass;
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public EClass getLendable()
-  {
-    return lendableEClass;
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EAttribute getLendable_LoanDays() {
+		return (EAttribute)lendableEClass.getEStructuralFeatures().get(0);
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public EAttribute getLendable_LoanDays()
-  {
-    return (EAttribute)lendableEClass.getEStructuralFeatures().get(0);
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EAttribute getLendable_OnLoan() {
+		return (EAttribute)lendableEClass.getEStructuralFeatures().get(1);
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public EAttribute getLendable_OnLoan()
-  {
-    return (EAttribute)lendableEClass.getEStructuralFeatures().get(1);
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EClass getBook() {
+		return bookEClass;
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public EClass getBook()
-  {
-    return bookEClass;
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EAttribute getBook_Pages() {
+		return (EAttribute)bookEClass.getEStructuralFeatures().get(0);
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public EAttribute getBook_Pages()
-  {
-    return (EAttribute)bookEClass.getEStructuralFeatures().get(0);
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EAttribute getBook_Category() {
+		return (EAttribute)bookEClass.getEStructuralFeatures().get(1);
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public EAttribute getBook_Category()
-  {
-    return (EAttribute)bookEClass.getEStructuralFeatures().get(1);
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EAttribute getBook_Isbn() {
+		return (EAttribute)bookEClass.getEStructuralFeatures().get(2);
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public EAttribute getBook_Isbn()
-  {
-    return (EAttribute)bookEClass.getEStructuralFeatures().get(2);
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EReference getBook_Author() {
+		return (EReference)bookEClass.getEStructuralFeatures().get(3);
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public EReference getBook_Author()
-  {
-    return (EReference)bookEClass.getEStructuralFeatures().get(3);
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EReference getBook_Library() {
+		return (EReference)bookEClass.getEStructuralFeatures().get(4);
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public EReference getBook_Library()
-  {
-    return (EReference)bookEClass.getEStructuralFeatures().get(4);
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EClass getWriter() {
+		return writerEClass;
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public EClass getWriter()
-  {
-    return writerEClass;
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EAttribute getWriter_Aliases() {
+		return (EAttribute)writerEClass.getEStructuralFeatures().get(0);
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public EAttribute getWriter_Aliases()
-  {
-    return (EAttribute)writerEClass.getEStructuralFeatures().get(0);
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EReference getWriter_Books() {
+		return (EReference)writerEClass.getEStructuralFeatures().get(1);
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public EReference getWriter_Books()
-  {
-    return (EReference)writerEClass.getEStructuralFeatures().get(1);
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EClass getLibrary() {
+		return libraryEClass;
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public EClass getLibrary()
-  {
-    return libraryEClass;
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EReference getLibrary_Books() {
+		return (EReference)libraryEClass.getEStructuralFeatures().get(0);
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public EReference getLibrary_Books()
-  {
-    return (EReference)libraryEClass.getEStructuralFeatures().get(0);
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EReference getLibrary_Writers() {
+		return (EReference)libraryEClass.getEStructuralFeatures().get(1);
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public EReference getLibrary_Writers()
-  {
-    return (EReference)libraryEClass.getEStructuralFeatures().get(1);
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EOperation getLibrary__FindBooks__String_int() {
+		return libraryEClass.getEOperations().get(0);
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public EOperation getLibrary__FindBooks__String_int()
-  {
-    return libraryEClass.getEOperations().get(0);
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EEnum getBookCategory() {
+		return bookCategoryEEnum;
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public EEnum getBookCategory()
-  {
-    return bookCategoryEEnum;
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public EDataType getISBN() {
+		return isbnEDataType;
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public EDataType getISBN()
-  {
-    return isbnEDataType;
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public LibraryFactory getLibraryFactory() {
+		return (LibraryFactory)getEFactoryInstance();
+	}
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public LibraryFactory getLibraryFactory()
-  {
-    return (LibraryFactory)getEFactoryInstance();
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	private boolean isCreated = false;
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  private boolean isCreated = false;
+	/**
+	 * Creates the meta-model objects for the package.  This method is
+	 * guarded to have no affect on any invocation but its first.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public void createPackageContents() {
+		if (isCreated) return;
+		isCreated = true;
 
-  /**
-   * Creates the meta-model objects for the package.  This method is
-   * guarded to have no affect on any invocation but its first.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  public void createPackageContents()
-  {
-    if (isCreated) return;
-    isCreated = true;
+		// Create classes and their features
+		namedEClass = createEClass(NAMED);
+		createEAttribute(namedEClass, NAMED__NAME);
 
-    // Create classes and their features
-    namedEClass = createEClass(NAMED);
-    createEAttribute(namedEClass, NAMED__NAME);
+		lendableEClass = createEClass(LENDABLE);
+		createEAttribute(lendableEClass, LENDABLE__LOAN_DAYS);
+		createEAttribute(lendableEClass, LENDABLE__ON_LOAN);
 
-    lendableEClass = createEClass(LENDABLE);
-    createEAttribute(lendableEClass, LENDABLE__LOAN_DAYS);
-    createEAttribute(lendableEClass, LENDABLE__ON_LOAN);
+		bookEClass = createEClass(BOOK);
+		createEAttribute(bookEClass, BOOK__PAGES);
+		createEAttribute(bookEClass, BOOK__CATEGORY);
+		createEAttribute(bookEClass, BOOK__ISBN);
+		createEReference(bookEClass, BOOK__AUTHOR);
+		createEReference(bookEClass, BOOK__LIBRARY);
 
-    bookEClass = createEClass(BOOK);
-    createEAttribute(bookEClass, BOOK__PAGES);
-    createEAttribute(bookEClass, BOOK__CATEGORY);
-    createEAttribute(bookEClass, BOOK__ISBN);
-    createEReference(bookEClass, BOOK__AUTHOR);
-    createEReference(bookEClass, BOOK__LIBRARY);
+		writerEClass = createEClass(WRITER);
+		createEAttribute(writerEClass, WRITER__ALIASES);
+		createEReference(writerEClass, WRITER__BOOKS);
 
-    writerEClass = createEClass(WRITER);
-    createEAttribute(writerEClass, WRITER__ALIASES);
-    createEReference(writerEClass, WRITER__BOOKS);
+		libraryEClass = createEClass(LIBRARY);
+		createEReference(libraryEClass, LIBRARY__BOOKS);
+		createEReference(libraryEClass, LIBRARY__WRITERS);
+		createEOperation(libraryEClass, LIBRARY___FIND_BOOKS__STRING_INT);
 
-    libraryEClass = createEClass(LIBRARY);
-    createEReference(libraryEClass, LIBRARY__BOOKS);
-    createEReference(libraryEClass, LIBRARY__WRITERS);
-    createEOperation(libraryEClass, LIBRARY___FIND_BOOKS__STRING_INT);
+		// Create enums
+		bookCategoryEEnum = createEEnum(BOOK_CATEGORY);
 
-    // Create enums
-    bookCategoryEEnum = createEEnum(BOOK_CATEGORY);
+		// Create data types
+		isbnEDataType = createEDataType(ISBN);
+	}
 
-    // Create data types
-    isbnEDataType = createEDataType(ISBN);
-  }
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	private boolean isInitialized = false;
 
-  /**
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  private boolean isInitialized = false;
+	/**
+	 * Complete the initialization of the package and its meta-model.  This
+	 * method is guarded to have no affect on any invocation but its first.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public void initializePackageContents() {
+		if (isInitialized) return;
+		isInitialized = true;
 
-  /**
-   * Complete the initialization of the package and its meta-model.  This
-   * method is guarded to have no affect on any invocation but its first.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  public void initializePackageContents()
-  {
-    if (isInitialized) return;
-    isInitialized = true;
+		// Initialize package
+		setName(eNAME);
+		setNsPrefix(eNS_PREFIX);
+		setNsURI(eNS_URI);
 
-    // Initialize package
-    setName(eNAME);
-    setNsPrefix(eNS_PREFIX);
-    setNsURI(eNS_URI);
+		// Create type parameters
 
-    // Create type parameters
+		// Set bounds for type parameters
 
-    // Set bounds for type parameters
+		// Add supertypes to classes
+		bookEClass.getESuperTypes().add(this.getNamed());
+		bookEClass.getESuperTypes().add(this.getLendable());
+		writerEClass.getESuperTypes().add(this.getNamed());
+		libraryEClass.getESuperTypes().add(this.getNamed());
 
-    // Add supertypes to classes
-    bookEClass.getESuperTypes().add(this.getNamed());
-    bookEClass.getESuperTypes().add(this.getLendable());
-    writerEClass.getESuperTypes().add(this.getNamed());
-    libraryEClass.getESuperTypes().add(this.getNamed());
+		// Initialize classes, features, and operations; add parameters
+		initEClass(namedEClass, Named.class, "Named", IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
+		initEAttribute(getNamed_Name(), ecorePackage.getEString(), "name", null, 0, 1, Named.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
-    // Initialize classes, features, and operations; add parameters
-    initEClass(namedEClass, Named.class, "Named", IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
-    initEAttribute(getNamed_Name(), ecorePackage.getEString(), "name", null, 0, 1, Named.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEClass(lendableEClass, Lendable.class, "Lendable", IS_ABSTRACT, IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
+		initEAttribute(getLendable_LoanDays(), ecorePackage.getEInt(), "loanDays", "14", 0, 1, Lendable.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEAttribute(getLendable_OnLoan(), ecorePackage.getEBoolean(), "onLoan", null, 0, 1, Lendable.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
-    initEClass(lendableEClass, Lendable.class, "Lendable", IS_ABSTRACT, IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
-    initEAttribute(getLendable_LoanDays(), ecorePackage.getEInt(), "loanDays", "14", 0, 1, Lendable.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
-    initEAttribute(getLendable_OnLoan(), ecorePackage.getEBoolean(), "onLoan", null, 0, 1, Lendable.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEClass(bookEClass, Book.class, "Book", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
+		initEAttribute(getBook_Pages(), ecorePackage.getEInt(), "pages", "100", 0, 1, Book.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEAttribute(getBook_Category(), this.getBookCategory(), "category", null, 0, 1, Book.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEAttribute(getBook_Isbn(), this.getISBN(), "isbn", null, 0, 1, Book.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEReference(getBook_Author(), this.getWriter(), this.getWriter_Books(), "author", null, 1, 1, Book.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEReference(getBook_Library(), this.getLibrary(), this.getLibrary_Books(), "library", null, 0, 1, Book.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
-    initEClass(bookEClass, Book.class, "Book", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
-    initEAttribute(getBook_Pages(), ecorePackage.getEInt(), "pages", "100", 0, 1, Book.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
-    initEAttribute(getBook_Category(), this.getBookCategory(), "category", null, 0, 1, Book.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
-    initEAttribute(getBook_Isbn(), this.getISBN(), "isbn", null, 0, 1, Book.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
-    initEReference(getBook_Author(), this.getWriter(), this.getWriter_Books(), "author", null, 1, 1, Book.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
-    initEReference(getBook_Library(), this.getLibrary(), this.getLibrary_Books(), "library", null, 0, 1, Book.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEClass(writerEClass, Writer.class, "Writer", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
+		initEAttribute(getWriter_Aliases(), ecorePackage.getEString(), "aliases", null, 0, -1, Writer.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEReference(getWriter_Books(), this.getBook(), this.getBook_Author(), "books", null, 0, -1, Writer.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
-    initEClass(writerEClass, Writer.class, "Writer", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
-    initEAttribute(getWriter_Aliases(), ecorePackage.getEString(), "aliases", null, 0, -1, Writer.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
-    initEReference(getWriter_Books(), this.getBook(), this.getBook_Author(), "books", null, 0, -1, Writer.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEClass(libraryEClass, Library.class, "Library", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
+		initEReference(getLibrary_Books(), this.getBook(), this.getBook_Library(), "books", null, 0, -1, Library.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEReference(getLibrary_Writers(), this.getWriter(), null, "writers", null, 0, -1, Library.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
-    initEClass(libraryEClass, Library.class, "Library", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
-    initEReference(getLibrary_Books(), this.getBook(), this.getBook_Library(), "books", null, 0, -1, Library.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
-    initEReference(getLibrary_Writers(), this.getWriter(), null, "writers", null, 0, -1, Library.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		EOperation op = initEOperation(getLibrary__FindBooks__String_int(), this.getBook(), "findBooks", 0, -1, IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, ecorePackage.getEString(), "title", 0, 1, IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, ecorePackage.getEInt(), "maxResults", 0, 1, IS_UNIQUE, IS_ORDERED);
 
-    EOperation op = initEOperation(getLibrary__FindBooks__String_int(), this.getBook(), "findBooks", 0, -1, IS_UNIQUE, IS_ORDERED);
-    addEParameter(op, ecorePackage.getEString(), "title", 0, 1, IS_UNIQUE, IS_ORDERED);
-    addEParameter(op, ecorePackage.getEInt(), "maxResults", 0, 1, IS_UNIQUE, IS_ORDERED);
+		// Initialize enums and add enum literals
+		initEEnum(bookCategoryEEnum, BookCategory.class, "BookCategory");
+		addEEnumLiteral(bookCategoryEEnum, BookCategory.MYSTERY);
+		addEEnumLiteral(bookCategoryEEnum, BookCategory.SCIENCE_FICTION);
+		addEEnumLiteral(bookCategoryEEnum, BookCategory.BIOGRAPHY);
 
-    // Initialize enums and add enum literals
-    initEEnum(bookCategoryEEnum, BookCategory.class, "BookCategory");
-    addEEnumLiteral(bookCategoryEEnum, BookCategory.MYSTERY);
-    addEEnumLiteral(bookCategoryEEnum, BookCategory.SCIENCE_FICTION);
-    addEEnumLiteral(bookCategoryEEnum, BookCategory.BIOGRAPHY);
+		// Initialize data types
+		initEDataType(isbnEDataType, String.class, "ISBN", IS_SERIALIZABLE, !IS_GENERATED_INSTANCE_CLASS);
 
-    // Initialize data types
-    initEDataType(isbnEDataType, String.class, "ISBN", IS_SERIALIZABLE, !IS_GENERATED_INSTANCE_CLASS);
-
-    // Create resource
-    createResource(eNS_URI);
-  }
+		// Create resource
+		createResource(eNS_URI);
+	}
 
 } //LibraryPackageImpl

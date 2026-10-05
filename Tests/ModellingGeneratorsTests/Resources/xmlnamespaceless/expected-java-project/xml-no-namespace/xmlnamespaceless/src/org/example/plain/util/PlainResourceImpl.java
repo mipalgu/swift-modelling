@@ -2,11 +2,9 @@
  */
 package org.example.plain.util;
 
-
 import org.eclipse.emf.common.util.URI;
 
 import org.eclipse.emf.ecore.xmi.impl.XMLResourceImpl;
-
 
 /**
  * <!-- begin-user-doc -->
@@ -15,18 +13,16 @@ import org.eclipse.emf.ecore.xmi.impl.XMLResourceImpl;
  * @see org.example.plain.util.PlainResourceFactoryImpl
  * @generated
  */
-public class PlainResourceImpl extends XMLResourceImpl
-{
-  /**
-   * Creates an instance of the resource.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @param uri the URI of the new resource.
-   * @generated
-   */
-  public PlainResourceImpl(URI uri)
-  {
-    super(uri);
-  }
+public class PlainResourceImpl extends XMLResourceImpl {
+	/**
+	 * Creates an instance of the resource.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @param uri the URI of the new resource.
+	 * @generated
+	 */
+	public PlainResourceImpl(URI uri) {
+		super(uri);
+	}
 
 } //PlainResourceImpl
