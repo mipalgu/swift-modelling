@@ -9,8 +9,10 @@ struct GenerateCommandTests {
     /// The copyright that the golden files were generated with.
     private static let copyright = "Copyright 2026 Example Pty Ltd"
 
-    /// The options that make the output equal to the golden files.
-    private static let goldenOptions = ["--base-package", basePackage, "--copyright", copyright]
+    /// The options that make the output equal to the golden files, which use the wizard defaults.
+    private static let goldenOptions = [
+        "--base-package", basePackage, "--copyright", copyright, "--defaults", "wizard",
+    ]
 
     /// The arguments that generate the Java of a fixture into its output directory with the golden options.
     ///
@@ -387,6 +389,121 @@ struct GenerateCommandTests {
 
         #expect(!result.succeeded)
         #expect(result.stderr.contains("neither a generator model nor an Ecore model"))
+    }
+
+    // MARK: - Generator model defaults
+
+    /// The settings of the wizard preset, as the lines of the generator model.
+    private static let wizardLines = [
+        #"operationReflection="true""#, #"importOrganizing="true""#,
+        #"rootExtendsClass="org.eclipse.emf.ecore.impl.MinimalEObjectImpl$Container""#,
+    ]
+
+    /// Creates the generator model of the library with extra arguments and reads it.
+    private static func genModelText(_ extra: [String]) async throws -> (text: String, result: SubprocessResult) {
+        let fixture = try LibraryFixture.make()
+        defer { fixture.remove() }
+        let result = try await executeSwiftATL(
+            command: "generate", arguments: [fixture.ecore.path, "--language", "genmodel"] + extra)
+        return ((try? String(contentsOf: fixture.genModel, encoding: .utf8)) ?? "", result)
+    }
+
+    @Test("leaves the root class, operation reflection and import organising at the metamodel defaults")
+    @MainActor
+    func headlessGenModel() async throws {
+        let run = try await Self.genModelText([])
+        #expect(run.result.succeeded, "\(run.result.stderr)")
+        #expect(!run.text.contains("operationReflection"))
+        #expect(!run.text.contains("importOrganizing"))
+        #expect(!run.text.contains("rootExtendsClass"))
+    }
+
+    @Test("writes the settings of the interactive wizard for --defaults wizard")
+    @MainActor
+    func wizardGenModel() async throws {
+        let run = try await Self.genModelText(["--defaults", "wizard"])
+        #expect(run.result.succeeded, "\(run.result.stderr)")
+        for line in Self.wizardLines { #expect(run.text.contains(line), "Missing \(line)") }
+    }
+
+    @Test("lets each flag override the preset")
+    @MainActor
+    func flagsOverridePreset() async throws {
+        let wizard = try await Self.genModelText([
+            "--defaults", "wizard", "--no-operation-reflection", "--no-import-organizing",
+            "--root-extends-class", "org.example.Root",
+        ])
+        #expect(wizard.result.succeeded, "\(wizard.result.stderr)")
+        #expect(!wizard.text.contains("operationReflection"))
+        #expect(!wizard.text.contains("importOrganizing"))
+        #expect(wizard.text.contains(#"rootExtendsClass="org.example.Root""#))
+        let headless = try await Self.genModelText([
+            "--defaults", "headless", "--operation-reflection", "--import-organizing",
+        ])
+        #expect(headless.result.succeeded, "\(headless.result.stderr)")
+        #expect(headless.text.contains(#"operationReflection="true""#))
+        #expect(headless.text.contains(#"importOrganizing="true""#))
+        #expect(!headless.text.contains("rootExtendsClass"))
+    }
+
+    @Test("writes explicit imports into the Java when imports are organised")
+    @MainActor
+    func organisedImports() async throws {
+        let factory = "org/example/library/impl/LibraryFactoryImpl.java"
+        let plain = try LibraryFixture.make()
+        defer { plain.remove() }
+        let organised = try LibraryFixture.make()
+        defer { organised.remove() }
+        let base = ["--base-package", Self.basePackage]
+        let one = try await executeSwiftATL(
+            command: "generate",
+            arguments: [plain.ecore.path, "--language", "java", "-o", plain.output.path] + base)
+        let two = try await executeSwiftATL(
+            command: "generate",
+            arguments: [organised.ecore.path, "--language", "java", "-o", organised.output.path, "--import-organizing"] + base)
+        #expect(one.succeeded && two.succeeded, "\(one.stderr)\(two.stderr)")
+        let plainText = try String(contentsOf: plain.output.appendingPathComponent(factory), encoding: .utf8)
+        let organisedText = try String(contentsOf: organised.output.appendingPathComponent(factory), encoding: .utf8)
+        #expect(plainText.contains("import org.example.library.*;"))
+        #expect(!organisedText.contains("import org.example.library.*;"))
+        #expect(organisedText.contains("import org.example.library.Book;"))
+    }
+
+    @Test("rejects the defaults options for a generator model")
+    @MainActor
+    func defaultsNeedEcore() async throws {
+        let fixture = try LibraryFixture.make()
+        defer { fixture.remove() }
+        let created = try await executeSwiftATL(
+            command: "generate", arguments: [fixture.ecore.path, "--language", "genmodel"])
+        #expect(created.succeeded)
+        let result = try await executeSwiftATL(
+            command: "generate",
+            arguments: [fixture.genModel.path, "--language", "java", "--no-import-organizing"])
+        #expect(!result.succeeded)
+        #expect(result.stderr.contains("only apply to an Ecore model"))
+    }
+
+    @Test("rejects a preset that does not exist")
+    @MainActor
+    func unknownPreset() async throws {
+        let run = try await Self.genModelText(["--defaults", "interactive"])
+        #expect(!run.result.succeeded)
+        #expect(run.result.stderr.contains("interactive"))
+        #expect(run.result.stderr.contains("wizard"))
+    }
+
+    @Test("documents the defaults options in the help")
+    @MainActor
+    func helpListsDefaults() async throws {
+        let result = try await executeSwiftATL(command: "generate", arguments: ["--help"])
+        #expect(result.succeeded)
+        for option in [
+            "--defaults", "--root-extends-class", "--operation-reflection", "--no-operation-reflection",
+            "--import-organizing", "--no-import-organizing", "headless", "wizard",
+        ] {
+            #expect(result.stdout.contains(option), "Missing \(option)")
+        }
     }
 
     // MARK: - Support

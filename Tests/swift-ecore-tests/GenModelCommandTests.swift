@@ -269,4 +269,167 @@ struct GenModelCommandTests {
             #expect(result.stdout.contains(option), "Missing \(option)")
         }
     }
+
+    // MARK: - Generator model defaults
+
+    /// The settings of the wizard preset, as the lines of the generator model.
+    private static let wizardLines = [
+        #"operationReflection="true""#, #"importOrganizing="true""#,
+        #"rootExtendsClass="org.eclipse.emf.ecore.impl.MinimalEObjectImpl$Container""#,
+    ]
+
+    /// Writes the generator model of the families fixture with extra arguments.
+    ///
+    /// - Parameters:
+    ///   - extra: The arguments after the model.
+    ///   - fixture: The name of the fixture.
+    /// - Returns: The text of the generator model, the result and the scratch directory to clean up.
+    @MainActor
+    private func genModelText(_ extra: [String], fixture: String = "families") async throws
+        -> (text: String, result: SubprocessResult, scratch: URL, genModel: URL, ecore: URL)
+    {
+        let (scratch, project) = try scratchProject(fixture)
+        let ecore = project.appendingPathComponent("model/\(fixture).ecore")
+        let genModel = project.appendingPathComponent("model/\(fixture).genmodel")
+        let result = try await executeSwiftEcore(command: "genmodel", arguments: [ecore.path] + extra)
+        let text = (try? String(contentsOf: genModel, encoding: .utf8)) ?? ""
+        return (text, result, scratch, genModel, ecore)
+    }
+
+    @Test("leaves operation reflection, the root class and import organising at the metamodel defaults")
+    @MainActor
+    func headlessByDefault() async throws {
+        let run = try await genModelText([])
+        defer { cleanupTemporaryDirectory(run.scratch) }
+        #expect(run.result.succeeded)
+        #expect(!run.text.contains("operationReflection"))
+        #expect(!run.text.contains("importOrganizing"))
+        #expect(!run.text.contains("rootExtendsClass"))
+        let named = try await genModelText(["--defaults", "headless"])
+        defer { cleanupTemporaryDirectory(named.scratch) }
+        #expect(named.text == run.text)
+    }
+
+    @Test("writes the settings of the interactive wizard for --defaults wizard")
+    @MainActor
+    func wizardPreset() async throws {
+        let run = try await genModelText(["--defaults", "wizard"])
+        defer { cleanupTemporaryDirectory(run.scratch) }
+        #expect(run.result.succeeded)
+        for line in Self.wizardLines { #expect(run.text.contains(line), "Missing \(line)") }
+    }
+
+    @Test("matches the reviewed expectation of the wizard preset")
+    @MainActor
+    func wizardMatchesExpectation() async throws {
+        let (scratch, project) = try scratchProject("library")
+        defer { cleanupTemporaryDirectory(scratch) }
+        let result = try await executeSwiftEcore(
+            command: "genmodel",
+            arguments: [
+                project.appendingPathComponent("model/library.ecore").path, "--base-package", "org.example",
+                "--copyright", "Copyright 2026 Example Pty Ltd", "--defaults", "wizard",
+            ])
+        #expect(result.succeeded)
+        #expect(
+            try String(
+                contentsOf: project.appendingPathComponent("model/library.genmodel"), encoding: .utf8)
+                == expected("library", "library.wizard.genmodel"))
+    }
+
+    @Test("sets single settings with flags and their inverses")
+    @MainActor
+    func individualFlags() async throws {
+        let cases: [(arguments: [String], present: [String], absent: [String])] = [
+            (["--operation-reflection"], [#"operationReflection="true""#], ["importOrganizing", "rootExtendsClass"]),
+            (["--import-organizing"], [#"importOrganizing="true""#], ["operationReflection", "rootExtendsClass"]),
+            (
+                ["--root-extends-class", "org.example.Root"], [#"rootExtendsClass="org.example.Root""#],
+                ["operationReflection", "importOrganizing"]
+            ),
+            (["--no-operation-reflection"], [], ["operationReflection"]),
+            (["--no-import-organizing"], [], ["importOrganizing"]),
+        ]
+        for golden in cases {
+            let run = try await genModelText(golden.arguments)
+            defer { cleanupTemporaryDirectory(run.scratch) }
+            #expect(run.result.succeeded, "\(golden.arguments): \(run.result.stderr)")
+            for line in golden.present { #expect(run.text.contains(line), "\(golden.arguments) lacks \(line)") }
+            for line in golden.absent { #expect(!run.text.contains(line), "\(golden.arguments) has \(line)") }
+        }
+    }
+
+    @Test("lets the inverse flags and --root-extends-class override the wizard preset")
+    @MainActor
+    func flagsOverridePreset() async throws {
+        let run = try await genModelText([
+            "--defaults", "wizard", "--no-operation-reflection", "--no-import-organizing",
+            "--root-extends-class", "org.example.Root",
+        ])
+        defer { cleanupTemporaryDirectory(run.scratch) }
+        #expect(run.result.succeeded)
+        #expect(!run.text.contains("operationReflection"))
+        #expect(!run.text.contains("importOrganizing"))
+        #expect(run.text.contains(#"rootExtendsClass="org.example.Root""#))
+        let order = try await genModelText([
+            "--import-organizing", "--defaults", "headless", "--operation-reflection",
+        ])
+        defer { cleanupTemporaryDirectory(order.scratch) }
+        #expect(order.text.contains(#"importOrganizing="true""#))
+        #expect(order.text.contains(#"operationReflection="true""#))
+        #expect(!order.text.contains("rootExtendsClass"))
+    }
+
+    @Test("keeps the defaults of a reloaded model unless a flag is given")
+    @MainActor
+    func reloadAndDefaults() async throws {
+        let first = try await genModelText(["--defaults", "wizard"])
+        defer { cleanupTemporaryDirectory(first.scratch) }
+        let reload = ["--reload", first.genModel.path]
+
+        let kept = try await executeSwiftEcore(command: "genmodel", arguments: [first.ecore.path] + reload)
+        #expect(kept.succeeded)
+        let keptText = try String(contentsOf: first.genModel, encoding: .utf8)
+        for line in Self.wizardLines { #expect(keptText.contains(line), "Missing \(line)") }
+
+        let flagged = try await executeSwiftEcore(
+            command: "genmodel", arguments: [first.ecore.path, "--no-operation-reflection"] + reload)
+        #expect(flagged.succeeded)
+        let flaggedText = try String(contentsOf: first.genModel, encoding: .utf8)
+        #expect(!flaggedText.contains("operationReflection"))
+        #expect(flaggedText.contains(#"importOrganizing="true""#))
+        #expect(flaggedText.contains("rootExtendsClass"))
+
+        let headless = try await executeSwiftEcore(
+            command: "genmodel", arguments: [first.ecore.path, "--defaults", "headless"] + reload)
+        #expect(headless.succeeded)
+        let headlessText = try String(contentsOf: first.genModel, encoding: .utf8)
+        #expect(!headlessText.contains("operationReflection"))
+        #expect(!headlessText.contains("importOrganizing"))
+        #expect(!headlessText.contains("rootExtendsClass"))
+    }
+
+    @Test("rejects a preset that does not exist and names the valid ones")
+    @MainActor
+    func unknownPreset() async throws {
+        let run = try await genModelText(["--defaults", "interactive"])
+        defer { cleanupTemporaryDirectory(run.scratch) }
+        #expect(!run.result.succeeded)
+        #expect(run.result.stderr.contains("interactive"))
+        #expect(run.result.stderr.contains("headless"))
+        #expect(run.result.stderr.contains("wizard"))
+    }
+
+    @Test("documents the defaults options in the help")
+    @MainActor
+    func helpListsDefaults() async throws {
+        let result = try await executeSwiftEcore(command: "genmodel", arguments: ["--help"])
+        #expect(result.succeeded)
+        for option in [
+            "--defaults", "--root-extends-class", "--operation-reflection", "--no-operation-reflection",
+            "--import-organizing", "--no-import-organizing", "headless", "wizard",
+        ] {
+            #expect(result.stdout.contains(option), "Missing \(option)")
+        }
+    }
 }

@@ -62,12 +62,23 @@ let package = Package(
                 .enableUpcomingFeature("StrictConcurrency")
             ]
         ),
+        .target(
+            name: "ModellingCommandLine",
+            dependencies: [
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                "ModellingGenerators",
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency")
+            ]
+        ),
         .executableTarget(
             name: "swift-ecore",
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "ECore", package: "swift-ecore"),
                 "ModellingGenerators",
+                "ModellingCommandLine",
             ],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency")
@@ -80,6 +91,7 @@ let package = Package(
                 .product(name: "ECore", package: "swift-ecore"),
                 .product(name: "GenModel", package: "swift-ecore"),
                 "ModellingGenerators",
+                "ModellingCommandLine",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
             swiftSettings: [

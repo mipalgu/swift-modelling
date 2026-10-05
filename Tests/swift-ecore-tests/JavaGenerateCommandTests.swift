@@ -252,6 +252,90 @@ struct JavaGenerateCommandTests {
         #expect(!result.succeeded)
         #expect(result.stderr.contains("not a directory"))
     }
+
+    // MARK: - Generator model defaults
+
+    /// The factory implementation of the library fixture, relative to the output directory.
+    private static let factoryImplementation = "library/impl/LibraryFactoryImpl.java"
+
+    /// Generates the Java of the library Ecore model with extra arguments and reads the factory implementation.
+    ///
+    /// - Parameter extra: The arguments after the model.
+    /// - Returns: The text of the factory implementation, or `nil` if the command failed, and the result.
+    @MainActor
+    private func factoryImplementation(_ extra: [String]) async throws -> (text: String?, result: SubprocessResult) {
+        let (scratch, project, _) = try await libraryProject()
+        defer { cleanupTemporaryDirectory(scratch) }
+        let output = scratch.appendingPathComponent("java")
+        let result = try await executeSwiftEcore(
+            command: "generate",
+            arguments: [
+                "--language", "java", project.appendingPathComponent("model/library.ecore").path, "-o",
+                output.path,
+            ] + extra)
+        let text = try? String(
+            contentsOf: output.appendingPathComponent(Self.factoryImplementation), encoding: .utf8)
+        return (text, result)
+    }
+
+    @Test("imports the interface package with a wildcard by default")
+    @MainActor
+    func wildcardImportByDefault() async throws {
+        let run = try await factoryImplementation([])
+        #expect(run.result.succeeded, "\(run.result.stderr)")
+        let text = try #require(run.text)
+        #expect(text.contains("import library.*;"))
+        #expect(!text.contains("import library.Book;"))
+    }
+
+    @Test("writes explicit imports with --defaults wizard or --import-organizing")
+    @MainActor
+    func explicitImports() async throws {
+        for arguments in [["--defaults", "wizard"], ["--import-organizing"]] {
+            let run = try await factoryImplementation(arguments)
+            #expect(run.result.succeeded, "\(run.result.stderr)")
+            let text = try #require(run.text)
+            #expect(!text.contains("import library.*;"), "\(arguments)")
+            #expect(text.contains("import library.Book;"), "\(arguments)")
+        }
+    }
+
+    @Test("lets --no-import-organizing override the wizard preset")
+    @MainActor
+    func overridesPreset() async throws {
+        let run = try await factoryImplementation(["--defaults", "wizard", "--no-import-organizing"])
+        #expect(run.result.succeeded, "\(run.result.stderr)")
+        let text = try #require(run.text)
+        #expect(text.contains("import library.*;"))
+    }
+
+    @Test("rejects the defaults options for a generator model")
+    @MainActor
+    func defaultsNeedEcore() async throws {
+        let (scratch, _, genModel) = try await libraryProject()
+        defer { cleanupTemporaryDirectory(scratch) }
+        let result = try await executeSwiftEcore(
+            command: "generate",
+            arguments: [
+                "--language", "java", genModel.path, "--defaults", "wizard", "-o",
+                scratch.appendingPathComponent("x").path,
+            ])
+        #expect(!result.succeeded)
+        #expect(result.stderr.contains("only apply to an Ecore model"))
+    }
+
+    @Test("documents the defaults options in the generate help")
+    @MainActor
+    func helpListsDefaults() async throws {
+        let result = try await executeSwiftEcore(command: "generate", arguments: ["--help"])
+        #expect(result.succeeded)
+        for option in [
+            "--defaults", "--root-extends-class", "--operation-reflection", "--no-operation-reflection",
+            "--import-organizing", "--no-import-organizing",
+        ] {
+            #expect(result.stdout.contains(option), "Missing \(option)")
+        }
+    }
 }
 
 @Suite("swift-ecore - from Ecore to Java through the command line")
@@ -302,6 +386,7 @@ struct JavaChainTests {
             command: "genmodel",
             arguments: [
                 ecore.path, "--base-package", "org.example", "--copyright", "Copyright 2026 Example Pty Ltd",
+                "--defaults", "wizard",
             ])
         #expect(created.succeeded, "\(created.stderr)")
         let genModel = ecore.deletingPathExtension().appendingPathExtension("genmodel")

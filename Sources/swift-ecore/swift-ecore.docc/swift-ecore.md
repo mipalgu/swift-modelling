@@ -94,13 +94,19 @@ The generator model is written in the layout that the Eclipse Modeling Framework
 - `--model-directory <path>` - Source directory of the model project
 - `--copyright <text>` - Copyright text
 - `--jdk-level <level>` - Compliance level of the generated code (default: 17.0)
+- `--defaults headless|wizard` - Preset of the settings that the Eclipse tools write differently for headless and interactive use (default: `headless`)
+- `--root-extends-class <name>` - Class that generated root objects extend, overriding the preset
+- `--operation-reflection` / `--no-operation-reflection` - Whether generated models include operation reflection, overriding the preset
+- `--import-organizing` / `--no-import-organizing` - Whether generated code organises its imports, overriding the preset
 - `--reload <path>` - Existing generator model whose settings are kept
 - `--output <path>` - Generator model to write
 - `--verbose` - Show progress and a summary
 
 The model project is the `--model-project` option if given. Otherwise it is the parent directory of an Ecore model that lives in a directory named `model`, and the name of the root package in any other case.
 
-When `--reload` names an existing generator model, its settings are kept for every element that still exists, matched by name. New Ecore elements get the defaults, removed ones are dropped, and options given on the command line override the existing settings.
+Operation reflection, the root class and import organising follow the headless Eclipse generator by default: they keep the defaults of the generator metamodel and are not written. `--defaults wizard` gives the settings of the interactive Eclipse wizard (operation reflection and import organising on, `org.eclipse.emf.ecore.impl.MinimalEObjectImpl$Container` as the root class), and the individual options override the preset whatever their order.
+
+When `--reload` names an existing generator model, its settings are kept for every element that still exists, matched by name. New Ecore elements get the defaults, removed ones are dropped, and options given on the command line override the existing settings. The three settings of the preset are kept too, unless `--defaults` or one of their own options is given.
 
 **Examples:**
 
@@ -133,6 +139,7 @@ Languages that have a template set, such as `java`, are generated from a generat
 - `--force-overwrite` - Replace existing files without merging
 - `--diff` - Write the generated text of existing files beside them as `.<name>.new`
 - `--model-directory` - Write below the model directory of the generator model
+- `--defaults`, `--root-extends-class`, `--operation-reflection`, `--import-organizing` - The generator model defaults of an Ecore model that is imported for a template language, as for `genmodel`
 - `-v, --verbose` - Show every progress report
 
 Existing files are merged with the generated code: members tagged `@generated` are regenerated, members tagged `@generated NOT` and members without the tag are kept.

@@ -8,6 +8,7 @@
 import ArgumentParser
 import Foundation
 import GenModel
+import ModellingCommandLine
 import ModellingGenerators
 
 /// Command for generating code from Ecore models and generator models.
@@ -34,6 +35,12 @@ struct GenerateCommand: AsyncParsableCommand {
             the --output directory. Template files in the directories given with --template-path \
             replace the bundled templates of the same name. Existing files are merged with the \
             generated code unless --force-overwrite or --diff says otherwise.
+
+            An Ecore model is imported with the generator model defaults of the headless Eclipse \
+            generator. --defaults wizard gives the settings of the interactive Eclipse wizard \
+            instead, and --root-extends-class, --operation-reflection and --import-organizing (or \
+            their --no- forms) override single settings. They do not apply to a generator model that \
+            is generated from directly.
 
             Bundled languages: \(availableLanguageList()). A directory that holds a template set and \
             is given with --template-path adds its language.
@@ -100,6 +107,10 @@ struct GenerateCommand: AsyncParsableCommand {
     @Option(help: "The compliance level of the generated code, such as 17.0")
     var jdkLevel: String?
 
+    /// The preset and the overrides of the generator model defaults.
+    @OptionGroup(title: "Generator model defaults")
+    var genModelDefaults: GenModelDefaultsOptions
+
     /// Directories whose template files replace the bundled templates.
     @Option(
         name: .customLong("template-path"),
@@ -157,6 +168,12 @@ struct GenerateCommand: AsyncParsableCommand {
         guard FileManager.default.fileExists(atPath: inputModel) else {
             throw ValidationError("The model '\(inputModel)' does not exist")
         }
+        if genModelDefaults.isGiven
+            && inputURL.pathExtension.lowercased() != TemplateSetConstants.metamodelFileExtension
+        {
+            throw ValidationError(
+                "The generator model defaults only apply to an Ecore model, but '\(inputModel)' is not one")
+        }
         let bar = GenerationProgressBar(verbose: verbose)
         defer { bar.finish() }
         do {
@@ -186,6 +203,7 @@ struct GenerateCommand: AsyncParsableCommand {
         options.modelPluginID = modelPluginID
         options.copyright = copyright
         options.complianceLevel = jdkLevel
+        genModelDefaults.apply(to: &options)
         if let transformations {
             guard FileManager.default.fileExists(atPath: transformations) else {
                 throw ValidationError("The transformation '\(transformations)' does not exist")
