@@ -29,7 +29,7 @@ struct InfoCommandTests {
         #expect(version.succeeded)
         let number = version.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
         #expect(!number.isEmpty)
-        #expect(info.stdout.contains("Swift Ecore v\(number)\n"))
+        #expect(info.stdout.components(separatedBy: .newlines).first == "Swift Ecore v\(number)")
     }
 
     @Test("should exit with code 0")

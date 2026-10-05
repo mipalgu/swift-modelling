@@ -424,9 +424,9 @@ struct GenModelImportTests {
     @Test("A missing source model is reported by path")
     @MainActor
     func missingSource() async {
-        let path = "/nonexistent/swift-modelling/none.ecore"
-        await #expect(throws: GenerationError.sourceModelNotFound(path)) {
-            _ = try await GenerationPipeline.ecoreToGenModel(ecoreURLs: [URL(fileURLWithPath: path)])
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        await #expect(throws: GenerationError.sourceModelNotFound(url.path)) {
+            _ = try await GenerationPipeline.ecoreToGenModel(ecoreURLs: [url])
         }
     }
 
