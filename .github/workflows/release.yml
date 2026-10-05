@@ -116,15 +116,24 @@ jobs:
           echo '    end' >> Formula/swift-modelling.rb
           echo '' >> Formula/swift-modelling.rb
           echo '    system "swift", "build", "--disable-sandbox", "-c", "release"' >> Formula/swift-modelling.rb
-          echo '    bin.install ".build/release/swift-ecore"' >> Formula/swift-modelling.rb
-          echo '    bin.install ".build/release/swift-atl"' >> Formula/swift-modelling.rb
-          echo '    bin.install ".build/release/swift-mtl"' >> Formula/swift-modelling.rb
+          echo '' >> Formula/swift-modelling.rb
+          echo '    # The tools load their bundled templates, transformations and metamodels' >> Formula/swift-modelling.rb
+          echo '    # from resource bundles next to the executable, so both go into libexec.' >> Formula/swift-modelling.rb
+          echo '    tools = %w[swift-ecore swift-atl swift-mtl]' >> Formula/swift-modelling.rb
+          echo '    tools.each { |tool| libexec.install ".build/release/#{tool}" }' >> Formula/swift-modelling.rb
+          echo '    bundles = Dir[".build/release/*.bundle", ".build/release/*.resources"].reject do |bundle|' >> Formula/swift-modelling.rb
+          echo '      File.basename(bundle).match?(/(Tests|-tests)\.(bundle|resources)\z/)' >> Formula/swift-modelling.rb
+          echo '    end' >> Formula/swift-modelling.rb
+          echo '    odie "No resource bundles were built" if bundles.empty?' >> Formula/swift-modelling.rb
+          echo '    libexec.install bundles' >> Formula/swift-modelling.rb
+          echo '    tools.each { |tool| bin.write_exec_script libexec/tool }' >> Formula/swift-modelling.rb
           echo '  end' >> Formula/swift-modelling.rb
           echo '' >> Formula/swift-modelling.rb
           echo '  test do' >> Formula/swift-modelling.rb
           echo '    system "#{bin}/swift-ecore", "--help"' >> Formula/swift-modelling.rb
           echo '    system "#{bin}/swift-atl", "--help"' >> Formula/swift-modelling.rb
           echo '    system "#{bin}/swift-mtl", "--help"' >> Formula/swift-modelling.rb
+          echo '    assert_match "java", shell_output("#{bin}/swift-atl generate --help")' >> Formula/swift-modelling.rb
           echo '  end' >> Formula/swift-modelling.rb
           echo 'end' >> Formula/swift-modelling.rb
 
