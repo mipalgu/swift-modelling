@@ -115,8 +115,9 @@ struct JavaUtilityGenerationTests {
         let missing = Set(golden.files).subtracting(utilityPaths)
         #expect(missing.isEmpty, "missing generated files: \(missing.sorted())")
         for path in golden.files {
-            let expected = try String(contentsOf: generated.project.javaExpectation(path), encoding: .utf8)
-            #expect(try generated.text(path) == expected, "\(path) differs from its expectation")
+            try GoldenFiles.check(
+                try generated.text(path), against: "\(golden.fixture)/\(JavaGoldenCase.expectationFolder)/\(path)",
+                path)
         }
     }
 

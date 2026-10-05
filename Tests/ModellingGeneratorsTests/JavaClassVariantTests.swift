@@ -51,9 +51,6 @@ struct JavaClassVariant: Sendable, CustomTestStringConvertible {
 
 @Suite("Java classes with other generator model settings")
 struct JavaClassVariantTests {
-    /// The environment variable that makes the tests write their output as new expectations.
-    static let recordVariable = "JAVA_CLASS_VARIANT_RECORD"
-
     @Test("Generated classes match the reviewed expectations", arguments: JavaClassVariant.all)
     @MainActor
     func goldenFiles(_ variant: JavaClassVariant) async throws {
@@ -68,20 +65,9 @@ struct JavaClassVariantTests {
         try await generated.generate()
 
         for path in variant.files {
-            let actual = try generated.text(path)
-            if let record = ProcessInfo.processInfo.environment[Self.recordVariable] {
-                let target = URL(fileURLWithPath: record).appendingPathComponent(variant.name)
-                    .appendingPathComponent(path)
-                try FileManager.default.createDirectory(
-                    at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
-                try actual.write(to: target, atomically: true, encoding: .utf8)
-                continue
-            }
-            let expected = try String(
-                contentsOf: Fixtures.url(
-                    of: "\(variant.fixture)/expected-java-variants/\(variant.name)/\(path)"),
-                encoding: .utf8)
-            #expect(actual == expected, "\(path) differs from its expectation for \(variant.name)")
+            try GoldenFiles.check(
+                try generated.text(path), against: "\(variant.fixture)/expected-java-variants/\(variant.name)/\(path)",
+                "\(path) for \(variant.name)")
         }
     }
 }

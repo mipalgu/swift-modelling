@@ -29,9 +29,6 @@ struct JavaProjectCase: Sendable, CustomTestStringConvertible {
     /// The root of the expectations in the bundled fixtures.
     static let expectationFolder = "expected-java-project"
 
-    /// The environment variable that names a directory to record the generated files into.
-    static let recordVariable = "RECORD_JAVA_PROJECT_GOLDEN"
-
     /// The names of the project files that a model with plugin support writes into its project directory.
     static let projectFileNames: Set<String> = ["build.properties", "MANIFEST.MF", "plugin.properties", "plugin.xml"]
 
@@ -139,23 +136,20 @@ struct JavaProjectFilesTests {
     func goldenFiles(_ golden: JavaProjectCase) async throws {
         let generated = try await golden.generate()
         defer { generated.remove() }
-        if let record = ProcessInfo.processInfo.environment[JavaProjectCase.recordVariable] {
+        if GoldenFiles.isRecording {
             for path in generated.generatedPaths() {
-                let target = URL(fileURLWithPath: record).appendingPathComponent(golden.fixture)
-                    .appendingPathComponent(JavaProjectCase.expectationFolder).appendingPathComponent(golden.name)
-                    .appendingPathComponent(path)
-                try FileManager.default.createDirectory(
-                    at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
-                try generated.text(path).write(to: target, atomically: true, encoding: .utf8)
+                try GoldenFiles.check(
+                    try generated.text(path),
+                    against: "\(golden.fixture)/\(JavaProjectCase.expectationFolder)/\(golden.name)/\(path)")
             }
             return
         }
         let missing = Set(golden.files).subtracting(generated.generatedPaths())
         #expect(missing.isEmpty, "missing generated files: \(missing.sorted())")
         for path in golden.files {
-            let expected = try Fixtures.url(
-                of: "\(golden.fixture)/\(JavaProjectCase.expectationFolder)/\(golden.name)/\(path)")
-            #expect(try generated.text(path) == String(contentsOf: expected, encoding: .utf8), "\(path) differs")
+            try GoldenFiles.check(
+                try generated.text(path),
+                against: "\(golden.fixture)/\(JavaProjectCase.expectationFolder)/\(golden.name)/\(path)", path)
         }
     }
 

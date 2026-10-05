@@ -35,9 +35,8 @@ struct JavaBareModelTests {
 
         #expect(generated.generatedPaths() == Self.files.sorted())
         for path in Self.files {
-            let expected = try String(
-                contentsOf: Fixtures.url(of: "bare/\(Self.expectations(defaults))/\(path)"), encoding: .utf8)
-            #expect(try generated.text(path) == expected, "\(path) differs from its expectation")
+            try GoldenFiles.check(
+                try generated.text(path), against: "bare/\(Self.expectations(defaults))/\(path)", path)
         }
     }
 
