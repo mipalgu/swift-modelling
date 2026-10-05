@@ -129,7 +129,7 @@ Generate source code from models.
 swift-ecore generate <model> [options]
 ```
 
-Languages that have a template set, such as `java`, are generated from a generator model (`.genmodel`); an Ecore model is imported into a temporary generator model first. Swift, C++, C and LLVM are written by the built-in generator from Ecore, XMI or JSON models. A template set is a directory of templates and data files, so a new language needs no Swift code; see the `ModellingGenerators` documentation. The help (`swift-ecore generate --help`) lists the template set languages that exist, including those that `--template-path` adds, and an unknown language is reported with every language that can be used. `swift-atl generate` runs the same pipeline from the ATL tool.
+Languages that have a template set, such as `java`, are generated from a generator model (`.genmodel`); an Ecore model is imported into a temporary generator model first. Swift, C++, C and LLVM are written by the built-in generator from Ecore, XMI or JSON models. A template set is a directory of templates and data files, so a new language needs no Swift code; see the `ModellingGenerators` documentation. The help (`swift-ecore generate --help`) lists the bundled template set languages; a language that `--template-path` adds is accepted but not listed there, and an unknown language is reported with every language that can be used, including those additions. `swift-atl generate` runs the same pipeline from the ATL tool.
 
 **Options:**
 

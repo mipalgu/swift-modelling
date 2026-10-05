@@ -184,7 +184,7 @@ swift run swift-ecore generate Tests/ECoreTests/Resources/xmi/organisation.ecore
 
 **Input formats:** Ecore metamodels (`.ecore`), XMI models (`.xmi`), JSON models (`.json`)
 
-Languages that have a template set, such as `java`, are generated from a generator model or an Ecore model by the shared template pipeline; see [Generating Java from a Generator Model](#generating-java-from-a-generator-model). `swift-ecore generate --help` lists the template set languages that exist, including `--template-path` additions, and an unknown language is reported together with every language that can be used. The built-in generator for `swift`, `cpp`, `c` and `llvm` is unchanged.
+Languages that have a template set, such as `java`, are generated from a generator model or an Ecore model by the shared template pipeline; see [Generating Java from a Generator Model](#generating-java-from-a-generator-model). `swift-ecore generate --help` lists the bundled template set languages; a language that a `--template-path` directory adds is accepted but not listed there, and an unknown language is reported together with every language that can be used, including those additions. The built-in generator for `swift`, `cpp`, `c` and `llvm` is unchanged.
 
 ### GenModel Command
 
@@ -358,7 +358,7 @@ swift run swift-atl generate model/library.genmodel --language java --template-p
 swift run swift-atl generate model/library.ecore --language genmodel --transformations my-atl/
 ```
 
-**Languages.** `--language` takes `genmodel` (the default) or the name of any template set: the bundled ones (`java`) and the sets that `--template-path` directories add. `swift-atl generate --help` lists what exists, and an unknown name is rejected with that list. There are no other languages.
+**Languages.** `--language` takes `genmodel` (the default) or the name of any template set: the bundled ones (`java`) and the sets that `--template-path` directories add. `swift-atl generate --help` lists the bundled languages (a language that a `--template-path` directory adds is accepted but not listed there), and an unknown name is rejected with every language that can be used, including those additions. There are no other languages.
 
 **Options.** `--base-package`, `--prefix`, `--model-project`, `--model-plugin-id`, `--copyright`, `--jdk-level`, `--defaults`, `--root-extends-class`, `--operation-reflection` and `--import-organizing` (with their `--no-` forms) mirror `swift-ecore genmodel`. `--template-path` (repeatable), `--force-overwrite`, `--diff` and `--model-directory` mirror `swift-ecore generate`. `-o, --output` is the output directory (default `Generated`); for the language `genmodel` it is the directory or the `.genmodel` file to write, and the default is beside the Ecore model. `--transformations` replaces the bundled transformation with a transformation file or a directory holding `Ecore2GenModel.atl`; the replacement receives the same parameters as the bundled one. A progress bar with counts appears on an interactive terminal; `-v` prints one line for every file.
 

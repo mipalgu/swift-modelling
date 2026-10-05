@@ -27,7 +27,7 @@ For every package the set writes the package interface and implementation, the f
 - `generate.mtl` is the main module. It declares the merge and writes the files of each package.
 - `JavaNames.mtl` holds the naming rules: reserved word escaping, package names with their suffixes, interface and implementation class names, accessors and the constants of enumeration literals.
 - `JavaTypes.mtl` maps built-in data types with the bundled type table, finds the Java type of a classifier and decides on `EList` and `EMap`.
-- `JavaImports.mtl` implements imports: simple-name conflicts, `java.lang`, the package of the unit that is written, sorting and grouping.
+- `JavaImports.mtl` implements imports: simple-name conflicts, `java.lang`, the package of the unit that is written, sorting and grouping. A generator model that organises its imports (`importOrganizing`) gets explicit imports in groups of `java`, `javax`, `org`, `com` and other packages; otherwise the factory implementation, switch, adapter factory and validator import the interface package with a wildcard.
 - `JavaDocumentation.mtl` writes model tags, API tags from documentation, string literals and escapes.
 - `Header.mtl` writes the copyright comment that opens a file.
 - `EnumClass.mtl` writes the file of an enumeration.

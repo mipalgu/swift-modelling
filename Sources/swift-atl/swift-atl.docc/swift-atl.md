@@ -74,7 +74,7 @@ The command is the ATL entry to the shared generation pipeline. An Ecore model i
 
 **Options:**
 
-- `-l, --language <name>` - `genmodel` (default), or the name of a template set; the help lists those that exist, including the ones that `--template-path` adds
+- `-l, --language <name>` - `genmodel` (default), or the name of a template set; the help lists the bundled ones, and an unknown name is rejected with every language that can be used, including the ones that `--template-path` adds
 - `-o, --output <path>` - Output directory (default: `Generated`); for `genmodel`, the directory or `.genmodel` file to write (default: beside the Ecore model)
 - `--transformations <path>` - A transformation file, or a directory holding `Ecore2GenModel.atl`, that replaces the bundled transformation
 - `--base-package <name>`, `--prefix <[package=]name>` (repeatable), `--model-project <name>`, `--model-plugin-id <id>`, `--copyright <text>`, `--jdk-level <level>` - Settings of the generator model, as for `swift-ecore genmodel`

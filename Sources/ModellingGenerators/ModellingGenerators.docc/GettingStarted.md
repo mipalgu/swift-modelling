@@ -86,7 +86,7 @@ my-templates/
 swift-ecore generate --language outline library/model/library.genmodel -o out --template-path my-templates
 ```
 
-Every tool lists the languages that exist in its help, including those that `--template-path` adds. To bundle a set permanently, add its directory to `Sources/ModellingGenerators/Templates`. <doc:TemplateSets> describes the descriptor, the services that templates can call and the merge declaration.
+Every tool lists the bundled languages in its help; a language that `--template-path` adds is accepted but not listed there, and an unknown language is rejected with every language that can be used. To bundle a set permanently, add its directory to `Sources/ModellingGenerators/Templates`. <doc:TemplateSets> describes the descriptor, the services that templates can call and the merge declaration.
 
 ### Using the library
 
