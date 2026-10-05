@@ -8,9 +8,7 @@ import org.eclipse.emf.ecore.EPackage;
 
 import org.eclipse.emf.ecore.util.Switch;
 
-import org.example.families.Families.FamiliesPackage;
-import org.example.families.Families.Family;
-import org.example.families.Families.Member;
+import org.example.families.Families.*;
 
 
 /**

@@ -136,7 +136,7 @@ struct JavaNamesTests {
             "genModel.useInterfaceOverrideAnnotation()", "genModel.isOn('nonNLSMarkers')",
             "genModel.isOn('importOrganizing')", "genModel.isOn('noSuchSetting')",
         ])
-        #expect(values == ["17.0", "true", "true", "true", "false", "true", "false"])
+        #expect(values == ["17.0", "true", "true", "true", "false", "false", "false"])
     }
 
     @Test("Enumeration literals follow the constant naming conventions")

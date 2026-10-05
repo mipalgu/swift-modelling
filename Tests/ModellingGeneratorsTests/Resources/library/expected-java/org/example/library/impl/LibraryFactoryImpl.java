@@ -8,12 +8,14 @@ import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EDataType;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
-
 import org.eclipse.emf.ecore.impl.EFactoryImpl;
-
 import org.eclipse.emf.ecore.plugin.EcorePlugin;
-
-import org.example.library.*;
+import org.example.library.Book;
+import org.example.library.BookCategory;
+import org.example.library.Library;
+import org.example.library.LibraryFactory;
+import org.example.library.LibraryPackage;
+import org.example.library.Writer;
 
 
 /**

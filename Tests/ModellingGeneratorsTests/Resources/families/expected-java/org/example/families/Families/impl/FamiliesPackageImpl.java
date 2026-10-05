@@ -309,7 +309,7 @@ public class FamiliesPackageImpl extends EPackageImpl implements FamiliesPackage
 
     // Add supertypes to classes
 
-    // Initialize classes, features, and operations; add parameters
+    // Initialize classes and features; add operations and parameters
     initEClass(familyEClass, Family.class, "Family", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
     initEAttribute(getFamily_LastName(), ecorePackage.getEString(), "lastName", null, 1, 1, Family.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, !IS_ORDERED);
     initEReference(getFamily_Father(), this.getMember(), this.getMember_FamilyFather(), "father", null, 1, 1, Family.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, !IS_ORDERED);

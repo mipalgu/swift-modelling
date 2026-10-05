@@ -5,8 +5,7 @@ package maps.util;
 
 import java.util.Map;
 
-import maps.Dictionary;
-import maps.MapsPackage;
+import maps.*;
 
 import org.eclipse.emf.common.notify.Adapter;
 import org.eclipse.emf.common.notify.Notifier;

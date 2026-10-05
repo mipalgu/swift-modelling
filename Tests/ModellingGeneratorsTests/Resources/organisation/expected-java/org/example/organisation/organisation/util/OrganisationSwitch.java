@@ -8,10 +8,7 @@ import org.eclipse.emf.ecore.EPackage;
 
 import org.eclipse.emf.ecore.util.Switch;
 
-import org.example.organisation.organisation.Organisation;
-import org.example.organisation.organisation.OrganisationPackage;
-import org.example.organisation.organisation.Person;
-import org.example.organisation.organisation.Team;
+import org.example.organisation.organisation.*;
 
 
 /**

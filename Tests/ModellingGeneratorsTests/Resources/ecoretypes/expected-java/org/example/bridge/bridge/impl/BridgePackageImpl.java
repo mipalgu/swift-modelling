@@ -229,7 +229,7 @@ public class BridgePackageImpl extends EPackageImpl implements BridgePackage
     // Add supertypes to classes
     spanEClass.getESuperTypes().add(ecorePackage.getEObject());
 
-    // Initialize classes, features, and operations; add parameters
+    // Initialize classes and features; add operations and parameters
     initEClass(spanEClass, Span.class, "Span", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
     initEAttribute(getSpan_Label(), ecorePackage.getEString(), "label", null, 0, 1, Span.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
     initEAttribute(getSpan_Length(), ecorePackage.getEDouble(), "length", null, 0, 1, Span.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);

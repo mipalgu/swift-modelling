@@ -16,7 +16,6 @@ import org.eclipse.emf.ecore.EReference;
  * <ul>
  *   <li>each class,</li>
  *   <li>each feature of each class,</li>
- *   <li>each operation of each class,</li>
  *   <li>each enum,</li>
  *   <li>and each data type</li>
  * </ul>
@@ -124,15 +123,6 @@ public interface BridgePackage extends EPackage
   int SPAN_FEATURE_COUNT = 5;
 
   /**
-   * The number of operations of the '<em>Span</em>' class.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   * @ordered
-   */
-  int SPAN_OPERATION_COUNT = 0;
-
-  /**
    * Returns the meta object for class '{@link org.example.bridge.bridge.Span <em>Span</em>}'.
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
@@ -212,7 +202,6 @@ public interface BridgePackage extends EPackage
    * <ul>
    *   <li>each class,</li>
    *   <li>each feature of each class,</li>
-   *   <li>each operation of each class,</li>
    *   <li>each enum,</li>
    *   <li>and each data type</li>
    * </ul>

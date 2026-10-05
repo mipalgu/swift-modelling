@@ -7,7 +7,7 @@ import Testing
 @Suite("Java package templates")
 struct JavaPackageTests {
     /// The options that every test of this suite imports the library fixture with.
-    static let options = GenModelImportOptions(basePackage: "org.example")
+    static let options = GenModelImportOptions(basePackage: "org.example", defaults: .wizard)
 
     /// The location of the generated package interface of the library fixture.
     static let interfacePath = "org/example/library/LibraryPackage.java"

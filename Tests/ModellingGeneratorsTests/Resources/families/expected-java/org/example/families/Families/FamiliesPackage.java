@@ -16,7 +16,6 @@ import org.eclipse.emf.ecore.EReference;
  * <ul>
  *   <li>each class,</li>
  *   <li>each feature of each class,</li>
- *   <li>each operation of each class,</li>
  *   <li>each enum,</li>
  *   <li>and each data type</li>
  * </ul>
@@ -124,15 +123,6 @@ public interface FamiliesPackage extends EPackage
   int FAMILY_FEATURE_COUNT = 5;
 
   /**
-   * The number of operations of the '<em>Family</em>' class.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   * @ordered
-   */
-  int FAMILY_OPERATION_COUNT = 0;
-
-  /**
    * The meta object id for the '{@link org.example.families.Families.impl.MemberImpl <em>Member</em>}' class.
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
@@ -195,15 +185,6 @@ public interface FamiliesPackage extends EPackage
    * @ordered
    */
   int MEMBER_FEATURE_COUNT = 5;
-
-  /**
-   * The number of operations of the '<em>Member</em>' class.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   * @ordered
-   */
-  int MEMBER_OPERATION_COUNT = 0;
 
   /**
    * Returns the meta object for class '{@link org.example.families.Families.Family <em>Family</em>}'.
@@ -350,7 +331,6 @@ public interface FamiliesPackage extends EPackage
    * <ul>
    *   <li>each class,</li>
    *   <li>each feature of each class,</li>
-   *   <li>each operation of each class,</li>
    *   <li>each enum,</li>
    *   <li>and each data type</li>
    * </ul>

@@ -7,12 +7,13 @@ import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EDataType;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
-
 import org.eclipse.emf.ecore.impl.EFactoryImpl;
-
 import org.eclipse.emf.ecore.plugin.EcorePlugin;
-
-import org.example.shapes.classes.*;
+import org.example.shapes.classes.Canvas;
+import org.example.shapes.classes.Circle;
+import org.example.shapes.classes.ClassesFactory;
+import org.example.shapes.classes.ClassesPackage;
+import org.example.shapes.classes.Colour;
 
 
 /**

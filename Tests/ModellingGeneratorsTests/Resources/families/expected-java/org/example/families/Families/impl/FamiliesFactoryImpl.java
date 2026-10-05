@@ -11,10 +11,7 @@ import org.eclipse.emf.ecore.impl.EFactoryImpl;
 
 import org.eclipse.emf.ecore.plugin.EcorePlugin;
 
-import org.example.families.Families.FamiliesFactory;
-import org.example.families.Families.FamiliesPackage;
-import org.example.families.Families.Family;
-import org.example.families.Families.Member;
+import org.example.families.Families.*;
 
 
 /**

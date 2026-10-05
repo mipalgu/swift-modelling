@@ -15,7 +15,6 @@ import org.eclipse.emf.ecore.EPackage;
  * <ul>
  *   <li>each class,</li>
  *   <li>each feature of each class,</li>
- *   <li>each operation of each class,</li>
  *   <li>each enum,</li>
  *   <li>and each data type</li>
  * </ul>
@@ -87,15 +86,6 @@ public interface PeoplePackage extends EPackage
   int PERSON_FEATURE_COUNT = 1;
 
   /**
-   * The number of operations of the '<em>Person</em>' class.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   * @ordered
-   */
-  int PERSON_OPERATION_COUNT = 0;
-
-  /**
    * The meta object id for the '{@link org.example.company.company.people.impl.EmployeeImpl <em>Employee</em>}' class.
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
@@ -131,15 +121,6 @@ public interface PeoplePackage extends EPackage
    * @ordered
    */
   int EMPLOYEE_FEATURE_COUNT = PERSON_FEATURE_COUNT + 1;
-
-  /**
-   * The number of operations of the '<em>Employee</em>' class.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   * @ordered
-   */
-  int EMPLOYEE_OPERATION_COUNT = PERSON_OPERATION_COUNT + 0;
 
   /**
    * Returns the meta object for class '{@link org.example.company.company.people.Person <em>Person</em>}'.
@@ -198,7 +179,6 @@ public interface PeoplePackage extends EPackage
    * <ul>
    *   <li>each class,</li>
    *   <li>each feature of each class,</li>
-   *   <li>each operation of each class,</li>
    *   <li>each enum,</li>
    *   <li>and each data type</li>
    * </ul>

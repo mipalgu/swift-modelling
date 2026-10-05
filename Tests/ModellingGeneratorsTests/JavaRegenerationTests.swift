@@ -12,7 +12,7 @@ struct JavaRegenerationTests {
     @MainActor
     static func generatedLibrary() async throws -> GeneratedProject {
         let generated = try await GeneratedProject.make(
-            "library", stem: "library", options: GenModelImportOptions(basePackage: "org.example"))
+            "library", stem: "library", options: GenModelImportOptions(basePackage: "org.example", defaults: .wizard))
         try await generated.generate()
         return generated
     }

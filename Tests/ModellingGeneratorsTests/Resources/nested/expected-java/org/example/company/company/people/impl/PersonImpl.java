@@ -8,7 +8,7 @@ import org.eclipse.emf.common.notify.Notification;
 import org.eclipse.emf.ecore.EClass;
 
 import org.eclipse.emf.ecore.impl.ENotificationImpl;
-import org.eclipse.emf.ecore.impl.MinimalEObjectImpl;
+import org.eclipse.emf.ecore.impl.EObjectImpl;
 
 import org.example.company.company.people.PeoplePackage;
 import org.example.company.company.people.Person;
@@ -27,7 +27,7 @@ import org.example.company.company.people.Person;
  *
  * @generated
  */
-public abstract class PersonImpl extends MinimalEObjectImpl.Container implements Person
+public abstract class PersonImpl extends EObjectImpl implements Person
 {
   /**
    * The default value of the '{@link #getName() <em>Name</em>}' attribute.

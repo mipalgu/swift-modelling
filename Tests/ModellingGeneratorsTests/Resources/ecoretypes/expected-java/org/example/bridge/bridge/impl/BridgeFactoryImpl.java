@@ -11,9 +11,7 @@ import org.eclipse.emf.ecore.impl.EFactoryImpl;
 
 import org.eclipse.emf.ecore.plugin.EcorePlugin;
 
-import org.example.bridge.bridge.BridgeFactory;
-import org.example.bridge.bridge.BridgePackage;
-import org.example.bridge.bridge.Span;
+import org.example.bridge.bridge.*;
 
 
 /**

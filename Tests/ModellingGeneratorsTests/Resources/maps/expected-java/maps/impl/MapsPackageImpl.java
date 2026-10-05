@@ -226,7 +226,7 @@ public class MapsPackageImpl extends EPackageImpl implements MapsPackage
 
     // Add supertypes to classes
 
-    // Initialize classes, features, and operations; add parameters
+    // Initialize classes and features; add operations and parameters
     initEClass(dictionaryEClass, Dictionary.class, "Dictionary", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
     initEReference(getDictionary_Entries(), this.getStringToIntEntry(), null, "entries", null, 0, -1, Dictionary.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 

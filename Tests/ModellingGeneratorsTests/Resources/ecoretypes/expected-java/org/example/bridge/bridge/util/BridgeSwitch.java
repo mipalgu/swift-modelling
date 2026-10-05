@@ -8,8 +8,7 @@ import org.eclipse.emf.ecore.EPackage;
 
 import org.eclipse.emf.ecore.util.Switch;
 
-import org.example.bridge.bridge.BridgePackage;
-import org.example.bridge.bridge.Span;
+import org.example.bridge.bridge.*;
 
 
 /**

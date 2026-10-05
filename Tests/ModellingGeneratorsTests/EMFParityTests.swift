@@ -37,12 +37,11 @@ struct EMFParityTests {
         return normalised.split(whereSeparator: \.isWhitespace).map(String.init)
     }
 
-    @Test(
-        "Library example matches the Eclipse importer output",
-        .enabled(if: referenceRoot != nil, "EMF_REFERENCE_ROOT is not set; skipping Eclipse parity")
-    )
+    /// Imports the reference library model and compares the result with the generator model of the reference.
+    ///
+    /// - Parameter configure: Sets the options that the reference needs in addition to the common ones.
     @MainActor
-    func libraryMatchesReference() async throws {
+    func expectLibraryMatchesReference(configure: (inout GenModelImportOptions) -> Void) async throws {
         let root = try #require(Self.referenceRoot)
         let directory = root.appendingPathComponent(Self.libraryDirectory)
         let referenceEcore = directory.appendingPathComponent("library.ecore")
@@ -63,9 +62,7 @@ struct EMFParityTests {
         options.copyright = "This is my code."
         options.complianceLevel = "5.0"
         options.modelPluginID = "library.model"
-        options.operationReflection = false
-        options.rootExtendsClass = "org.eclipse.emf.ecore.impl.EObjectImpl"
-        options.importOrganizing = false
+        configure(&options)
         options.output = outputDirectory.appendingPathComponent("library.genmodel")
         let result = try await GenerationPipeline.ecoreToGenModel(ecoreURLs: [ecore], options: options)
 
@@ -81,5 +78,27 @@ struct EMFParityTests {
             \(differences.joined(separator: "\n"))
             expected \(expectedTokens.count) tokens, found \(actualTokens.count)
             """)
+    }
+
+    @Test(
+        "Library example matches the Eclipse importer output",
+        .enabled(if: referenceRoot != nil, "EMF_REFERENCE_ROOT is not set; skipping Eclipse parity")
+    )
+    @MainActor
+    func libraryMatchesReference() async throws {
+        try await expectLibraryMatchesReference { options in
+            options.operationReflection = false
+            options.rootExtendsClass = "org.eclipse.emf.ecore.impl.EObjectImpl"
+            options.importOrganizing = false
+        }
+    }
+
+    @Test(
+        "Library example matches the Eclipse importer output with the headless defaults",
+        .enabled(if: referenceRoot != nil, "EMF_REFERENCE_ROOT is not set; skipping Eclipse parity")
+    )
+    @MainActor
+    func libraryMatchesReferenceWithHeadlessDefaults() async throws {
+        try await expectLibraryMatchesReference { _ in }
     }
 }

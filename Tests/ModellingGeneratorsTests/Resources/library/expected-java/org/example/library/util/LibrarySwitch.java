@@ -6,10 +6,13 @@ package org.example.library.util;
 
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
-
 import org.eclipse.emf.ecore.util.Switch;
-
-import org.example.library.*;
+import org.example.library.Book;
+import org.example.library.Lendable;
+import org.example.library.Library;
+import org.example.library.LibraryPackage;
+import org.example.library.Named;
+import org.example.library.Writer;
 
 
 /**

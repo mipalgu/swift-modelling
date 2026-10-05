@@ -254,7 +254,7 @@ public class EnumerationsPackageImpl extends EPackageImpl implements Enumeration
 
     // Add supertypes to classes
 
-    // Initialize classes, features, and operations; add parameters
+    // Initialize classes and features; add operations and parameters
     initEClass(lightEClass, Light.class, "Light", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
     initEAttribute(getLight_Colour(), this.getColour(), "colour", null, 0, 1, Light.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
     initEAttribute(getLight_Mode(), this.getMode(), "mode", null, 0, 1, Light.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);

@@ -54,7 +54,7 @@ package [if (isInterface)][genPackage.interfacePackageName()/][else][genPackage.
 
 [emit ('imports') once]
 [if (not importedTypes(items)->isEmpty())]
-[importBlock(items)/]
+[importBlockFor(items, genModel)/]
 
 
 [/if]

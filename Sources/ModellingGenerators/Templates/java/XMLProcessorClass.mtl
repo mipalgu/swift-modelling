@@ -25,7 +25,7 @@
 package [genPackage.utilitiesPackageName()/];
 
 
-[emit ('imports') once][importBlock(items)/][/emit]
+[emit ('imports') once][importBlockFor(items, genModel)/][/emit]
 
 /**
  * This class contains helper methods to serialize and deserialize XML documents

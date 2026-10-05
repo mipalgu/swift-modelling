@@ -10,9 +10,7 @@ import org.eclipse.emf.common.notify.impl.AdapterFactoryImpl;
 
 import org.eclipse.emf.ecore.EObject;
 
-import org.example.families.Families.FamiliesPackage;
-import org.example.families.Families.Family;
-import org.example.families.Families.Member;
+import org.example.families.Families.*;
 
 
 /**

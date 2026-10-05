@@ -29,21 +29,21 @@ struct JavaClassVariant: Sendable, CustomTestStringConvertible {
     static let all: [JavaClassVariant] = [
         JavaClassVariant(
             name: "plain-operations", fixture: "library", stem: "library",
-            options: GenModelImportOptions(basePackage: "org.example", operationReflection: false),
+            options: GenModelImportOptions(basePackage: "org.example", defaults: .wizard, operationReflection: false),
             attributes: "", files: ["org/example/library/impl/LibraryImpl.java"]),
         JavaClassVariant(
             name: "all-reflective-methods", fixture: "classes", stem: "classes",
-            options: GenModelImportOptions(basePackage: "org.example.shapes"),
+            options: GenModelImportOptions(basePackage: "org.example.shapes", defaults: .wizard),
             attributes: #"minimalReflectiveMethods="false" switchMissingDefaultCase="true""#,
             files: ["org/example/shapes/classes/impl/CircleImpl.java"]),
         JavaClassVariant(
             name: "boolean-flags", fixture: "classes", stem: "classes",
-            options: GenModelImportOptions(basePackage: "org.example.shapes"),
+            options: GenModelImportOptions(basePackage: "org.example.shapes", defaults: .wizard),
             attributes: #"booleanFlagsField="eFlags" booleanFlagsReservedBits="8""#,
             files: ["org/example/shapes/classes/impl/ShapeImpl.java", "org/example/shapes/classes/impl/CircleImpl.java"]),
         JavaClassVariant(
             name: "public-constructors-without-notification", fixture: "classes", stem: "classes",
-            options: GenModelImportOptions(basePackage: "org.example.shapes"),
+            options: GenModelImportOptions(basePackage: "org.example.shapes", defaults: .wizard),
             attributes: #"publicConstructors="true" suppressNotification="true" nonNLSMarkers="true""#,
             files: ["org/example/shapes/classes/impl/CanvasImpl.java"]),
     ]

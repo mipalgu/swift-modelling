@@ -8,7 +8,7 @@ import org.eclipse.emf.common.notify.Notification;
 import org.eclipse.emf.ecore.EClass;
 
 import org.eclipse.emf.ecore.impl.ENotificationImpl;
-import org.eclipse.emf.ecore.impl.MinimalEObjectImpl;
+import org.eclipse.emf.ecore.impl.EObjectImpl;
 
 import org.example.traffic.enumerations.Colour;
 import org.example.traffic.enumerations.EnumerationsPackage;
@@ -30,7 +30,7 @@ import org.example.traffic.enumerations.Mode;
  *
  * @generated
  */
-public class LightImpl extends MinimalEObjectImpl.Container implements Light
+public class LightImpl extends EObjectImpl implements Light
 {
   /**
    * The default value of the '{@link #getColour() <em>Colour</em>}' attribute.

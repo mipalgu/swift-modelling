@@ -6,12 +6,14 @@ package org.example.library.util;
 
 import org.eclipse.emf.common.notify.Adapter;
 import org.eclipse.emf.common.notify.Notifier;
-
 import org.eclipse.emf.common.notify.impl.AdapterFactoryImpl;
-
 import org.eclipse.emf.ecore.EObject;
-
-import org.example.library.*;
+import org.example.library.Book;
+import org.example.library.Lendable;
+import org.example.library.Library;
+import org.example.library.LibraryPackage;
+import org.example.library.Named;
+import org.example.library.Writer;
 
 
 /**

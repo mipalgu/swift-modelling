@@ -16,7 +16,6 @@ import org.eclipse.emf.ecore.EReference;
  * <ul>
  *   <li>each class,</li>
  *   <li>each feature of each class,</li>
- *   <li>each operation of each class,</li>
  *   <li>each enum,</li>
  *   <li>and each data type</li>
  * </ul>
@@ -88,15 +87,6 @@ public interface MapsPackage extends EPackage
   int DICTIONARY_FEATURE_COUNT = 1;
 
   /**
-   * The number of operations of the '<em>Dictionary</em>' class.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   * @ordered
-   */
-  int DICTIONARY_OPERATION_COUNT = 0;
-
-  /**
    * The meta object id for the '{@link maps.impl.StringToIntEntryImpl <em>String To Int Entry</em>}' class.
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
@@ -132,15 +122,6 @@ public interface MapsPackage extends EPackage
    * @ordered
    */
   int STRING_TO_INT_ENTRY_FEATURE_COUNT = 2;
-
-  /**
-   * The number of operations of the '<em>String To Int Entry</em>' class.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   * @ordered
-   */
-  int STRING_TO_INT_ENTRY_OPERATION_COUNT = 0;
 
   /**
    * Returns the meta object for class '{@link maps.Dictionary <em>Dictionary</em>}'.
@@ -211,7 +192,6 @@ public interface MapsPackage extends EPackage
    * <ul>
    *   <li>each class,</li>
    *   <li>each feature of each class,</li>
-   *   <li>each operation of each class,</li>
    *   <li>each enum,</li>
    *   <li>and each data type</li>
    * </ul>

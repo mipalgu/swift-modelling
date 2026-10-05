@@ -5,10 +5,12 @@ package org.example.shapes.classes.util;
 
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
-
 import org.eclipse.emf.ecore.util.Switch;
-
-import org.example.shapes.classes.*;
+import org.example.shapes.classes.Canvas;
+import org.example.shapes.classes.Circle;
+import org.example.shapes.classes.ClassesPackage;
+import org.example.shapes.classes.Named;
+import org.example.shapes.classes.Shape;
 
 
 /**

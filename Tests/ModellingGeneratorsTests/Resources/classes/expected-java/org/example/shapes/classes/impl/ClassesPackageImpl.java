@@ -9,9 +9,7 @@ import org.eclipse.emf.ecore.EEnum;
 import org.eclipse.emf.ecore.EOperation;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
-
 import org.eclipse.emf.ecore.impl.EPackageImpl;
-
 import org.example.shapes.classes.Canvas;
 import org.example.shapes.classes.Circle;
 import org.example.shapes.classes.ClassesFactory;

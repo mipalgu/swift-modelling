@@ -11,9 +11,7 @@ import org.eclipse.emf.ecore.impl.EFactoryImpl;
 
 import org.eclipse.emf.ecore.plugin.EcorePlugin;
 
-import org.example.company.company.people.Employee;
-import org.example.company.company.people.PeopleFactory;
-import org.example.company.company.people.PeoplePackage;
+import org.example.company.company.people.*;
 
 
 /**

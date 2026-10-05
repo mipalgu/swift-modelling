@@ -70,9 +70,10 @@
 [query public hasJavaLangConflict(genPackage : GenPackage) : Boolean = genPackage.genClasses->exists(c | isImplicitType(c.name())) or genPackage.genEnums->exists(e | isImplicitType(e.name()))/]
 
 [**
- * Whether the factory implementation imports all types of the interface package with one wildcard import.
+ * Whether the factory implementation imports all types of the interface package with one wildcard import:
+ * unless the generator model organises its imports, which names every type that the file uses instead.
  **/]
-[query public factoryUsesWildcard(genPackage : GenPackage) : Boolean = not genPackage.hasJavaLangConflict() and not genPackage.hasInterfaceImplConflict() and genPackage.classPackageName() <> genPackage.interfacePackageName()/]
+[query public factoryUsesWildcard(genPackage : GenPackage) : Boolean = not genPackage.genModel().isOn('importOrganizing') and not genPackage.hasJavaLangConflict() and not genPackage.hasInterfaceImplConflict() and genPackage.classPackageName() <> genPackage.interfacePackageName()/]
 
 [**
  * Whether the classes that code creates need a cast to the root object interface in the generic create method.
@@ -223,7 +224,7 @@
 package [genPackage.reflectionPackageName()/];
 
 
-[emit ('imports') once][importBlock(items)/][/emit]
+[emit ('imports') once][importBlockFor(items, genModel)/][/emit]
 
 /**
  * <!-- begin-user-doc -->
@@ -347,7 +348,7 @@ public interface [genPackage.factoryInterfaceName()/] extends [importedName('org
 package [genPackage.factoryClassPackageName()/];
 
 
-[emit ('imports') once][importBlock(items)/][/emit]
+[emit ('imports') once][importBlockFor(items, genModel)/][/emit]
 
 /**
  * <!-- begin-user-doc -->

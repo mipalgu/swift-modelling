@@ -9,7 +9,7 @@ struct JavaClassQueryTests {
     /// The expressions for the classes fixture.
     static let shapes = FixtureExpressions(
         fixture: "classes", stem: "classes",
-        options: GenModelImportOptions(basePackage: "org.example.shapes"),
+        options: GenModelImportOptions(basePackage: "org.example.shapes", defaults: .wizard),
         bindings: [
             ("p", "GenPackage", "genModel.allGenPackages()->first()"),
             ("shape", "GenClass", "p.genClasses->at(1)"),

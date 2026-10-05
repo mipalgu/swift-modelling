@@ -4,11 +4,8 @@ package org.example.shapes.classes.impl;
 
 
 import org.eclipse.emf.common.notify.Notification;
-
 import org.eclipse.emf.ecore.EClass;
-
 import org.eclipse.emf.ecore.impl.ENotificationImpl;
-
 import org.example.shapes.classes.Circle;
 import org.example.shapes.classes.ClassesPackage;
 import org.example.shapes.classes.Named;

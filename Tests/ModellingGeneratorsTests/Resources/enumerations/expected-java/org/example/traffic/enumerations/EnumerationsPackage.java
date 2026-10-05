@@ -16,7 +16,6 @@ import org.eclipse.emf.ecore.EPackage;
  * <ul>
  *   <li>each class,</li>
  *   <li>each feature of each class,</li>
- *   <li>each operation of each class,</li>
  *   <li>each enum,</li>
  *   <li>and each data type</li>
  * </ul>
@@ -95,15 +94,6 @@ public interface EnumerationsPackage extends EPackage
    * @ordered
    */
   int LIGHT_FEATURE_COUNT = 2;
-
-  /**
-   * The number of operations of the '<em>Light</em>' class.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   * @ordered
-   */
-  int LIGHT_OPERATION_COUNT = 0;
 
   /**
    * The meta object id for the '{@link org.example.traffic.enumerations.Colour <em>Colour</em>}' enum.
@@ -212,7 +202,6 @@ public interface EnumerationsPackage extends EPackage
    * <ul>
    *   <li>each class,</li>
    *   <li>each feature of each class,</li>
-   *   <li>each operation of each class,</li>
    *   <li>each enum,</li>
    *   <li>and each data type</li>
    * </ul>

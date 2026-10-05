@@ -18,10 +18,7 @@ import org.eclipse.emf.ecore.util.EObjectValidator;
 
 import org.eclipse.emf.ecore.xml.type.util.XMLTypeUtil;
 
-import org.example.bank.bank.Account;
-import org.example.bank.bank.BankPackage;
-import org.example.bank.bank.Branch;
-import org.example.bank.bank.SavingsAccount;
+import org.example.bank.bank.*;
 
 
 /**

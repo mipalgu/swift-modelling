@@ -5,12 +5,13 @@ package org.example.shapes.classes.util;
 
 import org.eclipse.emf.common.notify.Adapter;
 import org.eclipse.emf.common.notify.Notifier;
-
 import org.eclipse.emf.common.notify.impl.AdapterFactoryImpl;
-
 import org.eclipse.emf.ecore.EObject;
-
-import org.example.shapes.classes.*;
+import org.example.shapes.classes.Canvas;
+import org.example.shapes.classes.Circle;
+import org.example.shapes.classes.ClassesPackage;
+import org.example.shapes.classes.Named;
+import org.example.shapes.classes.Shape;
 
 
 /**

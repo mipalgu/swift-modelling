@@ -17,7 +17,6 @@ import org.eclipse.emf.ecore.EReference;
  * <ul>
  *   <li>each class,</li>
  *   <li>each feature of each class,</li>
- *   <li>each operation of each class,</li>
  *   <li>each enum,</li>
  *   <li>and each data type</li>
  * </ul>
@@ -107,15 +106,6 @@ public interface ProjPackage extends EPackage
   int PROJECT_FEATURE_COUNT = 3;
 
   /**
-   * The number of operations of the '<em>Project</em>' class.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   * @ordered
-   */
-  int PROJECT_OPERATION_COUNT = 0;
-
-  /**
    * The meta object id for the '{@link org.example.company.company.projects.Status <em>Status</em>}' enum.
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
@@ -193,7 +183,6 @@ public interface ProjPackage extends EPackage
    * <ul>
    *   <li>each class,</li>
    *   <li>each feature of each class,</li>
-   *   <li>each operation of each class,</li>
    *   <li>each enum,</li>
    *   <li>and each data type</li>
    * </ul>

@@ -264,13 +264,24 @@ struct EMFJavaParityTests {
             .appendingPathComponent("swift-modelling-java-parity")
             .appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: output) }
+        // The reference sources were saved with organised imports, which their generator model does not ask for.
+        let models = output.appendingPathComponent("models")
+        try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
+        let referenceGenModel = root.appendingPathComponent(Self.switchGenModelPath)
+        try FileManager.default.copyItem(at: referenceGenModel.deletingLastPathComponent(), to: models)
+        let genModel = models.appendingPathComponent(referenceGenModel.lastPathComponent)
+        let text = try String(contentsOf: genModel, encoding: .utf8)
+        let marker = #"modelName="Switch""#
+        #expect(text.contains(marker))
+        try text.replacingOccurrences(of: marker, with: marker + #" importOrganizing="true""#)
+            .write(to: genModel, atomically: true, encoding: .utf8)
         _ = try await GenerationPipeline.generate(
-            genModelURL: root.appendingPathComponent(Self.switchGenModelPath), language: "java",
-            outputDirectory: output)
+            genModelURL: genModel, language: "java", outputDirectory: output.appendingPathComponent("java"))
         for path in Self.switchPaths {
             let generatedPath = String(path.dropFirst("tests/org.eclipse.emf.test.common/src/".count))
             let expected = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
-            let actual = try String(contentsOf: output.appendingPathComponent(generatedPath), encoding: .utf8)
+            let actual = try String(
+                contentsOf: output.appendingPathComponent("java").appendingPathComponent(generatedPath), encoding: .utf8)
             // The reference switches of this model were saved without the documentation of isSwitchFor.
             let comment = #"(?s)  /\*\*\n   \* Checks whether this is a switch.*?\*/\n"#
             #expect(

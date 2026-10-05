@@ -12,9 +12,7 @@ import org.eclipse.emf.ecore.impl.EFactoryImpl;
 
 import org.eclipse.emf.ecore.plugin.EcorePlugin;
 
-import org.example.alarm.documented.DocumentedFactory;
-import org.example.alarm.documented.DocumentedPackage;
-import org.example.alarm.documented.Level;
+import org.example.alarm.documented.*;
 
 
 /**

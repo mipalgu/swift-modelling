@@ -16,7 +16,6 @@ import org.eclipse.emf.ecore.EReference;
  * <ul>
  *   <li>each class,</li>
  *   <li>each feature of each class,</li>
- *   <li>each operation of each class,</li>
  *   <li>each enum,</li>
  *   <li>and each data type</li>
  * </ul>
@@ -97,15 +96,6 @@ public interface OrganisationPackage extends EPackage
   int PERSON_FEATURE_COUNT = 2;
 
   /**
-   * The number of operations of the '<em>Person</em>' class.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   * @ordered
-   */
-  int PERSON_OPERATION_COUNT = 0;
-
-  /**
    * The meta object id for the '{@link org.example.organisation.organisation.impl.TeamImpl <em>Team</em>}' class.
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
@@ -152,15 +142,6 @@ public interface OrganisationPackage extends EPackage
   int TEAM_FEATURE_COUNT = 3;
 
   /**
-   * The number of operations of the '<em>Team</em>' class.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   * @ordered
-   */
-  int TEAM_OPERATION_COUNT = 0;
-
-  /**
    * The meta object id for the '{@link org.example.organisation.organisation.impl.OrganisationImpl <em>Organisation</em>}' class.
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
@@ -196,15 +177,6 @@ public interface OrganisationPackage extends EPackage
    * @ordered
    */
   int ORGANISATION_FEATURE_COUNT = 2;
-
-  /**
-   * The number of operations of the '<em>Organisation</em>' class.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   * @ordered
-   */
-  int ORGANISATION_OPERATION_COUNT = 0;
 
   /**
    * Returns the meta object for class '{@link org.example.organisation.organisation.Person <em>Person</em>}'.
@@ -328,7 +300,6 @@ public interface OrganisationPackage extends EPackage
    * <ul>
    *   <li>each class,</li>
    *   <li>each feature of each class,</li>
-   *   <li>each operation of each class,</li>
    *   <li>each enum,</li>
    *   <li>and each data type</li>
    * </ul>

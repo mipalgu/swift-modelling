@@ -8,10 +8,7 @@ import org.eclipse.emf.ecore.EPackage;
 
 import org.eclipse.emf.ecore.util.Switch;
 
-import org.example.bank.bank.Account;
-import org.example.bank.bank.BankPackage;
-import org.example.bank.bank.Branch;
-import org.example.bank.bank.SavingsAccount;
+import org.example.bank.bank.*;
 
 
 /**

@@ -10,8 +10,7 @@ import org.eclipse.emf.common.notify.impl.AdapterFactoryImpl;
 
 import org.eclipse.emf.ecore.EObject;
 
-import org.example.bridge.bridge.BridgePackage;
-import org.example.bridge.bridge.Span;
+import org.example.bridge.bridge.*;
 
 
 /**

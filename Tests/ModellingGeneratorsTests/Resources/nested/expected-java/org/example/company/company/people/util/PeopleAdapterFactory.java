@@ -10,9 +10,7 @@ import org.eclipse.emf.common.notify.impl.AdapterFactoryImpl;
 
 import org.eclipse.emf.ecore.EObject;
 
-import org.example.company.company.people.Employee;
-import org.example.company.company.people.PeoplePackage;
-import org.example.company.company.people.Person;
+import org.example.company.company.people.*;
 
 
 /**

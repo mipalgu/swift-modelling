@@ -50,7 +50,7 @@
 package [if (isImplementation and not genModel.isOn('suppressInterfaces'))][genPackage.classPackageName()/][else][genPackage.reflectionPackageName()/][/if];
 
 
-[emit ('imports') once][importBlock(items)/][/emit]
+[emit ('imports') once][importBlockFor(items, genModel)/][/emit]
 
 [if (isInterface)]
 /**

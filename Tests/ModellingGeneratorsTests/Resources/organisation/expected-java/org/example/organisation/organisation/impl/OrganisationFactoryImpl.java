@@ -11,11 +11,7 @@ import org.eclipse.emf.ecore.impl.EFactoryImpl;
 
 import org.eclipse.emf.ecore.plugin.EcorePlugin;
 
-import org.example.organisation.organisation.Organisation;
-import org.example.organisation.organisation.OrganisationFactory;
-import org.example.organisation.organisation.OrganisationPackage;
-import org.example.organisation.organisation.Person;
-import org.example.organisation.organisation.Team;
+import org.example.organisation.organisation.*;
 
 
 /**

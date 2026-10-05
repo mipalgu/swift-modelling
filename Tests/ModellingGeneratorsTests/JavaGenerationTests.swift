@@ -34,7 +34,7 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
         JavaGoldenCase(
             fixture: "library", stem: "library",
             options: GenModelImportOptions(
-                basePackage: "org.example", copyright: "Copyright 2026 Example Pty Ltd"),
+                basePackage: "org.example", copyright: "Copyright 2026 Example Pty Ltd", defaults: .wizard),
             files: [
                 "org/example/library/Book.java",
                 "org/example/library/BookCategory.java",
@@ -106,7 +106,7 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
             ]),
         JavaGoldenCase(
             fixture: "classes", stem: "classes",
-            options: GenModelImportOptions(basePackage: "org.example.shapes"),
+            options: GenModelImportOptions(basePackage: "org.example.shapes", defaults: .wizard),
             files: [
                 "org/example/shapes/classes/Canvas.java",
                 "org/example/shapes/classes/Circle.java",
@@ -266,7 +266,7 @@ struct JavaGenerationTests {
     @MainActor
     func sourceRootLayout() async throws {
         let generated = try await GeneratedProject.make(
-            "library", stem: "library", options: GenModelImportOptions(basePackage: "org.example"))
+            "library", stem: "library", options: GenModelImportOptions(basePackage: "org.example", defaults: .wizard))
         defer { generated.remove() }
         let result = try await generated.generate(options: GenerationOptions(includeSourceRoot: true))
         let expected = (JavaGoldenCase.all.first { $0.fixture == "library" }?.allFiles ?? []).map { "library/src/" + $0 }

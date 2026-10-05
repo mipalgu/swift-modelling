@@ -12,7 +12,7 @@ import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EClass;
 
 import org.eclipse.emf.ecore.impl.ENotificationImpl;
-import org.eclipse.emf.ecore.impl.MinimalEObjectImpl;
+import org.eclipse.emf.ecore.impl.EObjectImpl;
 
 import org.eclipse.emf.ecore.util.EObjectResolvingEList;
 
@@ -38,7 +38,7 @@ import org.example.company.company.projects.Status;
  *
  * @generated
  */
-public class ProjectImpl extends MinimalEObjectImpl.Container implements Project
+public class ProjectImpl extends EObjectImpl implements Project
 {
   /**
    * The default value of the '{@link #getTitle() <em>Title</em>}' attribute.

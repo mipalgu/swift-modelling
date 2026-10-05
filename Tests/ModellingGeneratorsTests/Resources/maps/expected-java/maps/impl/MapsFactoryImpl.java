@@ -5,9 +5,7 @@ package maps.impl;
 
 import java.util.Map;
 
-import maps.Dictionary;
-import maps.MapsFactory;
-import maps.MapsPackage;
+import maps.*;
 
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;

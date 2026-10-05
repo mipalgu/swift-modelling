@@ -9,7 +9,7 @@ import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.InternalEObject;
 
 import org.eclipse.emf.ecore.impl.ENotificationImpl;
-import org.eclipse.emf.ecore.impl.MinimalEObjectImpl;
+import org.eclipse.emf.ecore.impl.EObjectImpl;
 
 import org.example.company.company.projects.Project;
 
@@ -29,7 +29,7 @@ import org.example.company.company.projects.archive.ArchivePackage;
  *
  * @generated
  */
-public class RecordImpl extends MinimalEObjectImpl.Container implements org.example.company.company.projects.archive.Record
+public class RecordImpl extends EObjectImpl implements org.example.company.company.projects.archive.Record
 {
   /**
    * The cached value of the '{@link #getProject() <em>Project</em>}' reference.

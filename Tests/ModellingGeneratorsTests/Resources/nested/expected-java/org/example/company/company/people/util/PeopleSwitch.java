@@ -8,9 +8,7 @@ import org.eclipse.emf.ecore.EPackage;
 
 import org.eclipse.emf.ecore.util.Switch;
 
-import org.example.company.company.people.Employee;
-import org.example.company.company.people.PeoplePackage;
-import org.example.company.company.people.Person;
+import org.example.company.company.people.*;
 
 
 /**

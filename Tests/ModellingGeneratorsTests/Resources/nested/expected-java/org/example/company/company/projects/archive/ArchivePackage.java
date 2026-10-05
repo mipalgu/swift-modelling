@@ -15,7 +15,6 @@ import org.eclipse.emf.ecore.EReference;
  * <ul>
  *   <li>each class,</li>
  *   <li>each feature of each class,</li>
- *   <li>each operation of each class,</li>
  *   <li>each enum,</li>
  *   <li>and each data type</li>
  * </ul>
@@ -87,15 +86,6 @@ public interface ArchivePackage extends EPackage
   int RECORD_FEATURE_COUNT = 1;
 
   /**
-   * The number of operations of the '<em>Record</em>' class.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   * @ordered
-   */
-  int RECORD_OPERATION_COUNT = 0;
-
-  /**
    * Returns the meta object for class '{@link org.example.company.company.projects.archive.Record <em>Record</em>}'.
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
@@ -131,7 +121,6 @@ public interface ArchivePackage extends EPackage
    * <ul>
    *   <li>each class,</li>
    *   <li>each feature of each class,</li>
-   *   <li>each operation of each class,</li>
    *   <li>each enum,</li>
    *   <li>and each data type</li>
    * </ul>
