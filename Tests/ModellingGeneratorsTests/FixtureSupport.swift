@@ -69,12 +69,19 @@ struct FixtureProject {
 enum Fixtures {
     /// The location of a bundled fixture.
     ///
+    /// Depending on the toolchain, the copied `Resources` folder is either the
+    /// bundle's resource directory itself or nested inside it, so both are tried.
+    ///
     /// - Parameter path: The path relative to the `Resources` folder.
     /// - Returns: The location of the file or directory.
     /// - Throws: ``FixtureError/missing(_:)`` if it does not exist.
     static func url(of path: String) throws -> URL {
-        let url = Bundle.module.resourceURL?.appendingPathComponent("Resources").appendingPathComponent(path)
-        guard let url, FileManager.default.fileExists(atPath: url.path) else {
+        guard let base = Bundle.module.resourceURL else { throw FixtureError.missing(path) }
+        let candidates = [
+            base.appendingPathComponent("Resources").appendingPathComponent(path),
+            base.appendingPathComponent(path),
+        ]
+        guard let url = candidates.first(where: { FileManager.default.fileExists(atPath: $0.path) }) else {
             throw FixtureError.missing(path)
         }
         return url
