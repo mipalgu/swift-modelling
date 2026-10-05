@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<genmodel:GenModel xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" xmlns:genmodel="http://www.eclipse.org/emf/2002/GenModel" copyrightText="Copyright 2026 Example Pty Ltd" modelDirectory="/library/src" modelPluginID="library" modelName="Library" importerID="org.eclipse.emf.importer.ecore" complianceLevel="17.0" copyrightFields="false">
+<genmodel:GenModel xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
+    xmlns:genmodel="http://www.eclipse.org/emf/2002/GenModel" copyrightText="Copyright 2026 Example Pty Ltd" modelDirectory="/library/src"
+    modelPluginID="library" modelName="Library" importerID="org.eclipse.emf.importer.ecore"
+    complianceLevel="17.0" copyrightFields="false">
   <foreignModel>library.ecore</foreignModel>
-  <genPackages prefix="Library" basePackage="org.example" disposableProviderFactory="true" ecorePackage="library.ecore#/">
+  <genPackages prefix="Library" basePackage="org.example" disposableProviderFactory="true"
+      ecorePackage="library.ecore#/">
     <genEnums typeSafeEnumCompatible="false" ecoreEnum="library.ecore#//BookCategory">
       <genEnumLiterals ecoreEnumLiteral="library.ecore#//BookCategory/Mystery"/>
       <genEnumLiterals ecoreEnumLiteral="library.ecore#//BookCategory/ScienceFiction"/>
