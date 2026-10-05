@@ -83,6 +83,12 @@ public enum GenerationError: Error, Sendable, Equatable, CustomStringConvertible
     /// The associated value is the offending path.
     case unsupportedInput(String)
 
+    /// The requested code style is not offered by the template set.
+    ///
+    /// The first associated value is the requested style, the second the language, the third the
+    /// styles that the template set offers.
+    case unknownCodeStyle(String, String, [String])
+
     /// A description of the error for display to the user.
     public var errorDescription: String? { description }
 
@@ -121,6 +127,9 @@ public enum GenerationError: Error, Sendable, Equatable, CustomStringConvertible
             return "The template path '\(path)' is not a directory"
         case .unsupportedInput(let path):
             return "The input '\(path)' is neither a generator model nor an Ecore model"
+        case .unknownCodeStyle(let style, let language, let available):
+            let known = available.isEmpty ? "none" : available.joined(separator: ", ")
+            return "The template set '\(language)' has no code style '\(style)'; available code styles: \(known)"
         }
     }
 }

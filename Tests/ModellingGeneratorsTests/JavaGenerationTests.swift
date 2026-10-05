@@ -29,12 +29,15 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
 
     var testDescription: String { fixture }
 
+    /// The folder of the expectations in the default code style, below the fixture.
+    static let expectationFolder = "expected-java"
+
     /// Every fixture with committed Java expectations.
     static let all: [JavaGoldenCase] = [
         JavaGoldenCase(
             fixture: "library", stem: "library",
             options: GenModelImportOptions(
-                basePackage: "org.example", copyright: "Copyright 2026 Example Pty Ltd"),
+                basePackage: "org.example", copyright: "Copyright 2026 Example Pty Ltd", defaults: .wizard),
             files: [
                 "org/example/library/Book.java",
                 "org/example/library/BookCategory.java",
@@ -106,7 +109,7 @@ struct JavaGoldenCase: Sendable, CustomTestStringConvertible {
             ]),
         JavaGoldenCase(
             fixture: "classes", stem: "classes",
-            options: GenModelImportOptions(basePackage: "org.example.shapes"),
+            options: GenModelImportOptions(basePackage: "org.example.shapes", defaults: .wizard),
             files: [
                 "org/example/shapes/classes/Canvas.java",
                 "org/example/shapes/classes/Circle.java",
@@ -206,11 +209,10 @@ struct JavaGenerationTests {
 
         let missing = Set(golden.allFiles).subtracting(generated.generatedPaths())
         #expect(missing.isEmpty, "missing generated files: \(missing.sorted())")
-        let project = generated.project
         for path in golden.allFiles {
-            let expected = try String(contentsOf: project.javaExpectation(path), encoding: .utf8)
-            let actual = try generated.text(path)
-            #expect(actual == expected, "\(path) differs from its expectation")
+            try GoldenFiles.check(
+                try generated.text(path), against: "\(golden.fixture)/\(JavaGoldenCase.expectationFolder)/\(path)",
+                path)
         }
     }
 
@@ -266,7 +268,7 @@ struct JavaGenerationTests {
     @MainActor
     func sourceRootLayout() async throws {
         let generated = try await GeneratedProject.make(
-            "library", stem: "library", options: GenModelImportOptions(basePackage: "org.example"))
+            "library", stem: "library", options: GenModelImportOptions(basePackage: "org.example", defaults: .wizard))
         defer { generated.remove() }
         let result = try await generated.generate(options: GenerationOptions(includeSourceRoot: true))
         let expected = (JavaGoldenCase.all.first { $0.fixture == "library" }?.allFiles ?? []).map { "library/src/" + $0 }

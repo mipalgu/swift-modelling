@@ -10,7 +10,9 @@ import Foundation
 ///
 /// The options mirror the settings of the Eclipse Ecore importer application. Every
 /// option is optional: an option that is `nil` takes the importer's default, which is
-/// described on the individual property.
+/// described on the individual property. The settings that the Eclipse tools write
+/// differently for headless and interactive use come from a preset, ``defaults``, which
+/// ``operationReflection``, ``rootExtendsClass`` and ``importOrganizing`` override.
 ///
 /// When an existing generator model is reloaded, the settings of that model are kept
 /// unless an option is given explicitly, in which case the option wins.
@@ -74,14 +76,21 @@ public struct GenModelImportOptions: Sendable, Equatable {
     /// transformation.
     public var transformation: URL?
 
-    /// Whether generated models include operation reflection.
-    public var operationReflection: Bool
+    /// The preset of the settings that the Eclipse tools write differently for headless and interactive use.
+    ///
+    /// A new generator model uses ``GenModelDefaults/headless`` if this is `nil`. A reloaded generator
+    /// model keeps its own values of those settings if this is `nil`; a preset given explicitly
+    /// replaces them, and the individual overrides replace the preset.
+    public var defaults: GenModelDefaults?
 
-    /// The class that generated root objects extend.
-    public var rootExtendsClass: String
+    /// Whether generated models include operation reflection; `nil` takes the value of the preset.
+    public var operationReflection: Bool?
 
-    /// Whether the generated code organises its imports.
-    public var importOrganizing: Bool
+    /// The class that generated root objects extend; `nil` takes the value of the preset.
+    public var rootExtendsClass: String?
+
+    /// Whether the generated code organises its imports; `nil` takes the value of the preset.
+    public var importOrganizing: Bool?
 
     /// Creates options with the importer's defaults.
     ///
@@ -97,9 +106,10 @@ public struct GenModelImportOptions: Sendable, Equatable {
     ///   - reload: The existing generator model whose settings are kept.
     ///   - output: The generator model file to write.
     ///   - transformation: A transformation file or directory that replaces the bundled transformation.
-    ///   - operationReflection: Whether generated models include operation reflection.
-    ///   - rootExtendsClass: The class that generated root objects extend.
-    ///   - importOrganizing: Whether the generated code organises its imports.
+    ///   - defaults: The preset of the settings that differ between headless and interactive use.
+    ///   - operationReflection: Whether generated models include operation reflection, overriding the preset.
+    ///   - rootExtendsClass: The class that generated root objects extend, overriding the preset.
+    ///   - importOrganizing: Whether the generated code organises its imports, overriding the preset.
     public init(
         basePackage: String? = nil,
         prefix: String? = nil,
@@ -112,9 +122,10 @@ public struct GenModelImportOptions: Sendable, Equatable {
         reload: URL? = nil,
         output: URL? = nil,
         transformation: URL? = nil,
-        operationReflection: Bool = GenModelImportConstants.defaultOperationReflection,
-        rootExtendsClass: String = GenModelImportConstants.defaultRootExtendsClass,
-        importOrganizing: Bool = GenModelImportConstants.defaultImportOrganizing
+        defaults: GenModelDefaults? = nil,
+        operationReflection: Bool? = nil,
+        rootExtendsClass: String? = nil,
+        importOrganizing: Bool? = nil
     ) {
         self.basePackage = basePackage
         self.prefix = prefix
@@ -127,6 +138,7 @@ public struct GenModelImportOptions: Sendable, Equatable {
         self.reload = reload
         self.output = output
         self.transformation = transformation
+        self.defaults = defaults
         self.operationReflection = operationReflection
         self.rootExtendsClass = rootExtendsClass
         self.importOrganizing = importOrganizing

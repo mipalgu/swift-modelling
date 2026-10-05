@@ -49,9 +49,7 @@
 [header(genPackage)/]
 package [if (isImplementation and not genModel.isOn('suppressInterfaces'))][genPackage.classPackageName()/][else][genPackage.reflectionPackageName()/][/if];
 
-
-[emit ('imports') once][importBlock(items)/][/emit]
-
+[emit ('imports') once][importBlockFor(items, genModel)/][/emit]
 [if (isInterface)]
 /**
  * <!-- begin-user-doc -->
@@ -113,6 +111,9 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
 [/if]
 [if (isImplementation)]
 [genPackage.packageImplementationHead()/]
+[/if]
+[if (isInterface)]
+
 [/if]
 [genPackage.packageAccessors(isInterface, isImplementation)/]
 [if (isImplementation)]
@@ -491,15 +492,14 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
     super(eNS_URI, [genPackage.factoryInstanceAccessor()/]);
   }
 [if (not familyMember)]
-
   /**
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
    * @generated
    */
   private static boolean isInited = false;
-[/if]
 
+[/if]
   /**
    * Creates, registers, and initializes the <b>Package</b> for this model, and for any others upon which it depends.
    *
@@ -1014,7 +1014,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
 [for (genOperation : GenOperation | genClass.genOperations)]
 [let operation : OclAny = genOperation.nativeOperation()]
 
-    [if (operation.eParameters->notEmpty() or operation.eExceptions->notEmpty())][if (genClass.operationDeclaresVariable(genOperation))]EOperation [/if]op = [/if][if (reflection)]initEOperation(get[genOperation.operationAccessorName()/]()[else]addEOperation([genClass.classifierInstanceName()/][/if], [if (operation.eType.oclIsUndefined())]null[else][genPackage.classifierExpression(operation.eType)/][/if], "[genOperation.name()/]", [operation.lowerBound/], [operation.upperBound/], [operation.uniqueFlag()/], [operation.orderedFlag()/]);[nonNLS(genModel, 1)/]
+    [if (operation.eParameters->notEmpty() or operation.eExceptions->notEmpty())][if (genClass.operationDeclaresVariable(genOperation))][importedName('org.eclipse.emf.ecore.EOperation')/] [/if]op = [/if][if (reflection)]initEOperation(get[genOperation.operationAccessorName()/]()[else]addEOperation([genClass.classifierInstanceName()/][/if], [if (operation.eType.oclIsUndefined())]null[else][genPackage.classifierExpression(operation.eType)/][/if], "[genOperation.name()/]", [operation.lowerBound/], [operation.upperBound/], [operation.uniqueFlag()/], [operation.orderedFlag()/]);[nonNLS(genModel, 1)/]
 [for (parameter : OclAny | operation.eParameters)]
     addEParameter(op, [genPackage.classifierExpression(parameter.eType)/], "[parameter.name/]", [parameter.lowerBound/], [parameter.upperBound/], [parameter.uniqueFlag()/], [parameter.orderedFlag()/]);[nonNLS(genModel, 1)/]
 [/for]

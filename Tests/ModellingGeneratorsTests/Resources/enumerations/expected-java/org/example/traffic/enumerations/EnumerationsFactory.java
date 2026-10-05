@@ -2,9 +2,7 @@
  */
 package org.example.traffic.enumerations;
 
-
 import org.eclipse.emf.ecore.EFactory;
-
 
 /**
  * <!-- begin-user-doc -->
@@ -14,32 +12,31 @@ import org.eclipse.emf.ecore.EFactory;
  * @see org.example.traffic.enumerations.EnumerationsPackage
  * @generated
  */
-public interface EnumerationsFactory extends EFactory
-{
-  /**
-   * The singleton instance of the factory.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  EnumerationsFactory eINSTANCE = org.example.traffic.enumerations.impl.EnumerationsFactoryImpl.init();
+public interface EnumerationsFactory extends EFactory {
+	/**
+	 * The singleton instance of the factory.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	EnumerationsFactory eINSTANCE = org.example.traffic.enumerations.impl.EnumerationsFactoryImpl.init();
 
-  /**
-   * Returns a new object of class '<em>Light</em>'.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @return a new object of class '<em>Light</em>'.
-   * @generated
-   */
-  Light createLight();
+	/**
+	 * Returns a new object of class '<em>Light</em>'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return a new object of class '<em>Light</em>'.
+	 * @generated
+	 */
+	Light createLight();
 
-  /**
-   * Returns the package supported by this factory.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @return the package supported by this factory.
-   * @generated
-   */
-  EnumerationsPackage getEnumerationsPackage();
+	/**
+	 * Returns the package supported by this factory.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the package supported by this factory.
+	 * @generated
+	 */
+	EnumerationsPackage getEnumerationsPackage();
 
 } //EnumerationsFactory

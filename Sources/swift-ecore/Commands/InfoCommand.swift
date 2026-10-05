@@ -21,7 +21,7 @@ struct InfoCommand: AsyncParsableCommand {
     func run() async throws {
         print(
             """
-            Swift Ecore v0.1.0
+            Swift Ecore v\(SwiftEcoreCommand.versionNumber)
             Eclipse Modeling Framework for Swift
 
             Available commands:

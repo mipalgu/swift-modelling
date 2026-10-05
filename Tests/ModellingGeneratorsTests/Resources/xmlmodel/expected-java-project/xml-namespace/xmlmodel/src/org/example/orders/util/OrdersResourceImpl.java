@@ -2,11 +2,9 @@
  */
 package org.example.orders.util;
 
-
 import org.eclipse.emf.common.util.URI;
 
 import org.eclipse.emf.ecore.xmi.impl.XMLResourceImpl;
-
 
 /**
  * <!-- begin-user-doc -->
@@ -15,18 +13,16 @@ import org.eclipse.emf.ecore.xmi.impl.XMLResourceImpl;
  * @see org.example.orders.util.OrdersResourceFactoryImpl
  * @generated
  */
-public class OrdersResourceImpl extends XMLResourceImpl
-{
-  /**
-   * Creates an instance of the resource.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @param uri the URI of the new resource.
-   * @generated
-   */
-  public OrdersResourceImpl(URI uri)
-  {
-    super(uri);
-  }
+public class OrdersResourceImpl extends XMLResourceImpl {
+	/**
+	 * Creates an instance of the resource.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @param uri the URI of the new resource.
+	 * @generated
+	 */
+	public OrdersResourceImpl(URI uri) {
+		super(uri);
+	}
 
 } //OrdersResourceImpl

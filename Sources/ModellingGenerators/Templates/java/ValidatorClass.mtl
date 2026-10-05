@@ -301,9 +301,7 @@
 [header(genPackage)/]
 package [genPackage.utilitiesPackageName()/];
 
-
-[emit ('imports') once][importBlock(items)/][/emit]
-
+[emit ('imports') once][importBlockFor(items, genModel)/][/emit]
 /**
  * <!-- begin-user-doc -->
  * The <b>Validator</b> for the model.

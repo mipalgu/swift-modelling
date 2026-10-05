@@ -74,14 +74,16 @@ The command is the ATL entry to the shared generation pipeline. An Ecore model i
 
 **Options:**
 
-- `-l, --language <name>` - `genmodel` (default), or the name of a template set; the help lists those that exist, including the ones that `--template-path` adds
+- `-l, --language <name>` - `genmodel` (default), or the name of a template set; the help lists the bundled ones, and an unknown name is rejected with every language that can be used, including the ones that `--template-path` adds
 - `-o, --output <path>` - Output directory (default: `Generated`); for `genmodel`, the directory or `.genmodel` file to write (default: beside the Ecore model)
 - `--transformations <path>` - A transformation file, or a directory holding `Ecore2GenModel.atl`, that replaces the bundled transformation
 - `--base-package <name>`, `--prefix <[package=]name>` (repeatable), `--model-project <name>`, `--model-plugin-id <id>`, `--copyright <text>`, `--jdk-level <level>` - Settings of the generator model, as for `swift-ecore genmodel`
+- `--defaults headless|wizard`, `--root-extends-class <name>`, `--operation-reflection` / `--no-operation-reflection`, `--import-organizing` / `--no-import-organizing` - The preset of the generator model defaults and its overrides, as for `swift-ecore genmodel`; they only apply to an Ecore model
 - `--template-path <directory>` - Directory with template files that replace bundled templates (repeatable)
 - `--force-overwrite` - Replace existing files without merging
 - `--diff` - Write the generated text of existing files beside them as `.<name>.new`
 - `--model-directory` - Write below the model directory of the generator model
+- `--code-style <style>` - The layout of the generated text, one of the styles of the template set (`java`: `eclipse`, the default, or `emf`); rejected for the language `genmodel`
 - `--verbose` - One line for every file; without it a progress bar with counts appears on an interactive terminal
 
 **Examples:**

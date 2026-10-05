@@ -6,6 +6,7 @@
 //
 import ArgumentParser
 import Foundation
+import ModellingCommandLine
 import ModellingGenerators
 
 /// Command for creating a generator model from Ecore models.
@@ -13,7 +14,8 @@ import ModellingGenerators
 /// The genmodel command imports one or more Ecore models into a `.genmodel` file with the
 /// settings that the Eclipse Ecore importer gives a freshly imported model. An existing
 /// generator model can be reloaded, which keeps its settings while the structure follows the
-/// current Ecore models.
+/// current Ecore models. The defaults of operation reflection, the root class and import
+/// organising follow the headless Eclipse generator unless ``GenModelDefaultsOptions`` say otherwise.
 struct GenModelCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "genmodel",
@@ -30,6 +32,13 @@ struct GenModelCommand: AsyncParsableCommand {
 
             With --reload, the settings of the existing generator model are kept. Options that are \
             given explicitly override the existing settings. Elements are matched by name.
+
+            Operation reflection, the root class and import organising are left at the defaults of \
+            the generator metamodel, as the headless Eclipse generator does. --defaults wizard \
+            gives the settings of the interactive Eclipse wizard instead (operation reflection and \
+            import organising on, and a root class with a container), and --root-extends-class, \
+            --operation-reflection and --import-organizing (or their --no- forms) override single \
+            settings of either preset.
             """
     )
 
@@ -76,6 +85,10 @@ struct GenModelCommand: AsyncParsableCommand {
     @Option(name: .shortAndLong, help: "The generator model to write")
     var output: String?
 
+    /// The preset and the overrides of the generator model defaults.
+    @OptionGroup(title: "Generator model defaults")
+    var genModelDefaults: GenModelDefaultsOptions
+
     /// Enable verbose output.
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose: Bool = false
@@ -119,6 +132,7 @@ struct GenModelCommand: AsyncParsableCommand {
         options.complianceLevel = jdkLevel
         options.reload = reload.map { URL(fileURLWithPath: $0) }
         options.output = output.map { URL(fileURLWithPath: $0) }
+        genModelDefaults.apply(to: &options)
         return options
     }
 }

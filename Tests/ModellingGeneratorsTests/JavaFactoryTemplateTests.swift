@@ -57,9 +57,9 @@ struct JavaFactoryTemplateTests {
         let generated = try await Self.generate(variant)
         defer { generated.remove() }
         for path in Self.files {
-            let expected = try String(
-                contentsOf: Fixtures.url(of: "datatypes/expected-java-\(variant.name)/\(path)"), encoding: .utf8)
-            #expect(try generated.text(path) == expected, "\(path) differs for \(variant.name)")
+            try GoldenFiles.check(
+                try generated.text(path), against: "datatypes/expected-java-\(variant.name)/\(path)",
+                "\(path) for \(variant.name)")
         }
     }
 
@@ -69,7 +69,7 @@ struct JavaFactoryTemplateTests {
         let generated = try await Self.generate(nil)
         defer { generated.remove() }
         let text = try generated.text(Self.files[1])
-        #expect(text.contains("return new Date(Long.parseLong(it));\n    // done"))
+        #expect(text.contains("return new Date(Long.parseLong(it));\n\t\t// done"))
         #expect(text.contains("import java.util.Date;"))
         #expect(!text.contains("<%"))
     }

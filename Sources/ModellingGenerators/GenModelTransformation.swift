@@ -102,9 +102,15 @@ struct GenModelTransformation {
         }
     }
 
+    /// The text that passes a boolean to the transformation.
+    private static func booleanText(_ value: Bool) -> String {
+        value ? GenModelImportConstants.trueText : GenModelImportConstants.falseText
+    }
+
     /// Computes the values of the module parameters from the options.
     ///
     /// Options that are not set are passed as empty text, which the transformation treats as unset.
+    /// The preset is always passed, as ``GenModelDefaults/headless`` if the options give none.
     ///
     /// - Parameters:
     ///   - options: The import options.
@@ -122,9 +128,10 @@ struct GenModelTransformation {
         }
         let values: [String: any EcoreValue] = [
             Name.importerID: GenModelImportConstants.importerID,
-            Name.rootExtendsClass: options.rootExtendsClass,
-            Name.operationReflection: options.operationReflection,
-            Name.importOrganizing: options.importOrganizing,
+            Name.defaults: (options.defaults ?? .headless).rawValue,
+            Name.rootExtendsClass: options.rootExtendsClass ?? "",
+            Name.operationReflection: options.operationReflection.map(booleanText) ?? "",
+            Name.importOrganizing: options.importOrganizing.map(booleanText) ?? "",
             Name.copyrightFields: GenModelImportConstants.defaultCopyrightFields,
             Name.bigModelThreshold: GenModelImportConstants.bigModelThreshold,
             Name.basePackage: options.basePackage ?? "",

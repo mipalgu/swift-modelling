@@ -2,11 +2,9 @@
  */
 package org.example.library.util;
 
-
 import org.eclipse.emf.common.util.URI;
 
 import org.eclipse.emf.ecore.resource.impl.ResourceImpl;
-
 
 /**
  * <!-- begin-user-doc -->
@@ -15,18 +13,16 @@ import org.eclipse.emf.ecore.resource.impl.ResourceImpl;
  * @see org.example.library.util.LibraryResourceFactoryImpl
  * @generated
  */
-public class LibraryResourceImpl extends ResourceImpl
-{
-  /**
-   * Creates an instance of the resource.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @param uri the URI of the new resource.
-   * @generated
-   */
-  public LibraryResourceImpl(URI uri)
-  {
-    super(uri);
-  }
+public class LibraryResourceImpl extends ResourceImpl {
+	/**
+	 * Creates an instance of the resource.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @param uri the URI of the new resource.
+	 * @generated
+	 */
+	public LibraryResourceImpl(URI uri) {
+		super(uri);
+	}
 
 } //LibraryResourceImpl

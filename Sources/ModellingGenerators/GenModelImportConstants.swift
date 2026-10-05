@@ -18,17 +18,8 @@ public enum GenModelImportConstants {
     /// The compliance level written to a new generator model unless another is requested.
     public static let defaultComplianceLevel = "17.0"
 
-    /// The class that generated root objects extend by default.
-    public static let defaultRootExtendsClass = "org.eclipse.emf.ecore.impl.MinimalEObjectImpl$Container"
-
     /// The number of model elements above which a package counts as a big model.
     public static let bigModelThreshold = 500
-
-    /// Whether generated models include operation reflection by default.
-    public static let defaultOperationReflection = true
-
-    /// Whether generated code organises its imports by default.
-    public static let defaultImportOrganizing = true
 
     /// Whether generated files carry copyright fields by default.
     public static let defaultCopyrightFields = false
@@ -50,6 +41,12 @@ public enum GenModelImportConstants {
 
     /// The instance class name of feature map entries.
     public static let featureMapEntryClass = "org.eclipse.emf.ecore.util.FeatureMap$Entry"
+
+    /// The text of a boolean module parameter that is true.
+    public static let trueText = "true"
+
+    /// The text of a boolean module parameter that is false.
+    public static let falseText = "false"
 
     /// The separator between items of a list passed to the transformation as text.
     public static let listSeparator = "\n"
@@ -79,12 +76,14 @@ public enum GenModelImportConstants {
     public enum Parameter {
         /// The importer identifier.
         public static let importerID = "importerID"
-        /// The class that generated root objects extend.
-        public static let rootExtendsClass = "rootExtendsClass"
-        /// Whether operation reflection is generated.
-        public static let operationReflection = "operationReflection"
-        /// Whether imports are organised.
-        public static let importOrganizing = "importOrganizing"
+        /// The name of the preset of the settings that differ between headless and interactive use.
+        public static let defaults = "defaults"
+        /// The class that generated root objects extend, or empty text to use the preset.
+        public static let rootExtendsClass = "rootExtendsClassOverride"
+        /// Whether operation reflection is generated (`true` or `false`), or empty text to use the preset.
+        public static let operationReflection = "operationReflectionOverride"
+        /// Whether imports are organised (`true` or `false`), or empty text to use the preset.
+        public static let importOrganizing = "importOrganizingOverride"
         /// Whether copyright fields are generated.
         public static let copyrightFields = "copyrightFields"
         /// The big model threshold.
@@ -122,7 +121,7 @@ public enum GenModelImportConstants {
 
         /// Every parameter name, which the bundled transformation declares.
         public static let all: Set<String> = [
-            importerID, rootExtendsClass, operationReflection, importOrganizing, copyrightFields,
+            importerID, defaults, rootExtendsClass, operationReflection, importOrganizing, copyrightFields,
             bigModelThreshold, basePackage, prefix, packagePrefixes, modelProject, modelPluginID,
             modelDirectory, modelName, copyright, foreignModels, listSeparator, assignmentSeparator,
             extendedMetaDataSource, featureMapEntryClass, xmlTypeNsURI, ecoreNsURI,
@@ -146,6 +145,16 @@ public enum GenModelImportConstants {
         /// The settings that a reconcile takes from the new import instead of the old model.
         public static let derivedFromSources: Set<String> = [
             GenModelConstants.FeatureName.foreignModel, importerID,
+        ]
+        /// The class that generated root objects extend.
+        public static let rootExtendsClass = "rootExtendsClass"
+        /// Whether operation reflection is generated.
+        public static let operationReflection = "operationReflection"
+        /// Whether imports are organised.
+        public static let importOrganizing = "importOrganizing"
+        /// The settings that follow the preset of the defaults.
+        public static let presetSettings: Set<String> = [
+            rootExtendsClass, operationReflection, importOrganizing,
         ]
         /// The importer identifier setting.
         public static let importerID = "importerID"

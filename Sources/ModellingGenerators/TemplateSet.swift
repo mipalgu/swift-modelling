@@ -59,6 +59,22 @@ public struct TemplateSet: Sendable {
         return languages.sorted()
     }
 
+    /// The code styles that the bundled template sets offer.
+    ///
+    /// - Returns: The bundled languages that offer code styles, sorted by name, each with the
+    ///   names of its styles sorted and the name of its default style, if it has one.
+    public static func bundledCodeStyles() -> [(language: String, styles: [String], defaultStyle: String?)] {
+        guard let root = bundledRoot else { return [] }
+        return availableLanguages().compactMap { language in
+            guard
+                let descriptor = try? readDescriptor(
+                    in: root.appendingPathComponent(language), language: language),
+                !descriptor.styles.isEmpty
+            else { return nil }
+            return (language, descriptor.styleNames, descriptor.defaultStyle)
+        }
+    }
+
     /// Assembles the template set of a language.
     ///
     /// - Parameters:

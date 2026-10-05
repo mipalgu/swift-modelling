@@ -2,17 +2,12 @@
  */
 package org.example.bank.bank.util;
 
-
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 
 import org.eclipse.emf.ecore.util.Switch;
 
-import org.example.bank.bank.Account;
-import org.example.bank.bank.BankPackage;
-import org.example.bank.bank.Branch;
-import org.example.bank.bank.SavingsAccount;
-
+import org.example.bank.bank.*;
 
 /**
  * <!-- begin-user-doc -->
@@ -27,145 +22,132 @@ import org.example.bank.bank.SavingsAccount;
  * @see org.example.bank.bank.BankPackage
  * @generated
  */
-public class BankSwitch<T> extends Switch<T>
-{
-  /**
-   * The cached model package
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  protected static BankPackage modelPackage;
+public class BankSwitch<T> extends Switch<T> {
+	/**
+	 * The cached model package
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	protected static BankPackage modelPackage;
 
-  /**
-   * Creates an instance of the switch.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  public BankSwitch()
-  {
-    if (modelPackage == null)
-    {
-      modelPackage = BankPackage.eINSTANCE;
-    }
-  }
+	/**
+	 * Creates an instance of the switch.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public BankSwitch() {
+		if (modelPackage == null) {
+			modelPackage = BankPackage.eINSTANCE;
+		}
+	}
 
-  /**
-   * Checks whether this is a switch for the given package.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @param ePackage the package in question.
-   * @return whether this is a switch for the given package.
-   * @generated
-   */
-  @Override
-  protected boolean isSwitchFor(EPackage ePackage)
-  {
-    return ePackage == modelPackage;
-  }
+	/**
+	 * Checks whether this is a switch for the given package.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @param ePackage the package in question.
+	 * @return whether this is a switch for the given package.
+	 * @generated
+	 */
+	@Override
+	protected boolean isSwitchFor(EPackage ePackage) {
+		return ePackage == modelPackage;
+	}
 
-  /**
-   * Calls <code>caseXXX</code> for each class of the model until one returns a non null result; it yields that result.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @return the first non-null result returned by a <code>caseXXX</code> call.
-   * @generated
-   */
-  @Override
-  protected T doSwitch(int classifierID, EObject theEObject)
-  {
-    switch (classifierID)
-    {
-      case BankPackage.ACCOUNT:
-      {
-        Account account = (Account)theEObject;
-        T result = caseAccount(account);
-        if (result == null) result = defaultCase(theEObject);
-        return result;
-      }
-      case BankPackage.SAVINGS_ACCOUNT:
-      {
-        SavingsAccount savingsAccount = (SavingsAccount)theEObject;
-        T result = caseSavingsAccount(savingsAccount);
-        if (result == null) result = caseAccount(savingsAccount);
-        if (result == null) result = defaultCase(theEObject);
-        return result;
-      }
-      case BankPackage.BRANCH:
-      {
-        Branch branch = (Branch)theEObject;
-        T result = caseBranch(branch);
-        if (result == null) result = defaultCase(theEObject);
-        return result;
-      }
-      default: return defaultCase(theEObject);
-    }
-  }
+	/**
+	 * Calls <code>caseXXX</code> for each class of the model until one returns a non null result; it yields that result.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the first non-null result returned by a <code>caseXXX</code> call.
+	 * @generated
+	 */
+	@Override
+	protected T doSwitch(int classifierID, EObject theEObject) {
+		switch (classifierID) {
+			case BankPackage.ACCOUNT: {
+				Account account = (Account)theEObject;
+				T result = caseAccount(account);
+				if (result == null) result = defaultCase(theEObject);
+				return result;
+			}
+			case BankPackage.SAVINGS_ACCOUNT: {
+				SavingsAccount savingsAccount = (SavingsAccount)theEObject;
+				T result = caseSavingsAccount(savingsAccount);
+				if (result == null) result = caseAccount(savingsAccount);
+				if (result == null) result = defaultCase(theEObject);
+				return result;
+			}
+			case BankPackage.BRANCH: {
+				Branch branch = (Branch)theEObject;
+				T result = caseBranch(branch);
+				if (result == null) result = defaultCase(theEObject);
+				return result;
+			}
+			default: return defaultCase(theEObject);
+		}
+	}
 
-  /**
-   * Returns the result of interpreting the object as an instance of '<em>Account</em>'.
-   * <!-- begin-user-doc -->
-   * This implementation returns null;
-   * returning a non-null result will terminate the switch.
-   * <!-- end-user-doc -->
-   * @param object the target of the switch.
-   * @return the result of interpreting the object as an instance of '<em>Account</em>'.
-   * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
-   * @generated
-   */
-  public T caseAccount(Account object)
-  {
-    return null;
-  }
+	/**
+	 * Returns the result of interpreting the object as an instance of '<em>Account</em>'.
+	 * <!-- begin-user-doc -->
+	 * This implementation returns null;
+	 * returning a non-null result will terminate the switch.
+	 * <!-- end-user-doc -->
+	 * @param object the target of the switch.
+	 * @return the result of interpreting the object as an instance of '<em>Account</em>'.
+	 * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
+	 * @generated
+	 */
+	public T caseAccount(Account object) {
+		return null;
+	}
 
-  /**
-   * Returns the result of interpreting the object as an instance of '<em>Savings Account</em>'.
-   * <!-- begin-user-doc -->
-   * This implementation returns null;
-   * returning a non-null result will terminate the switch.
-   * <!-- end-user-doc -->
-   * @param object the target of the switch.
-   * @return the result of interpreting the object as an instance of '<em>Savings Account</em>'.
-   * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
-   * @generated
-   */
-  public T caseSavingsAccount(SavingsAccount object)
-  {
-    return null;
-  }
+	/**
+	 * Returns the result of interpreting the object as an instance of '<em>Savings Account</em>'.
+	 * <!-- begin-user-doc -->
+	 * This implementation returns null;
+	 * returning a non-null result will terminate the switch.
+	 * <!-- end-user-doc -->
+	 * @param object the target of the switch.
+	 * @return the result of interpreting the object as an instance of '<em>Savings Account</em>'.
+	 * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
+	 * @generated
+	 */
+	public T caseSavingsAccount(SavingsAccount object) {
+		return null;
+	}
 
-  /**
-   * Returns the result of interpreting the object as an instance of '<em>Branch</em>'.
-   * <!-- begin-user-doc -->
-   * This implementation returns null;
-   * returning a non-null result will terminate the switch.
-   * <!-- end-user-doc -->
-   * @param object the target of the switch.
-   * @return the result of interpreting the object as an instance of '<em>Branch</em>'.
-   * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
-   * @generated
-   */
-  public T caseBranch(Branch object)
-  {
-    return null;
-  }
+	/**
+	 * Returns the result of interpreting the object as an instance of '<em>Branch</em>'.
+	 * <!-- begin-user-doc -->
+	 * This implementation returns null;
+	 * returning a non-null result will terminate the switch.
+	 * <!-- end-user-doc -->
+	 * @param object the target of the switch.
+	 * @return the result of interpreting the object as an instance of '<em>Branch</em>'.
+	 * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
+	 * @generated
+	 */
+	public T caseBranch(Branch object) {
+		return null;
+	}
 
-  /**
-   * Returns the result of interpreting the object as an instance of '<em>EObject</em>'.
-   * <!-- begin-user-doc -->
-   * This implementation returns null;
-   * returning a non-null result will terminate the switch, but this is the last case anyway.
-   * <!-- end-user-doc -->
-   * @param object the target of the switch.
-   * @return the result of interpreting the object as an instance of '<em>EObject</em>'.
-   * @see #doSwitch(org.eclipse.emf.ecore.EObject)
-   * @generated
-   */
-  @Override
-  public T defaultCase(EObject object)
-  {
-    return null;
-  }
+	/**
+	 * Returns the result of interpreting the object as an instance of '<em>EObject</em>'.
+	 * <!-- begin-user-doc -->
+	 * This implementation returns null;
+	 * returning a non-null result will terminate the switch, but this is the last case anyway.
+	 * <!-- end-user-doc -->
+	 * @param object the target of the switch.
+	 * @return the result of interpreting the object as an instance of '<em>EObject</em>'.
+	 * @see #doSwitch(org.eclipse.emf.ecore.EObject)
+	 * @generated
+	 */
+	@Override
+	public T defaultCase(EObject object) {
+		return null;
+	}
 
 } //BankSwitch

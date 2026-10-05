@@ -8,7 +8,7 @@ struct TemplateOverrideTests {
     @MainActor
     static func library() async throws -> GeneratedProject {
         try await GeneratedProject.make(
-            "library", stem: "library", options: GenModelImportOptions(basePackage: "org.example"))
+            "library", stem: "library", options: GenModelImportOptions(basePackage: "org.example", defaults: .wizard))
     }
 
     @Test("A template path overrides a single bundled module")

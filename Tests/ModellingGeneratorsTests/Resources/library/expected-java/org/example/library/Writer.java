@@ -3,9 +3,7 @@
  */
 package org.example.library;
 
-
 import org.eclipse.emf.common.util.EList;
-
 
 /**
  * <!-- begin-user-doc -->
@@ -24,32 +22,31 @@ import org.eclipse.emf.common.util.EList;
  * @model
  * @generated
  */
-public interface Writer extends Named
-{
-  /**
-   * Returns the value of the '<em><b>Aliases</b></em>' attribute list.
-   * The list contents are of type {@link java.lang.String}.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @return the value of the '<em>Aliases</em>' attribute list.
-   * @see org.example.library.LibraryPackage#getWriter_Aliases()
-   * @model
-   * @generated
-   */
-  EList<String> getAliases();
+public interface Writer extends Named {
+	/**
+	 * Returns the value of the '<em><b>Aliases</b></em>' attribute list.
+	 * The list contents are of type {@link java.lang.String}.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the value of the '<em>Aliases</em>' attribute list.
+	 * @see org.example.library.LibraryPackage#getWriter_Aliases()
+	 * @model
+	 * @generated
+	 */
+	EList<String> getAliases();
 
-  /**
-   * Returns the value of the '<em><b>Books</b></em>' reference list.
-   * The list contents are of type {@link org.example.library.Book}.
-   * It is bidirectional and its opposite is '{@link org.example.library.Book#getAuthor <em>Author</em>}'.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @return the value of the '<em>Books</em>' reference list.
-   * @see org.example.library.LibraryPackage#getWriter_Books()
-   * @see org.example.library.Book#getAuthor
-   * @model opposite="author"
-   * @generated
-   */
-  EList<Book> getBooks();
+	/**
+	 * Returns the value of the '<em><b>Books</b></em>' reference list.
+	 * The list contents are of type {@link org.example.library.Book}.
+	 * It is bidirectional and its opposite is '{@link org.example.library.Book#getAuthor <em>Author</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the value of the '<em>Books</em>' reference list.
+	 * @see org.example.library.LibraryPackage#getWriter_Books()
+	 * @see org.example.library.Book#getAuthor
+	 * @model opposite="author"
+	 * @generated
+	 */
+	EList<Book> getBooks();
 
 } // Writer

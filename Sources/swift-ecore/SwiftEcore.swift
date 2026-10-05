@@ -13,6 +13,9 @@ import ArgumentParser
 /// including model validation, format conversion, code generation, and querying capabilities.
 @main
 struct SwiftEcoreCommand: AsyncParsableCommand {
+    /// The version that `--version` and the info command report.
+    static let versionNumber = "0.2.1"
+
     static let configuration = CommandConfiguration(
         commandName: "swift-ecore",
         abstract: "Swift Ecore - Eclipse Modeling Framework for Swift",
@@ -28,7 +31,7 @@ struct SwiftEcoreCommand: AsyncParsableCommand {
             Eclipse Ecore meta-models while providing enhanced performance through Swift's concurrent
             execution model and type safety.
             """,
-        version: "0.2.1",
+        version: versionNumber,
         subcommands: [
             InfoCommand.self,
             ValidateCommand.self,

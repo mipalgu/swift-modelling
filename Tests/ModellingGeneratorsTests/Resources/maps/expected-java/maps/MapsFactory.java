@@ -2,9 +2,7 @@
  */
 package maps;
 
-
 import org.eclipse.emf.ecore.EFactory;
-
 
 /**
  * <!-- begin-user-doc -->
@@ -14,32 +12,31 @@ import org.eclipse.emf.ecore.EFactory;
  * @see maps.MapsPackage
  * @generated
  */
-public interface MapsFactory extends EFactory
-{
-  /**
-   * The singleton instance of the factory.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  MapsFactory eINSTANCE = maps.impl.MapsFactoryImpl.init();
+public interface MapsFactory extends EFactory {
+	/**
+	 * The singleton instance of the factory.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	MapsFactory eINSTANCE = maps.impl.MapsFactoryImpl.init();
 
-  /**
-   * Returns a new object of class '<em>Dictionary</em>'.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @return a new object of class '<em>Dictionary</em>'.
-   * @generated
-   */
-  Dictionary createDictionary();
+	/**
+	 * Returns a new object of class '<em>Dictionary</em>'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return a new object of class '<em>Dictionary</em>'.
+	 * @generated
+	 */
+	Dictionary createDictionary();
 
-  /**
-   * Returns the package supported by this factory.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @return the package supported by this factory.
-   * @generated
-   */
-  MapsPackage getMapsPackage();
+	/**
+	 * Returns the package supported by this factory.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the package supported by this factory.
+	 * @generated
+	 */
+	MapsPackage getMapsPackage();
 
 } //MapsFactory

@@ -1,6 +1,45 @@
 import Foundation
+import Testing
 
 @testable import ModellingGenerators
+
+/// Compares generated text with the reviewed expectations bundled with the tests, and records new ones.
+///
+/// When the environment variable `JAVA_GOLDEN_RECORD` is set, the expectations are not compared: the
+/// generated text is written to the fixture folder of the source tree instead, to be reviewed and committed.
+enum GoldenFiles {
+    /// The environment variable that makes the tests write their output as new expectations.
+    static let recordVariable = "JAVA_GOLDEN_RECORD"
+
+    /// The folder of the fixtures in the source tree, which recording writes to.
+    static let sourceFixtures = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+        .appendingPathComponent("Resources")
+
+    /// Whether the tests record expectations instead of comparing them.
+    static var isRecording: Bool { ProcessInfo.processInfo.environment[recordVariable] != nil }
+
+    /// Compares generated text with an expectation, or records it.
+    ///
+    /// - Parameters:
+    ///   - actual: The generated text.
+    ///   - path: The path of the expectation relative to the `Resources` folder.
+    ///   - message: A description of the file for the failure report.
+    ///   - sourceLocation: The location of the check.
+    static func check(
+        _ actual: String, against path: String, _ message: String = "",
+        sourceLocation: SourceLocation = #_sourceLocation
+    ) throws {
+        if isRecording {
+            let target = sourceFixtures.appendingPathComponent(path)
+            try FileManager.default.createDirectory(
+                at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try actual.write(to: target, atomically: true, encoding: .utf8)
+            return
+        }
+        let expected = try String(contentsOf: Fixtures.url(of: path), encoding: .utf8)
+        #expect(actual == expected, "\(message.isEmpty ? path : message) differs from its expectation", sourceLocation: sourceLocation)
+    }
+}
 
 /// A fixture project that has been turned into a generator model, with a place for generated code.
 struct GeneratedProject {

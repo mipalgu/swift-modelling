@@ -68,9 +68,10 @@
 [query public hasDefaultPackageConflict(genPackage : GenPackage) : Boolean = genPackage.genClasses->exists(c | isImplicitType(c.name())) or genPackage.genEnums->exists(e | isImplicitType(e.name()))/]
 
 [**
- * Whether the utility classes of a package import the interface package as a whole.
+ * Whether the utility classes of a package import the interface package as a whole: unless the generator
+ * model organises its imports, which names every type that the classes use instead.
  **/]
-[query public usesInterfaceWildcard(genPackage : GenPackage) : Boolean = not genPackage.hasDefaultPackageConflict() and genPackage.utilitiesPackageName() <> genPackage.interfacePackageName()/]
+[query public usesInterfaceWildcard(genPackage : GenPackage) : Boolean = not genPackage.genModel().isOn('importOrganizing') and not genPackage.hasDefaultPackageConflict() and genPackage.utilitiesPackageName() <> genPackage.interfacePackageName()/]
 
 [**
  * Whether a package generates a switch and an adapter factory: it asks for adapter factories and has classes.

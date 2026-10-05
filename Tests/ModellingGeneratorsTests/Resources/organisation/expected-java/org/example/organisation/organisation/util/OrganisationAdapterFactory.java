@@ -2,7 +2,6 @@
  */
 package org.example.organisation.organisation.util;
 
-
 import org.eclipse.emf.common.notify.Adapter;
 import org.eclipse.emf.common.notify.Notifier;
 
@@ -10,11 +9,7 @@ import org.eclipse.emf.common.notify.impl.AdapterFactoryImpl;
 
 import org.eclipse.emf.ecore.EObject;
 
-import org.example.organisation.organisation.Organisation;
-import org.example.organisation.organisation.OrganisationPackage;
-import org.example.organisation.organisation.Person;
-import org.example.organisation.organisation.Team;
-
+import org.example.organisation.organisation.*;
 
 /**
  * <!-- begin-user-doc -->
@@ -24,154 +19,138 @@ import org.example.organisation.organisation.Team;
  * @see org.example.organisation.organisation.OrganisationPackage
  * @generated
  */
-public class OrganisationAdapterFactory extends AdapterFactoryImpl
-{
-  /**
-   * The cached model package.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  protected static OrganisationPackage modelPackage;
+public class OrganisationAdapterFactory extends AdapterFactoryImpl {
+	/**
+	 * The cached model package.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	protected static OrganisationPackage modelPackage;
 
-  /**
-   * Creates an instance of the adapter factory.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  public OrganisationAdapterFactory()
-  {
-    if (modelPackage == null)
-    {
-      modelPackage = OrganisationPackage.eINSTANCE;
-    }
-  }
+	/**
+	 * Creates an instance of the adapter factory.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public OrganisationAdapterFactory() {
+		if (modelPackage == null) {
+			modelPackage = OrganisationPackage.eINSTANCE;
+		}
+	}
 
-  /**
-   * Returns whether this factory is applicable for the type of the object.
-   * <!-- begin-user-doc -->
-   * This implementation returns <code>true</code> if the object is either the model's package or is an instance object of the model.
-   * <!-- end-user-doc -->
-   * @return whether this factory is applicable for the type of the object.
-   * @generated
-   */
-  @Override
-  public boolean isFactoryForType(Object object)
-  {
-    if (object == modelPackage)
-    {
-      return true;
-    }
-    if (object instanceof EObject)
-    {
-      return ((EObject)object).eClass().getEPackage() == modelPackage;
-    }
-    return false;
-  }
+	/**
+	 * Returns whether this factory is applicable for the type of the object.
+	 * <!-- begin-user-doc -->
+	 * This implementation returns <code>true</code> if the object is either the model's package or is an instance object of the model.
+	 * <!-- end-user-doc -->
+	 * @return whether this factory is applicable for the type of the object.
+	 * @generated
+	 */
+	@Override
+	public boolean isFactoryForType(Object object) {
+		if (object == modelPackage) {
+			return true;
+		}
+		if (object instanceof EObject) {
+			return ((EObject)object).eClass().getEPackage() == modelPackage;
+		}
+		return false;
+	}
 
-  /**
-   * The switch that delegates to the <code>createXXX</code> methods.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  protected OrganisationSwitch<Adapter> modelSwitch =
-    new OrganisationSwitch<Adapter>()
-    {
-      @Override
-      public Adapter casePerson(Person object)
-      {
-        return createPersonAdapter();
-      }
-      @Override
-      public Adapter caseTeam(Team object)
-      {
-        return createTeamAdapter();
-      }
-      @Override
-      public Adapter caseOrganisation(Organisation object)
-      {
-        return createOrganisationAdapter();
-      }
-      @Override
-      public Adapter defaultCase(EObject object)
-      {
-        return createEObjectAdapter();
-      }
-    };
+	/**
+	 * The switch that delegates to the <code>createXXX</code> methods.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	protected OrganisationSwitch<Adapter> modelSwitch =
+		new OrganisationSwitch<Adapter>() {
+			@Override
+			public Adapter casePerson(Person object) {
+				return createPersonAdapter();
+			}
+			@Override
+			public Adapter caseTeam(Team object) {
+				return createTeamAdapter();
+			}
+			@Override
+			public Adapter caseOrganisation(Organisation object) {
+				return createOrganisationAdapter();
+			}
+			@Override
+			public Adapter defaultCase(EObject object) {
+				return createEObjectAdapter();
+			}
+		};
 
-  /**
-   * Creates an adapter for the <code>target</code>.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @param target the object to adapt.
-   * @return the adapter for the <code>target</code>.
-   * @generated
-   */
-  @Override
-  public Adapter createAdapter(Notifier target)
-  {
-    return modelSwitch.doSwitch((EObject)target);
-  }
+	/**
+	 * Creates an adapter for the <code>target</code>.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @param target the object to adapt.
+	 * @return the adapter for the <code>target</code>.
+	 * @generated
+	 */
+	@Override
+	public Adapter createAdapter(Notifier target) {
+		return modelSwitch.doSwitch((EObject)target);
+	}
 
 
-  /**
-   * Creates a new adapter for an object of class '{@link org.example.organisation.organisation.Person <em>Person</em>}'.
-   * <!-- begin-user-doc -->
-   * This default implementation returns null so that we can easily ignore cases;
-   * it's useful to ignore a case when inheritance will catch all the cases anyway.
-   * <!-- end-user-doc -->
-   * @return the new adapter.
-   * @see org.example.organisation.organisation.Person
-   * @generated
-   */
-  public Adapter createPersonAdapter()
-  {
-    return null;
-  }
+	/**
+	 * Creates a new adapter for an object of class '{@link org.example.organisation.organisation.Person <em>Person</em>}'.
+	 * <!-- begin-user-doc -->
+	 * This default implementation returns null so that we can easily ignore cases;
+	 * it's useful to ignore a case when inheritance will catch all the cases anyway.
+	 * <!-- end-user-doc -->
+	 * @return the new adapter.
+	 * @see org.example.organisation.organisation.Person
+	 * @generated
+	 */
+	public Adapter createPersonAdapter() {
+		return null;
+	}
 
-  /**
-   * Creates a new adapter for an object of class '{@link org.example.organisation.organisation.Team <em>Team</em>}'.
-   * <!-- begin-user-doc -->
-   * This default implementation returns null so that we can easily ignore cases;
-   * it's useful to ignore a case when inheritance will catch all the cases anyway.
-   * <!-- end-user-doc -->
-   * @return the new adapter.
-   * @see org.example.organisation.organisation.Team
-   * @generated
-   */
-  public Adapter createTeamAdapter()
-  {
-    return null;
-  }
+	/**
+	 * Creates a new adapter for an object of class '{@link org.example.organisation.organisation.Team <em>Team</em>}'.
+	 * <!-- begin-user-doc -->
+	 * This default implementation returns null so that we can easily ignore cases;
+	 * it's useful to ignore a case when inheritance will catch all the cases anyway.
+	 * <!-- end-user-doc -->
+	 * @return the new adapter.
+	 * @see org.example.organisation.organisation.Team
+	 * @generated
+	 */
+	public Adapter createTeamAdapter() {
+		return null;
+	}
 
-  /**
-   * Creates a new adapter for an object of class '{@link org.example.organisation.organisation.Organisation <em>Organisation</em>}'.
-   * <!-- begin-user-doc -->
-   * This default implementation returns null so that we can easily ignore cases;
-   * it's useful to ignore a case when inheritance will catch all the cases anyway.
-   * <!-- end-user-doc -->
-   * @return the new adapter.
-   * @see org.example.organisation.organisation.Organisation
-   * @generated
-   */
-  public Adapter createOrganisationAdapter()
-  {
-    return null;
-  }
+	/**
+	 * Creates a new adapter for an object of class '{@link org.example.organisation.organisation.Organisation <em>Organisation</em>}'.
+	 * <!-- begin-user-doc -->
+	 * This default implementation returns null so that we can easily ignore cases;
+	 * it's useful to ignore a case when inheritance will catch all the cases anyway.
+	 * <!-- end-user-doc -->
+	 * @return the new adapter.
+	 * @see org.example.organisation.organisation.Organisation
+	 * @generated
+	 */
+	public Adapter createOrganisationAdapter() {
+		return null;
+	}
 
-  /**
-   * Creates a new adapter for the default case.
-   * <!-- begin-user-doc -->
-   * This default implementation returns null.
-   * <!-- end-user-doc -->
-   * @return the new adapter.
-   * @generated
-   */
-  public Adapter createEObjectAdapter()
-  {
-    return null;
-  }
+	/**
+	 * Creates a new adapter for the default case.
+	 * <!-- begin-user-doc -->
+	 * This default implementation returns null.
+	 * <!-- end-user-doc -->
+	 * @return the new adapter.
+	 * @generated
+	 */
+	public Adapter createEObjectAdapter() {
+		return null;
+	}
 
 } //OrganisationAdapterFactory

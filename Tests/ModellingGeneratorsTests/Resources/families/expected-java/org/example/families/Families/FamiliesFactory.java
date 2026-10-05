@@ -2,9 +2,7 @@
  */
 package org.example.families.Families;
 
-
 import org.eclipse.emf.ecore.EFactory;
-
 
 /**
  * <!-- begin-user-doc -->
@@ -14,41 +12,40 @@ import org.eclipse.emf.ecore.EFactory;
  * @see org.example.families.Families.FamiliesPackage
  * @generated
  */
-public interface FamiliesFactory extends EFactory
-{
-  /**
-   * The singleton instance of the factory.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  FamiliesFactory eINSTANCE = org.example.families.Families.impl.FamiliesFactoryImpl.init();
+public interface FamiliesFactory extends EFactory {
+	/**
+	 * The singleton instance of the factory.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	FamiliesFactory eINSTANCE = org.example.families.Families.impl.FamiliesFactoryImpl.init();
 
-  /**
-   * Returns a new object of class '<em>Family</em>'.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @return a new object of class '<em>Family</em>'.
-   * @generated
-   */
-  Family createFamily();
+	/**
+	 * Returns a new object of class '<em>Family</em>'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return a new object of class '<em>Family</em>'.
+	 * @generated
+	 */
+	Family createFamily();
 
-  /**
-   * Returns a new object of class '<em>Member</em>'.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @return a new object of class '<em>Member</em>'.
-   * @generated
-   */
-  Member createMember();
+	/**
+	 * Returns a new object of class '<em>Member</em>'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return a new object of class '<em>Member</em>'.
+	 * @generated
+	 */
+	Member createMember();
 
-  /**
-   * Returns the package supported by this factory.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @return the package supported by this factory.
-   * @generated
-   */
-  FamiliesPackage getFamiliesPackage();
+	/**
+	 * Returns the package supported by this factory.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the package supported by this factory.
+	 * @generated
+	 */
+	FamiliesPackage getFamiliesPackage();
 
 } //FamiliesFactory

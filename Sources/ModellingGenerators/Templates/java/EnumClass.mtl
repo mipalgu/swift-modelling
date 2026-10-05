@@ -25,9 +25,7 @@
 [header(genEnum)/]
 package [genPackage.interfacePackageName()/];
 
-
-[emit ('imports') once][importBlock(items)/][/emit]
-
+[emit ('imports') once][importBlockFor(items, genModel)/][/emit]
 /**
  * <!-- begin-user-doc -->
  * A representation of the literals of the enumeration '<em><b>[genEnum.formattedClassifierName()/]</b></em>',

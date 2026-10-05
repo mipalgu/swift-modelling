@@ -124,7 +124,8 @@ struct EMFJavaClassParityTests {
             .appendingPathComponent("swift-modelling-java-class-parity")
             .appendingPathComponent(UUID().uuidString)
         _ = try await GenerationPipeline.generate(
-            genModelURL: genModel, language: "java", outputDirectory: output)
+            genModelURL: genModel, language: "java", outputDirectory: output,
+            options: EMFParityTests.repositoryOptions)
         generatedDirectory = output
         return output
     }

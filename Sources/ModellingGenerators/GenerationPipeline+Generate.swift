@@ -45,6 +45,7 @@ extension GenerationPipeline {
         progress(GenerationProgressUpdate(message: "Assembling the \(language) templates"))
         let templateSet = try TemplateSet.assemble(language: language, templatePaths: options.templatePaths)
         defer { templateSet.remove() }
+        let layout = try templateSet.descriptor.layoutConfiguration(forStyle: options.codeStyle)
 
         progress(GenerationProgressUpdate(message: "Loading \(source.lastPathComponent)"))
         let resourceSet = ResourceSet()
@@ -85,6 +86,7 @@ extension GenerationPipeline {
             lineDelimiter: options.lineDelimiter ?? templateSet.descriptor.options.lineDelimiter ?? "\n",
             templateSearchPaths: options.templatePaths.map(\.path))
         if options.forceOverwrite { generatorOptions.redirectionPattern = nil }
+        generatorOptions.layout = layout
         let strategy = GenerationProgressStrategy(
             wrapping: MTLFileSystemStrategy(basePath: base.path, options: generatorOptions),
             outputDirectory: base, total: total, report: progress)

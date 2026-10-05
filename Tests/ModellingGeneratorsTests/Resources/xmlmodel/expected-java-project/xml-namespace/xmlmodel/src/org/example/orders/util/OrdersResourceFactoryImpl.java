@@ -2,7 +2,6 @@
  */
 package org.example.orders.util;
 
-
 import org.eclipse.emf.common.util.URI;
 
 import org.eclipse.emf.ecore.resource.Resource;
@@ -11,7 +10,6 @@ import org.eclipse.emf.ecore.resource.impl.ResourceFactoryImpl;
 
 import org.eclipse.emf.ecore.xmi.XMLResource;
 
-
 /**
  * <!-- begin-user-doc -->
  * The <b>Resource Factory</b> associated with the package.
@@ -19,39 +17,36 @@ import org.eclipse.emf.ecore.xmi.XMLResource;
  * @see org.example.orders.util.OrdersResourceImpl
  * @generated
  */
-public class OrdersResourceFactoryImpl extends ResourceFactoryImpl
-{
-  /**
-   * Creates an instance of the resource factory.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  public OrdersResourceFactoryImpl()
-  {
-    super();
-  }
+public class OrdersResourceFactoryImpl extends ResourceFactoryImpl {
+	/**
+	 * Creates an instance of the resource factory.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public OrdersResourceFactoryImpl() {
+		super();
+	}
 
-  /**
-   * Creates an instance of the resource.
-   * <!-- begin-user-doc -->
-   * <!-- end-user-doc -->
-   * @generated
-   */
-  @Override
-  public Resource createResource(URI uri)
-  {
-    XMLResource result = new OrdersResourceImpl(uri);
-    result.getDefaultSaveOptions().put(XMLResource.OPTION_EXTENDED_META_DATA, Boolean.TRUE);
-    result.getDefaultLoadOptions().put(XMLResource.OPTION_EXTENDED_META_DATA, Boolean.TRUE);
+	/**
+	 * Creates an instance of the resource.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public Resource createResource(URI uri) {
+		XMLResource result = new OrdersResourceImpl(uri);
+		result.getDefaultSaveOptions().put(XMLResource.OPTION_EXTENDED_META_DATA, Boolean.TRUE);
+		result.getDefaultLoadOptions().put(XMLResource.OPTION_EXTENDED_META_DATA, Boolean.TRUE);
 
-    result.getDefaultSaveOptions().put(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE);
+		result.getDefaultSaveOptions().put(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE);
 
-    result.getDefaultLoadOptions().put(XMLResource.OPTION_USE_ENCODED_ATTRIBUTE_STYLE, Boolean.TRUE);
-    result.getDefaultSaveOptions().put(XMLResource.OPTION_USE_ENCODED_ATTRIBUTE_STYLE, Boolean.TRUE);
+		result.getDefaultLoadOptions().put(XMLResource.OPTION_USE_ENCODED_ATTRIBUTE_STYLE, Boolean.TRUE);
+		result.getDefaultSaveOptions().put(XMLResource.OPTION_USE_ENCODED_ATTRIBUTE_STYLE, Boolean.TRUE);
 
-    result.getDefaultLoadOptions().put(XMLResource.OPTION_USE_LEXICAL_HANDLER, Boolean.TRUE);
-    return result;
-  }
+		result.getDefaultLoadOptions().put(XMLResource.OPTION_USE_LEXICAL_HANDLER, Boolean.TRUE);
+		return result;
+	}
 
 } //OrdersResourceFactoryImpl

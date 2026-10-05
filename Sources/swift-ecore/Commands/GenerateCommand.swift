@@ -8,6 +8,7 @@
 import ArgumentParser
 import ECore
 import Foundation
+import ModellingCommandLine
 import ModellingGenerators
 
 /// Command for generating code from models.
@@ -33,6 +34,13 @@ struct GenerateCommand: AsyncParsableCommand {
             templates of the same name, and a directory there that holds a template set adds a \
             language. Existing files are merged with the generated code unless --force-overwrite \
             or --diff says otherwise.
+
+            An Ecore model given for a template language is imported with the generator model \
+            defaults of the headless Eclipse generator. --defaults wizard gives the settings of \
+            the interactive Eclipse wizard instead, and --root-extends-class, --operation-reflection \
+            and --import-organizing (or their --no- forms) override single settings.
+
+            Code styles of the template sets (--code-style): \(CodeStyleOptions.bundledStyleList())
             """
     )
 
@@ -63,6 +71,14 @@ struct GenerateCommand: AsyncParsableCommand {
         name: .shortAndLong,
         help: "Target language: swift, cpp, c, llvm, or the name of a template set (see the discussion)")
     var language: String = "swift"
+
+    /// The preset and the overrides of the generator model defaults.
+    @OptionGroup(title: "Generator model defaults")
+    var genModelDefaults: GenModelDefaultsOptions
+
+    /// The code style of the generated text.
+    @OptionGroup(title: "Code style")
+    var codeStyle: CodeStyleOptions
 
     /// Directories whose template files replace the bundled templates.
     @Option(
@@ -103,6 +119,13 @@ struct GenerateCommand: AsyncParsableCommand {
         let templateURLs = templatePaths.map { URL(fileURLWithPath: $0) }
         let templateLanguages = TemplateSet.availableLanguages(templatePaths: templateURLs)
 
+        let importsEcore = extensionName == "ecore"
+            && templateLanguages.contains(language) && !CodeGenerator.supportedLanguages.contains(language)
+        if genModelDefaults.isGiven && !importsEcore {
+            throw ArgumentParser.ValidationError(
+                "The generator model defaults only apply to an Ecore model generated with a template language")
+        }
+
         if extensionName == "genmodel" {
             guard templateLanguages.contains(language) else {
                 throw templateLanguageError(templateLanguages)
@@ -115,6 +138,10 @@ struct GenerateCommand: AsyncParsableCommand {
         } else {
             guard CodeGenerator.supportedLanguages.contains(language) else {
                 throw templateLanguageError(templateLanguages)
+            }
+            if codeStyle.isGiven {
+                throw ArgumentParser.ValidationError(
+                    "--code-style only applies to a language with a template set, not to \(language)")
             }
             try await generateWithBuiltInGenerator(inputURL)
         }
@@ -135,6 +162,9 @@ struct GenerateCommand: AsyncParsableCommand {
         var options = GenerationOptions(
             templatePaths: templateURLs, forceOverwrite: forceOverwrite, diff: diff)
         if useModelDirectory { options.includeSourceRoot = true }
+        codeStyle.apply(to: &options)
+        var importOptions = GenModelImportOptions()
+        genModelDefaults.apply(to: &importOptions)
         let bar = GenerationProgressBar(verbose: verbose)
         if verbose {
             print("Generating \(language) code from: \(input.path)")
@@ -144,7 +174,7 @@ struct GenerateCommand: AsyncParsableCommand {
         do {
             result = try await ModellingGenerators.GenerationPipeline.generate(
                 inputURL: input, language: language, outputDirectory: URL(fileURLWithPath: output),
-                options: options, progress: bar.reporter)
+                importOptions: importOptions, options: options, progress: bar.reporter)
         } catch {
             bar.finish()
             throw error

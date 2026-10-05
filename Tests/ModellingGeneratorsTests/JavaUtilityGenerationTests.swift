@@ -26,7 +26,7 @@ struct JavaUtilityCase: Sendable, CustomTestStringConvertible {
     static let all: [JavaUtilityCase] = [
         JavaUtilityCase(
             fixture: "library", stem: "library",
-            options: GenModelImportOptions(basePackage: "org.example", copyright: "Copyright 2026 Example Pty Ltd"),
+            options: GenModelImportOptions(basePackage: "org.example", copyright: "Copyright 2026 Example Pty Ltd", defaults: .wizard),
             files: [
                 "org/example/library/util/LibraryAdapterFactory.java",
                 "org/example/library/util/LibrarySwitch.java",
@@ -78,7 +78,7 @@ struct JavaUtilityCase: Sendable, CustomTestStringConvertible {
             ]),
         JavaUtilityCase(
             fixture: "classes", stem: "classes",
-            options: GenModelImportOptions(basePackage: "org.example.shapes"),
+            options: GenModelImportOptions(basePackage: "org.example.shapes", defaults: .wizard),
             files: [
                 "org/example/shapes/classes/util/ClassesAdapterFactory.java",
                 "org/example/shapes/classes/util/ClassesSwitch.java",
@@ -115,8 +115,9 @@ struct JavaUtilityGenerationTests {
         let missing = Set(golden.files).subtracting(utilityPaths)
         #expect(missing.isEmpty, "missing generated files: \(missing.sorted())")
         for path in golden.files {
-            let expected = try String(contentsOf: generated.project.javaExpectation(path), encoding: .utf8)
-            #expect(try generated.text(path) == expected, "\(path) differs from its expectation")
+            try GoldenFiles.check(
+                try generated.text(path), against: "\(golden.fixture)/\(JavaGoldenCase.expectationFolder)/\(path)",
+                path)
         }
     }
 
@@ -143,7 +144,7 @@ struct JavaUtilityGenerationTests {
     @MainActor
     func adapterFactorySwitchedOff() async throws {
         let generated = try await GeneratedProject.make(
-            "library", stem: "library", options: GenModelImportOptions(basePackage: "org.example"))
+            "library", stem: "library", options: GenModelImportOptions(basePackage: "org.example", defaults: .wizard))
         defer { generated.remove() }
         let text = try String(contentsOf: generated.genModel, encoding: .utf8)
         try text.replacingOccurrences(of: "<genPackages ", with: "<genPackages adapterFactory=\"false\" ")

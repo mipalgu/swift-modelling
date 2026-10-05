@@ -17,5 +17,22 @@
   "options": {
     "lineDelimiter": "\n"
   },
-  "fileCountTemplate": "fileCount"
+  "fileCountTemplate": "fileCount",
+  "styles": {
+    "eclipse": {
+      "summary": "Tab indentation and the opening brace at the end of the preceding line, as Eclipse writes with its default Java formatter preferences",
+      "sourceIndent": "  ",
+      "targetIndent": "\t",
+      "openerPlacement": "sameLine",
+      "files": ["*.java"]
+    },
+    "emf": {
+      "summary": "Two-space indentation and the opening brace on its own line, as in the sources of the Eclipse Modeling Framework",
+      "sourceIndent": "  ",
+      "targetIndent": "  ",
+      "openerPlacement": "ownLine",
+      "files": ["*.java"]
+    }
+  },
+  "defaultStyle": "eclipse"
 }

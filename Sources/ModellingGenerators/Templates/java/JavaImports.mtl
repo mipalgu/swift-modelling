@@ -4,7 +4,8 @@
  *
  * A template collects the qualified name of the unit it writes as the first import, names types with
  * importedName, which registers an import and answers the name to write, and renders the import block
- * at the position of an emit block with importBlock. The rules follow the way Java names resolve: a simple name is used
+ * at the position of an emit block with importBlockFor, which groups the imports of a generator model that
+ * organises its imports and otherwise separates packages with a blank line. The rules follow the way Java names resolve: a simple name is used
  * for the first type that claims it, for types of java.lang and for types of the unit's own package;
  * any other type with a claimed simple name is written with its qualified name.
  **/]
@@ -62,11 +63,59 @@
 [query public importedTypes(names : OclAny) : OclAny = names->select(n | n.packageOf() <> names->first().packageOf())->sortedBy(n | n)/]
 
 [**
- * Writes the import statements, with a blank line between packages. Each statement begins on a new line.
+ * The top-level package names of organised imports in the order of their groups; types of other
+ * top-level packages follow in a group of their own.
+ **/]
+[query public importGroupOrder() : OclAny = Sequence{'java', 'javax', 'org', 'com'}/]
+
+[**
+ * The top-level package name of a qualified name.
+ **/]
+[query public topLevelPackage(qualifiedName : String) : String = if qualifiedName.index('.') > 0 then qualifiedName.substring(1, qualifiedName.index('.') - 1) else qualifiedName endif/]
+
+[**
+ * The position of the group of an organised import: the index of its top-level package in the group order,
+ * or after all of them for any other package.
+ **/]
+[query public importGroup(qualifiedName : String) : Integer = if importGroupOrder()->includes(qualifiedName.topLevelPackage()) then importGroupOrder()->indexOf(qualifiedName.topLevelPackage()) else importGroupOrder()->size() + 1 endif/]
+
+[**
+ * The imports to write when imports are organised: the same names as importedTypes, grouped by top-level
+ * package and sorted within each group.
+ **/]
+[query public organisedImportedTypes(names : OclAny) : OclAny = importedTypes(names)->sortedBy(n | n.importGroup().toString() + n)/]
+
+[**
+ * Writes the import statements for a generator model. A generator model that organises its imports gets the
+ * imports in groups separated by a blank line, otherwise there is a blank line between packages.
+ * Each statement begins on a new line.
+ **/]
+[template public importBlockFor(names : OclAny, genModel : GenModel)]
+[if (genModel.isOn('importOrganizing'))]
+[organisedImportBlock(names)/]
+[else]
+[importBlock(names)/]
+[/if]
+[/template]
+
+[**
+ * Writes the import statements with a blank line between packages. Each statement begins on a new line.
  **/]
 [template public importBlock(names : OclAny)]
 [for (n | importedTypes(names))]
 [if (i > 1 and importedTypes(names)->at(i - 1).packageOf() <> n.packageOf())]
+
+[/if]
+import [n/];
+[/for]
+[/template]
+
+[**
+ * Writes the import statements in groups separated by a blank line. Each statement begins on a new line.
+ **/]
+[template public organisedImportBlock(names : OclAny)]
+[for (n | organisedImportedTypes(names))]
+[if (i > 1 and organisedImportedTypes(names)->at(i - 1).importGroup() <> n.importGroup())]
 
 [/if]
 import [n/];

@@ -18,10 +18,10 @@ func edited(_ text: String, replacing target: String, with replacement: String) 
 
 @Suite("Reloading an existing generator model")
 struct GenModelReconcileTests {
-    /// Generates the library model, applies the edits a user might make, and changes the source model.
+    /// Generates the library model with the wizard defaults, applies the edits a user might make, and changes the source model.
     @MainActor
     private func editedLibrary() async throws -> (project: FixtureProject, genModel: URL) {
-        let generated = try await generate(OracleCase.all[0])
+        let generated = try await generate(OracleCase.all[5])
         let project = generated.project
         var text = generated.text
         text = try edited(text, replacing: #"modelName="Library""#, with: #"modelName="MyLibrary""#)

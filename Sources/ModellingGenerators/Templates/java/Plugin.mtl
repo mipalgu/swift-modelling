@@ -26,9 +26,7 @@
 [header(genModel)/]
 package [genModel.modelPluginPackageName()/];
 
-
-[emit ('imports') once][importBlock(items)/][/emit]
-
+[emit ('imports') once][importBlockFor(items, genModel)/][/emit]
 /**
  * This is the central singleton for the [genModel.setting('modelName')/] model plugin.
  * <!-- begin-user-doc -->

@@ -27,7 +27,7 @@ For every package the set writes the package interface and implementation, the f
 - `generate.mtl` is the main module. It declares the merge and writes the files of each package.
 - `JavaNames.mtl` holds the naming rules: reserved word escaping, package names with their suffixes, interface and implementation class names, accessors and the constants of enumeration literals.
 - `JavaTypes.mtl` maps built-in data types with the bundled type table, finds the Java type of a classifier and decides on `EList` and `EMap`.
-- `JavaImports.mtl` implements imports: simple-name conflicts, `java.lang`, the package of the unit that is written, sorting and grouping.
+- `JavaImports.mtl` implements imports: simple-name conflicts, `java.lang`, the package of the unit that is written, sorting and grouping. A generator model that organises its imports (`importOrganizing`) gets explicit imports in groups of `java`, `javax`, `org`, `com` and other packages; otherwise the factory implementation, switch, adapter factory and validator import the interface package with a wildcard.
 - `JavaDocumentation.mtl` writes model tags, API tags from documentation, string literals and escapes.
 - `Header.mtl` writes the copyright comment that opens a file.
 - `EnumClass.mtl` writes the file of an enumeration.
@@ -40,6 +40,12 @@ For every package the set writes the package interface and implementation, the f
 A Java file that exists is merged with the generated text. A member whose comment carries `@generated` is regenerated, a member marked `@generated NOT` is kept, and members without the tag are kept. ``GenerationOptions/forceOverwrite`` replaces the file; ``GenerationOptions/diff`` writes the generated text beside it as `.<name>.new`.
 
 The project files are not merged. An existing plugin descriptor, bundle manifest and plugin properties file stay as they are unless the overwrite is forced, and the build properties are replaced only while there is no plugin descriptor yet or when the overwrite is forced. The properties files are written in ISO-8859-1, with a Unicode escape for every character beyond it.
+
+### Code styles
+
+The templates write the layout of the Eclipse Modeling Framework repository sources: two-space indentation and the opening brace on its own line. The descriptor of the set declares two code styles that convert it, chosen with ``GenerationOptions/codeStyle``. `eclipse`, the default, indents with tabs and writes the opening brace at the end of the preceding line, as the Eclipse generator leaves the files in a workspace with the default Java formatter preferences. `emf` keeps the layout of the templates. Both styles share the blank lines of the Eclipse output: one blank line before and after the import block, or two blank lines between the package statement and the first comment when there are no imports; two blank lines between the identifier constants and the accessors of a package interface; and none between the constructor of a package implementation and the comment that follows it. Only `*.java` files are converted.
+
+Switching the style of an existing tree is safe: generated members are regenerated in the new style, while members that you marked `@generated NOT` or wrote yourself keep their layout, so a mixture remains until the overwrite is forced. The merge also keeps the closing brace of a nested type, such as the literals interface of a package interface, and the body of an operation that has no implementation, so those lines keep the old layout too.
 
 ### Checking the output
 
