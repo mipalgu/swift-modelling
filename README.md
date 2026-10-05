@@ -94,6 +94,32 @@ swift run swift-atl --help
 swift run swift-mtl --help
 ```
 
+
+## From Ecore to Java
+
+<!-- from-ecore-to-java:begin -->
+Turn an Ecore model into an Eclipse generator model (`.genmodel`) and into Java that compiles against the EMF runtime. The example is the extended library model of the Eclipse Modeling Framework, which is published under the Eclipse Public License and therefore downloaded rather than included:
+
+```bash
+mkdir -p extlibrary/model && cd extlibrary/model
+curl -LO https://raw.githubusercontent.com/eclipse-emf/org.eclipse.emf/master/examples/org.eclipse.emf.examples.library/model/extlibrary.ecore
+cd ..
+
+# Two steps: write model/extlibrary.genmodel, then generate Java from it
+swift-ecore genmodel model/extlibrary.ecore --base-package org.example
+swift-ecore generate --language java model/extlibrary.genmodel --output src-gen
+
+# One step: no generator model is left behind
+swift-atl generate model/extlibrary.ecore --language java --base-package org.example --output src-gen
+```
+
+Both routes write the same 36 Java files below `src-gen/org/example/extlibrary`. Add `--model-directory` to `swift-ecore generate` to write below the model directory of the generator model together with `plugin.xml`, `MANIFEST.MF` and the other project files of an Eclipse model project. Regenerating merges into existing files: members tagged `@generated` are rewritten, members tagged `@generated NOT` and your own members are kept; `--diff` and `--force-overwrite` change that. To compile the result, `Scripts/fetch-emf-runtime.sh` downloads the EMF runtime jars and prints the class path.
+
+`--defaults headless|wizard`, `--root-extends-class`, `--operation-reflection`, `--import-organizing` and `--code-style eclipse|emf` choose which of Eclipse's behaviours the output follows.
+
+The [documentation](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/convertingecoretojava/index.html) lists every option and the files written, and [Matching Eclipse](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/matchingeclipse/index.html) explains precisely how the output relates to the Eclipse generator.
+<!-- from-ecore-to-java:end -->
+
 ## Usage
 
 The `swift-ecore` command-line tool provides comprehensive Eclipse Modelling Framework functionality for Swift. All commands except `info` support the `-v, --verbose` flag for detailed output, and every command supports `--help` for usage information.

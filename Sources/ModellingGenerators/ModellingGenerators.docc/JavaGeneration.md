@@ -4,7 +4,7 @@ Generate Java model code from a generator model.
 
 ## Overview
 
-The bundled `java` template set generates Java for the Eclipse Modeling Framework runtime. Its output follows the Eclipse code generator for the default options, including the `@generated` tags in the documentation comments, so files can be merged with hand-written code.
+The bundled `java` template set generates Java for the Eclipse Modeling Framework runtime. Its output follows the Eclipse code generator, including the `@generated` tags in the documentation comments, so files can be merged with hand-written code. <doc:MatchingEclipse> describes how, and which Eclipse defaults and code styles can be chosen.
 
 ```swift
 var options = GenerationOptions()
@@ -16,28 +16,34 @@ let result = try await GenerationPipeline.generate(
     options: options)
 ```
 
-From the command line, `swift-ecore generate --language java model/library.genmodel --output src-gen` and `swift-atl generate model/library.ecore --language java --output src-gen` do the same; <doc:GettingStarted> walks through the chain.
+From the command line, `swift-ecore generate --language java model/library.genmodel --output src-gen` and `swift-atl generate model/library.ecore --language java --output src-gen` do the same; <doc:ConvertingEcoreToJava> walks through the chain and lists every option.
 
 ### What is generated
 
-For every package the set writes the package interface and implementation, the factory interface and implementation, the interface and implementation class of every class, the Java enum of every enumeration, and, where the package asks for them, the XML processor, resource factory and resource, the switch and adapter factory, and the validator. When the output location includes the source directory of the model project it also writes the plugin class, plugin properties, build properties, bundle manifest and plugin descriptor. Compliance level 5.0 and higher is covered; generic type parameters, reflective, dynamic and virtual feature delegation, packed enumeration flags and the Google Web Toolkit platform are not.
+For every package the set writes the package interface and implementation, the factory interface and implementation, the interface and implementation class of every class, and the Java enum of every enumeration. Where the package asks for them it also writes the XML processor, resource factory and resource, the switch and adapter factory, and the validator. When the output location includes the source directory of the model project (`--model-directory`), it also writes the plugin class when the generator model names one, plugin properties, build properties, bundle manifest and plugin descriptor.
+
+Compliance level 5.0 and higher is covered. <doc:MatchingEclipse> lists the model features that are not.
 
 ### Modules of the set
 
 - `generate.mtl` is the main module. It declares the merge and writes the files of each package.
+- `Class.mtl` writes the interface and implementation of a class, with `ClassQueries.mtl` (what a class contains), `ClassFeature.mtl` (fields and accessors), `ClassOperation.mtl` (operations), `ClassReflection.mtl` (the reflective methods) and `ClassModelInfo.mtl` (the model tags of documentation comments).
+- `PackageClass.mtl` writes the package interface and implementation, and `PackageNames.mtl` holds its queries.
+- `FactoryClass.mtl` writes the factory interface and implementation.
+- `EnumClass.mtl` writes the file of an enumeration.
+- `SwitchClass.mtl` and `AdapterFactoryClass.mtl` write the switch and the adapter factory of a package that has classes and asks for adapter factories. `ValidatorClass.mtl` writes the validator of a package that has constraints (annotated constraints, invariant operations and data type facets). `JavaUtilities.mtl` holds what the three share.
+- `XMLProcessorClass.mtl`, `ResourceFactoryClass.mtl`, `ResourceClass.mtl` and `JavaResources.mtl` write the resource support of a package.
+- `ProjectFiles.mtl` writes the project files: `Plugin.mtl` (the plugin class), `PluginXML.mtl`, `PluginProperties.mtl`, `BuildProperties.mtl` and `ManifestMF.mtl`, with `JavaProject.mtl` deciding which of them a model project needs.
 - `JavaNames.mtl` holds the naming rules: reserved word escaping, package names with their suffixes, interface and implementation class names, accessors and the constants of enumeration literals.
 - `JavaTypes.mtl` maps built-in data types with the bundled type table, finds the Java type of a classifier and decides on `EList` and `EMap`.
 - `JavaImports.mtl` implements imports: simple-name conflicts, `java.lang`, the package of the unit that is written, sorting and grouping. A generator model that organises its imports (`importOrganizing`) gets explicit imports in groups of `java`, `javax`, `org`, `com` and other packages; otherwise the factory implementation, switch, adapter factory and validator import the interface package with a wildcard.
 - `JavaDocumentation.mtl` writes model tags, API tags from documentation, string literals and escapes.
 - `Header.mtl` writes the copyright comment that opens a file.
-- `EnumClass.mtl` writes the file of an enumeration.
-- `PackageClass.mtl` writes the package interface and the package implementation, and `PackageNames.mtl` holds its queries. Generic types and type parameters in the metamodel, the GWT platform and compliance levels below 5.0 are not supported.
-- `SwitchClass.mtl` and `AdapterFactoryClass.mtl` write the switch and the adapter factory of a package that has classes and asks for adapter factories. `ValidatorClass.mtl` writes the validator of a package that has constraints (annotated constraints, invariant operations and data type facets). `JavaUtilities.mtl` holds what the three share. Classes with type parameters, external interfaces, runtimes older than 2.7 and facets that derive from base, item or member types are not covered.
 - `TypeMapping.ecore` and `java-types.xmi` are the data model with the type table, the reserved words and the types that need no import.
 
 ### Existing files
 
-A Java file that exists is merged with the generated text. A member whose comment carries `@generated` is regenerated, a member marked `@generated NOT` is kept, and members without the tag are kept. ``GenerationOptions/forceOverwrite`` replaces the file; ``GenerationOptions/diff`` writes the generated text beside it as `.<name>.new`.
+A Java file that exists is merged with the generated text. A member whose comment carries `@generated` is regenerated, a member marked `@generated NOT` is kept, and members without the tag are kept. ``GenerationOptions/forceOverwrite`` replaces the file; ``GenerationOptions/diff`` writes the generated text beside it as `.<name>.new` (hidden, for example `.Book.java.new`). With both set, the overwrite wins.
 
 The project files are not merged. An existing plugin descriptor, bundle manifest and plugin properties file stay as they are unless the overwrite is forced, and the build properties are replaced only while there is no plugin descriptor yet or when the overwrite is forced. The properties files are written in ISO-8859-1, with a Unicode escape for every character beyond it.
 

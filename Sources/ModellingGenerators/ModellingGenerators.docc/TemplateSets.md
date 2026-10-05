@@ -85,13 +85,14 @@ A set can bundle small models for the templates to read, such as a table that ma
 | `featureID(f)`, `featureCount()`, `operationID(o)`, `operationCount()`, `classifierID()`, `classifierIDName()` | Numbering. |
 | `isMapEntry()`, `labelFeature()`, `isInterface()`, `isAbstract()`, `uniqueValuedGenEnumLiterals()` | Class and enumeration queries. |
 | `ecorePackage()`, `ecoreClass()`, `ecoreFeature()`, `ecoreEnum()`, `ecoreEnumLiteral()`, `ecoreDataType()`, `genClassifier()` | The native Ecore element, or the generator classifier for an Ecore classifier. |
-| `isContainment()`, `isContainer()`, `isBidirectional()`, `reverseGenFeature()`, `isListType()`, `isRequired()`, `isChangeable()`, `isVolatile()`, `isTransient()`, `isDerived()`, `isUnsettable()`, `isResolveProxies()`, `hasDefault()`, `defaultValueLiteral()`, `lowerBound()`, `upperBound()` | Properties of a feature. |
+| `isAttributeType()`, `isReferenceType()`, `isContainment()`, `isContainer()`, `isBidirectional()`, `reverseGenFeature()`, `isListType()`, `isRequired()`, `isChangeable()`, `isVolatile()`, `isTransient()`, `isDerived()`, `isUnsettable()`, `isResolveProxies()`, `hasDefault()`, `defaultValueLiteral()`, `lowerBound()`, `upperBound()` | Properties of a feature. |
 | `setting('name')`, `isSetting('name')` | A setting of the generator model with the default of the metamodel; whether it is set explicitly. |
 | `documentation()`, `hasDocumentation()`, `annotationDetail(source, key)` | Model documentation and annotation details. |
 | `lines()`, `indentLines(prefix)`, `join(separator)`, `characterCodes()`, `fromCharacterCode()`, `toHexString(width)`, `toOctalString(width)` | Text helpers that the AQL library lacks. |
 | `detailKeys()`, `detailValue(key)` | The details of an annotation, in the order the model lists them. |
 | `serialisedEcore()`, `serialisedEcore(source)` | The Ecore model of a generator package as `.ecore` text, optionally without the annotations of one source. |
 | `templateData('name')` | The root objects of a data model of the set. |
+| `layoutIncludesSourceRoot()` | Whether the output location contains the source directory of the generator model (`--model-directory`), as opposed to being that directory. |
 
 Services with parentheses win over stored references of the same name, so derived navigation is written `element.genPackage()`; `element.genPackage` would read the stored reference of the generator metamodel.
 

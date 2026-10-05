@@ -1,38 +1,19 @@
 # Getting Started
 
-Take an Ecore model to a generator model and to Java, change the templates, and add a language.
+Change the templates, add a language and call the generator from Swift.
 
 ## Overview
 
-This article follows one model, `library.ecore`, through the whole chain with the command line tools and with the library. The model lives in the Eclipse layout `library/model/library.ecore`.
-
-### From Ecore to a generator model
-
-A generator model (`.genmodel`) holds the settings that decide what code is generated for an Ecore model. Create it with `swift-ecore genmodel`, or with `swift-atl generate --language genmodel`; both run the bundled ATL transformation `Ecore2GenModel.atl`, which gives the model the settings that the Eclipse Ecore importer gives a new model:
+The first step is to convert a model; <doc:ConvertingEcoreToJava> walks through that with the extended library example of the Eclipse Modeling Framework, and <doc:MatchingEclipse> explains how the output relates to Eclipse's. In short:
 
 ```bash
 swift-ecore genmodel library/model/library.ecore --base-package org.example
-```
-
-The generator model is written beside the Ecore model as `library.genmodel`. Edit it to change settings, for example the model directory or the compliance level; it opens unchanged in the Eclipse tooling. Running the command again with `--reload library/model/library.genmodel` keeps your settings while the structure follows the Ecore model.
-
-Operation reflection, the root class and import organising are left at the defaults of the generator metamodel, as the headless Eclipse generator does. `--defaults wizard` gives the settings of the interactive Eclipse wizard instead, and `--root-extends-class`, `--operation-reflection` and `--import-organizing` (or their `--no-` forms) override single settings. In code, these are ``GenModelImportOptions/defaults`` (a ``GenModelDefaults``) and the options of the same names.
-
-To use your own transformation, give `swift-atl generate --transformations` a file, or a directory that holds `Ecore2GenModel.atl`. The replacement receives the same parameters as the bundled one (see ``GenModelImportConstants/Parameter``).
-
-### From the generator model to Java
-
-```bash
 swift-ecore generate --language java library/model/library.genmodel --output src-gen
 ```
 
-The packages of the model are written below `src-gen`: `src-gen/org/example/library/Book.java`, `src-gen/org/example/library/impl/BookImpl.java`, the package and factory classes, enumerations, and the utility classes. Giving the Ecore model instead imports it into a temporary generator model on the way, and `swift-atl generate library/model/library.ecore --language java --output src-gen` does the same through the ATL command.
+The first command writes `library/model/library.genmodel` beside the Ecore model; the second writes the Java packages below `src-gen`. The Eclipse layout `library/model/library.ecore` names the project `library`. `swift-atl generate library/model/library.ecore --language java --output src-gen` does both in one step.
 
-A progress bar with the number of files appears on an interactive terminal; with `--verbose` every file is reported on its own line.
-
-### Regenerating
-
-Generating into a directory that holds earlier output merges the new text with the existing files. A member whose documentation comment carries `@generated` is regenerated; mark a member `@generated NOT` to keep your version, or add members without the tag, and they are kept. Two options change this: `--force-overwrite` replaces everything, and `--diff` leaves existing files alone and writes the generated text beside them as `.<name>.new`.
+To use your own Ecore-to-generator-model transformation, give `swift-atl generate --transformations` a file, or a directory that holds `Ecore2GenModel.atl`. The replacement receives the same parameters as the bundled one (see ``GenModelImportConstants/Parameter``).
 
 ### Customising templates
 
@@ -96,7 +77,7 @@ The command line tools are thin layers over ``GenerationPipeline``:
 let model = URL(fileURLWithPath: "library/model/library.ecore")
 
 // Ecore to generator model
-var importing = GenModelImportOptions(basePackage: "org.example", defaults: .wizard)
+let importing = GenModelImportOptions(basePackage: "org.example", defaults: .wizard)
 let created = try await GenerationPipeline.ecoreToGenModel(ecoreURLs: [model], options: importing)
 
 // Generator model, or Ecore model, to Java

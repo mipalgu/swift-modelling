@@ -41,6 +41,8 @@ dependencies: [
 The package provides three CLI tools: swift-ecore for model
 validation and conversion, swift-atl for model-to-model
 transformations, and swift-mtl for template-based code generation.
-For details, see
-[Getting Started](documentation/swiftmodelling/gettingstarted) and
-[Understanding Swift Modelling](documentation/swiftmodelling/understandingswiftmodelling).
+For converting Ecore models into generator models and Java, see
+[Converting Ecore to GenModel and Java](documentation/modellinggenerators/convertingecoretojava/index.html)
+and [Matching Eclipse](documentation/modellinggenerators/matchingeclipse/index.html).
+For the rest, see the [SwiftModelling](documentation/swiftmodelling/swiftmodelling/index.html)
+overview and its [tutorials](tutorials/tutorials/index.html).
