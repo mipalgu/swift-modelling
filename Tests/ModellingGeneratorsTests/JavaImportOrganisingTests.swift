@@ -151,4 +151,20 @@ struct JavaImportOrganisingTests {
                 == "import java.io.File;\nimport java.util.List;\n\nimport javax.x.X;\n\nimport org.a.A;\nimport org.b.B;\n\nimport com.c.C;\n\nimport acme.Q;\nimport zed.Z;\n"
         )
     }
+
+    @Test("Without operation reflection the package implementation imports the type of its operation variables")
+    @MainActor
+    func operationVariablesAreImported() async throws {
+        for organising in [false, true] {
+            let generated = try await GeneratedProject.make(
+                "library", stem: "library",
+                options: GenModelImportOptions(
+                    basePackage: "org.example", operationReflection: false, importOrganizing: organising))
+            defer { generated.remove() }
+            try await generated.generate()
+            let text = try generated.text("org/example/library/impl/LibraryPackageImpl.java")
+            #expect(text.contains("EOperation op = addEOperation("), "organising \(organising)")
+            #expect(text.contains("import org.eclipse.emf.ecore.EOperation;"), "organising \(organising)")
+        }
+    }
 }

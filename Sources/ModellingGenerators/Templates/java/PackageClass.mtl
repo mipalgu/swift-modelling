@@ -1014,7 +1014,7 @@ public interface [genPackage.packageInterfaceName()/] extends [importedName(ePac
 [for (genOperation : GenOperation | genClass.genOperations)]
 [let operation : OclAny = genOperation.nativeOperation()]
 
-    [if (operation.eParameters->notEmpty() or operation.eExceptions->notEmpty())][if (genClass.operationDeclaresVariable(genOperation))]EOperation [/if]op = [/if][if (reflection)]initEOperation(get[genOperation.operationAccessorName()/]()[else]addEOperation([genClass.classifierInstanceName()/][/if], [if (operation.eType.oclIsUndefined())]null[else][genPackage.classifierExpression(operation.eType)/][/if], "[genOperation.name()/]", [operation.lowerBound/], [operation.upperBound/], [operation.uniqueFlag()/], [operation.orderedFlag()/]);[nonNLS(genModel, 1)/]
+    [if (operation.eParameters->notEmpty() or operation.eExceptions->notEmpty())][if (genClass.operationDeclaresVariable(genOperation))][importedName('org.eclipse.emf.ecore.EOperation')/] [/if]op = [/if][if (reflection)]initEOperation(get[genOperation.operationAccessorName()/]()[else]addEOperation([genClass.classifierInstanceName()/][/if], [if (operation.eType.oclIsUndefined())]null[else][genPackage.classifierExpression(operation.eType)/][/if], "[genOperation.name()/]", [operation.lowerBound/], [operation.upperBound/], [operation.uniqueFlag()/], [operation.orderedFlag()/]);[nonNLS(genModel, 1)/]
 [for (parameter : OclAny | operation.eParameters)]
     addEParameter(op, [genPackage.classifierExpression(parameter.eType)/], "[parameter.name/]", [parameter.lowerBound/], [parameter.upperBound/], [parameter.uniqueFlag()/], [parameter.orderedFlag()/]);[nonNLS(genModel, 1)/]
 [/for]
