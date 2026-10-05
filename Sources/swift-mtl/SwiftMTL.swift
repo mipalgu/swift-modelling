@@ -50,7 +50,7 @@ struct SwiftMTLCommand: AsyncParsableCommand {
             Acceleo-specific extensions where applicable, while providing enhanced performance
             through Swift's concurrent execution model and type safety.
             """,
-        version: "0.2.0",
+        version: "0.2.1",
         subcommands: [
             GenerateCommand.self,
             ParseCommand.self,
