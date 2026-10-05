@@ -78,7 +78,10 @@ struct GenModelReconcileTests {
         #expect(!text.contains("operationReflection"))
         #expect(text.contains(#"<genPackages prefix="Lib" basePackage="org.example""#))
         #expect(text.contains(#"<genClasses image="false" ecoreClass="library.ecore#//Book">"#))
-        #expect(text.contains(#"property="Readonly" createChild="false" propertyDescription="Page count" ecoreFeature="ecore:EAttribute library.ecore#//Book/pages""#))
+        #expect(text.contains("""
+            property="Readonly" createChild="false" propertyDescription="Page count"
+                      ecoreFeature="ecore:EAttribute library.ecore#//Book/pages"
+            """))
         #expect(text.contains(#"usedGenPackages="platform:/plugin/org.example/model/Other.genmodel#//other""#))
         #expect(text.contains(#"<genFeatures createChild="false" ecoreFeature="ecore:EAttribute library.ecore#//Book/subtitle"/>"#))
         #expect(!text.contains("Writer/aliases"))
@@ -184,7 +187,7 @@ struct GenModelReconcileTests {
         let result = try await GenerationPipeline.ecoreToGenModel(
             ecoreURLs: [generated.project.model("library.ecore")], options: options)
         let text = try String(contentsOf: result.url, encoding: .utf8)
-        #expect(text.contains(##"labelFeature="#//@genPackages.0/@genClasses.2/@genFeatures.1""##))
+        #expect(text.contains(##"labelFeature="#//library/Book/category""##))
     }
 
     @Test("Many-valued settings of the existing model are kept")
