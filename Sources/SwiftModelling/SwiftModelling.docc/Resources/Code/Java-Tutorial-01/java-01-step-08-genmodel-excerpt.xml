@@ -1,0 +1,10 @@
+  <foreignModel>extlibrary.ecore</foreignModel>
+  <genPackages prefix="EXTLibrary" basePackage="org.eclipse.emf.examples" resource="XML" disposableProviderFactory="true" ecorePackage="extlibrary.ecore#/">
+    <genEnums typeSafeEnumCompatible="false" ecoreEnum="extlibrary.ecore#//BookCategory">
+      <genEnumLiterals ecoreEnumLiteral="extlibrary.ecore#//BookCategory/Mystery"/>
+      <genEnumLiterals ecoreEnumLiteral="extlibrary.ecore#//BookCategory/ScienceFiction"/>
+      <genEnumLiterals ecoreEnumLiteral="extlibrary.ecore#//BookCategory/Biography"/>
+    </genEnums>
+    <genClasses ecoreClass="extlibrary.ecore#//Book">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute extlibrary.ecore#//Book/title"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute extlibrary.ecore#//Book/pages"/>

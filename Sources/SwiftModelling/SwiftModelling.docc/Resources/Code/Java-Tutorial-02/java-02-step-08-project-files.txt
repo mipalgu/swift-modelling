@@ -1,0 +1,6 @@
+project/org.example.extlibrary/META-INF/MANIFEST.MF
+project/org.example.extlibrary/build.properties
+project/org.example.extlibrary/plugin.properties
+project/org.example.extlibrary/plugin.xml
+project/org.example.extlibrary/src/org/eclipse/emf/examples/extlibrary/Book.java
+...

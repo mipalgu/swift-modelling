@@ -1,0 +1,289 @@
+@Tutorial(time: 45) {
+    @Intro(title: "From a Generator Model to Java") {
+        Generate Java for the Eclipse Modeling Framework from the generator model of the extended library example, keep your own code when you generate again, and change how the generated code looks.
+
+        You will use the files from <doc:Java-01-ecore-to-genmodel>: `extlibrary.ecore`, `extlibrary.genmodel`, and the generator model with its own settings in `generated/extlibrary.genmodel`. The last section compiles the result, which needs a Java development kit.
+
+        @Image(source: "mtl-code-generation.svg", alt: "Code generation from a generator model")
+    }
+
+    @Section(title: "Generating Java") {
+        @ContentAndMedia {
+            The `generate` command turns a generator model into source files. The bundled `java` template set follows the Eclipse code generator, including the `@generated` tags in the documentation comments that make regeneration safe.
+        }
+
+        @Steps {
+            @Step {
+                Generate Java into the directory `src`.
+
+                @Code(name: "Terminal", file: java-02-step-01-generate.sh)
+
+                `--language java` selects the template set, and `-o` is the directory that receives the files. The packages of the model are written below it, in the directories that their Java package names give.
+            }
+
+            @Step {
+                The command reports how many files it wrote. On an interactive terminal a progress bar shows the work while it runs, and `--verbose` names every file.
+
+                @Code(name: "Output", file: java-02-step-02-generate-output.txt)
+            }
+
+            @Step {
+                List what was generated.
+
+                @Code(name: "Terminal", file: java-02-step-03-list-files.sh)
+            }
+
+            @Step {
+                The package directory holds an interface for every class, the Java enumeration, and the package and factory interfaces. The `impl` directory holds the implementation classes, and the package and factory implementations. The `util` directory holds the switch, adapter factory, XML processor, resource and resource factory.
+
+                @Code(name: "Files (abridged)", file: java-02-step-04-file-list.txt)
+
+                Every class of the model yields an interface and an `Impl` class, so the extended library gives thirty-six files in all.
+            }
+
+            @Step {
+                Open `Book.java`. Each feature has an accessor with documentation that records where it came from.
+
+                @Code(name: "Book.java (excerpt)", file: java-02-step-05-book-interface.java)
+
+                The `@model` tag and the `@see` reference to the package class are what the Eclipse tooling reads back, and `@generated` marks the member as owned by the generator.
+            }
+
+            @Step {
+                `BookImpl.java` implements the accessor.
+
+                @Code(name: "BookImpl.java (excerpt)", file: java-02-step-06-book-impl.java)
+
+                The generated code runs against the EMF runtime libraries, which the last section of this tutorial fetches.
+            }
+
+            @Step {
+                Generate a complete Eclipse project instead of bare sources.
+
+                @Code(name: "Terminal", file: java-02-step-07-model-directory.sh)
+
+                `--model-directory` writes below the model directory of the generator model, here `project/org.example.extlibrary/src`, and adds the project files beside it. The generator model that you created with `--model-project` names the project.
+            }
+
+            @Step {
+                The project files are the bundle manifest, the plug-in descriptor, the plug-in properties and the build properties.
+
+                @Code(name: "Files (abridged)", file: java-02-step-08-project-files.txt)
+            }
+        }
+    }
+
+    @Section(title: "Regenerating Safely") {
+        @ContentAndMedia {
+            A model changes, and the generated code must follow it without losing what you wrote. When a file already exists, the generator merges its new text with it: a member whose documentation comment carries `@generated` is regenerated, a member marked `@generated NOT` is kept, and members without the tag are kept as well.
+        }
+
+        @Steps {
+            @Step {
+                Edit `BookImpl.java`: change the body of `getTitle`, and add `NOT` to its tag, as the Eclipse tooling does. You may also describe your change in the comment.
+
+                @Code(name: "BookImpl.java (edited)", file: java-02-step-09-edited-member.java)
+            }
+
+            @Step {
+                Generate again, after changing the model if you like.
+
+                @Code(name: "Terminal", file: java-02-step-10-regenerate.sh)
+
+                Your edited `getTitle` is still there, and every other member that carries a plain `@generated` tag is brought up to date.
+            }
+
+            @Step {
+                See what would change without touching your files.
+
+                @Code(name: "Terminal", file: java-02-step-11-diff.sh)
+
+                `--diff` leaves existing files alone and writes the generated text beside them as hidden files named `.<name>.new`, for example `.BookImpl.java.new`. Compare them with your tools of choice.
+            }
+
+            @Step {
+                Throw your edits away when you want the generator's version.
+
+                @Code(name: "Terminal", file: java-02-step-12-force.sh)
+
+                `--force-overwrite` replaces every existing file without merging.
+            }
+        }
+    }
+
+    @Section(title: "In One Step") {
+        @ContentAndMedia {
+            You do not have to create the generator model first. Both tools accept the Ecore model and make a temporary generator model on the way.
+        }
+
+        @Steps {
+            @Step {
+                Go from the Ecore model to Java with `swift-atl`.
+
+                @Code(name: "Terminal", file: java-02-step-13-single-step.sh)
+
+                The settings that `genmodel` takes, such as `--base-package`, `--prefix`, `--copyright` and `--jdk-level`, are available here, and the result is the same as the two commands in sequence. Without `--output`, the files go to a directory called `Generated`.
+            }
+
+            @Step {
+                `swift-ecore generate` also accepts the Ecore model.
+
+                @Code(name: "Terminal", file: java-02-step-14-ecore-input.sh)
+
+                This imports the model with the default settings and no base package, so the package directory is `extlibrary`. Create the generator model first when you want to choose the settings.
+            }
+        }
+    }
+
+    @Section(title: "Customising Templates") {
+        @ContentAndMedia {
+            The templates are ordinary Model-to-Text modules. `--template-path` names a directory whose files replace the bundled files of the same name, so you change one part of the output without copying the rest.
+        }
+
+        @Steps {
+            @Step {
+                Start from a copy of the bundled `Header.mtl`, change its `header` template, and save the result as `my-templates/Header.mtl`.
+
+                @Code(name: "my-templates/Header.mtl", file: java-02-step-15-header-template.mtl)
+
+                `Header.mtl` writes the comment that opens every generated file. The bundled module is `Sources/ModellingGenerators/Templates/java/Header.mtl` in the repository. Keep its queries, because other modules call them and the generator stops when they are missing. Only the `header` template changes here: it still writes the copyright text, if the generator model has one, and adds a line.
+            }
+
+            @Step {
+                Generate with the replacement.
+
+                @Code(name: "Terminal", file: java-02-step-16-template-path.sh)
+
+                Every generated file now opens with your comment. The option can be repeated, and later directories win over earlier ones. The `TemplateSets` article of the ModellingGenerators documentation describes the modules of the set, the services that templates can call, and how to add a language of your own.
+            }
+        }
+    }
+
+    @Section(title: "Code Style") {
+        @ContentAndMedia {
+            Generated code can follow two layouts. Choose the one that matches your project, so that regenerating does not reformat files that you edited.
+        }
+
+        @Steps {
+            @Step {
+                Write the layout of the EMF sources.
+
+                @Code(name: "Terminal", file: java-02-step-17-code-style-emf.sh)
+
+                `--code-style emf` indents with two spaces and puts an opening brace on its own line, as the sources of EMF itself do.
+            }
+
+            @Step {
+                The same accessor in that layout.
+
+                @Code(name: "BookImpl.java (emf style)", file: java-02-step-19-style-emf.java)
+            }
+
+            @Step {
+                Write the layout of an Eclipse workspace.
+
+                @Code(name: "Terminal", file: java-02-step-18-code-style-eclipse.sh)
+
+                `--code-style eclipse` is the default. It indents with tabs and keeps the opening brace on the line of its declaration, which is what a default Eclipse workspace writes when it formats Java.
+            }
+
+            @Step {
+                The same accessor in that layout.
+
+                @Code(name: "BookImpl.java (eclipse style)", file: java-02-step-20-style-eclipse.java)
+
+                Choose `eclipse` for a project that you format with Eclipse or a formatter with its defaults. Choose `emf` when your code sits beside EMF's own sources, or when you compare your output with them. Switching styles on an existing tree changes the whitespace of regenerated members, so decide once.
+            }
+
+            @Step {
+                Combine style and generator model presets, here in the single step with `swift-atl`.
+
+                @Code(name: "Terminal", file: java-02-step-21-preset-in-one-step.sh)
+
+                `--defaults`, `--root-extends-class`, `--operation-reflection`, `--import-organizing` and their negations, which <doc:Java-01-ecore-to-genmodel> describes, work on `swift-ecore genmodel`, on `swift-ecore generate` with an Ecore model, and on `swift-atl generate`.
+            }
+        }
+    }
+
+    @Section(title: "Compiling the Result") {
+        @ContentAndMedia {
+            Generated code is only useful if it compiles. The code needs the EMF runtime libraries, and the repository of Swift Modelling has a script that fetches them.
+        }
+
+        @Steps {
+            @Step {
+                From a checkout of the swift-modelling repository, fetch the runtime jars and keep their class path.
+
+                @Code(name: "Terminal", file: java-02-step-22-fetch-runtime.sh)
+
+                The script downloads the jars for the EMF common and ecore libraries, the XMI support, the OSGi framework and the Eclipse core runtime from Maven Central into a directory below the temporary directory, unless they are already there, and prints the class path that names them. Progress messages go to the error stream.
+            }
+
+            @Step {
+                Compile everything that was generated.
+
+                @Code(name: "Terminal", file: java-02-step-23-javac.sh)
+
+                The compiler finishes without a message, and `classes` holds one class file for each Java type. You have taken an Ecore file through a generator model to working Java code.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            Which tag keeps your version of a method when you generate again?
+
+            @Choice(isCorrect: true) {
+                `@generated NOT`
+
+                @Justification(reaction: "Correct!") {
+                    A member that is marked `@generated NOT` is never regenerated. A member with a plain `@generated` tag is.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `@generated`
+
+                @Justification(reaction: "Incorrect.") {
+                    That tag tells the generator that it owns the member, so your edit would be replaced.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `@ordered`
+
+                @Justification(reaction: "No.") {
+                    `@ordered` records that a feature is ordered. It has no effect on regeneration.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What does `--diff` do?
+
+            @Choice(isCorrect: true) {
+                Writes the generated text beside existing files as `.<name>.new` and leaves the files alone
+
+                @Justification(reaction: "Exactly!") {
+                    It lets you review what regenerating would change before you commit to it.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Replaces existing files without merging
+
+                @Justification(reaction: "No.") {
+                    That is `--force-overwrite`.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Prints a unified diff to the terminal
+
+                @Justification(reaction: "No.") {
+                    The generated text is written to files, which you compare with your own tools.
+                }
+            }
+        }
+    }
+}

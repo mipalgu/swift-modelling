@@ -52,6 +52,15 @@
         @TutorialReference(tutorial: "doc:MTL-08-complete-generator")
     }
 
+    @Chapter(name: "Java Code Generation") {
+        Take an Ecore model to a generator model and to Java for the Eclipse Modeling Framework.
+
+        @Image(source: "mtl-code-generation.svg", alt: "Java Code Generation Workflow")
+
+        @TutorialReference(tutorial: "doc:Java-01-ecore-to-genmodel")
+        @TutorialReference(tutorial: "doc:Java-02-genmodel-to-java")
+    }
+
     @Chapter(name: "AQL Query Language") {
         Query and navigate models with the Acceleo Query Language.
 

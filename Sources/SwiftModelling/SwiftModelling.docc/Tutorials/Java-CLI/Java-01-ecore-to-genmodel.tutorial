@@ -1,0 +1,215 @@
+@Tutorial(time: 30) {
+    @Intro(title: "From Ecore to a Generator Model") {
+        Take a real Ecore model, the extended library example of the Eclipse Modeling Framework, and create the generator model that decides how Java is generated for it.
+
+        A generator model (`.genmodel`) records the settings of the code generator: the base package, the prefixes of the generated classes, the Java compliance level, the copyright text and many more. You will create one with `swift-ecore genmodel`, learn which settings you can choose on the command line, and keep your own edits when the Ecore model changes.
+
+        The tutorial assumes that `swift-ecore` and `swift-atl` are on your search path. The next tutorial turns the generator model into Java.
+
+        @Image(source: "mtl-code-generation.svg", alt: "Code generation from a generator model")
+    }
+
+    @Section(title: "The Extended Library Model") {
+        @ContentAndMedia {
+            The Eclipse Modeling Framework publishes a small example model, the extended library, that is a good subject for code generation. It has a `Library` that owns books, writers, borrowers and employees, an enumeration of book categories, and a hierarchy of lendable items with interfaces such as `Lendable` and `Addressable`.
+
+            The model belongs to the Eclipse project and is licensed by it, so you download it from its upstream location instead of copying it from this package.
+        }
+
+        @Steps {
+            @Step {
+                Create an empty directory for the tutorial, change into it, and download the model.
+
+                @Code(name: "Terminal", file: java-01-step-01-download.sh)
+
+                The file `extlibrary.ecore` holds one package, `extlibrary`, with fourteen classes and the enumeration `BookCategory`. Every command in this tutorial runs in this directory.
+            }
+
+            @Step {
+                Check that the model loads and is well formed.
+
+                @Code(name: "Terminal", file: java-01-step-02-validate.sh)
+
+                `swift-ecore validate` reads the model and checks it. A model that does not validate cannot be turned into a generator model.
+            }
+
+            @Step {
+                The tool reports success on its last line.
+
+                @Code(name: "Output", file: java-01-step-03-validate-output.txt)
+            }
+
+            @Step {
+                Look at the model with the query command.
+
+                @Code(name: "Terminal", file: java-01-step-04-query.sh)
+
+                Without a query expression the command reports what the file holds: a single root object, the `EPackage` that owns everything else in the model.
+            }
+
+            @Step {
+                Count the classes with an ordinary text tool.
+
+                @Code(name: "Terminal", file: java-01-step-05-count-classes.sh)
+
+                An Ecore file is XML, so `grep` answers simple questions. It prints `14`: the generator will write an interface and an implementation class for each of them.
+            }
+        }
+    }
+
+    @Section(title: "Creating the Generator Model") {
+        @ContentAndMedia {
+            The `genmodel` command runs a bundled ATL transformation that gives the model the settings that the Eclipse Ecore importer gives a new model. You choose the base package and the prefix; everything else has a sensible default.
+        }
+
+        @Steps {
+            @Step {
+                Create the generator model.
+
+                @Code(name: "Terminal", file: java-01-step-06-genmodel.sh)
+
+                `--base-package` is the Java package that is put in front of the package name of the model, so the classes of `extlibrary` end up in `org.eclipse.emf.examples.extlibrary`. `--prefix` names the generated package and factory classes: `EXTLibraryPackage` and `EXTLibraryFactory` instead of the names that the package name would give.
+            }
+
+            @Step {
+                The command reports where it wrote the file.
+
+                @Code(name: "Output", file: java-01-step-07-genmodel-output.txt)
+
+                Unless you pass `--output`, the generator model is written beside the Ecore model and named after it. Several Ecore models can be given at once; the first one names the result.
+            }
+
+            @Step {
+                Open `extlibrary.genmodel`. It is XML in the format of the Eclipse tooling, so the Eclipse generator model editor opens it unchanged.
+
+                @Code(name: "extlibrary.genmodel (excerpt)", file: java-01-step-08-genmodel-excerpt.xml)
+
+                The root element carries the settings of the whole model, such as the compliance level, the model directory and the plug-in identifier. Below it, one `genPackages` element holds a `genEnums` or `genClasses` element for every classifier, and a `genFeatures` element for every feature. Each refers back to the Ecore model by a URI, so the generator model stays small and the Ecore model remains the single source of the structure.
+            }
+        }
+    }
+
+    @Section(title: "Choosing Settings") {
+        @ContentAndMedia {
+            The most common settings have options of their own. You can also edit the generator model by hand; its attributes have the same names as in the Eclipse tooling.
+        }
+
+        @Steps {
+            @Step {
+                Set the compliance level, the copyright text, the name of the model project and the identifier of its plug-in, and write the result to a chosen file.
+
+                @Code(name: "Terminal", file: java-01-step-09-genmodel-options.sh)
+
+                `--jdk-level` is the Java compliance level of the generated code. `--copyright` is written as the comment that opens every generated file. `--model-project` and `--model-plugin-id` name the Eclipse project that holds the generated model; the project name decides the directory that `--model-directory` writes to in the next tutorial. When the Ecore model lives in a directory called `model`, as in the Eclipse layout, the parent directory is the project, and otherwise the name of the root package is used. `--output` names the file to write, and creates its directory if needed.
+            }
+
+            @Step {
+                Keep your edits when the Ecore model changes. Open `extlibrary.genmodel`, change `complianceLevel` to `11.0`, and create the generator model again with `--reload`.
+
+                @Code(name: "Terminal", file: java-01-step-10-reload.sh)
+
+                The settings of the existing generator model are kept, and the structure follows the Ecore model: new classes are added to it. Elements are matched by name. An option that you give explicitly, such as `--jdk-level 21.0`, wins over the existing setting.
+            }
+        }
+    }
+
+    @Section(title: "Matching a Code Generator") {
+        @ContentAndMedia {
+            The Eclipse code generator writes different code depending on how it is started. Its interactive wizard turns on a few settings that its headless generator leaves off. Both are valid, so you choose which one your generator model follows.
+
+            A generator model records three of these settings: the class that generated classes extend (`rootExtendsClass`), whether operations can be invoked reflectively (`operationReflection`), and whether imports are organised (`importOrganizing`).
+        }
+
+        @Steps {
+            @Step {
+                Create a generator model with the settings of the interactive wizard.
+
+                @Code(name: "Terminal", file: java-01-step-11-defaults-wizard.sh)
+
+                `--defaults wizard` sets `operationReflection="true"` and `importOrganizing="true"`, and makes generated classes extend `org.eclipse.emf.ecore.impl.MinimalEObjectImpl$Container`, as the wizard does. Operation reflection adds the `eInvoke` machinery to every class, and organised imports give every generated file an explicit import for each type it uses, grouped as `java`, `javax`, `org`, `com` and then everything else.
+            }
+
+            @Step {
+                Create a generator model with the settings of the headless generator.
+
+                @Code(name: "Terminal", file: java-01-step-12-defaults-headless.sh)
+
+                `--defaults headless` is the default, so you only name it for clarity. It writes what the headless generator of Eclipse writes. Files that use many types of the model package, such as the factory implementation and the switch, import the package with a wildcard, and the imports are not sorted into groups.
+            }
+
+            @Step {
+                Choose `wizard` when your project was created with the Eclipse wizard, or when you want generated code to match what your colleagues' Eclipse produces. Choose `headless` when your build runs the generator without a user interface, which is the common case for continuous integration.
+            }
+
+            @Step {
+                Start from one preset and change single settings.
+
+                @Code(name: "Terminal", file: java-01-step-13-individual-settings.sh)
+
+                `--root-extends-class` names the base class of generated classes. `--operation-reflection` and `--no-operation-reflection` switch operation reflection on and off, and `--import-organizing` and `--no-import-organizing` do the same for organised imports. An option you give overrides the preset, wherever it appears on the command line.
+            }
+
+            @Step {
+                The same options are available on `swift-ecore generate` and `swift-atl generate`, which create the generator model on the way. They are rejected when the input is already a generator model, or when the language is one of the built-in ones, because there is no new generator model to apply them to. With `--reload`, existing values are kept unless you give a flag or `--defaults`. The next tutorial uses them there.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What does `--reload` keep when you create a generator model again?
+
+            @Choice(isCorrect: true) {
+                The settings of the existing generator model, while the structure follows the Ecore model
+
+                @Justification(reaction: "Correct!") {
+                    Elements are matched by name, so your edits survive while classes and features are added or removed to follow the Ecore model.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Only the copyright text
+
+                @Justification(reaction: "Not quite.") {
+                    All settings of the existing generator model are kept, not just one.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The generated Java files
+
+                @Justification(reaction: "No.") {
+                    `genmodel` does not write Java. Java generation is a separate command.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Where is the generator model written when you do not pass `--output`?
+
+            @Choice(isCorrect: true) {
+                Beside the first Ecore model, named after it
+
+                @Justification(reaction: "Exactly!") {
+                    `extlibrary.ecore` gives `extlibrary.genmodel` in the same directory.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                In a directory called `Generated`
+
+                @Justification(reaction: "Incorrect.") {
+                    That is the default directory for generated source files of `swift-atl generate`, not for the generator model.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                In the current directory under a fixed name
+
+                @Justification(reaction: "No.") {
+                    The name follows the Ecore model, and the location is its directory.
+                }
+            }
+        }
+    }
+}

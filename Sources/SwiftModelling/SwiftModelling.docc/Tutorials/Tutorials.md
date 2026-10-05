@@ -62,6 +62,15 @@ Generate code from models using the Model-to-Text Language.
    - <doc:MTL-08-complete-generator>
 }
 
+### Java Code Generation
+
+Take an Ecore model to a generator model and to Java for the Eclipse Modeling Framework.
+
+@Links(visualStyle: detailedGrid) {
+   - <doc:Java-01-ecore-to-genmodel>
+   - <doc:Java-02-genmodel-to-java>
+}
+
 ### AQL Query Language
 
 Query and navigate models with the Acceleo Query Language.

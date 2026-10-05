@@ -173,6 +173,7 @@ let package = Package(
                 .product(name: "ATL", package: "swift-atl"),
                 .product(name: "MTL", package: "swift-mtl"),
                 "swift-ecore",
+                "swift-atl",
             ],
             resources: [
                 .copy("Resources")
