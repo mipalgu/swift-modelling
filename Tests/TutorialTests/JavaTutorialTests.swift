@@ -602,7 +602,6 @@ struct JavaTutorialPresetTests {
 
 @Suite(
     "Tutorials Java-01 and Java-02: code style",
-    .disabled("requires the code style option"),
     .enabled(if: JavaTutorial.shellAvailable, Comment(rawValue: shellReason)))
 struct JavaTutorialCodeStyleTests {
     @Test("Steps 17 to 20: the two code styles", arguments: JavaTutorialSubject.available)
