@@ -506,6 +506,29 @@ struct GenerateCommandTests {
         }
     }
 
+    @Test("writes plain relative references when the model is reached through a symbolic link")
+    @MainActor
+    func genModelThroughSymbolicLink() async throws {
+        let fixture = try LibraryFixture.make()
+        let holder = try createTemporaryDirectory()
+        defer {
+            fixture.remove()
+            cleanupTemporaryDirectory(holder)
+        }
+        let link = holder.appendingPathComponent("linked")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: fixture.project)
+
+        let result = try await executeSwiftATL(
+            command: "generate",
+            arguments: [link.appendingPathComponent("model/library.ecore").path, "--language", "genmodel"])
+
+        #expect(result.succeeded, "\(result.stderr)")
+        let text = try String(contentsOf: fixture.genModel, encoding: .utf8)
+        #expect(text.contains("<foreignModel>library.ecore</foreignModel>"))
+        #expect(text.contains(#"ecoreClass="library.ecore#//Book""#))
+        #expect(!text.contains(".."))
+    }
+
     // MARK: - Support
 
     /// The text of a committed golden file.

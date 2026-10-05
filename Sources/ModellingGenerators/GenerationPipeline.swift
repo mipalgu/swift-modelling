@@ -52,11 +52,11 @@ public enum GenerationPipeline {
         progress: GenerationProgress = { _ in }
     ) async throws -> GenModelResult {
         guard let first = ecoreURLs.first else { throw GenerationError.noSourceModels }
-        let sources = ecoreURLs.map(\.standardizedFileURL)
+        let sources = ecoreURLs.map(FileLocations.canonical)
         for url in sources where !FileManager.default.fileExists(atPath: url.path) {
             throw GenerationError.sourceModelNotFound(url.path)
         }
-        let output = (options.output ?? defaultOutput(for: first)).standardizedFileURL
+        let output = FileLocations.canonical(options.output ?? defaultOutput(for: first))
 
         let resourceSet = ResourceSet()
         let generatorMetamodel: EPackage
@@ -109,7 +109,7 @@ public enum GenerationPipeline {
         if let reload = options.reload {
             progress("Reconciling with \(reload.lastPathComponent)")
             try await GenModelReconciler.reconcile(
-                target, in: resourceSet, with: reload.standardizedFileURL, overriding: options)
+                target, in: resourceSet, with: FileLocations.canonical(reload), overriding: options)
             reloaded = true
         }
 
@@ -161,7 +161,7 @@ public enum GenerationPipeline {
     ///   transformation use the name of the root package.
     static func modelProject(for ecoreURL: URL, options: GenModelImportOptions) -> String {
         if let project = options.modelProject, !project.isEmpty { return project }
-        let directory = ecoreURL.standardizedFileURL.deletingLastPathComponent()
+        let directory = FileLocations.canonical(ecoreURL).deletingLastPathComponent()
         guard directory.lastPathComponent == GenModelImportConstants.modelFolderName else { return "" }
         return directory.deletingLastPathComponent().lastPathComponent
     }

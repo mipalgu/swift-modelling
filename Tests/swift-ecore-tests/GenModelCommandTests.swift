@@ -432,4 +432,69 @@ struct GenModelCommandTests {
             #expect(result.stdout.contains(option), "Missing \(option)")
         }
     }
+
+    // MARK: - Symbolic links
+
+    /// Links to a project directory from another scratch directory.
+    ///
+    /// - Parameter project: The project directory.
+    /// - Returns: The link and the scratch directory that holds it.
+    private func linked(to project: URL) throws -> (link: URL, holder: URL) {
+        let holder = try createTemporaryDirectory()
+        let link = holder.appendingPathComponent("linked")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: project)
+        return (link, holder)
+    }
+
+    @Test("writes plain relative references when the model is reached through a symbolic link")
+    @MainActor
+    func throughSymbolicLink() async throws {
+        let (scratch, project) = try scratchProject("families")
+        let (link, holder) = try linked(to: project)
+        defer {
+            cleanupTemporaryDirectory(scratch)
+            cleanupTemporaryDirectory(holder)
+        }
+        let ecore = link.appendingPathComponent("model/families.ecore").path
+
+        let result = try await executeSwiftEcore(command: "genmodel", arguments: [ecore])
+
+        #expect(result.succeeded, "\(result.stderr)")
+        let text = try String(
+            contentsOf: project.appendingPathComponent("model/families.genmodel"), encoding: .utf8)
+        #expect(text.contains("<foreignModel>families.ecore</foreignModel>"))
+        #expect(text.contains(#"ecoreClass="families.ecore#//Family""#))
+        #expect(!text.contains(".."))
+    }
+
+    @Test("relates an output in another directory through a symbolic link, and reloads through it")
+    @MainActor
+    func outputAndReloadThroughSymbolicLink() async throws {
+        let (scratch, project) = try scratchProject("families")
+        let (link, holder) = try linked(to: project)
+        defer {
+            cleanupTemporaryDirectory(scratch)
+            cleanupTemporaryDirectory(holder)
+        }
+        let ecore = link.appendingPathComponent("model/families.ecore").path
+        let output = link.appendingPathComponent("gen/families.genmodel")
+
+        let created = try await executeSwiftEcore(
+            command: "genmodel", arguments: [ecore, "--defaults", "wizard", "-o", output.path])
+        #expect(created.succeeded, "\(created.stderr)")
+        let real = project.appendingPathComponent("gen/families.genmodel")
+        let text = try String(contentsOf: real, encoding: .utf8)
+        #expect(text.contains("<foreignModel>../model/families.ecore</foreignModel>"))
+        #expect(text.contains(#"ecoreClass="../model/families.ecore#//Family""#))
+
+        let edited = text.replacingOccurrences(of: #"modelName="Families""#, with: #"modelName="Kin""#)
+        try edited.write(to: real, atomically: true, encoding: .utf8)
+        let reloaded = try await executeSwiftEcore(
+            command: "genmodel", arguments: [ecore, "-o", output.path, "--reload", output.path])
+        #expect(reloaded.succeeded, "\(reloaded.stderr)")
+        let again = try String(contentsOf: real, encoding: .utf8)
+        #expect(again.contains(#"modelName="Kin""#))
+        #expect(again.contains(#"operationReflection="true""#))
+        #expect(again.contains("<foreignModel>../model/families.ecore</foreignModel>"))
+    }
 }
