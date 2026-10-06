@@ -95,30 +95,28 @@ swift run swift-mtl --help
 ```
 
 
-## From Ecore to Java
+## From Ecore to a Programming Language
 
-<!-- from-ecore-to-java:begin -->
-Turn an Ecore model into an Eclipse generator model (`.genmodel`) and into Java that compiles against the EMF runtime. The example is the extended library model of the Eclipse Modeling Framework, which is published under the Eclipse Public License and therefore downloaded rather than included:
+<!-- from-ecore-to-language:begin -->
+Turn an Ecore model into an EMF generator model (`.genmodel`) and into a language such as Java that compiles against the EMF runtime.
 
 ```bash
-mkdir -p extlibrary/model && cd extlibrary/model
-curl -LO https://raw.githubusercontent.com/eclipse-emf/org.eclipse.emf/master/examples/org.eclipse.emf.examples.library/model/extlibrary.ecore
-cd ..
-
-# Two steps: write model/extlibrary.genmodel, then generate Java from it
-swift-ecore genmodel model/extlibrary.ecore --base-package org.example
-swift-ecore generate --language java model/extlibrary.genmodel --output src-gen
+# Two steps: write example.genmodel, then generate Java from it
+swift-ecore genmodel example.ecore --base-package org.example
+swift-ecore generate --language java example.genmodel --output src-gen
 
 # One step: no generator model is left behind
-swift-atl generate model/extlibrary.ecore --language java --base-package org.example --output src-gen
+swift-atl example.ecore --language java --base-package org.example --output src-gen
 ```
 
-Both routes write the same 36 Java files below `src-gen/org/example/extlibrary`. Add `--model-directory` to `swift-ecore generate` to write below the model directory of the generator model together with `plugin.xml`, `MANIFEST.MF` and the other project files of an Eclipse model project. Regenerating merges into existing files: members tagged `@generated` are rewritten, members tagged `@generated NOT` and your own members are kept; `--diff` and `--force-overwrite` change that. To compile the result, `Scripts/fetch-emf-runtime.sh` downloads the EMF runtime jars and prints the class path.
+Both routes write the same 36 Java files below `src-gen/org/example/example`. Add `--model-directory` to `swift-ecore generate` to write below the model directory of the generator model together with `plugin.xml`, `MANIFEST.MF` and the other project files of an Eclipse model project. Regenerating merges into existing files: members tagged `@generated` are rewritten, members tagged `@generated NOT` and your own members are kept; `--diff` and `--force-overwrite` change that. To compile the result, `Scripts/fetch-emf-runtime.sh` downloads the EMF runtime jars and prints the class path.
 
-`--defaults headless|wizard`, `--root-extends-class`, `--operation-reflection`, `--import-organizing` and `--code-style eclipse|emf` choose which of Eclipse's behaviours the output follows.
+The `--base-package` argument is optional, but best practice for languages such as Java that organise their packages hierarchically.
+
+`--defaults headless|wizard`, `--root-extends-class`, `--operation-reflection`, `--import-organizing` and `--code-style eclipse|emf` choose which of Eclipse's default behaviours the output follows.
 
 The [documentation](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/convertingecoretojava/index.html) lists every option and the files written, and [Matching Eclipse](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/matchingeclipse/index.html) explains precisely how the output relates to the Eclipse generator.
-<!-- from-ecore-to-java:end -->
+<!-- from-ecore-to-language:end -->
 
 ## Usage
 
@@ -128,10 +126,10 @@ The `swift-ecore` command-line tool provides comprehensive Eclipse Modelling Fra
 
 ```bash
 # Show version and available commands
-swift run swift-ecore info
+swift-ecore info
 
 # Get help for any command
-swift run swift-ecore <command> --help
+swift-ecore <command> --help
 ```
 
 ### Validate Command
@@ -140,19 +138,19 @@ Validate models and metamodels for structural correctness and compliance.
 
 ```bash
 # Validate an XMI model file
-swift run swift-ecore validate model.xmi
+swift-ecore validate model.xmi
 
 # Validate with verbose output
-swift run swift-ecore validate model.xmi --verbose
+swift-ecore validate model.xmi --verbose
 
 # Validate a JSON model
-swift run swift-ecore validate data.json --verbose
+swift-ecore validate data.json --verbose
 
 # Validate an Ecore metamodel
-swift run swift-ecore validate metamodel.ecore
+swift-ecore validate metamodel.ecore
 
 # Validate with optional metamodel reference
-swift run swift-ecore validate instance.xmi --metamodel schema.ecore
+swift-ecore validate instance.xmi --metamodel schema.ecore
 ```
 
 **Supported formats:** XMI (`.xmi`), JSON (`.json`), Ecore (`.ecore`)
@@ -163,19 +161,19 @@ Convert between XMI and JSON formats while preserving model structure and data i
 
 ```bash
 # Convert XMI to JSON
-swift run swift-ecore convert model.xmi output.json
+swift-ecore convert model.xmi output.json
 
 # Convert JSON to XMI
-swift run swift-ecore convert data.json output.xmi
+swift-ecore convert data.json output.xmi
 
 # Convert with verbose progress information
-swift run swift-ecore convert input.xmi output.json --verbose
+swift-ecore convert input.xmi output.json --verbose
 
 # Force overwrite existing output file
-swift run swift-ecore convert input.json output.xmi --force
+swift-ecore convert input.json output.xmi --force
 
 # Example: Convert team model from XMI to JSON
-swift run swift-ecore convert Tests/ECoreTests/Resources/xmi/team.xmi team.json --verbose
+swift-ecore convert Tests/ECoreTests/Resources/xmi/team.xmi team.json --verbose
 ```
 
 **Round-trip compatibility:** XMI ↔ JSON conversions maintain full fidelity with cross-references, containment relationships, and all data types.
@@ -186,23 +184,23 @@ Generate source code in multiple programming languages from Ecore metamodels or 
 
 ```bash
 # Generate Swift code (default language)
-swift run swift-ecore generate metamodel.ecore --output generated/
+swift-ecore generate metamodel.ecore --output generated/
 
 # Generate C++ code
-swift run swift-ecore generate model.xmi --language cpp --output cpp-code/
+swift-ecore generate model.xmi --language cpp --output cpp-code/
 
 # Generate C code
-swift run swift-ecore generate schema.ecore --language c --output c-src/ --verbose
+swift-ecore generate schema.ecore --language c --output c-src/ --verbose
 
 # Generate LLVM IR
-swift run swift-ecore generate model.json --language llvm --output ir/
+swift-ecore generate model.json --language llvm --output ir/
 
 # Example: Generate Swift classes from organisation metamodel
-swift run swift-ecore generate Tests/ECoreTests/Resources/xmi/organisation.ecore \
+swift-ecore generate Tests/ECoreTests/Resources/xmi/organisation.ecore \
   --output generated/ --language swift --verbose
 ```
 
-**Supported languages (planned):**
+**Planned language support:**
 - 🚧 `swift` - Swift structs with properties and types
 - 🚧 `cpp` - C++ classes with getters/setters and headers
 - 🚧 `c` - C structs and function declarations
@@ -210,7 +208,9 @@ swift run swift-ecore generate Tests/ECoreTests/Resources/xmi/organisation.ecore
 
 **Input formats:** Ecore metamodels (`.ecore`), XMI models (`.xmi`), JSON models (`.json`)
 
-Languages that have a template set, such as `java`, are generated from a generator model or an Ecore model by the shared template pipeline; see [Generating Java from a Generator Model](#generating-java-from-a-generator-model). `swift-ecore generate --help` lists the bundled template set languages; a language that a `--template-path` directory adds is accepted but not listed there, and an unknown language is reported together with every language that can be used, including those additions. The built-in generator for `swift`, `cpp`, `c` and `llvm` is unchanged.
+Languages that have a template, such as `java`, can be generated from a generator model or an Ecore model by the corresponding shared template pipeline; see [Generating Java from a Generator Model](#generating-java-from-a-generator-model).
+
+`swift-ecore generate --help` lists the bundled template set languages; a language that a `--template-path` directory adds is accepted but not listed there, and an unknown language is reported together with every language that can be used, including those additions. The built-in generator for `swift`, `cpp`, `c` and `llvm` is unchanged.
 
 ### GenModel Command
 
@@ -218,18 +218,18 @@ Create a generator model (`.genmodel`) from one or more Ecore models, as the Ecl
 
 ```bash
 # Write library.genmodel beside library.ecore
-swift run swift-ecore genmodel model/library.ecore --base-package org.example
+swift-ecore genmodel model/library.ecore --base-package org.example
 
 # Choose the output, project, plug-in identifier, copyright and compliance level
-swift run swift-ecore genmodel model/library.ecore --output gen/library.genmodel \
+swift-ecore genmodel model/library.ecore --output gen/library.genmodel \
   --model-project org.example.library --model-plugin-id org.example.library \
   --copyright "Copyright 2026 Example Pty Ltd" --jdk-level 17.0 --verbose
 
 # Set the prefix of the root package, or of one named package
-swift run swift-ecore genmodel model/company.ecore --prefix Company --prefix projects=Proj
+swift-ecore genmodel model/company.ecore --prefix Company --prefix projects=Proj
 
 # Keep the settings of an existing generator model while following changes to the Ecore model
-swift run swift-ecore genmodel model/library.ecore --reload model/library.genmodel
+swift-ecore genmodel model/library.ecore --reload model/library.genmodel
 ```
 
 **Options:**
@@ -264,18 +264,18 @@ Generate Java model code from a generator model (`.genmodel`), with the template
 
 ```bash
 # Write the packages of the model below the output directory
-swift run swift-ecore generate --language java model/library.genmodel --output src-gen/
+swift-ecore generate --language java model/library.genmodel --output src-gen/
 
 # Start from an Ecore model; a temporary generator model with the importer defaults is used
-swift run swift-ecore generate --language java model/library.ecore --output src-gen/
+swift-ecore generate --language java model/library.ecore --output src-gen/
 
 # Write below the model directory of the generator model (src-gen/library/src/org/example/...)
-swift run swift-ecore generate --language java model/library.genmodel -o src-gen --model-directory
+swift-ecore generate --language java model/library.genmodel -o src-gen --model-directory
 
 # Replace bundled templates, keep a copy of what would change, or replace everything
-swift run swift-ecore generate --language java model/library.genmodel -o src-gen --template-path my-templates
-swift run swift-ecore generate --language java model/library.genmodel -o src-gen --diff
-swift run swift-ecore generate --language java model/library.genmodel -o src-gen --force-overwrite
+swift-ecore generate --language java model/library.genmodel -o src-gen --template-path my-templates
+swift-ecore generate --language java model/library.genmodel -o src-gen --diff
+swift-ecore generate --language java model/library.genmodel -o src-gen --force-overwrite
 ```
 
 **Options:**
@@ -317,7 +317,7 @@ my-templates/
 ```
 
 ```bash
-swift run swift-ecore generate --language outline model/library.genmodel -o out --template-path my-templates
+swift-ecore generate --language outline model/library.genmodel -o out --template-path my-templates
 ```
 
 A file in a template path replaces the bundled file of the same relative name. Later paths take precedence, so individual modules can be customised without copying the whole set. The [Template Sets article](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/templatesets/index.html) is the reference for descriptors, code styles, merge declarations, data models and services. [Java Generation](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/javageneration/index.html) describes the bundled Java modules and project files.
@@ -328,16 +328,16 @@ A file in a template path replaces the bundled file of the same relative name. L
 
 ```bash
 # Create library.genmodel beside library.ecore (the language genmodel stops after the transformation)
-swift run swift-atl generate model/library.ecore --language genmodel --base-package org.example
+swift-atl generate model/library.ecore --language genmodel --base-package org.example
 
 # Generate Java from an Ecore model in one step (no generator model is left behind)
-swift run swift-atl generate model/library.ecore --language java --base-package org.example -o src-gen/
+swift-atl generate model/library.ecore --language java --base-package org.example -o src-gen/
 
 # Generate from an existing generator model, with customised templates and a copy of what would change
-swift run swift-atl generate model/library.genmodel --language java --template-path my-templates --diff -o src-gen/
+swift-atl generate model/library.genmodel --language java --template-path my-templates --diff -o src-gen/
 
 # Replace the bundled transformation with a file, or with a directory that holds Ecore2GenModel.atl
-swift run swift-atl generate model/library.ecore --language genmodel --transformations my-atl/
+swift-atl generate model/library.ecore --language genmodel --transformations my-atl/
 ```
 
 **Languages.** `--language` takes `genmodel` (the default) or the name of any template set: the bundled ones (`java`) and the sets that `--template-path` directories add. `swift-atl generate --help` lists the bundled languages (a language that a `--template-path` directory adds is accepted but not listed there), and an unknown name is rejected with every language that can be used, including those additions. There are no other languages.
@@ -348,10 +348,10 @@ swift run swift-atl generate model/library.ecore --language genmodel --transform
 
 ```bash
 # Positional source and target, as before
-swift run swift-atl transform Families2Persons.atl --source families.xmi --target persons.xmi
+swift-atl transform Families2Persons.atl --source families.xmi --target persons.xmi
 
 # Values for the parameters a transformation declares with -- @param (repeatable)
-swift run swift-atl transform Ecore2GenModel.atl --source IN=library.ecore --target OUT=library.genmodel \
+swift-atl transform Ecore2GenModel.atl --source IN=library.ecore --target OUT=library.genmodel \
   --param basePackage=org.example --param prefix=Library
 ```
 
@@ -374,22 +374,22 @@ Inspect and analyse models with powerful query operations.
 
 ```bash
 # Show general model information (default query)
-swift run swift-ecore query model.xmi
+swift-ecore query model.xmi
 
 # Count total objects in model
-swift run swift-ecore query model.xmi --query "count"
+swift-ecore query model.xmi --query "count"
 
 # List all available classes
-swift run swift-ecore query model.xmi --query "list-classes"
+swift-ecore query model.xmi --query "list-classes"
 
 # Find objects of specific class
-swift run swift-ecore query model.xmi --query "find Person"
+swift-ecore query model.xmi --query "find Person"
 
 # Show object tree structure
-swift run swift-ecore query model.xmi --query "tree"
+swift-ecore query model.xmi --query "tree"
 
 # Query with verbose output
-swift run swift-ecore query team.xmi --query "find Team" --verbose
+swift-ecore query team.xmi --query "find Team" --verbose
 ```
 
 **Available query types:**
@@ -407,49 +407,49 @@ Generate text from models using MTL templates following the OMG MOFM2T (MOF Mode
 
 ```bash
 # Basic generation from template
-swift run swift-mtl generate template.mtl --output generated/
+swift-mtl generate template.mtl --output generated/
 
 # Generate with input models
-swift run swift-mtl generate template.mtl \
+swift-mtl generate template.mtl \
   --model input.xmi \
   --output generated/
 
 # Generate with multiple models
-swift run swift-mtl generate template.mtl \
+swift-mtl generate template.mtl \
   --model families.xmi \
   --model departments.xmi \
   --output generated/
 
 # Specify main template explicitly
-swift run swift-mtl generate template.mtl \
+swift-mtl generate template.mtl \
   --model input.xmi \
   --template generateAll \
   --output generated/
 
 # Ecore model: registered as a metamodel, and its EPackage is passed to the template
-swift run swift-mtl generate ecore2dot.mtl \
+swift-mtl generate ecore2dot.mtl \
   --model library.ecore \
   --output generated/
 
 # Register a metamodel only, and pass just the instance model to the template
-swift run swift-mtl generate template.mtl \
+swift-mtl generate template.mtl \
   --metamodel library.ecore \
   --model books.xmi \
   --output generated/
 
 # Import modules from extra directories, and pass parameters to the templates
-swift run swift-mtl generate template.mtl \
+swift-mtl generate template.mtl \
   --model input.xmi \
   --template-path shared/templates \
   --param package=org.example --param verbose=true \
   --output generated/
 
 # Keep existing files and write the new text beside them as .<name>.new, or replace them all
-swift run swift-mtl generate template.mtl --model input.xmi --diff --output generated/
-swift run swift-mtl generate template.mtl --model input.xmi --force-overwrite --output generated/
+swift-mtl generate template.mtl --model input.xmi --diff --output generated/
+swift-mtl generate template.mtl --model input.xmi --force-overwrite --output generated/
 
 # Verbose generation with statistics
-swift run swift-mtl generate template.mtl \
+swift-mtl generate template.mtl \
   --model input.xmi \
   --output generated/ \
   --verbose
@@ -475,16 +475,16 @@ Display MTL template structure for inspection and debugging.
 
 ```bash
 # Parse and show template structure
-swift run swift-mtl parse template.mtl
+swift-mtl parse template.mtl
 
 # Parse multiple templates
-swift run swift-mtl parse template1.mtl template2.mtl
+swift-mtl parse template1.mtl template2.mtl
 
 # Detailed template information
-swift run swift-mtl parse template.mtl --detailed
+swift-mtl parse template.mtl --detailed
 
 # JSON output for programmatic use
-swift run swift-mtl parse template.mtl --json
+swift-mtl parse template.mtl --json
 ```
 
 #### Validate Command
@@ -493,13 +493,13 @@ Validate MTL template syntax and structure.
 
 ```bash
 # Validate single template
-swift run swift-mtl validate template.mtl
+swift-mtl validate template.mtl
 
 # Validate multiple templates
-swift run swift-mtl validate *.mtl
+swift-mtl validate *.mtl
 
 # Verbose validation with module details
-swift run swift-mtl validate template.mtl --verbose
+swift-mtl validate template.mtl --verbose
 ```
 
 #### MTL Template Example
@@ -518,7 +518,7 @@ This is a simple MTL template.
 Then generate:
 
 ```bash
-swift run swift-mtl generate hello.mtl --output /tmp/output/
+swift-mtl generate hello.mtl --output /tmp/output/
 cat /tmp/output/stdout
 ```
 
@@ -542,7 +542,7 @@ class [c.name/] {
 Generate Swift code from an Ecore model:
 
 ```bash
-swift run swift-mtl generate ClassGenerator.mtl \
+swift-mtl generate ClassGenerator.mtl \
   --model mymodel.ecore \
   --output generated-swift/
 ```
@@ -552,22 +552,22 @@ swift run swift-mtl generate ClassGenerator.mtl \
 **Complete workflow example:**
 ```bash
 # 1. Validate a metamodel
-swift run swift-ecore validate organisation.ecore --verbose
+swift-ecore validate organisation.ecore --verbose
 
 # 2. Validate an instance against metamodel
-swift run swift-ecore validate company.xmi --metamodel organisation.ecore
+swift-ecore validate company.xmi --metamodel organisation.ecore
 
 # 3. Convert to JSON for web APIs
-swift run swift-ecore convert company.xmi company.json --verbose
+swift-ecore convert company.xmi company.json --verbose
 
 # 4. Query the model for analysis
-swift run swift-ecore query company.xmi --query "find Employee" --verbose
+swift-ecore query company.xmi --query "find Employee" --verbose
 
 # 5. Generate Swift code from metamodel
-swift run swift-ecore generate organisation.ecore --output swift-gen/ --verbose
+swift-ecore generate organisation.ecore --output swift-gen/ --verbose
 
 # 6. Convert back to XMI from JSON
-swift run swift-ecore convert company.json company-copy.xmi --force
+swift-ecore convert company.json company-copy.xmi --force
 ```
 
 **Batch processing example:**
@@ -575,13 +575,13 @@ swift run swift-ecore convert company.json company-copy.xmi --force
 # Validate all XMI files in a directory
 for file in models/*.xmi; do
   echo "Validating $file..."
-  swift run swift-ecore validate "$file" --verbose
+  swift-ecore validate "$file" --verbose
 done
 
 # Convert all XMI files to JSON
 for file in models/*.xmi; do
   json_file="${file%.xmi}.json"
-  swift run swift-ecore convert "$file" "$json_file" --force
+  swift-ecore convert "$file" "$json_file" --force
 done
 ```
 
