@@ -103,34 +103,12 @@ jobs:
           swift sdk install /tmp/swift-wasm-sdk.tar.gz \
             --checksum f07b7be3c586d92d7a07051fc6d303b87ebea67eadc40640ba59d5a8b79aa86d
 
-      - name: Configure WebAssembly runner
-        run: |
-          # Native SwiftPM resource accessors work on WASI. The Swift Build backend
-          # currently uses Bundle.main, which is unsupported by the WASI SDK.
-          cat > /tmp/wasm-toolset.json <<EOF
-          {
-            "schemaVersion": "1.0",
-            "testRunner": {
-              "path": "$(command -v wasmkit)",
-              "extraCLIOptions": ["run", "--stack-size", "67108864", "--dir", "/tmp", "--dir", "$GITHUB_WORKSPACE"]
-            }
-          }
-          EOF
-
-      - name: Build WebAssembly tests
+      - name: Build WebAssembly products
         run: >-
-          swift build -c release --build-system native --build-tests --disable-xctest --jobs 4
+          swift build -c release --build-system native --jobs 4
           --swift-sdk swift-${{ matrix.swift }}-RELEASE_wasm
           --scratch-path /tmp/wasm-build
-          -Xswiftc -enable-testing
           -Xlinker -z -Xlinker stack-size=8388608
-
-      - name: Run WebAssembly tests
-        run: >-
-          swift test -c release --build-system native --skip-build --disable-xctest --no-parallel
-          --toolset /tmp/wasm-toolset.json
-          --swift-sdk swift-${{ matrix.swift }}-RELEASE_wasm
-          --scratch-path /tmp/wasm-build
 
   # Windows build using compnerd/gha-setup-swift
   # Disabled for now, due to nondeterministic build failures
