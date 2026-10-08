@@ -78,6 +78,24 @@ Pre-built Windows binaries are available from the
 Download `swift-modelling-vX.Y.Z-windows-x86_64.zip`, extract it, and add
 the executables to your PATH.
 
+### WebAssembly (WASI)
+
+Download `swift-modelling-vX.Y.Z-wasm32-wasi.tar.gz` and its SHA256 file
+from [GitHub Releases](https://github.com/mipalgu/swift-modelling/releases).
+The archive includes `swift-ecore.wasm`, `swift-atl.wasm`, `swift-mtl.wasm`
+and their resource directories. Keep these directories beside the modules.
+
+Extract the archive and run a module with a WASI runtime. For example, with
+the `wasmkit` runtime included in the Swift 6.4 toolchain:
+
+```bash
+cd swift-modelling-vX.Y.Z-wasm32-wasi
+wasmkit run --stack-size 67108864 --dir . swift-ecore.wasm --help
+```
+
+The `--dir .` option grants access to the extracted resources and any models
+in that directory. Grant access to additional directories when needed.
+
 ## Building
 
 ```bash

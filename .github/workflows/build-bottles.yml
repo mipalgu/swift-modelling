@@ -14,12 +14,69 @@ on:
         type: string
 
 jobs:
+  build-wasm:
+    name: Build WebAssembly Archive
+    runs-on: ubuntu-24.04
+    container: swift:6.4.0-noble
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.event.inputs.tag || github.ref_name }}
+
+      - name: Install SDK download tools
+        run: |
+          apt-get update
+          apt-get install --yes --no-install-recommends ca-certificates curl
+
+      - name: Install WebAssembly SDK
+        run: |
+          curl --fail --location --retry 3 --output /tmp/swift-wasm-sdk.tar.gz \
+            https://download.swift.org/swift-6.4.0-release/wasm-sdk/swift-6.4.0-RELEASE/swift-6.4.0-RELEASE_wasm.artifactbundle.tar.gz
+          swift sdk install /tmp/swift-wasm-sdk.tar.gz \
+            --checksum f07b7be3c586d92d7a07051fc6d303b87ebea67eadc40640ba59d5a8b79aa86d
+
+      - name: Check packaging
+        run: Scripts/tests/package-wasm-test.sh
+
+      - name: Build WebAssembly products
+        run: >-
+          swift build -c release --build-system native --jobs 4
+          --swift-sdk swift-6.4.0-RELEASE_wasm --scratch-path /tmp/wasm-build
+          -Xlinker -z -Xlinker stack-size=8388608
+
+      - name: Create and check WebAssembly archive
+        env:
+          TAG: ${{ inputs.tag || github.event.inputs.tag || github.ref_name }}
+        run: |
+          PRODUCTS=$(swift build -c release --build-system native \
+            --swift-sdk swift-6.4.0-RELEASE_wasm --scratch-path /tmp/wasm-build --show-bin-path)
+          PACKAGE="swift-modelling-${TAG}-wasm32-wasi"
+          Scripts/package-wasm.sh "$PRODUCTS" "$PACKAGE"
+          for tool in swift-ecore swift-atl swift-mtl; do
+            wasmkit run --dir . "$PACKAGE/$tool.wasm" --version
+          done
+          tar czf "${PACKAGE}.tar.gz" "$PACKAGE"
+          sha256sum "${PACKAGE}.tar.gz" > "${PACKAGE}.tar.gz.sha256"
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.tag || github.event.inputs.tag || github.ref_name }}
+          files: |
+            swift-modelling-*-wasm32-wasi.tar.gz
+            swift-modelling-*-wasm32-wasi.tar.gz.sha256
+
   build-windows:
     name: Build Windows Binary
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.tag || github.event.inputs.tag || github.ref_name }}
           fetch-depth: 0
 
       - name: Setup Swift
@@ -71,6 +128,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.tag || github.event.inputs.tag || github.ref_name }}
           fetch-depth: 0
 
       - name: Select Xcode
@@ -119,6 +177,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.tag || github.event.inputs.tag || github.ref_name }}
           fetch-depth: 0
 
       - name: Setup Swift

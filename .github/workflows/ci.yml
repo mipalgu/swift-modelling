@@ -68,7 +68,7 @@ jobs:
       - name: Run tests
         run: swift test
 
-  # WebAssembly build and tests using Swift 6.4
+  # WebAssembly product build using Swift 6.4
   build-wasm:
     name: WebAssembly (Swift ${{ matrix.swift }})
     runs-on: ${{ matrix.os }}
@@ -109,6 +109,9 @@ jobs:
           --swift-sdk swift-${{ matrix.swift }}-RELEASE_wasm
           --scratch-path /tmp/wasm-build
           -Xlinker -z -Xlinker stack-size=8388608
+
+      - name: Check WebAssembly packaging
+        run: Scripts/tests/package-wasm-test.sh
 
   # Windows build using compnerd/gha-setup-swift
   # Disabled for now, due to nondeterministic build failures

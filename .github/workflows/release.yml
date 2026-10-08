@@ -70,7 +70,7 @@ jobs:
           echo '  homepage "https://github.com/mipalgu/swift-modelling"' >> Formula/swift-modelling.rb
           echo "  url \"https://github.com/mipalgu/swift-modelling/archive/refs/tags/${TAG}.tar.gz\"" >> Formula/swift-modelling.rb
           echo "  sha256 \"${SOURCE_SHA256}\"" >> Formula/swift-modelling.rb
-          echo '  license "MIT"' >> Formula/swift-modelling.rb
+          echo '  license any_of: ["BSD-4-Clause", "GPL-2.0-or-later"]' >> Formula/swift-modelling.rb
           echo '  env :std' >> Formula/swift-modelling.rb
           echo '  head "https://github.com/mipalgu/swift-modelling.git", branch: "main"' >> Formula/swift-modelling.rb
           echo '' >> Formula/swift-modelling.rb
