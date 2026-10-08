@@ -90,11 +90,12 @@ the `wasmkit` runtime included in the Swift 6.4 toolchain:
 
 ```bash
 cd swift-modelling-vX.Y.Z-wasm32-wasi
-wasmkit run --stack-size 67108864 --dir . swift-ecore.wasm --help
+wasmkit run --stack-size 67108864 --env TMPDIR=. --dir . swift-ecore.wasm --help
 ```
 
 The `--dir .` option grants access to the extracted resources and any models
-in that directory. Grant access to additional directories when needed.
+in that directory. `TMPDIR=.` also keeps generation scratch files within
+that accessible directory. Grant access to additional directories when needed.
 
 ## Building
 

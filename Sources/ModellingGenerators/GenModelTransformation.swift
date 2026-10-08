@@ -23,7 +23,7 @@ struct GenModelTransformation {
     ///
     /// - Returns: The file URL of the transformation, or `nil` if the bundle does not contain it.
     static var resourceURL: URL? {
-        Bundle.module.url(
+        GeneratorResources.url(
             forResource: GenModelImportConstants.transformationName,
             withExtension: GenModelImportConstants.transformationExtension,
             subdirectory: GenModelImportConstants.transformationDirectory)

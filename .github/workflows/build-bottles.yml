@@ -56,11 +56,11 @@ jobs:
             --swift-sdk swift-6.4.0-RELEASE_wasm --scratch-path /tmp/wasm-build --show-bin-path)
           PACKAGE="swift-modelling-${TAG}-wasm32-wasi"
           Scripts/package-wasm.sh "$PRODUCTS" "$PACKAGE"
-          for tool in swift-ecore swift-atl swift-mtl; do
-            wasmkit run --dir . "$PACKAGE/$tool.wasm" --version
-          done
           tar czf "${PACKAGE}.tar.gz" "$PACKAGE"
           sha256sum "${PACKAGE}.tar.gz" > "${PACKAGE}.tar.gz.sha256"
+          EXTRACTED=$(mktemp -d)
+          tar xzf "${PACKAGE}.tar.gz" -C "$EXTRACTED"
+          Scripts/test-wasm-package.sh "$(command -v wasmkit)" "$EXTRACTED/$PACKAGE" "${TAG#v}"
 
       - name: Upload to release
         uses: softprops/action-gh-release@v1

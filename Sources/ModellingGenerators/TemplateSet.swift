@@ -41,7 +41,7 @@ public struct TemplateSet: Sendable {
     ///
     /// - Returns: The file URL of the directory, or `nil` if the resource bundle does not contain it.
     public static var bundledRoot: URL? {
-        Bundle.module.url(forResource: TemplateSetConstants.bundledDirectory, withExtension: nil)
+        GeneratorResources.url(forResource: TemplateSetConstants.bundledDirectory, withExtension: nil)
     }
 
     /// The languages for which a template set exists.
