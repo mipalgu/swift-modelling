@@ -264,22 +264,22 @@ struct JavaGenerateCommandTests {
         #expect(!FileManager.default.fileExists(atPath: output.path))
     }
 
-    @Test("rejects a code style for the built-in languages")
+    @Test("rejects a code style for a template set that offers none")
     @MainActor
-    func codeStyleForBuiltInLanguage() async throws {
+    func codeStyleForSetWithoutStyles() async throws {
         let (scratch, project, _) = try await libraryProject()
         defer { cleanupTemporaryDirectory(scratch) }
-        let output = scratch.appendingPathComponent("swift")
+        let output = scratch.appendingPathComponent("cpp")
 
         let result = try await executeSwiftEcore(
             command: "generate",
             arguments: [
-                "--language", "swift", project.appendingPathComponent("model/library.ecore").path,
+                "--language", "cpp", project.appendingPathComponent("model/library.ecore").path,
                 "-o", output.path, "--code-style", "emf",
             ])
 
         #expect(!result.succeeded)
-        #expect(result.stderr.contains("--code-style only applies to a language with a template set"))
+        #expect(result.stderr.contains("emf"))
         #expect(!FileManager.default.fileExists(atPath: output.path))
     }
 
@@ -293,18 +293,19 @@ struct JavaGenerateCommandTests {
         #expect(result.stdout.contains("java: eclipse (default), emf"))
     }
 
-    @Test("asks for a generator model when a built-in language is given one")
+    @Test("reports a language without a template set, also for a generator model")
     @MainActor
-    func builtInLanguageWithGenModel() async throws {
+    func languageWithoutTemplateSetWithGenModel() async throws {
         let (scratch, _, genModel) = try await libraryProject()
         defer { cleanupTemporaryDirectory(scratch) }
 
         let result = try await executeSwiftEcore(
             command: "generate",
-            arguments: ["--language", "swift", genModel.path, "-o", scratch.appendingPathComponent("x").path])
+            arguments: ["--language", "llvm", genModel.path, "-o", scratch.appendingPathComponent("x").path])
 
         #expect(!result.succeeded)
-        #expect(result.stderr.contains("generator model"))
+        #expect(result.stderr.contains("Unsupported language: llvm"))
+        #expect(result.stderr.contains("c, cpp, java, swift"))
     }
 
     @Test("reports a template path that is not a directory")
@@ -419,7 +420,7 @@ struct JavaChainTests {
         .appendingPathComponent("ModellingGeneratorsTests/Resources/library/expected-java")
 
     /// The files below a directory, relative to it and sorted.
-    private static func files(below directory: URL) -> [String] {
+    static func files(below directory: URL) -> [String] {
         let base = directory.standardizedFileURL.path
         guard
             let enumerator = FileManager.default.enumerator(
@@ -503,13 +504,13 @@ struct JavaChainTests {
         #expect(text.contains("@generated NOT"))
     }
 
-    @Test("lists the languages of the template sets and of the built-in generator in the help")
+    @Test("lists the languages of the template sets in the help")
     @MainActor
     func helpListsLanguages() async throws {
         let result = try await executeSwiftEcore(command: "generate", arguments: ["--help"])
 
         #expect(result.succeeded)
-        #expect(result.stdout.contains("Languages with a template set: java"))
-        #expect(result.stdout.contains("swift, cpp, c, llvm"))
+        #expect(result.stdout.contains("Languages with a template set: c, cpp, java, swift"))
+        #expect(!result.stdout.contains("llvm"))
     }
 }

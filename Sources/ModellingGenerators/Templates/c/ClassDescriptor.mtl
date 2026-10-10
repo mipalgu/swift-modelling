@@ -1,0 +1,70 @@
+[comment encoding = UTF-8 /]
+[**
+ * The description of a generator class.
+ *
+ * Every class has constants that describe it: the table of its features, the table of its supertypes and the
+ * description itself, which refers to the functions that create and destroy objects of the class. A table that would
+ * be empty is left out, because C has no empty arrays, and the description holds the null pointer and a count of zero.
+ **/]
+[module ClassDescriptor('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CNames/]
+[import CTypes/]
+[import CDocumentation/]
+[import ClassQueries/]
+
+[**
+ * The expression for a table of a class description: the name of the table, or the null pointer if it is empty.
+ **/]
+[query public tableReference(name : String, count : Integer) : String = if count = 0 then 'NULL' else name endif/]
+
+[**
+ * Writes the functions that create and destroy an object through the description of a class.
+ **/]
+[template public tableFunctions(genClass : GenClass)]
+/// @brief Creates an object of the [genClass.name()/] class for its description.
+[generatedTag()/]
+static EObject *[genClass.tableCreateName()/](void) {
+    [genClass.className()/] *object = [genClass.createName()/]();
+    return object == NULL ? NULL : &object->eObject;
+}
+
+/// @brief Destroys an object of the [genClass.name()/] class for its description.
+[generatedTag()/]
+static void [genClass.tableDestroyName()/](EObject *object) {
+    [genClass.destroyName()/](([genClass.className()/] *)object);
+}
+[/template]
+
+[**
+ * Writes the table of the features of a class, the table of its supertypes and the description of the class.
+ **/]
+[template public descriptorDefinition(genClass : GenClass)]
+[if (genClass.implementedFeatures()->notEmpty())]
+/// @brief The features of the [genClass.name()/] class.
+[generatedTag()/]
+static const EFeatureInfo [genClass.featureTableName()/]['['/][']'/] = {
+[for (genFeature : GenFeature | genClass.implementedFeatures())]
+    { .name = [cStringLiteral(genFeature.name())/], .kind = [genFeature.featureKindConstant()/], .isMany = [genFeature.isMany()/], .typeName = [cStringLiteral(genFeature.featureClassifier().name)/] },
+[/for]
+};
+
+[/if]
+[if (genClass.modelSupers()->notEmpty())]
+/// @brief The supertypes of the [genClass.name()/] class.
+[generatedTag()/]
+static const EClassInfo *const [genClass.superTableName()/]['['/][']'/] = { [genClass.modelSupers()->collect(s | '&' + s.descriptorName())->join(', ')/] };
+
+[/if]
+/// @brief The description of the [genClass.name()/] class.
+[generatedTag()/]
+const EClassInfo [genClass.descriptorName()/] = {
+    .name = [cStringLiteral(genClass.name())/],
+    .isAbstract = [not genClass.isInstantiable()/],
+    .superTypes = [tableReference(genClass.superTableName(), genClass.modelSupers()->size())/],
+    .superTypeCount = [genClass.modelSupers()->size()/],
+    .features = [tableReference(genClass.featureTableName(), genClass.implementedFeatures()->size())/],
+    .featureCount = [genClass.implementedFeatures()->size()/],
+    .create = [if (genClass.isInstantiable())][genClass.tableCreateName()/][else]NULL[/if],
+    .destroy = [if (genClass.isInstantiable())][genClass.tableDestroyName()/][else]NULL[/if]
+};
+[/template]

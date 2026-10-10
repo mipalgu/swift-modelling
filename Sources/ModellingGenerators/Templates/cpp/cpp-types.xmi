@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<typemapping:TypeTable xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:typemapping="http://swift-modelling.org/typemapping/1.0" language="cpp">
+  <mappings modelType="EString" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="std::string" instanceClass="java.lang.String" module="string" literalStyle="string"/>
+  <mappings modelType="EBoolean" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="bool" zeroValue="false" instanceClass="boolean" literalStyle="boolean" byValue="true"/>
+  <mappings modelType="EBooleanObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="std::optional&lt;bool>" instanceClass="java.lang.Boolean" module="optional" literalStyle="boolean" byValue="true"/>
+  <mappings modelType="EByte" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="std::int8_t" zeroValue="0" instanceClass="byte" module="cstdint" literalStyle="number" byValue="true"/>
+  <mappings modelType="EByteObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="std::optional&lt;std::int8_t>" instanceClass="java.lang.Byte" module="optional cstdint" literalStyle="number" byValue="true"/>
+  <mappings modelType="EShort" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="std::int16_t" zeroValue="0" instanceClass="short" module="cstdint" literalStyle="number" byValue="true"/>
+  <mappings modelType="EShortObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="std::optional&lt;std::int16_t>" instanceClass="java.lang.Short" module="optional cstdint" literalStyle="number" byValue="true"/>
+  <mappings modelType="EInt" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="std::int32_t" zeroValue="0" instanceClass="int" module="cstdint" literalStyle="number" byValue="true"/>
+  <mappings modelType="EIntegerObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="std::optional&lt;std::int32_t>" instanceClass="java.lang.Integer" module="optional cstdint" literalStyle="number" byValue="true"/>
+  <mappings modelType="ELong" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="std::int64_t" zeroValue="0" instanceClass="long" module="cstdint" literalStyle="number" byValue="true"/>
+  <mappings modelType="ELongObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="std::optional&lt;std::int64_t>" instanceClass="java.lang.Long" module="optional cstdint" literalStyle="number" byValue="true"/>
+  <mappings modelType="EByteArray" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="std::vector&lt;std::uint8_t>" instanceClass="byte[]" module="vector cstdint"/>
+  <mappings modelType="EChar" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="char16_t" zeroValue="0" instanceClass="char" literalStyle="character" byValue="true"/>
+  <mappings modelType="ECharacterObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="std::optional&lt;char16_t>" instanceClass="java.lang.Character" module="optional" literalStyle="character" byValue="true"/>
+  <mappings modelType="EDouble" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="double" zeroValue="0.0" instanceClass="double" literalStyle="number" byValue="true"/>
+  <mappings modelType="EDoubleObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="std::optional&lt;double>" instanceClass="java.lang.Double" module="optional" literalStyle="number" byValue="true"/>
+  <mappings modelType="EFloat" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="float" zeroValue="0.0f" instanceClass="float" literalStyle="number" byValue="true"/>
+  <mappings modelType="EFloatObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="std::optional&lt;float>" instanceClass="java.lang.Float" module="optional" literalStyle="number" byValue="true"/>
+  <mappings modelType="EBigDecimal" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="std::string" instanceClass="java.math.BigDecimal" module="string"/>
+  <mappings modelType="EBigInteger" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="std::string" instanceClass="java.math.BigInteger" module="string"/>
+  <mappings modelType="EDate" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="std::chrono::system_clock::time_point" instanceClass="java.util.Date" module="chrono" byValue="true"/>
+  <mappings modelType="EJavaObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="std::any" instanceClass="java.lang.Object" module="any"/>
+  <mappings modelType="EObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EObject"/>
+  <mappings modelType="EClass" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EObject"/>
+  <mappings modelType="EPackage" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EObject"/>
+  <mappings modelType="EAttribute" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EObject"/>
+  <mappings modelType="EReference" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EObject"/>
+  <mappings modelType="EOperation" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EObject"/>
+  <mappings modelType="EEnum" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EObject"/>
+  <mappings modelType="EEnumLiteral" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EObject"/>
+  <mappings modelType="EDataType" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EObject"/>
+  <mappings modelType="EFactory" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EObject"/>
+  <mappings modelType="EAnnotation" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EObject"/>
+  <mappings modelType="EClassifier" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EObject"/>
+  <mappings modelType="EStructuralFeature" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EObject"/>
+  <mappings modelType="ENamedElement" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EObject"/>
+  <mappings modelType="EModelElement" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EObject"/>
+  <reservedWords word="alignas" kind="keyword"/>
+  <reservedWords word="alignof" kind="keyword"/>
+  <reservedWords word="and" kind="keyword"/>
+  <reservedWords word="and_eq" kind="keyword"/>
+  <reservedWords word="asm" kind="keyword"/>
+  <reservedWords word="atomic_cancel" kind="keyword"/>
+  <reservedWords word="atomic_commit" kind="keyword"/>
+  <reservedWords word="atomic_noexcept" kind="keyword"/>
+  <reservedWords word="auto" kind="keyword"/>
+  <reservedWords word="bitand" kind="keyword"/>
+  <reservedWords word="bitor" kind="keyword"/>
+  <reservedWords word="bool" kind="keyword"/>
+  <reservedWords word="break" kind="keyword"/>
+  <reservedWords word="case" kind="keyword"/>
+  <reservedWords word="catch" kind="keyword"/>
+  <reservedWords word="char" kind="keyword"/>
+  <reservedWords word="char8_t" kind="keyword"/>
+  <reservedWords word="char16_t" kind="keyword"/>
+  <reservedWords word="char32_t" kind="keyword"/>
+  <reservedWords word="class" kind="keyword"/>
+  <reservedWords word="compl" kind="keyword"/>
+  <reservedWords word="concept" kind="keyword"/>
+  <reservedWords word="const" kind="keyword"/>
+  <reservedWords word="consteval" kind="keyword"/>
+  <reservedWords word="constexpr" kind="keyword"/>
+  <reservedWords word="constinit" kind="keyword"/>
+  <reservedWords word="const_cast" kind="keyword"/>
+  <reservedWords word="continue" kind="keyword"/>
+  <reservedWords word="co_await" kind="keyword"/>
+  <reservedWords word="co_return" kind="keyword"/>
+  <reservedWords word="co_yield" kind="keyword"/>
+  <reservedWords word="decltype" kind="keyword"/>
+  <reservedWords word="default" kind="keyword"/>
+  <reservedWords word="delete" kind="keyword"/>
+  <reservedWords word="do" kind="keyword"/>
+  <reservedWords word="double" kind="keyword"/>
+  <reservedWords word="dynamic_cast" kind="keyword"/>
+  <reservedWords word="else" kind="keyword"/>
+  <reservedWords word="enum" kind="keyword"/>
+  <reservedWords word="explicit" kind="keyword"/>
+  <reservedWords word="export" kind="keyword"/>
+  <reservedWords word="extern" kind="keyword"/>
+  <reservedWords word="false" kind="keyword"/>
+  <reservedWords word="final" kind="keyword"/>
+  <reservedWords word="float" kind="keyword"/>
+  <reservedWords word="for" kind="keyword"/>
+  <reservedWords word="friend" kind="keyword"/>
+  <reservedWords word="goto" kind="keyword"/>
+  <reservedWords word="if" kind="keyword"/>
+  <reservedWords word="import" kind="keyword"/>
+  <reservedWords word="inline" kind="keyword"/>
+  <reservedWords word="int" kind="keyword"/>
+  <reservedWords word="long" kind="keyword"/>
+  <reservedWords word="module" kind="keyword"/>
+  <reservedWords word="mutable" kind="keyword"/>
+  <reservedWords word="namespace" kind="keyword"/>
+  <reservedWords word="new" kind="keyword"/>
+  <reservedWords word="noexcept" kind="keyword"/>
+  <reservedWords word="not" kind="keyword"/>
+  <reservedWords word="not_eq" kind="keyword"/>
+  <reservedWords word="nullptr" kind="keyword"/>
+  <reservedWords word="operator" kind="keyword"/>
+  <reservedWords word="or" kind="keyword"/>
+  <reservedWords word="or_eq" kind="keyword"/>
+  <reservedWords word="override" kind="keyword"/>
+  <reservedWords word="private" kind="keyword"/>
+  <reservedWords word="protected" kind="keyword"/>
+  <reservedWords word="public" kind="keyword"/>
+  <reservedWords word="register" kind="keyword"/>
+  <reservedWords word="reinterpret_cast" kind="keyword"/>
+  <reservedWords word="requires" kind="keyword"/>
+  <reservedWords word="return" kind="keyword"/>
+  <reservedWords word="short" kind="keyword"/>
+  <reservedWords word="signed" kind="keyword"/>
+  <reservedWords word="sizeof" kind="keyword"/>
+  <reservedWords word="static" kind="keyword"/>
+  <reservedWords word="static_assert" kind="keyword"/>
+  <reservedWords word="static_cast" kind="keyword"/>
+  <reservedWords word="struct" kind="keyword"/>
+  <reservedWords word="switch" kind="keyword"/>
+  <reservedWords word="synchronized" kind="keyword"/>
+  <reservedWords word="template" kind="keyword"/>
+  <reservedWords word="this" kind="keyword"/>
+  <reservedWords word="thread_local" kind="keyword"/>
+  <reservedWords word="throw" kind="keyword"/>
+  <reservedWords word="true" kind="keyword"/>
+  <reservedWords word="try" kind="keyword"/>
+  <reservedWords word="typedef" kind="keyword"/>
+  <reservedWords word="typeid" kind="keyword"/>
+  <reservedWords word="typename" kind="keyword"/>
+  <reservedWords word="union" kind="keyword"/>
+  <reservedWords word="unsigned" kind="keyword"/>
+  <reservedWords word="using" kind="keyword"/>
+  <reservedWords word="virtual" kind="keyword"/>
+  <reservedWords word="void" kind="keyword"/>
+  <reservedWords word="volatile" kind="keyword"/>
+  <reservedWords word="wchar_t" kind="keyword"/>
+  <reservedWords word="while" kind="keyword"/>
+  <reservedWords word="xor" kind="keyword"/>
+  <reservedWords word="xor_eq" kind="keyword"/>
+  <reservedWords word="std" kind="type"/>
+  <reservedWords word="EObject" kind="type"/>
+  <reservedWords word="ClassInfo" kind="type"/>
+  <reservedWords word="FeatureInfo" kind="type"/>
+  <reservedWords word="FeatureKind" kind="type"/>
+  <reservedWords word="PackageInfo" kind="type"/>
+  <reservedWords word="isKindOf" kind="type"/>
+  <reservedWords word="literalOf" kind="type"/>
+  <reservedWords word="NULL" kind="type"/>
+  <reservedWords word="EOF" kind="type"/>
+  <reservedWords word="FILE" kind="type"/>
+  <reservedWords word="BUFSIZ" kind="type"/>
+  <reservedWords word="EXIT_SUCCESS" kind="type"/>
+  <reservedWords word="EXIT_FAILURE" kind="type"/>
+  <reservedWords word="RAND_MAX" kind="type"/>
+  <reservedWords word="CHAR_BIT" kind="type"/>
+  <reservedWords word="INT_MAX" kind="type"/>
+  <reservedWords word="INT_MIN" kind="type"/>
+  <reservedWords word="UINT_MAX" kind="type"/>
+  <reservedWords word="LONG_MAX" kind="type"/>
+  <reservedWords word="LONG_MIN" kind="type"/>
+  <reservedWords word="SEEK_SET" kind="type"/>
+  <reservedWords word="SEEK_CUR" kind="type"/>
+  <reservedWords word="SEEK_END" kind="type"/>
+  <reservedWords word="stdin" kind="type"/>
+  <reservedWords word="stdout" kind="type"/>
+  <reservedWords word="stderr" kind="type"/>
+  <reservedWords word="errno" kind="type"/>
+  <reservedWords word="assert" kind="type"/>
+  <reservedWords word="offsetof" kind="type"/>
+  <reservedWords word="va_list" kind="type"/>
+  <reservedWords word="jmp_buf" kind="type"/>
+  <reservedWords word="size_t" kind="type"/>
+  <reservedWords word="ssize_t" kind="type"/>
+  <reservedWords word="ptrdiff_t" kind="type"/>
+  <reservedWords word="nullptr_t" kind="type"/>
+  <reservedWords word="max_align_t" kind="type"/>
+  <reservedWords word="div_t" kind="type"/>
+  <reservedWords word="ldiv_t" kind="type"/>
+  <reservedWords word="time_t" kind="type"/>
+  <reservedWords word="clock_t" kind="type"/>
+  <reservedWords word="tm" kind="type"/>
+  <reservedWords word="fpos_t" kind="type"/>
+  <reservedWords word="int8_t" kind="type"/>
+  <reservedWords word="int16_t" kind="type"/>
+  <reservedWords word="int32_t" kind="type"/>
+  <reservedWords word="int64_t" kind="type"/>
+  <reservedWords word="uint8_t" kind="type"/>
+  <reservedWords word="uint16_t" kind="type"/>
+  <reservedWords word="uint32_t" kind="type"/>
+  <reservedWords word="uint64_t" kind="type"/>
+  <reservedWords word="intptr_t" kind="type"/>
+  <reservedWords word="uintptr_t" kind="type"/>
+  <reservedWords word="intmax_t" kind="type"/>
+  <reservedWords word="uintmax_t" kind="type"/>
+  <reservedWords word="restrict" kind="type"/>
+  <reservedWords word="TRUE" kind="type"/>
+  <reservedWords word="FALSE" kind="type"/>
+  <reservedWords word="min" kind="type"/>
+  <reservedWords word="max" kind="type"/>
+  <reservedWords word="small" kind="type"/>
+  <reservedWords word="near" kind="type"/>
+  <reservedWords word="far" kind="type"/>
+  <reservedWords word="interface" kind="type"/>
+  <reservedWords word="unix" kind="type"/>
+  <reservedWords word="linux" kind="type"/>
+  <reservedWords word="major" kind="type"/>
+  <reservedWords word="minor" kind="type"/>
+</typemapping:TypeTable>

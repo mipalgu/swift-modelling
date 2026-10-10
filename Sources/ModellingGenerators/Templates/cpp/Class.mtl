@@ -1,0 +1,121 @@
+[comment encoding = UTF-8 /]
+[**
+ * The header of a generator class.
+ *
+ * A class that is abstract, an interface, or extended by other classes is declared as an abstract base class that
+ * lists the accessors of the features it declares. A class that has instances is also declared as a final class that
+ * owns the storage of all its features, declared or inherited, and implements their accessors. Bases are virtual
+ * and concrete classes never derive from each other, so every object has one copy of each base and one set of
+ * storage. A class that other classes extend has a concrete class whose name carries a suffix.
+ **/]
+[module Class('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CppNames/]
+[import CppIncludes/]
+[import CppTypes/]
+[import CppDocumentation/]
+[import Header/]
+[import ClassQueries/]
+[import ClassFeature/]
+[import SupportHeader/]
+
+[**
+ * The complete text of the header that declares a generator class.
+ **/]
+[template public classFile(genClass : GenClass)]
+[collect ('includes', supportInclude())/]
+[for (base : GenClass | genClass.modelSupers())]
+[collect ('includes', projectInclude(base.classifierHeader()))/]
+[/for]
+[if (genClass.isInstantiable())]
+[collect ('includes', projectInclude(genClass.genPackage().packageHeader()))/]
+[/if]
+[for (genFeature : GenFeature | genClass.usedFeatures())]
+[genFeature.collectFeatureIncludes()/]
+[/for]
+#pragma once
+
+[header(genClass, genClass.classifierFileName())/]
+
+[emit ('includes') once][includeBlock(items)/][/emit]
+[for (target : GenClass | genClass.forwardDeclared())]
+[generatedTag()/]
+namespace [target.genPackage().namespacePath()/] { class [target.interfaceName()/]; }
+
+[/for]
+[generatedTag()/]
+namespace [genClass.genPackage().namespacePath()/] {
+
+[if (genClass.isProtocol())]
+[genClass.abstractClassDeclaration()/]
+[/if]
+[if (genClass.isProtocol() and genClass.isInstantiable())]
+
+[/if]
+[if (genClass.isInstantiable())]
+[genClass.concreteClassDeclaration()/]
+[/if]
+
+}
+[/template]
+
+[**
+ * Writes the abstract base class of a class.
+ *
+ * The class has a protected default constructor, a virtual destructor and the pure virtual accessors of the features
+ * that the class declares itself. Inherited features are declared by the base classes.
+ **/]
+[template public abstractClassDeclaration(genClass : GenClass)]
+[documentationText(genClass, 'The ' + genClass.name() + ' class.\n\nPart of the ' + genClass.genPackage().name() + ' package.')/]
+[generatedTag()/]
+class [genClass.interfaceName()/] : [genClass.baseClasses(genClass.genPackage())/] {
+public:
+    /// @brief Destroys the object.
+    [generatedTag()/]
+    virtual ~[genClass.interfaceName()/]() = default;
+[for (genFeature : GenFeature | genClass.genFeatures)]
+
+[genFeature.pureAccessors(genClass.genPackage())/]
+[/for]
+
+protected:
+    /// @brief Creates the part of an object that this class describes.
+    [generatedTag()/]
+    [genClass.interfaceName()/]() = default;
+};
+[/template]
+
+[**
+ * Writes the concrete class of a class.
+ *
+ * The class is final, describes itself with the entry of its package, implements the accessors of all its features,
+ * declared and inherited, and owns their storage in private data members.
+ **/]
+[template public concreteClassDeclaration(genClass : GenClass)]
+[if (genClass.hasSubclasses())]
+/// @brief The implementation of the [genClass.name()/] class.
+[else]
+[documentationText(genClass, 'The ' + genClass.name() + ' class.\n\nPart of the ' + genClass.genPackage().name() + ' package.')/]
+[/if]
+[generatedTag()/]
+class [genClass.className()/] final : [genClass.concreteBaseClasses(genClass.genPackage())/] {
+public:
+    /// @brief The description of the class of the object.
+    /// @return The entry of the package description for the [genClass.name()/] class.
+    [generatedTag()/]
+    const [classInfoName()/] &[describeFunctionName()/]() const override { return [genClass.genPackage().packageTypeName()/]::instance().[genClass.descriptorName()/](); }
+[for (genFeature : GenFeature | genClass.implementedFeatures())]
+
+[genFeature.concreteAccessors(genClass)/]
+[/for]
+[if (genClass.implementedFeatures()->notEmpty())]
+
+private:
+[for (genFeature : GenFeature | genClass.implementedFeatures())]
+[if (i > 1)]
+
+[/if]
+[genFeature.storage(genClass.genPackage())/]
+[/for]
+[/if]
+};
+[/template]

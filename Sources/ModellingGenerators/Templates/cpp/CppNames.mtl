@@ -1,0 +1,191 @@
+[comment encoding = UTF-8 /]
+[**
+ * C++ naming conventions for the elements of a generator model.
+ *
+ * The queries here decide how model names become C++ identifiers and file names: the trailing underscore of
+ * names that the language or the support header claims, the namespaces and directories of packages, the include
+ * paths of classifiers, and which classes are written as abstract base classes. Language independent name
+ * formatting (capitalisation, word splitting) comes from the generator model services.
+ **/]
+[module CppNames('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+
+[**
+ * The language table that the template set bundles: type mappings and reserved words.
+ **/]
+[query public languageTable() : OclAny = templateData('types')->first()/]
+
+[**
+ * Whether a text is missing or empty.
+ **/]
+[query public isBlank(text : OclAny) : Boolean = if text.oclIsUndefined() then true else text.size() = 0 endif/]
+
+[comment Making names safe /]
+
+[**
+ * Whether the language table lists a name as reserved in a way: keyword or type.
+ **/]
+[query public isReservedAs(name : String, kind : String) : Boolean = languageTable().reservedWords->exists(w | w.word = name and w.kind = kind)/]
+
+[**
+ * The identifier for a type, namespace, enumeration literal or other name that C++ or the support header claims:
+ * the name with a trailing underscore if the language table lists it as a keyword or a type, otherwise the name.
+ *
+ * The table of the language lists the words; a name that it does not list stays as it is.
+ **/]
+[query public escaped(name : String) : String = if isReservedAs(name, 'keyword') or isReservedAs(name, 'type') then name + '_' else name endif/]
+
+[**
+ * The identifier of a generated type.
+ **/]
+[query public typeIdentifier(name : String) : String = escaped(name)/]
+
+[**
+ * The identifier of an enumeration literal.
+ **/]
+[query public literalName(genEnumLiteral : GenEnumLiteral) : String = escaped(genEnumLiteral.name())/]
+
+[comment Files /]
+
+[**
+ * The extension of the files that the set writes, including the dot.
+ **/]
+[query public headerExtension() : String = '.hpp'/]
+
+[**
+ * The name, without extension, of the model independent header that declares the root class and the descriptions of
+ * classes and packages.
+ **/]
+[query public supportHeaderName() : String = 'EObject'/]
+
+[**
+ * The file name, including the extension, of a header.
+ **/]
+[query public headerFileName(name : String) : String = name + headerExtension()/]
+
+[comment Packages /]
+
+[**
+ * The relative path of the directory that holds the files of a package: the names of its containing
+ * packages and its own, separated by slashes.
+ *
+ * The directory keeps the plain names of the packages, even those that the namespaces escape.
+ **/]
+[query public packageDirectory(genPackage : GenPackage) : String = if genPackage.parentGenPackage().oclIsUndefined() then genPackage.name() else genPackage.parentGenPackage().packageDirectory() + '/' + genPackage.name() endif/]
+
+[**
+ * The namespace of a package: the escaped names of its containing packages and its own, separated by two colons.
+ *
+ * Every name is escaped if it is reserved, while the directory of the package keeps its plain name.
+ **/]
+[query public namespacePath(genPackage : GenPackage) : String = if genPackage.parentGenPackage().oclIsUndefined() then escaped(genPackage.name()) else genPackage.parentGenPackage().namespacePath() + '::' + escaped(genPackage.name()) endif/]
+
+[**
+ * The text before a name that a package puts before the names of its factory and package classes.
+ **/]
+[query public prefixedName(genPackage : GenPackage, name : String) : String = if isBlank(genPackage.setting('prefix')) then name else genPackage.setting('prefix') + name endif/]
+
+[**
+ * The name of the class that describes a package and its classifiers.
+ **/]
+[query public packageTypeName(genPackage : GenPackage) : String = typeIdentifier(genPackage.prefixedName('Package'))/]
+
+[**
+ * The name of the class that creates the objects of a package.
+ **/]
+[query public factoryTypeName(genPackage : GenPackage) : String = typeIdentifier(genPackage.prefixedName('Factory'))/]
+
+[**
+ * The file name, without extension, of the package description of a package.
+ **/]
+[query public packageFileName(genPackage : GenPackage) : String = typeIdentifier(genPackage.prefixedName('Package'))/]
+
+[**
+ * The file name, without extension, of the factory of a package.
+ **/]
+[query public factoryFileName(genPackage : GenPackage) : String = typeIdentifier(genPackage.prefixedName('Factory'))/]
+
+[**
+ * The path, relative to the output directory, of the header with the description of a package.
+ **/]
+[query public packageHeader(genPackage : GenPackage) : String = genPackage.packageDirectory() + '/' + headerFileName(genPackage.packageFileName())/]
+
+[**
+ * Whether a package has anything to generate: a class, an enumeration or a data type.
+ **/]
+[query public hasClassifiers(genPackage : GenPackage) : Boolean = genPackage.genClasses->notEmpty() or genPackage.genEnums->notEmpty() or genPackage.genDataTypes->notEmpty()/]
+
+[**
+ * The namespace of the Ecore metamodel, whose classifiers the support header stands in for.
+ **/]
+[query public ecoreNamespace() : String = 'http://www.eclipse.org/emf/2002/Ecore'/]
+
+[**
+ * Whether a package is the Ecore package itself, which the support header stands in for.
+ **/]
+[query public isEcorePackage(genPackage : GenPackage) : Boolean = genPackage.ecorePackage.nsURI = ecoreNamespace()/]
+
+[comment Classifiers /]
+
+[**
+ * The name of the file of a classifier, without extension.
+ **/]
+[query public classifierFileName(classifier : OclAny) : String = typeIdentifier(classifier.name())/]
+
+[**
+ * The path, relative to the output directory, of the header of a classifier. Headers include each other with
+ * this path.
+ *
+ * The path is the directory of the package followed by the escaped name of the classifier and the extension of headers.
+ **/]
+[query public classifierHeader(genClassifier : OclAny) : String = genClassifier.genPackage().packageDirectory() + '/' + headerFileName(genClassifier.classifierFileName())/]
+
+[**
+ * The name of a classifier as other code writes it from inside a package: the plain name within the package,
+ * otherwise the name with the namespace of its package, starting at the global namespace.
+ *
+ * The name starts at the global namespace, so that no namespace of the generated code hides it.
+ **/]
+[query public qualifiedName(genClassifier : OclAny, context : GenPackage) : String = if genClassifier.genPackage().packageDirectory() = context.packageDirectory() then genClassifier.classifierFileName() else '::' + genClassifier.genPackage().namespacePath() + '::' + genClassifier.classifierFileName() endif/]
+
+[**
+ * The supertypes of a class that are generated: the Ecore root class, which the support header provides, is left out.
+ **/]
+[query public modelSupers(genClass : GenClass) : OclAny = genClass.baseGenClasses()->reject(b | b.genPackage().isEcorePackage())/]
+
+[**
+ * Whether another class of the generator model extends a class.
+ **/]
+[query public hasSubclasses(genClass : GenClass) : Boolean = genClass.genModel().allGenPackages()->exists(p | p.genClasses->exists(c | c.modelSupers()->includes(genClass)))/]
+
+[**
+ * Whether a class is declared as an abstract base class: a class that is abstract or an interface, or that other
+ * classes extend. The other classes only exist as concrete classes.
+ *
+ * Such a class gets an abstract base class; the classes that have instances only get a concrete class.
+ **/]
+[query public isProtocol(genClass : GenClass) : Boolean = genClass.isInterface() or genClass.isAbstract() or genClass.hasSubclasses()/]
+
+[**
+ * Whether a class has instances, and so a concrete class that implements it.
+ **/]
+[query public isInstantiable(genClass : GenClass) : Boolean = not (genClass.isInterface() or genClass.isAbstract())/]
+
+[**
+ * The suffix of the name of the concrete class that implements an abstract base class of a class that is not abstract.
+ **/]
+[query public implementationSuffix() : String = 'Impl'/]
+
+[**
+ * The identifier of the abstract base class of a class, or of its concrete class if it is not a base class.
+ **/]
+[query public interfaceName(genClass : GenClass) : String = typeIdentifier(genClass.name())/]
+
+[**
+ * The identifier of the concrete class that implements a class.
+ **/]
+[query public className(genClass : GenClass) : String = if genClass.hasSubclasses() then typeIdentifier(genClass.name() + implementationSuffix()) else typeIdentifier(genClass.name()) endif/]
+
+[**
+ * The name of the accessor of a package description that returns the description of a class.
+ **/]
+[query public descriptorName(genClass : GenClass) : String = genClass.name().toLowerFirst() + 'Class'/]

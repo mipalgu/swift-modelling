@@ -1,0 +1,272 @@
+[comment encoding = UTF-8 /]
+[**
+ * C++ types for the elements of a generator model.
+ *
+ * The queries here map built-in model data types to C++ types with the table that the template set bundles,
+ * derive the C++ type that a data type, enumeration or class stands for, and decide how a feature is stored and
+ * passed: values of attributes by value or by constant reference, references as shared pointers to the objects
+ * they contain and weak pointers to the objects they merely refer to. They also turn the default value literal of
+ * a model into a C++ expression.
+ **/]
+[module CppTypes('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CppNames/]
+[import CppDocumentation/]
+
+[comment Standard library types /]
+
+[**
+ * The type of a vector of items.
+ **/]
+[query public vectorType(item : String) : String = 'std::vector<' + item + '>'/]
+
+[**
+ * The type of a shared pointer to an object.
+ **/]
+[query public sharedType(item : String) : String = 'std::shared_ptr<' + item + '>'/]
+
+[**
+ * The type of a weak pointer to an object.
+ **/]
+[query public weakType(item : String) : String = 'std::weak_ptr<' + item + '>'/]
+
+[**
+ * The type of a view of text that the generated code does not own: the names and literals of descriptions.
+ **/]
+[query public textViewType() : String = 'std::string_view'/]
+
+[**
+ * The type of an optional value of an item type.
+ **/]
+[query public optionalType(item : String) : String = 'std::optional<' + item + '>'/]
+
+[**
+ * The type of the integers that stand for the values of an enumeration.
+ **/]
+[query public enumerationBaseType() : String = 'std::int32_t'/]
+
+[**
+ * The function that creates an object owned by a shared pointer.
+ **/]
+[query public makeSharedFunction() : String = 'std::make_shared'/]
+
+[**
+ * A reference to a constant value of a type.
+ **/]
+[query public constReference(type : String) : String = 'const ' + type + ' &'/]
+
+[comment Built-in data types /]
+
+[**
+ * The entry of the type table for a built-in model type, found by its name.
+ **/]
+[query public typeMapping(modelType : String) : OclAny = languageTable().mappings->select(m | m.modelType = modelType)->first()/]
+
+[**
+ * The entry of the type table for the class of the instances that a model names for a data type.
+ **/]
+[query public instanceMapping(instanceClass : String) : OclAny = languageTable().mappings->select(m | m.instanceClass = instanceClass)->first()/]
+
+[**
+ * The model type whose table entry describes a data type that the table does not know: the type of any value.
+ **/]
+[query public fallbackModelType() : String = 'EJavaObject'/]
+
+[**
+ * The entry of the type table that describes a data type: the entry for its instance class if the model
+ * names one that the table knows, otherwise the entry for its name, otherwise the entry for any value.
+ *
+ * A data type of the model that names an instance class which the table knows takes the type of that class, so that an
+ * alias of java.lang.Integer holds an optional integer.
+ **/]
+[query public dataTypeMapping(dataType : OclAny) : OclAny = if not isBlank(dataType.instanceClassName) and not instanceMapping(dataType.instanceClassName).oclIsUndefined() then instanceMapping(dataType.instanceClassName) else (if typeMapping(dataType.name).oclIsUndefined() then typeMapping(fallbackModelType()) else typeMapping(dataType.name) endif) endif/]
+
+[**
+ * The type that stands for any object of the model: the root class of the support header.
+ **/]
+[query public rootObjectType() : String = supportHeaderName()/]
+
+[**
+ * Whether a classifier of the model is one that the Ecore package provides.
+ **/]
+[query public isEcoreClassifier(classifier : OclAny) : Boolean = if classifier.genClassifier().oclIsUndefined() then true else classifier.genClassifier().genPackage().isEcorePackage() endif/]
+
+[comment Classifiers /]
+
+[**
+ * The C++ type that a model classifier stands for, as written inside a package: the abstract base class or concrete
+ * class of a class, the enumeration class of an enumeration, the alias of a data type that the model defines, or
+ * the type of the table for a data type of Ecore. Classifiers that the generator model does not describe are written
+ * as the root class for classes and as the type of any value for data types.
+ *
+ * The name is written as seen from the package that the context names: plain for a classifier of that package,
+ * otherwise with its namespace.
+ **/]
+[query public classifierTypeName(classifier : OclAny, context : GenPackage) : String = if classifier.oclIsUndefined() then rootObjectType() else (if classifier.oclIsKindOf(EClass) then classifier.classTypeName(context) else (if classifier.oclIsKindOf(EEnum) then classifier.enumTypeName(context) else classifier.dataTypeName(context) endif) endif) endif/]
+
+[**
+ * The C++ type of a class that a feature refers to: the root class for a class of the Ecore package, otherwise the
+ * abstract base class or concrete class of the generated class.
+ **/]
+[query classTypeName(classifier : OclAny, context : GenPackage) : String = if classifier.isEcoreClassifier() then (if typeMapping(classifier.name).oclIsUndefined() then rootObjectType() else typeMapping(classifier.name).targetType endif) else classifier.genClassifier().qualifiedName(context) endif/]
+
+[**
+ * The C++ type of an enumeration of the model: the enumeration class, or the type of text if the generator model does
+ * not describe the enumeration.
+ **/]
+[query enumTypeName(classifier : OclAny, context : GenPackage) : String = if classifier.genClassifier().oclIsUndefined() then typeMapping('EString').targetType else classifier.genClassifier().qualifiedName(context) endif/]
+
+[**
+ * The C++ type of a data type: the type of the table for a data type of Ecore, otherwise the alias that the model
+ * defines.
+ **/]
+[query dataTypeName(classifier : OclAny, context : GenPackage) : String = if classifier.isEcoreClassifier() then classifier.dataTypeMapping().targetType else classifier.genClassifier().qualifiedName(context) endif/]
+
+[**
+ * The type that a data type of the model is an alias of.
+ **/]
+[query public aliasedTypeName(genDataType : GenDataType) : String = genDataType.ecoreDataType.dataTypeMapping().targetType/]
+
+[comment Features /]
+
+[**
+ * Whether a feature can hold several values.
+ **/]
+[query public isMany(genFeature : GenFeature) : Boolean = genFeature.isListType()/]
+
+[**
+ * The native classifier of the type of a feature.
+ **/]
+[query public featureClassifier(genFeature : GenFeature) : OclAny = genFeature.ecoreFeature.eType/]
+
+[**
+ * The table entry for the data type of an attribute; undefined for references and enumerations.
+ *
+ * The table is looked up by the instance class or the name of the data type, and falls back to the entry for any value.
+ **/]
+[query public featureMapping(genFeature : GenFeature) : OclAny = if genFeature.isAttributeType() and genFeature.featureClassifier().oclIsKindOf(EDataType) and not genFeature.featureClassifier().oclIsKindOf(EEnum) then genFeature.featureClassifier().dataTypeMapping() else null endif/]
+
+[**
+ * Whether the type of a feature is an enumeration of the model.
+ **/]
+[query public isEnumFeature(genFeature : GenFeature) : Boolean = genFeature.isAttributeType() and genFeature.featureClassifier().oclIsKindOf(EEnum)/]
+
+[**
+ * The type of a single value of a feature: the type of its attribute, or the class that its reference points to.
+ **/]
+[query public itemTypeName(genFeature : GenFeature, context : GenPackage) : String = classifierTypeName(genFeature.featureClassifier(), context)/]
+
+[**
+ * Whether a feature holds its objects with shared ownership: a reference that contains its targets, or that points
+ * to a class of the Ecore package, whose objects no other reference owns.
+ *
+ * A shared pointer expresses ownership; the objects behind weak pointers must be owned by some containment.
+ **/]
+[query public isShared(genFeature : GenFeature) : Boolean = genFeature.isReferenceType() and (genFeature.isContainment() or genFeature.featureClassifier().isEcoreClassifier())/]
+
+[**
+ * Whether a feature refers weakly to the objects it points to: a reference to a generated class that does not
+ * contain it.
+ *
+ * Weak pointers keep reference cycles, which the opposite ends of a pair of references form, from keeping objects
+ * alive.
+ **/]
+[query public isWeak(genFeature : GenFeature) : Boolean = genFeature.isReferenceType() and not genFeature.isShared()/]
+
+[**
+ * The type of one stored value of a feature: the type of an attribute, or a shared or weak pointer for a reference.
+ *
+ * The item is the type of the values for an attribute and the class for a reference, which is held by a shared or a
+ * weak pointer.
+ **/]
+[query public storedItemType(genFeature : GenFeature, context : GenPackage) : String = if genFeature.isWeak() then weakType(genFeature.itemTypeName(context)) else (if genFeature.isReferenceType() then sharedType(genFeature.itemTypeName(context)) else genFeature.itemTypeName(context) endif) endif/]
+
+[**
+ * The type of the storage of a feature: a vector for many values, otherwise the type of a single value.
+ *
+ * The storage is the data member that the concrete class declares, and the many-valued getters return it by reference.
+ **/]
+[query public storageType(genFeature : GenFeature, context : GenPackage) : String = if genFeature.isMany() then vectorType(genFeature.storedItemType(context)) else genFeature.storedItemType(context) endif/]
+
+[**
+ * Whether the accessors of an attribute pass its values by value: enumerations, and the types that the table marks.
+ *
+ * Small types are passed by value because a copy costs no more than a reference; the table marks them.
+ **/]
+[query public passesByValue(genFeature : GenFeature) : Boolean = genFeature.isEnumFeature() or (not genFeature.featureMapping().oclIsUndefined() and genFeature.featureMapping().byValue)/]
+
+[**
+ * The type that the getter of a single-valued feature returns: a shared pointer for a reference, the value
+ * for a type that passes by value, otherwise a reference to a constant value.
+ *
+ * A reference is returned as a shared pointer made from the stored pointer, so the caller keeps its target alive while
+ * it uses it.
+ **/]
+[query public valueTypeName(genFeature : GenFeature, context : GenPackage) : String = if genFeature.isReferenceType() then sharedType(genFeature.itemTypeName(context)) else (if genFeature.passesByValue() then genFeature.itemTypeName(context) else constReference(genFeature.itemTypeName(context)) endif) endif/]
+
+[**
+ * The type of the parameter of the setter of a single-valued feature.
+ *
+ * A reference is passed as a constant reference to a shared pointer, so no count changes hands for a call that only
+ * stores it.
+ **/]
+[query public parameterTypeName(genFeature : GenFeature, context : GenPackage) : String = if genFeature.isReferenceType() then constReference(sharedType(genFeature.itemTypeName(context))) else genFeature.valueTypeName(context) endif/]
+
+[comment Default values /]
+
+[**
+ * The enumeration literal that a feature uses as its default: the literal that the model names, otherwise the first.
+ **/]
+[query public defaultLiteral(genFeature : GenFeature) : OclAny = if genFeature.hasDefault() and not genFeature.featureClassifier().genClassifier().genEnumLiterals->select(l | l.ecoreEnumLiteral.literal = genFeature.defaultValueLiteral() or l.name() = genFeature.defaultValueLiteral())->isEmpty() then genFeature.featureClassifier().genClassifier().genEnumLiterals->select(l | l.ecoreEnumLiteral.literal = genFeature.defaultValueLiteral() or l.name() = genFeature.defaultValueLiteral())->first() else genFeature.featureClassifier().genClassifier().genEnumLiterals->first() endif/]
+
+[**
+ * Whether the enumeration that is the type of a feature has literals, so that its first literal can be the default.
+ **/]
+[query public hasEnumDefault(genFeature : GenFeature) : Boolean = genFeature.isEnumFeature() and not genFeature.featureClassifier().genClassifier().oclIsUndefined() and genFeature.featureClassifier().genClassifier().genEnumLiterals->notEmpty()/]
+
+[**
+ * The C++ literal for a default value literal of the model, or an empty text if the table has no way to write one.
+ * A character is written as the number of its code, because the merge cannot tell a quote inside a character literal
+ * from the start of a string.
+ *
+ * The style names how the text is read; a text that does not fit its style gives an empty text, and the zero value
+ * applies.
+ **/]
+[query public literalExpression(literal : String, style : OclAny) : String = if isBlank(style) then '' else (if style = 'string' then cppStringLiteral(literal) else (if style = 'boolean' then (if literal.toLower() = 'true' or literal.toLower() = 'false' then literal.toLower() else '' endif) else (if style = 'number' then (if literal.matches('^-?[0-9]+([.][0-9]+)?([eE][-+]?[0-9]+)?$') then literal else '' endif) else (if style = 'character' and literal.size() > 0 then literal.characterCodes()->first().toString() else '' endif) endif) endif) endif) endif/]
+
+[**
+ * The value that an attribute of the table starts with: the default of the model if the table can write it,
+ * otherwise the zero value of the type, which is empty if default construction is the zero value.
+ *
+ * The default of the model wins when the table can write it; otherwise the zero value of the table applies.
+ **/]
+[query public mappedDefault(genFeature : GenFeature) : String = if genFeature.hasDefault() and not literalExpression(genFeature.defaultValueLiteral(), genFeature.featureMapping().literalStyle).isBlank() then literalExpression(genFeature.defaultValueLiteral(), genFeature.featureMapping().literalStyle) else (if isBlank(genFeature.featureMapping().zeroValue) then '' else genFeature.featureMapping().zeroValue endif) endif/]
+
+[**
+ * The expression that an attribute starts with, or an empty text if default construction is enough: the default
+ * literal or first literal of an enumeration, otherwise the default of the model or the zero value of the table.
+ * Many-valued features and references start empty.
+ *
+ * The result is empty for storage that default construction already makes right: strings, vectors, optional values,
+ * pointers and dates.
+ **/]
+[query public initialValue(genFeature : GenFeature, context : GenPackage) : String = if genFeature.isMany() or genFeature.isReferenceType() then '' else (if genFeature.isEnumFeature() then (if genFeature.hasEnumDefault() then genFeature.itemTypeName(context) + '::' + genFeature.defaultLiteral().literalName() else 'static_cast<' + genFeature.itemTypeName(context) + '>(0)' endif) else (if genFeature.featureMapping().oclIsUndefined() then '' else genFeature.mappedDefault() endif) endif) endif/]
+
+[**
+ * The declaration of the storage of a feature, with its initial value if it has one.
+ **/]
+[query public storageDeclaration(genFeature : GenFeature, context : GenPackage) : String = genFeature.storageType(context) + ' ' + genFeature.storageName() + (if genFeature.initialValue(context).isBlank() then '' else ' = ' + genFeature.initialValue(context) endif) + ';'/]
+
+[**
+ * The name of the storage of a feature.
+ **/]
+[query public storageName(genFeature : GenFeature) : String = 'm_' + genFeature.name()/]
+
+[comment Declarations /]
+
+[**
+ * A declarator: a type followed by a name, with a space between them unless the type ends in a reference or pointer.
+ *
+ * Joining the pieces with a space after an ampersand would write const std::string & name, so the space is left out
+ * there.
+ **/]
+[query public declarator(type : String, name : String) : String = if type.endsWith('&') then type + name else type + ' ' + name endif/]

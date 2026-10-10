@@ -44,35 +44,33 @@ struct CodeGenerationTests {
         // Task 4.1 & 4.2: Verify Package and Factory content
         let packageContent = try String(
             contentsOf: pkgDir.appendingPathComponent("FamiliesPackage.swift"), encoding: .utf8)
-        #expect(packageContent.contains("struct FamiliesPackage"))
-        #expect(packageContent.contains("static let shared = FamiliesPackage()"))
-        #expect(packageContent.contains("let eFamily: EClass"))
-        #expect(packageContent.contains("let eMember: EClass"))
+        #expect(packageContent.contains("public struct FamiliesPackage: Sendable"))
+        #expect(packageContent.contains("public static let shared = FamiliesPackage()"))
+        #expect(packageContent.contains("public let eFamily: EClass"))
+        #expect(packageContent.contains("public let eMember: EClass"))
 
         let factoryContent = try String(
             contentsOf: pkgDir.appendingPathComponent("FamiliesFactory.swift"), encoding: .utf8)
-        #expect(factoryContent.contains("struct FamiliesFactory"))
-        #expect(factoryContent.contains("func createFamily() -> Family"))
-        #expect(factoryContent.contains("func createMember() -> Member"))
-        #expect(factoryContent.contains("func create(_ eClass: EClass) -> any EObject"))
+        #expect(factoryContent.contains("public struct FamiliesFactory: Sendable"))
+        #expect(factoryContent.contains("public func createFamily() -> Family"))
+        #expect(factoryContent.contains("public func createMember() -> Member"))
+        #expect(factoryContent.contains("public func create(_ eClass: EClass) -> (any EObject)?"))
 
         // Task 3.2 & 4.3: Verify bidirectional references and reflective access in Family.swift
         let familyContent = try String(
             contentsOf: pkgDir.appendingPathComponent("Family.swift"), encoding: .utf8)
-        #expect(familyContent.contains("class Family: EObject, Hashable"))
-        #expect(familyContent.contains("didSet"))
+        #expect(familyContent.contains("public final class Family: EObject"))
+        #expect(familyContent.contains("previous"))
         #expect(
             familyContent.contains(
                 "func eGet(_ feature: some EStructuralFeature) -> (any EcoreValue)?"))
         #expect(
             familyContent.contains(
-                "func eSet(_ feature: some EStructuralFeature, value: (any EcoreValue)?)"))
+                "func eSet(_ feature: some EStructuralFeature, _ value: (any EcoreValue)?)"))
 
         // Task 6.1: Verify DocC documentation (Australian English summary/description pattern)
         #expect(familyContent.contains("/// The Family class."))
-        #expect(
-            familyContent.contains("An implementation of the Family type from the Ecore metamodel.")
-        )
+        #expect(familyContent.contains("/// Part of the Families package."))
     }
 
     @Test("should generate documented Swift code from organisation.ecore")
@@ -106,7 +104,7 @@ struct CodeGenerationTests {
         #expect(FileManager.default.fileExists(atPath: teamFile.path))
 
         let personContent = try String(contentsOf: personFile, encoding: .utf8)
-        #expect(personContent.contains("class Person"))
+        #expect(personContent.contains("public final class Person"))
 
         // Verify DocC property documentation
         #expect(personContent.contains("/// The name attribute."))
@@ -143,8 +141,9 @@ struct CodeGenerationTests {
 
         // Task 5.1 & 6.1: Verify documented enumeration
         #expect(enumContent.contains("/// The MyEnum enumeration."))
-        #expect(enumContent.contains("enum MyEnum: Int, Sendable, Codable, CaseIterable"))
+        #expect(enumContent.contains("public enum MyEnum: Int, Sendable, Codable, CaseIterable, EcoreValue"))
         #expect(enumContent.contains("case ABC = 0"))
-        #expect(enumContent.contains("case DEF = 1"))
+        // Literals that the model gives no value share the value 0, as in Ecore, so DEF is an alias of ABC
+        #expect(enumContent.contains("public static let DEF: MyEnum = .ABC"))
     }
 }

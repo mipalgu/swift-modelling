@@ -1,0 +1,21 @@
+{
+  "name": "cpp",
+  "summary": "C++20 model code with header-only classes",
+  "mainModule": "generate",
+  "mainTemplate": "generate",
+  "dataModels": [
+    {
+      "name": "types",
+      "metamodel": "TypeMapping.ecore",
+      "model": "cpp-types.xmi"
+    }
+  ],
+  "layout": {
+    "sourceRootSetting": "modelDirectory",
+    "includeSourceRoot": false
+  },
+  "options": {
+    "lineDelimiter": "\n"
+  },
+  "fileCountTemplate": "fileCount"
+}

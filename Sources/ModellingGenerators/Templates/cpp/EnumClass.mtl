@@ -1,0 +1,78 @@
+[comment encoding = UTF-8 /]
+[**
+ * The header of a generator enumeration.
+ *
+ * The header declares a scoped enumeration with a sized integer type and one enumerator for each literal, then
+ * the functions that convert a value to the text of its literal and the text of a literal to a value. Literals that
+ * repeat a value are enumerators with the same value.
+ **/]
+[module EnumClass('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CppNames/]
+[import CppIncludes/]
+[import CppTypes/]
+[import CppDocumentation/]
+[import Header/]
+
+[**
+ * The name of the function that converts a value of an enumeration to the text of its literal. One function of
+ * this name exists for each enumeration of a package.
+ **/]
+[query public literalFunctionName() : String = 'literalOf'/]
+
+[**
+ * The name of the function that converts the text of a literal to a value of an enumeration.
+ **/]
+[query public parseFunctionName(genEnum : GenEnum) : String = 'parse' + genEnum.name()/]
+
+[**
+ * The complete text of the header that declares a generator enumeration.
+ *
+ * Each literal is an enumerator with the value of the model, so literals that repeat a value are enumerators with the
+ * same value; the conversion to text answers with the first literal of a value.
+ **/]
+[template public enumFile(genEnum : GenEnum)]
+[collect ('includes', Sequence{standardInclude(integerHeader()), standardInclude(textViewHeader()), standardInclude(optionalHeader())})/]
+#pragma once
+
+[header(genEnum, genEnum.classifierFileName())/]
+
+[emit ('includes') once][includeBlock(items)/][/emit]
+[generatedTag()/]
+namespace [genEnum.genPackage().namespacePath()/] {
+
+[documentationText(genEnum, 'The ' + genEnum.name() + ' enumeration.')/]
+[generatedTag()/]
+enum class [typeIdentifier(genEnum.name())/] : [enumerationBaseType()/] {
+[for (literal : GenEnumLiteral | genEnum.genEnumLiterals)]
+    [documentationText(literal, 'The ' + literal.name() + ' literal.')/]
+    [generatedTag()/]
+    [literal.literalName()/] = [literal.ecoreEnumLiteral.value/],
+[/for]
+};
+
+/// @brief The text of the literal of a value of the [genEnum.name()/] enumeration.
+/// @param value The value to describe.
+/// @return The literal as a model writes it, or an empty text for a value that has no literal.
+[generatedTag()/]
+constexpr [textViewType()/] [literalFunctionName()/]([typeIdentifier(genEnum.name())/] value) {
+    switch (value) {
+[for (literal : GenEnumLiteral | genEnum.uniqueValuedGenEnumLiterals())]
+    case [typeIdentifier(genEnum.name())/]::[literal.literalName()/]: return [cppStringLiteral(literal.ecoreEnumLiteral.literal)/];
+[/for]
+    }
+    return [textViewType()/]();
+}
+
+/// @brief The value of the [genEnum.name()/] enumeration that a literal stands for.
+/// @param text The text of the literal as a model writes it.
+/// @return The value, or no value if the text names no literal.
+[generatedTag()/]
+inline [optionalType(typeIdentifier(genEnum.name()))/] [genEnum.parseFunctionName()/]([if (genEnum.genEnumLiterals->isEmpty())]['['/]['['/]maybe_unused[']'/][']'/] [/if][textViewType()/] text) {
+[for (literal : GenEnumLiteral | genEnum.genEnumLiterals)]
+    if (text == [cppStringLiteral(literal.ecoreEnumLiteral.literal)/]) return [typeIdentifier(genEnum.name())/]::[literal.literalName()/];
+[/for]
+    return std::nullopt;
+}
+
+}
+[/template]

@@ -70,7 +70,7 @@ Generate generator models and source code from Ecore models.
 swift-atl generate <model.ecore | model.genmodel> [options]
 ```
 
-The command is the ATL entry to the shared generation pipeline. An Ecore model is transformed into a generator model with the bundled `Ecore2GenModel.atl`; the pseudo-language `genmodel` stops there, and the name of a template set, such as `java`, continues to source files. A generator model is generated from directly.
+The command is the ATL entry to the shared generation pipeline. An Ecore model is transformed into a generator model with the bundled `Ecore2GenModel.atl`; the pseudo-language `genmodel` stops there, and the name of a template set, such as `java`, `swift`, `c` or `cpp`, continues to source files. A generator model is generated from directly.
 
 **Options:**
 
@@ -83,7 +83,7 @@ The command is the ATL entry to the shared generation pipeline. An Ecore model i
 - `--force-overwrite` - Replace existing files without merging
 - `--diff` - Write the generated text of existing files beside them as `.<name>.new`
 - `--model-directory` - Write below the model directory of the generator model
-- `--code-style <style>` - The layout of the generated text, one of the styles of the template set (`java`: `eclipse`, the default, or `emf`); rejected for the language `genmodel`
+- `--code-style <style>` - The layout of the generated text, one of the styles of the template set (`java`: `eclipse`, the default, or `emf`); rejected for the language `genmodel` and for sets that offer none, such as `swift`, `c` and `cpp`
 - `--verbose` - One line for every file; without it a progress bar with counts appears on an interactive terminal
 
 **Examples:**
@@ -91,6 +91,13 @@ The command is the ATL entry to the shared generation pipeline. An Ecore model i
 ```bash
 # Create library.genmodel beside library.ecore
 swift-atl generate model/library.ecore --language genmodel --base-package org.example
+
+# Generate Swift in one step
+swift-atl generate model/library.ecore --language swift -o Sources/Library
+
+# Generate a C11 or a C++20 model API
+swift-atl generate model/library.ecore --language c -o c-src
+swift-atl generate model/library.ecore --language cpp -o cpp-src
 
 # Generate Java in one step
 swift-atl generate model/library.ecore --language java --base-package org.example -o src-gen

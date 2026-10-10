@@ -1,0 +1,83 @@
+[comment encoding = UTF-8 /]
+[**
+ * The Swift file of a generator enumeration.
+ *
+ * The file declares an enumeration with integer raw values that conforms to the protocol of Ecore values. It holds
+ * one case for each literal that is the first to carry its value, a static constant for every literal that repeats
+ * a value, and the conversion from and to the text of the literals.
+ **/]
+[module EnumClass('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import SwiftNames/]
+[import SwiftImports/]
+[import SwiftDocumentation/]
+[import Header/]
+
+[**
+ * The complete text of the file that declares a generator enumeration.
+ **/]
+[template public enumFile(genEnum : GenEnum)]
+[collect ('imports', Sequence{valueModule(), foundationModule()})/]
+[header(genEnum, genEnum.classifierFileName())/]
+
+[emit ('imports') once][importBlock(items)/][/emit]
+[documentationText(genEnum, 'The ' + genEnum.name() + ' enumeration.')/]
+[generatedTag()/]
+public enum [typeIdentifier(genEnum.name())/]: [if (genEnum.genEnumLiterals->isEmpty())][else]Int, [/if]Sendable, Codable, CaseIterable, EcoreValue {
+[for (literal : GenEnumLiteral | genEnum.uniqueValuedGenEnumLiterals())]
+    [documentationText(literal, 'The ' + literal.name() + ' literal.')/]
+    [generatedTag()/]
+    case [literal.caseName()/] = [literal.ecoreEnumLiteral.value/]
+
+[/for]
+[for (literal : GenEnumLiteral | genEnum.genEnumLiterals->reject(l | genEnum.uniqueValuedGenEnumLiterals()->includes(l)))]
+    [documentationText(literal, 'The ' + literal.name() + ' literal, which has the value of ' + genEnum.uniqueValuedGenEnumLiterals()->select(u | u.ecoreEnumLiteral.value = literal.ecoreEnumLiteral.value)->first().name() + '.')/]
+    [generatedTag()/]
+    public static let [literal.caseName()/]: [typeIdentifier(genEnum.name())/] = .[genEnum.uniqueValuedGenEnumLiterals()->select(u | u.ecoreEnumLiteral.value = literal.ecoreEnumLiteral.value)->first().caseName()/]
+
+[/for]
+    /// The text that stands for the literal in a serialised model.
+    // @generated
+    public var literalText: String {
+        switch self {
+[for (literal : GenEnumLiteral | genEnum.uniqueValuedGenEnumLiterals())]
+        case .[literal.caseName()/]: return [swiftStringLiteral(literal.ecoreEnumLiteral.literal)/]
+[/for]
+        }
+    }
+
+    /// Creates the literal that a text stands for in a serialised model.
+    ///
+    /// - Parameter literalText: The text of the literal.
+    // @generated
+    public init?(literalText: String) {
+        switch literalText {
+[for (literal : GenEnumLiteral | genEnum.genEnumLiterals)]
+        case [swiftStringLiteral(literal.ecoreEnumLiteral.literal)/]: self = .[literal.caseName()/]
+[/for]
+        default: return nil
+        }
+    }
+[if (genEnum.genEnumLiterals->isEmpty())]
+
+    /// Fails, because an enumeration without literals has no value to decode.
+    ///
+    /// - Parameter decoder: The decoder that holds the encoded value.
+    /// - Throws: A decoding error, always.
+    // @generated
+    public init(from decoder: any Decoder) throws {
+        throw DecodingError.dataCorrupted(
+            DecodingError.Context(
+                codingPath: decoder.codingPath, debugDescription: "An enumeration without literals has no values."))
+    }
+
+    /// Encodes nothing, because an enumeration without literals has no values.
+    ///
+    /// - Parameter encoder: The encoder that receives the value.
+    // @generated
+    public func encode(to encoder: any Encoder) throws {
+        switch self {
+        }
+    }
+[/if]
+}
+[/template]

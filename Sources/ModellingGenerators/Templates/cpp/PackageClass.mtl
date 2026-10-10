@@ -1,0 +1,131 @@
+[comment encoding = UTF-8 /]
+[**
+ * The header that describes a generator package.
+ *
+ * The header declares a class with one shared instance. It holds the description of the package with the
+ * description of every class: the names of its supertypes and of its features with their kinds and types. The
+ * objects of the package return these descriptions as their class.
+ **/]
+[module PackageClass('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CppNames/]
+[import CppIncludes/]
+[import CppTypes/]
+[import CppDocumentation/]
+[import Header/]
+[import SupportHeader/]
+[import ClassQueries/]
+
+[**
+ * The name in the model of the type of the values of a feature.
+ **/]
+[query public featureTypeName(genFeature : GenFeature) : String = if genFeature.featureClassifier().oclIsUndefined() then rootObjectType() else genFeature.featureClassifier().name endif/]
+
+[**
+ * The enumerator of the kind of a feature.
+ **/]
+[query public featureKindEnumerator(genFeature : GenFeature) : String = if genFeature.isAttributeType() then attributeKind() else (if genFeature.isContainment() then containmentKind() else referenceKind() endif) endif/]
+
+[**
+ * The names of all generated supertypes of a class, written as the elements of a list.
+ **/]
+[query public superTypeList(genClass : GenClass) : String = genClass.allBaseGenClasses()->reject(b | b.genPackage().isEcorePackage())->collect(b | cppStringLiteral(b.name()))->join(', ')/]
+
+[**
+ * Writes the description of a feature in the list of features of its class.
+ *
+ * The line holds the name of the feature, its kind, whether it has many values and the name of its type in the model.
+ **/]
+[template public featureConstruction(genFeature : GenFeature)]
+                [featureInfoName()/]{[cppStringLiteral(genFeature.name())/], [featureKindName()/]::[genFeature.featureKindEnumerator()/], [genFeature.isMany()/], [cppStringLiteral(genFeature.featureTypeName())/]},
+[/template]
+
+[**
+ * Writes the description of a class in the list of classes of its package.
+ *
+ * The entry lists the features of the class including the inherited ones and all generated supertypes, so that a
+ * description answers questions about a class without a search through the hierarchy.
+ **/]
+[template public classConstruction(genClass : GenClass)]
+            [classInfoName()/]{[cppStringLiteral(genClass.name())/], [not genClass.isInstantiable()/], {[genClass.superTypeList()/]}, {
+[for (genFeature : GenFeature | genClass.implementedFeatures())]
+[genFeature.featureConstruction()/]
+[/for]
+            }},
+[/template]
+
+[**
+ * The complete text of the header that describes a generator package.
+ **/]
+[template public packageFile(genPackage : GenPackage)]
+[collect ('includes', Sequence{supportInclude(), standardInclude(textViewHeader())})/]
+#pragma once
+
+[header(genPackage, genPackage.packageFileName())/]
+
+[emit ('includes') once][includeBlock(items)/][/emit]
+[generatedTag()/]
+namespace [genPackage.namespacePath()/] {
+
+/// @brief The description of the [genPackage.name()/] package.
+///
+/// The shared instance holds the description of the package and of each of its classes, which the objects of the
+/// package return as their class.
+[generatedTag()/]
+class [genPackage.packageTypeName()/] final {
+public:
+    /// @brief The shared description of the package.
+    /// @return The only instance.
+    [generatedTag()/]
+    static const [genPackage.packageTypeName()/] &instance() {
+        static const [genPackage.packageTypeName()/] description;
+        return description;
+    }
+
+    /// @brief The name of the package.
+    /// @return The name in the model.
+    [generatedTag()/]
+    [textViewType()/] name() const { return m_info.name; }
+
+    /// @brief The namespace URI of the package.
+    /// @return The namespace URI in the model.
+    [generatedTag()/]
+    [textViewType()/] nsURI() const { return m_info.nsURI; }
+
+    /// @brief The namespace prefix of the package.
+    /// @return The namespace prefix in the model.
+    [generatedTag()/]
+    [textViewType()/] nsPrefix() const { return m_info.nsPrefix; }
+
+    /// @brief The description of the package and its classes.
+    /// @return The description, which lives as long as the program.
+    [generatedTag()/]
+    const [packageInfoName()/] &info() const { return m_info; }
+[for (genClass : GenClass | genPackage.orderedGenClasses())]
+
+    /// @brief The description of the [genClass.name()/] class.
+    /// @return The description, which lives as long as the program.
+    [generatedTag()/]
+    const [classInfoName()/] &[genClass.descriptorName()/]() const { return m_info.classes['['/][i - 1/][']'/]; }
+[/for]
+
+private:
+    /// @brief Builds the description of the package.
+    [generatedTag()/]
+    [genPackage.packageTypeName()/]() {
+        m_info.name = [cppStringLiteral(genPackage.name())/];
+        m_info.nsURI = [cppStringLiteral(genPackage.ecorePackage.nsURI)/];
+        m_info.nsPrefix = [cppStringLiteral(genPackage.ecorePackage.nsPrefix)/];
+        m_info.classes = {
+[for (genClass : GenClass | genPackage.orderedGenClasses())]
+[genClass.classConstruction()/]
+[/for]
+        };
+    }
+
+    /// @brief The description of the package and its classes.
+    [generatedTag()/]
+    [packageInfoName()/] m_info;
+};
+
+}
+[/template]

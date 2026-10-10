@@ -661,7 +661,7 @@ struct JavaTutorialPresetTests {
         #expect(!single.contains("importOrganizing=\"true\""))
     }
 
-    @Test("the flags are rejected for a generator model and for built-in languages", arguments: JavaTutorialSubject.available)
+    @Test("the flags are rejected for a generator model and for a language without a template set", arguments: JavaTutorialSubject.available)
     func flagsRejected(_ subject: JavaTutorialSubject) async throws {
         let workspace = try JavaTutorialWorkspace(subject)
         defer { workspace.remove() }
@@ -669,11 +669,11 @@ struct JavaTutorialPresetTests {
 
         let genModel = try await workspace.shell(
             "swift-ecore generate --language java extlibrary.genmodel --defaults wizard -o out")
-        let builtIn = try await workspace.shell(
-            "swift-ecore generate --language swift extlibrary.ecore --defaults wizard -o out-swift")
+        let withoutTemplateSet = try await workspace.shell(
+            "swift-ecore generate --language llvm extlibrary.ecore --defaults wizard -o out-llvm")
 
         #expect(!genModel.succeeded)
-        #expect(!builtIn.succeeded)
+        #expect(!withoutTemplateSet.succeeded)
     }
 }
 

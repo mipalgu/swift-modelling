@@ -1,0 +1,204 @@
+[comment encoding = UTF-8 /]
+[**
+ * The definitions of the functions of a generator class.
+ *
+ * The functions create an object with the defaults of its model, destroy it with everything it owns, and read and
+ * change its features. Strings and byte arrays are copied when they are stored, contained objects are destroyed with
+ * the object that contains them, and every allocation is checked. The size of a list cannot overflow.
+ **/]
+[module ClassSource('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CNames/]
+[import CTypes/]
+[import CDocumentation/]
+[import ClassQueries/]
+
+[**
+ * The expression for the field of a feature of the object that a function works on.
+ **/]
+[query public fieldExpression(genClass : GenClass, genFeature : GenFeature) : String = 'self->' + genClass.fieldName(genFeature)/]
+
+[**
+ * The expression for the value of a many-valued feature at a position, given the expression for the field.
+ **/]
+[query public itemExpression(field : String, position : String) : String = field + '.' + itemsMember() + '[' + position + ']'/]
+
+[**
+ * The statements that give a field of a new object its value: the default of the model, or the zero value. Text
+ * that has a default is copied afterwards, because copying can fail.
+ **/]
+[template public fieldInitialisation(genClass : GenClass, genFeature : GenFeature)]
+[let field : String = genClass.fieldExpression(genFeature)]
+[if (genFeature.isMany())]
+    [field/].[itemsMember()/] = NULL;
+    [field/].[countMember()/] = 0;
+    [field/].[capacityMember()/] = 0;
+[else]
+    [field/] = [genFeature.defaultExpression()/];
+[/if]
+[/let]
+[/template]
+
+[**
+ * Writes the functions that create and destroy the objects of a class.
+ **/]
+[template public lifecycleDefinitions(genClass : GenClass)]
+[generatedTag()/]
+[genClass.className()/] *[genClass.createName()/](void) {
+    [genClass.className()/] *self = malloc(sizeof *self);
+    if (self == NULL) {
+        return NULL;
+    }
+    self->eObject.eClass = &[genClass.descriptorName()/];
+[for (genFeature : GenFeature | genClass.implementedFeatures())]
+[genClass.fieldInitialisation(genFeature)/]
+[/for]
+[for (genFeature : GenFeature | genClass.implementedFeatures()->reject(f | f.stringDefault().isBlank()))]
+    [genClass.fieldExpression(genFeature)/] = EObject_duplicateString([genFeature.stringDefault()/]);
+    if ([genClass.fieldExpression(genFeature)/] == NULL) {
+        [genClass.destroyName()/](self);
+        return NULL;
+    }
+[/for]
+    return self;
+}
+
+[generatedTag()/]
+void [genClass.destroyName()/]([genClass.className()/] *self) {
+    if (self == NULL) {
+        return;
+    }
+[for (genFeature : GenFeature | genClass.implementedFeatures())]
+[if (genFeature.isMany())]
+    [genClass.clearName(genFeature)/](self);
+[elseif (genFeature.releasesValues())]
+    [genFeature.releaseStatement(genClass.fieldExpression(genFeature))/]
+[/if]
+[/for]
+    free(self);
+}
+[/template]
+
+[**
+ * The statements that store a new value in a single-valued feature.
+ **/]
+[template public singleStore(genClass : GenClass, genFeature : GenFeature)]
+[let field : String = genClass.fieldExpression(genFeature)]
+[if (genFeature.copiesValue())]
+[if (genFeature.storesText())]
+    char *copy = EObject_duplicateString(value);
+    if (copy == NULL && value != NULL) {
+        return false;
+    }
+[else]
+    EByteArray copy;
+    if (!EObject_duplicateBytes(value, &copy)) {
+        return false;
+    }
+[/if]
+    [genFeature.releaseStatement(field)/]
+    [field/] = copy;
+    return true;
+[elseif (genFeature.isOwning())]
+    if ([field/] != value) {
+        [genFeature.releaseStatement(field)/]
+        [field/] = value;
+    }
+[else]
+    [field/] = value;
+[/if]
+[/let]
+[/template]
+
+[**
+ * The statements that append a value to a many-valued feature.
+ **/]
+[template public listAppend(genClass : GenClass, genFeature : GenFeature)]
+[let field : String = genClass.fieldExpression(genFeature)]
+[if (genFeature.storesText())]
+    char *copy = EObject_duplicateString(value);
+    if (copy == NULL && value != NULL) {
+        return false;
+    }
+[elseif (genFeature.storesBytes())]
+    EByteArray copy;
+    if (!EObject_duplicateBytes(value, &copy)) {
+        return false;
+    }
+[/if]
+    if ([field/].[countMember()/] == [field/].[capacityMember()/]) {
+        void *items = EObject_grown([field/].[itemsMember()/], &[field/].[capacityMember()/], sizeof *[field/].[itemsMember()/]);
+        if (items == NULL) {
+[if (genFeature.copiesValue())]
+            [genFeature.releaseStatement('copy')/]
+[/if]
+            return false;
+        }
+        [field/].[itemsMember()/] = items;
+    }
+    [itemExpression(field, field + '.' + countMember() + '++')/] = [if (genFeature.copiesValue())]copy[else]value[/if];
+    return true;
+[/let]
+[/template]
+
+[**
+ * Writes the definitions of the functions that read and change a feature.
+ **/]
+[template public accessorDefinitions(genClass : GenClass, genFeature : GenFeature)]
+[let field : String = genClass.fieldExpression(genFeature)]
+[if (genFeature.isMany())]
+[generatedTag()/]
+size_t [genClass.countName(genFeature)/](const [genClass.className()/] *self) {
+    return [field/].[countMember()/];
+}
+
+[generatedTag()/]
+[declare(genFeature.valueTypeName(), genClass.itemName(genFeature))/](const [genClass.className()/] *self, size_t index) {
+    if (index >= [field/].[countMember()/]) {
+        return [genFeature.zeroValue()/];
+    }
+    return [itemExpression(field, 'index')/];
+}
+
+[generatedTag()/]
+bool [genClass.addName(genFeature)/]([genClass.className()/] *self, [declare(genFeature.valueTypeName(), 'value')/]) {
+[genClass.listAppend(genFeature)/]
+}
+
+[generatedTag()/]
+bool [genClass.removeName(genFeature)/]([genClass.className()/] *self, size_t index) {
+    if (index >= [field/].[countMember()/]) {
+        return false;
+    }
+[if (genFeature.releasesValues())]
+    [genFeature.releaseStatement(itemExpression(field, 'index'))/]
+[/if]
+    memmove(&[itemExpression(field, 'index')/], &[itemExpression(field, 'index + 1')/], ([field/].[countMember()/] - index - 1) * sizeof *[field/].[itemsMember()/]);
+    [field/].[countMember()/]--;
+    return true;
+}
+
+[generatedTag()/]
+void [genClass.clearName(genFeature)/]([genClass.className()/] *self) {
+[if (genFeature.releasesValues())]
+    for (size_t position = 0; position < [field/].[countMember()/]; position++) {
+        [genFeature.releaseStatement(itemExpression(field, 'position'))/]
+    }
+[/if]
+    free([field/].[itemsMember()/]);
+    [field/].[itemsMember()/] = NULL;
+    [field/].[countMember()/] = 0;
+    [field/].[capacityMember()/] = 0;
+}
+[else]
+[generatedTag()/]
+[declare(genFeature.valueTypeName(), genClass.getterName(genFeature))/](const [genClass.className()/] *self) {
+    return [field/];
+}
+
+[generatedTag()/]
+[if (genFeature.copiesValue())]bool[else]void[/if] [genClass.setterName(genFeature)/]([genClass.className()/] *self, [declare(genFeature.valueTypeName(), 'value')/]) {
+[genClass.singleStore(genFeature)/]
+}
+[/if]
+[/let]
+[/template]

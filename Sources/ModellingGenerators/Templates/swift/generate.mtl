@@ -1,0 +1,57 @@
+[comment encoding = UTF-8 /]
+[**
+ * The main module of the Swift template set.
+ *
+ * It writes the model code of a generator model, one file for each classifier and two for each package: the
+ * description of the package with the metaclasses of its classifiers, and its factory. Swift files that exist
+ * already are merged: members whose comment carries the generated tag are regenerated, members marked as not
+ * generated are kept, and members without a tag are kept.
+ **/]
+[module generate('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[merge ('//', '', '@generated', '@generated NOT', 'braces', 'terminators=\n;', 'quotes="', 'files=*.swift')/]
+[import SwiftNames/]
+[import SwiftImports/]
+[import SwiftTypes/]
+[import EnumClass/]
+[import DataTypeFile/]
+[import Class/]
+[import PackageClass/]
+[import FactoryClass/]
+[import ClassQueries/]
+
+[**
+ * Writes the model code of every package of a generator model, nested packages included.
+ **/]
+[template public generate(genModel : GenModel)]
+[for (genPackage : GenPackage | genModel.allGenPackages())]
+[genPackage.generatePackage()/]
+[/for]
+[/template]
+
+[**
+ * Writes the files of one generator package.
+ **/]
+[template public generatePackage(genPackage : GenPackage)]
+[if (genPackage.hasClassifiers())]
+[file (genPackage.packageDirectory() + '/' + genPackage.packageFileName() + '.swift', false, 'UTF-8')][genPackage.packageFile()/][/file]
+[file (genPackage.packageDirectory() + '/' + genPackage.factoryFileName() + '.swift', false, 'UTF-8')][genPackage.factoryFile()/][/file]
+[/if]
+[for (genClass : GenClass | genPackage.orderedGenClasses())]
+[file (genPackage.packageDirectory() + '/' + genClass.classifierFileName() + '.swift', false, 'UTF-8')][genClass.classFile()/][/file]
+[/for]
+[for (genEnum : GenEnum | genPackage.genEnums)]
+[file (genPackage.packageDirectory() + '/' + genEnum.classifierFileName() + '.swift', false, 'UTF-8')][genEnum.enumFile()/][/file]
+[/for]
+[for (genDataType : GenDataType | genPackage.genDataTypes)]
+[file (genPackage.packageDirectory() + '/' + genDataType.classifierFileName() + '.swift', false, 'UTF-8')][genDataType.dataTypeFile()/][/file]
+[/for]
+[/template]
+
+[**
+ * The number of files that this module writes for a generator model, used to report progress.
+ **/]
+[template public fileCount(genModel : GenModel)]
+[file ('count')]
+[genModel.allGenPackages()->collect(p | p.genClasses->size() + p.genEnums->size() + p.genDataTypes->size() + (if p.hasClassifiers() then 2 else 0 endif))->sum()/]
+[/file]
+[/template]

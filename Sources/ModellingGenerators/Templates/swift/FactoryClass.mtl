@@ -1,0 +1,68 @@
+[comment encoding = UTF-8 /]
+[**
+ * The Swift file of the factory of a generator package.
+ *
+ * The factory has a method that creates an object for every class that has instances, and a method that creates an
+ * object for the metaclass it is given.
+ **/]
+[module FactoryClass('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import SwiftNames/]
+[import SwiftImports/]
+[import SwiftDocumentation/]
+[import Header/]
+[import ClassQueries/]
+
+[**
+ * The classes of a package that have instances.
+ **/]
+[query public instantiableClasses(genPackage : GenPackage) : OclAny = genPackage.genClasses->select(c | c.isInstantiable())/]
+
+[**
+ * The name of the method of a factory that creates the objects of a class.
+ **/]
+[query public creationMethod(genClass : GenClass) : String = 'create' + genClass.name()/]
+
+[**
+ * The complete text of the file that declares the factory of a generator package.
+ **/]
+[template public factoryFile(genPackage : GenPackage)]
+[collect ('imports', Sequence{valueModule(), objectModule(), foundationModule()})/]
+[header(genPackage, genPackage.factoryFileName())/]
+
+[emit ('imports') once][importBlock(items)/][/emit]
+/// The factory of the [genPackage.name()/] package.
+///
+/// The factory creates the objects of the classes of the package that have instances.
+// @generated
+public struct [genPackage.factoryTypeName()/]: Sendable {
+    /// The shared factory of the package.
+    // @generated
+    public static let shared = [genPackage.factoryTypeName()/]()
+
+    /// Creates a factory.
+    // @generated
+    public init() {}
+[for (genClass : GenClass | genPackage.instantiableClasses())]
+
+    /// Creates a new [genClass.name()/] object.
+    ///
+    /// - Returns: An object with all features at their defaults.
+    // @generated
+    public func [genClass.creationMethod()/]() -> [genClass.className()/] { [genClass.className()/]() }
+[/for]
+
+    /// Creates an object for a metaclass of the package.
+    ///
+    /// - Parameter eClass: The metaclass to create an object for.
+    /// - Returns: A new object, or `nil` if the package has no class with instances of that name.
+    // @generated
+    public func create(_ eClass: EClass) -> (any EObject)? {
+        switch eClass.name {
+[for (genClass : GenClass | genPackage.instantiableClasses())]
+        case [swiftStringLiteral(genClass.name())/]: return [genClass.creationMethod()/]()
+[/for]
+        default: return nil
+        }
+    }
+}
+[/template]

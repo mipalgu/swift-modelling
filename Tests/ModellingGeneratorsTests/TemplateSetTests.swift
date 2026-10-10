@@ -55,9 +55,175 @@ struct TemplateSetTests {
         }
     }
 
-    @Test("The available languages include Java")
+    @Test("The bundled Swift set is assembled with its modules and data")
+    func bundledSwiftSet() throws {
+        let set = try TemplateSet.assemble(language: "swift")
+        defer { set.remove() }
+        #expect(set.descriptor.name == "swift")
+        #expect(set.descriptor.summary?.isEmpty == false)
+        #expect(set.descriptor.mainModule == "generate")
+        #expect(set.descriptor.mainTemplate == "generate")
+        #expect(set.descriptor.fileCountTemplate == "fileCount")
+        #expect(set.descriptor.dataModels == [.init(name: "types", metamodel: "TypeMapping.ecore", model: "swift-types.xmi")])
+        #expect(set.descriptor.layout.sourceRootSetting == "modelDirectory")
+        #expect(!set.descriptor.layout.includeSourceRoot)
+        #expect(set.descriptor.options.lineDelimiter == "\n")
+        #expect(set.descriptor.styles.isEmpty && set.descriptor.defaultStyle == nil)
+        for file in [
+            "generate.mtl", "SwiftNames.mtl", "SwiftTypes.mtl", "SwiftImports.mtl", "SwiftDocumentation.mtl",
+            "Header.mtl", "EnumClass.mtl", "DataTypeFile.mtl", "Class.mtl", "ClassQueries.mtl",
+            "ClassFeature.mtl", "ClassReflection.mtl", "PackageClass.mtl", "FactoryClass.mtl",
+            "TypeMapping.ecore", "swift-types.xmi",
+        ] {
+            #expect(
+                FileManager.default.fileExists(atPath: set.directory.appendingPathComponent(file).path),
+                "\(file) is missing")
+        }
+        #expect(set.mainModuleURL.lastPathComponent == "generate.mtl")
+    }
+
+    @Test("The Swift type table lists the built-in types, the reserved words and their kinds")
+    func swiftTypeTable() throws {
+        let set = try TemplateSet.assemble(language: "swift")
+        defer { set.remove() }
+        let table = try String(
+            contentsOf: set.directory.appendingPathComponent("swift-types.xmi"), encoding: .utf8)
+        #expect(table.contains(#"language="swift""#))
+        for model in [
+            "EString", "EBoolean", "EInt", "ELong", "EShort", "EByte", "EChar", "EDouble", "EFloat", "EBigInteger",
+            "EBigDecimal", "EDate", "EJavaObject", "EByteArray", "EObject", "EClass",
+        ] {
+            #expect(table.contains(#"modelType="\#(model)""#), "\(model) is not mapped")
+        }
+        for word in ["guard", "Type", "class", "protocol", "default", "in", "operator", "repeat", "where"] {
+            #expect(table.contains(#"word="\#(word)" kind="keyword""#), "\(word) is not a keyword")
+        }
+        for word in ["String", "Date", "Mutex"] { #expect(table.contains(#"word="\#(word)" kind="type""#)) }
+        for word in ["id", "eClass", "hash"] { #expect(table.contains(#"word="\#(word)" kind="member""#)) }
+        let metamodel = try String(
+            contentsOf: set.directory.appendingPathComponent("TypeMapping.ecore"), encoding: .utf8)
+        for feature in ["modelType", "targetType", "zeroValue", "instanceClass", "module", "literalStyle", "kind"] {
+            #expect(metamodel.contains(#"name="\#(feature)""#), "\(feature) is not declared")
+        }
+    }
+
+    @Test("The bundled C set is assembled with its modules and data")
+    func bundledCSet() throws {
+        let set = try TemplateSet.assemble(language: "c")
+        defer { set.remove() }
+        #expect(set.descriptor.name == "c")
+        #expect(set.descriptor.summary?.isEmpty == false)
+        #expect(set.descriptor.mainModule == "generate")
+        #expect(set.descriptor.mainTemplate == "generate")
+        #expect(set.descriptor.fileCountTemplate == "fileCount")
+        #expect(set.descriptor.dataModels == [.init(name: "types", metamodel: "TypeMapping.ecore", model: "c-types.xmi")])
+        #expect(set.descriptor.layout.sourceRootSetting == "modelDirectory")
+        #expect(!set.descriptor.layout.includeSourceRoot)
+        #expect(set.descriptor.options.lineDelimiter == "\n")
+        #expect(set.descriptor.styles.isEmpty && set.descriptor.defaultStyle == nil)
+        for file in [
+            "generate.mtl", "CNames.mtl", "CTypes.mtl", "CIncludes.mtl", "CDocumentation.mtl", "Header.mtl",
+            "EObjectHeader.mtl", "PackageHeader.mtl", "PackageSource.mtl", "ClassQueries.mtl", "ClassHeader.mtl",
+            "ClassSource.mtl", "ClassDescriptor.mtl", "EnumDeclaration.mtl", "DataTypeDeclaration.mtl",
+            "TypeMapping.ecore", "c-types.xmi",
+        ] {
+            #expect(
+                FileManager.default.fileExists(atPath: set.directory.appendingPathComponent(file).path),
+                "\(file) is missing")
+        }
+        #expect(set.mainModuleURL.lastPathComponent == "generate.mtl")
+    }
+
+    @Test("The C type table lists the built-in types, how they are stored and the reserved words")
+    func cTypeTable() throws {
+        let set = try TemplateSet.assemble(language: "c")
+        defer { set.remove() }
+        let table = try String(contentsOf: set.directory.appendingPathComponent("c-types.xmi"), encoding: .utf8)
+        #expect(table.contains(#"language="c""#))
+        for model in [
+            "EString", "EBoolean", "EInt", "ELong", "EShort", "EByte", "EChar", "EDouble", "EFloat", "EBigInteger",
+            "EBigDecimal", "EDate", "EJavaObject", "EByteArray", "EObject",
+        ] {
+            #expect(table.contains(#"modelType="\#(model)""#), "\(model) is not mapped")
+        }
+        for storage in ["scalar", "string", "bytes", "pointer"] {
+            #expect(table.contains(#"storage="\#(storage)""#), "no mapping is stored as \(storage)")
+        }
+        for kind in ["keyword", "type", "member"] { #expect(table.contains(#"<reservedWords kind="\#(kind)""#)) }
+        let metamodel = try String(
+            contentsOf: set.directory.appendingPathComponent("TypeMapping.ecore"), encoding: .utf8)
+        for feature in ["modelType", "targetType", "parameterType", "storage", "zeroValue", "module", "literalStyle", "words"] {
+            #expect(metamodel.contains(#"name="\#(feature)""#), "\(feature) is not declared")
+        }
+    }
+
+    @Test("The bundled C++ set is assembled with its modules and data")
+    func bundledCppSet() throws {
+        let set = try TemplateSet.assemble(language: "cpp")
+        defer { set.remove() }
+        #expect(set.descriptor.name == "cpp")
+        #expect(set.descriptor.summary?.isEmpty == false)
+        #expect(set.descriptor.mainModule == "generate")
+        #expect(set.descriptor.mainTemplate == "generate")
+        #expect(set.descriptor.fileCountTemplate == "fileCount")
+        #expect(
+            set.descriptor.dataModels == [.init(name: "types", metamodel: "TypeMapping.ecore", model: "cpp-types.xmi")])
+        #expect(set.descriptor.layout.sourceRootSetting == "modelDirectory")
+        #expect(!set.descriptor.layout.includeSourceRoot)
+        #expect(set.descriptor.options.lineDelimiter == "\n")
+        #expect(set.descriptor.styles.isEmpty && set.descriptor.defaultStyle == nil)
+        for file in [
+            "generate.mtl", "SupportHeader.mtl", "Class.mtl", "ClassQueries.mtl", "ClassFeature.mtl",
+            "EnumClass.mtl", "DataTypeFile.mtl", "PackageClass.mtl", "FactoryClass.mtl", "Header.mtl",
+            "CppNames.mtl", "CppTypes.mtl", "CppIncludes.mtl", "CppDocumentation.mtl",
+            "TypeMapping.ecore", "cpp-types.xmi",
+        ] {
+            #expect(
+                FileManager.default.fileExists(atPath: set.directory.appendingPathComponent(file).path),
+                "\(file) is missing")
+        }
+        #expect(set.mainModuleURL.lastPathComponent == "generate.mtl")
+    }
+
+    @Test("The C++ type table lists the built-in types, how they are passed and the reserved words")
+    func cppTypeTable() throws {
+        let set = try TemplateSet.assemble(language: "cpp")
+        defer { set.remove() }
+        let table = try String(
+            contentsOf: set.directory.appendingPathComponent("cpp-types.xmi"), encoding: .utf8)
+        #expect(table.contains(#"language="cpp""#))
+        for model in [
+            "EString", "EBoolean", "EInt", "ELong", "EShort", "EByte", "EChar", "EDouble", "EFloat", "EBigInteger",
+            "EBigDecimal", "EDate", "EJavaObject", "EByteArray", "EObject",
+        ] {
+            #expect(table.contains(#"modelType="\#(model)""#), "\(model) is not mapped")
+        }
+        for word in ["class", "namespace", "template", "new", "delete", "this", "virtual", "operator", "and", "not"] {
+            #expect(table.contains(#"word="\#(word)" kind="keyword""#), "\(word) is not a keyword")
+        }
+        for word in ["EObject", "ClassInfo", "FILE", "size_t"] {
+            #expect(table.contains(#"word="\#(word)" kind="type""#), "\(word) is not a type")
+        }
+        let metamodel = try String(
+            contentsOf: set.directory.appendingPathComponent("TypeMapping.ecore"), encoding: .utf8)
+        for feature in ["modelType", "targetType", "zeroValue", "module", "literalStyle", "byValue", "kind"] {
+            #expect(metamodel.contains(#"name="\#(feature)""#), "\(feature) is not declared")
+        }
+    }
+
+    @Test("The available languages include C, C++, Java and Swift")
     func availableLanguages() {
         #expect(TemplateSet.availableLanguages().contains("java"))
+        #expect(TemplateSet.availableLanguages().contains("swift"))
+        #expect(TemplateSet.availableLanguages().contains("c"))
+        #expect(TemplateSet.availableLanguages().contains("cpp"))
+        #expect(!TemplateSet.availableLanguages().contains("llvm"))
+        #expect(TemplateSet.availableLanguages() == TemplateSet.availableLanguages().sorted())
+    }
+
+    @Test("Only Java offers code styles")
+    func bundledCodeStyles() {
+        #expect(TemplateSet.bundledCodeStyles().map(\.language) == ["java"])
     }
 
     @Test("An unknown language is reported with the known ones")

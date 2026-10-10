@@ -149,7 +149,7 @@
             }
 
             @Step {
-                The same options are available on `swift-ecore generate` and `swift-atl generate`, which create the generator model on the way. They are rejected when the input is already a generator model, or when the language is one of the built-in ones, because there is no new generator model to apply them to. With `--reload`, existing values are kept unless you give a flag or `--defaults`. The next tutorial uses them there.
+                The same options are available on `swift-ecore generate` and `swift-atl generate`, which create the generator model on the way. They are rejected when the input is already a generator model, because there is no new generator model to apply them to. With `--reload`, existing values are kept unless you give a flag or `--defaults`. The next tutorial uses them there.
             }
         }
     }

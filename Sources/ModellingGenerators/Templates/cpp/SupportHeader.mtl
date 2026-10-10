@@ -1,0 +1,198 @@
+[comment encoding = UTF-8 /]
+[**
+ * The model independent header of the generated code.
+ *
+ * The header declares the root class of all generated classes and the structures that describe classes, features and
+ * packages. It does not depend on any model, so that the same text is written for every generator model and
+ * several models can share one output directory.
+ **/]
+[module SupportHeader('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CppNames/]
+[import CppIncludes/]
+[import CppTypes/]
+[import CppDocumentation/]
+
+[comment Names of the declarations /]
+
+[**
+ * The name of the structure that describes a class.
+ **/]
+[query public classInfoName() : String = 'ClassInfo'/]
+
+[**
+ * The name of the structure that describes a feature.
+ **/]
+[query public featureInfoName() : String = 'FeatureInfo'/]
+
+[**
+ * The name of the structure that describes a package.
+ **/]
+[query public packageInfoName() : String = 'PackageInfo'/]
+
+[**
+ * The name of the enumeration of the kinds of features.
+ **/]
+[query public featureKindName() : String = 'FeatureKind'/]
+
+[**
+ * The name of the function that describes the class of an object.
+ **/]
+[query public describeFunctionName() : String = 'eClass'/]
+
+[**
+ * The name of the function that tells whether an object is an instance of a class.
+ **/]
+[query public kindOfFunctionName() : String = 'isKindOf'/]
+
+[**
+ * The enumerator for a feature that holds values of a data type.
+ **/]
+[query public attributeKind() : String = 'attribute'/]
+
+[**
+ * The enumerator for a feature that refers to objects that it does not contain.
+ **/]
+[query public referenceKind() : String = 'reference'/]
+
+[**
+ * The enumerator for a feature that contains the objects it refers to.
+ **/]
+[query public containmentKind() : String = 'containment'/]
+
+[comment The header /]
+
+[**
+ * The complete text of the support header.
+ *
+ * The description structures are aggregates of views of text that point into string literals, so a description is
+ * built once and lives as long as the program.
+ **/]
+[template public supportHeader()]
+#pragma once
+
+//
+//  [headerFileName(supportHeaderName())/]
+//
+
+[standardInclude(integerHeader())/]
+[standardInclude(textViewHeader())/]
+[standardInclude(vectorHeader())/]
+
+/// @brief How a feature holds its values.
+[generatedTag()/]
+enum class [featureKindName()/] : [enumerationBaseType()/] {
+    /// @brief The feature holds values of a data type.
+    [generatedTag()/]
+    [attributeKind()/],
+    /// @brief The feature refers to objects that it does not contain.
+    [generatedTag()/]
+    [referenceKind()/],
+    /// @brief The feature contains the objects it refers to.
+    [generatedTag()/]
+    [containmentKind()/],
+};
+
+/// @brief The description of a feature of a class.
+[generatedTag()/]
+struct [featureInfoName()/] {
+    /// @brief The name of the feature in the model.
+    [generatedTag()/]
+    [textViewType()/] name;
+
+    /// @brief Whether the feature holds data or objects, and whether it contains them.
+    [generatedTag()/]
+    [featureKindName()/] kind = [featureKindName()/]::[attributeKind()/];
+
+    /// @brief Whether the feature can hold several values.
+    [generatedTag()/]
+    bool many = false;
+
+    /// @brief The name in the model of the type of the values.
+    [generatedTag()/]
+    [textViewType()/] typeName;
+};
+
+/// @brief The description of a class of a model.
+[generatedTag()/]
+struct [classInfoName()/] {
+    /// @brief The name of the class in the model.
+    [generatedTag()/]
+    [textViewType()/] name;
+
+    /// @brief Whether the class has no instances of its own.
+    [generatedTag()/]
+    bool isAbstract = false;
+
+    /// @brief The names of all generated supertypes of the class, the direct ones and those they inherit.
+    [generatedTag()/]
+    [vectorType(textViewType())/] superTypes;
+
+    /// @brief All features of the class, those it declares and those it inherits.
+    [generatedTag()/]
+    [vectorType(featureInfoName())/] features;
+};
+
+/// @brief The description of a package of a model.
+[generatedTag()/]
+struct [packageInfoName()/] {
+    /// @brief The name of the package in the model.
+    [generatedTag()/]
+    [textViewType()/] name;
+
+    /// @brief The namespace URI of the package.
+    [generatedTag()/]
+    [textViewType()/] nsURI;
+
+    /// @brief The namespace prefix of the package.
+    [generatedTag()/]
+    [textViewType()/] nsPrefix;
+
+    /// @brief The classes of the package.
+    [generatedTag()/]
+    [vectorType(classInfoName())/] classes;
+};
+
+/// @brief The root of all generated classes.
+///
+/// Objects are owned through shared pointers and cannot be copied, because a copy would share the objects it
+/// contains. Every object can describe its class.
+[generatedTag()/]
+class [rootObjectType()/] {
+public:
+    /// @brief Destroys the object.
+    [generatedTag()/]
+    virtual ~[rootObjectType()/]() = default;
+
+    /// @brief Describes the class of the object.
+    /// @return The description of the class, which lives as long as the program.
+    [generatedTag()/]
+    virtual const [classInfoName()/] &[describeFunctionName()/]() const = 0;
+
+    /// @brief Objects cannot be copied.
+    [generatedTag()/]
+    [rootObjectType()/](const [rootObjectType()/] &) = delete;
+
+    /// @brief Objects cannot be assigned.
+    [generatedTag()/]
+    [rootObjectType()/] &operator=(const [rootObjectType()/] &) = delete;
+
+protected:
+    /// @brief Creates the root part of an object.
+    [generatedTag()/]
+    [rootObjectType()/]() = default;
+};
+
+/// @brief Whether an object is an instance of a class or of one of its subclasses.
+/// @param object The object to test.
+/// @param className The name of the class in the model.
+/// @return True if the class of the object is the class or inherits from it.
+[generatedTag()/]
+inline bool [kindOfFunctionName()/](const [rootObjectType()/] &object, [textViewType()/] className) {
+    const [classInfoName()/] &info = object.[describeFunctionName()/]();
+    if (info.name == className) return true;
+    for ([textViewType()/] superType : info.superTypes) {
+        if (superType == className) return true;
+    }
+    return false;
+}
+[/template]

@@ -1,0 +1,99 @@
+[comment encoding = UTF-8 /]
+[**
+ * Queries that decide what the header of a generator class contains.
+ *
+ * The queries here answer the questions that the class template asks: which base classes a class has, which
+ * features it declares or implements, how the accessors of a feature are named, and which classes its header
+ * declares ahead of use.
+ **/]
+[module ClassQueries('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CppNames/]
+[import CppTypes/]
+
+[comment Supertypes /]
+
+[**
+ * The clause that makes a class derive from a base class. Inheritance is virtual, so a class that reaches the same
+ * base class along two paths has one copy of it.
+ **/]
+[query public inheritance(base : String) : String = 'public virtual ' + base/]
+
+[**
+ * The base classes that a class names: the abstract base classes of its generated supertypes, otherwise the
+ * root class.
+ *
+ * A class of another package is named with its namespace. The text is written after the colon of the class
+ * declaration, on one line, because the merge ends a member at the end of its line.
+ **/]
+[query public baseClasses(genClass : GenClass, context : GenPackage) : String = if genClass.modelSupers()->isEmpty() then inheritance(rootObjectType()) else genClass.modelSupers()->collect(b | inheritance(b.qualifiedName(context)))->join(', ') endif/]
+
+[**
+ * The base classes of the concrete class of a class: its own abstract base class if it has one, otherwise the
+ * base classes of the generated supertypes.
+ *
+ * A class that other classes extend has an abstract base class of its own, which its concrete class derives from.
+ * Concrete classes never derive from each other.
+ **/]
+[query public concreteBaseClasses(genClass : GenClass, context : GenPackage) : String = if genClass.hasSubclasses() then inheritance(genClass.interfaceName()) else genClass.baseClasses(context) endif/]
+
+[comment Features /]
+
+[**
+ * The features that the concrete class of a class implements: all that it declares or inherits, without those of the
+ * Ecore package. A name that two unrelated supertypes declare is implemented once, by the accessors that satisfy both.
+ *
+ * The features come in the order of the generator model, inherited ones first, so that the accessors and the storage
+ * of a class read the same in every file.
+ **/]
+[query public implementedFeatures(genClass : GenClass) : OclAny = if genClass.generatedFeatures()->collect(f | f.name())->asSet()->size() = genClass.generatedFeatures()->size() then genClass.generatedFeatures() else genClass.generatedFeatures()->select(f | genClass.generatedFeatures()->select(g | g.name() = f.name())->first() = f) endif/]
+
+[**
+ * The features of a class that the generated code describes: all that it declares or inherits, without those of the
+ * Ecore package.
+ **/]
+[query public generatedFeatures(genClass : GenClass) : OclAny = genClass.allGenFeatures()->reject(f | f.genClass().genPackage().isEcorePackage())/]
+
+[**
+ * The features that the header of a class has to know the types of: those of its concrete class if it has
+ * instances, otherwise those that it declares.
+ *
+ * A class that has no instances declares only its own features, so only the types of those matter to its header.
+ **/]
+[query public usedFeatures(genClass : GenClass) : OclAny = if genClass.isInstantiable() then genClass.implementedFeatures() else genClass.genFeatures endif/]
+
+[**
+ * The name of the getter of a feature.
+ *
+ * The name is the word get followed by the name of the feature with a capital first letter, so it cannot be a keyword.
+ **/]
+[query public getterName(genFeature : GenFeature) : String = 'get' + genFeature.name().toUpperFirst()/]
+
+[**
+ * The name of the setter of a feature.
+ *
+ * The name is the word set followed by the name of the feature with a capital first letter, so it cannot be a keyword.
+ **/]
+[query public setterName(genFeature : GenFeature) : String = 'set' + genFeature.name().toUpperFirst()/]
+
+[**
+ * The word that documentation uses for a feature: attribute or reference.
+ **/]
+[query public featureKind(genFeature : GenFeature) : String = if genFeature.isAttributeType() then 'attribute' else 'reference' endif/]
+
+[**
+ * The documentation comment text of a feature that its model does not document.
+ *
+ * The text names the feature and says whether it is an attribute or a reference.
+ **/]
+[query public featureSummary(genFeature : GenFeature) : String = 'The ' + genFeature.name() + ' ' + genFeature.featureKind() + '.'/]
+
+[comment Declarations ahead of use /]
+
+[**
+ * The classes that the header of a class declares ahead of use: those that its features refer to, except the class
+ * itself, the classes of the Ecore package and its base classes, whose headers it includes.
+ *
+ * A declaration ahead of use is enough for a pointer to a class, so the headers of two classes that refer to each
+ * other do not include each other. The classes are in the order of their headers.
+ **/]
+[query public forwardDeclared(genClass : GenClass) : OclAny = genClass.usedFeatures()->select(f | f.isReferenceType() and not f.featureClassifier().isEcoreClassifier())->collect(f | f.featureClassifier().genClassifier())->asSet()->reject(c | c = genClass or genClass.modelSupers()->includes(c))->sortedBy(c | c.classifierHeader())/]

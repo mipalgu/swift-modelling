@@ -1,0 +1,115 @@
+[comment encoding = UTF-8 /]
+[**
+ * Include handling for C++ header files.
+ *
+ * A template collects the include directives a file needs, with the headers of each mapped type and the headers of
+ * the classifiers it uses, and writes them at the position of an emit block. The directives are sorted, so that
+ * the headers of the model come before the standard ones, and written once.
+ **/]
+[module CppIncludes('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CppNames/]
+[import CppTypes/]
+
+[comment Directives /]
+
+[**
+ * The directive that includes a header of the standard library.
+ **/]
+[query public standardInclude(header : String) : String = '#include <' + header + '>'/]
+
+[**
+ * The directive that includes a header of the generated code, given its path relative to the output directory.
+ *
+ * The path is relative to the output directory, which the compiler needs on its include path.
+ **/]
+[query public projectInclude(path : String) : String = '#include "' + path + '"'/]
+
+[**
+ * The directive that includes the model independent support header.
+ **/]
+[query public supportInclude() : String = projectInclude(headerFileName(supportHeaderName()))/]
+
+[comment Standard headers that the templates need /]
+
+[**
+ * The header with the dynamic arrays that hold many values.
+ **/]
+[query public vectorHeader() : String = 'vector'/]
+
+[**
+ * The header with the shared and weak pointers that hold references.
+ **/]
+[query public memoryHeader() : String = 'memory'/]
+
+[**
+ * The header with the sized integers of enumerations and the identifiers of literals.
+ **/]
+[query public integerHeader() : String = 'cstdint'/]
+
+[**
+ * The header with the text views of literals and names.
+ **/]
+[query public textViewHeader() : String = 'string_view'/]
+
+[**
+ * The header with the optional values that parsing a literal returns.
+ **/]
+[query public optionalHeader() : String = 'optional'/]
+
+[comment Collecting /]
+
+[**
+ * The sorted directives to write, without repetitions.
+ *
+ * Directives for the headers of the generated code sort before those of the standard library, because a quote sorts
+ * before an angle bracket.
+ **/]
+[query public includedDirectives(directives : OclAny) : OclAny = directives->asSet()->sortedBy(d | d)/]
+
+[**
+ * Registers the directives for standard headers that a table entry names, if it names any.
+ *
+ * The table names the headers of a type separated by spaces and without angle brackets; nothing is registered for an
+ * entry that names none.
+ **/]
+[template public collectMappingHeaders(mapping : OclAny)]
+[if (not mapping.oclIsUndefined() and not mapping.module.isBlank())]
+[for (header | mapping.module.tokenize(' '))]
+[collect ('includes', standardInclude(header))/]
+[/for]
+[/if]
+[/template]
+
+[**
+ * Registers the directives that a feature needs: the headers of the type of its attribute, the header of the
+ * enumeration or data type of the model that it uses, and the headers of the containers and pointers that hold its
+ * values.
+ *
+ * A reference needs the header with the pointers, a many-valued feature the header with the vector, and an attribute
+ * of a type of the model the header of that type. A class that a reference points to needs no include, because the
+ * header of the referring class declares it ahead of use.
+ **/]
+[template public collectFeatureIncludes(genFeature : GenFeature)]
+[genFeature.featureMapping().collectMappingHeaders()/]
+[if (genFeature.isMany())]
+[collect ('includes', standardInclude(vectorHeader()))/]
+[/if]
+[if (genFeature.isReferenceType())]
+[collect ('includes', standardInclude(memoryHeader()))/]
+[/if]
+[if (genFeature.isAttributeType() and not genFeature.featureClassifier().isEcoreClassifier())]
+[collect ('includes', projectInclude(genFeature.featureClassifier().genClassifier().classifierHeader()))/]
+[/if]
+[/template]
+
+[**
+ * Writes the include directives, one on each line.
+ *
+ * The block is written at the position of the emit block of a file, where the merge also keeps the includes that a
+ * user added.
+ **/]
+[template public includeBlock(directives : OclAny)]
+[for (d | includedDirectives(directives))]
+[d/]
+[/for]
+[/template]

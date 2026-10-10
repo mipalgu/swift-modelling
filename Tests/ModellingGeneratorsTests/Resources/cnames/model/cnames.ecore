@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
+    name="cnames" nsURI="http://swift-modelling.org/test/cnames" nsPrefix="cn">
+  <eClassifiers xsi:type="ecore:EClass" name="Vehicle">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="A vehicle, which other classes extend.&#xA;&#xA;Its features are named with words that C and C++ reserve."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="int"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="register"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="union"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="class"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="namespace"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="new"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="delete"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="template"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="this"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="signed"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble" defaultValueLiteral="1.5"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="NULL"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="eObject"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="bool"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean" defaultValueLiteral="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="default"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" defaultValueLiteral="say &quot;hi&quot;&#xA;\there"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="size_t"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//ELong"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="mode" eType="#//Mode"
+        defaultValueLiteral="and"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="modes" upperBound="-1" eType="#//Mode"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="keywords" upperBound="-1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="driver" eType="#//Driver"
+        eOpposite="#//Driver/vehicle"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="wheels" upperBound="-1"
+        eType="#//delete/Wheel" containment="true" eOpposite="#//delete/Wheel/virtual"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="static" eType="#//static"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Truck" eSuperTypes="#//Vehicle">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="operator"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="goto"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" defaultValueLiteral="N/A"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="trailer" eType="#//Truck"
+        eOpposite="#//Truck/towedBy"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="towedBy" eType="#//Truck"
+        eOpposite="#//Truck/trailer"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Driver">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="vehicle" eType="#//Vehicle"
+        eOpposite="#//Vehicle/driver"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="static">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="A class whose name is a keyword."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="volatile"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="FILE"/>
+  <eClassifiers xsi:type="ecore:EClass" name="EObject">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="eClass"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Shape" abstract="true"/>
+  <eClassifiers xsi:type="ecore:EEnum" name="Mode">
+    <eLiterals name="and"/>
+    <eLiterals name="default" value="1"/>
+    <eLiterals name="int" value="2"/>
+    <eLiterals name="NULL" value="3"/>
+    <eLiterals name="new" value="4"/>
+    <eLiterals name="true" value="5"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EDataType" name="size_t" instanceClassName="java.lang.Long"/>
+  <eSubpackages name="delete" nsURI="http://swift-modelling.org/test/cnames/delete" nsPrefix="del">
+    <eClassifiers xsi:type="ecore:EClass" name="Wheel">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="auto"
+          eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="virtual" eType="#//Vehicle"
+          eOpposite="#//Vehicle/wheels"/>
+    </eClassifiers>
+  </eSubpackages>
+</ecore:EPackage>

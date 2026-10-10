@@ -1,0 +1,83 @@
+[comment encoding = UTF-8 /]
+[**
+ * The source file of a generator package.
+ *
+ * The file defines the functions that the header of the package declares: the conversions of its enumerations, the
+ * functions of its classes, the descriptions of its classes and of the package, and the factory function.
+ **/]
+[module PackageSource('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CNames/]
+[import CTypes/]
+[import CIncludes/]
+[import CDocumentation/]
+[import Header/]
+[import ClassQueries/]
+[import ClassSource/]
+[import ClassDescriptor/]
+[import EnumDeclaration/]
+
+[**
+ * Writes the constants that describe a package, and its factory function.
+ **/]
+[template public packageDefinition(genPackage : GenPackage)]
+[if (genPackage.genClasses->notEmpty())]
+/// @brief The descriptions of the classes of the [genPackage.name()/] package.
+[generatedTag()/]
+static const EClassInfo *const [genPackage.classListName()/]['['/][']'/] = {
+[for (genClass : GenClass | genPackage.orderedGenClasses())]
+    &[genClass.descriptorName()/],
+[/for]
+};
+
+[/if]
+/// @brief The description of the [genPackage.name()/] package and its classes.
+[generatedTag()/]
+const EPackageInfo [genPackage.packageInfoName()/] = {
+    .name = [cStringLiteral(genPackage.name())/],
+    .nsURI = [cStringLiteral(genPackage.ecorePackage.nsURI)/],
+    .nsPrefix = [cStringLiteral(genPackage.ecorePackage.nsPrefix)/],
+    .classes = [tableReference(genPackage.classListName(), genPackage.genClasses->size())/],
+    .classCount = [genPackage.genClasses->size()/]
+};
+
+[generatedTag()/]
+EObject *[genPackage.factoryFunctionName()/](const EClassInfo *eClass) {
+    for (size_t position = 0; position < [genPackage.packageInfoName()/].classCount; position++) {
+        if ([genPackage.packageInfoName()/].classes['['/]position[']'/] == eClass) {
+            return eClass->create == NULL ? NULL : eClass->create();
+        }
+    }
+    return NULL;
+}
+[/template]
+
+[**
+ * The complete text of the source file of a generator package.
+ **/]
+[template public packageSource(genPackage : GenPackage)]
+[collect ('includes', Sequence{genPackage.headerInclude()})/]
+[collect ('includes', sourceIncludes())/]
+[collect ('includes', genPackage.foreignSuperHeaders())/]
+[header(genPackage, genPackage.name() + sourceExtension())/]
+
+[emit ('includes') once][includeBlock(items)/][/emit]
+[for (genEnum : GenEnum | genPackage.genEnums)]
+[genEnum.enumDefinition()/]
+
+[/for]
+[for (genClass : GenClass | genPackage.instantiableClasses())]
+[genClass.lifecycleDefinitions()/]
+
+[for (genFeature : GenFeature | genClass.implementedFeatures())]
+[genClass.accessorDefinitions(genFeature)/]
+
+[/for]
+[genClass.tableFunctions()/]
+
+[/for]
+[for (genClass : GenClass | genPackage.orderedGenClasses())]
+[genClass.descriptorDefinition()/]
+
+[/for]
+[genPackage.packageDefinition()/]
+[/template]

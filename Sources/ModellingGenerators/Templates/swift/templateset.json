@@ -1,0 +1,21 @@
+{
+  "name": "swift",
+  "summary": "Swift model code for the ECore runtime",
+  "mainModule": "generate",
+  "mainTemplate": "generate",
+  "dataModels": [
+    {
+      "name": "types",
+      "metamodel": "TypeMapping.ecore",
+      "model": "swift-types.xmi"
+    }
+  ],
+  "layout": {
+    "sourceRootSetting": "modelDirectory",
+    "includeSourceRoot": false
+  },
+  "options": {
+    "lineDelimiter": "\n"
+  },
+  "fileCountTemplate": "fileCount"
+}

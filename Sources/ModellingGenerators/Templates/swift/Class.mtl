@@ -1,0 +1,137 @@
+[comment encoding = UTF-8 /]
+[**
+ * The Swift file of a generator class.
+ *
+ * A class that is abstract, an interface, or extended by other classes is declared as a protocol that lists the
+ * properties of its features. A class that has instances is also declared as a final class, because the runtime
+ * requires model objects to be sendable. The final class keeps the values of its features in a structure that a
+ * lock guards, offers a property for every feature it declares or inherits, and implements the reflective methods
+ * of the runtime. A class that other classes extend has a final class whose name carries a suffix.
+ **/]
+[module Class('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import SwiftNames/]
+[import SwiftImports/]
+[import SwiftTypes/]
+[import SwiftDocumentation/]
+[import Header/]
+[import ClassQueries/]
+[import ClassFeature/]
+[import ClassReflection/]
+
+[**
+ * The complete text of the file that declares a generator class.
+ **/]
+[template public classFile(genClass : GenClass)]
+[collect ('imports', Sequence{valueModule(), objectModule(), foundationModule()})/]
+[if (genClass.isInstantiable())]
+[collect ('imports', lockModule())/]
+[for (genFeature : GenFeature | genClass.implementedFeatures())]
+[genFeature.collectFeatureModule()/]
+[/for]
+[/if]
+[header(genClass, genClass.classifierFileName())/]
+
+[emit ('imports') once][importBlock(items)/][/emit]
+[if (genClass.isProtocol())]
+[genClass.protocolDeclaration()/]
+[/if]
+[if (genClass.isProtocol() and genClass.isInstantiable())]
+
+[/if]
+[if (genClass.isInstantiable())]
+[genClass.finalClassDeclaration()/]
+[/if]
+[/template]
+
+[**
+ * Writes the protocol of a class.
+ **/]
+[template public protocolDeclaration(genClass : GenClass)]
+[documentationText(genClass, 'The ' + genClass.name() + ' protocol.\n\nPart of the ' + genClass.genPackage().name() + ' package.')/]
+[generatedTag()/]
+public protocol [genClass.interfaceName()/]: [genClass.protocolInheritance()/] {
+[for (genFeature : GenFeature | genClass.genFeatures)]
+[if (i > 1)]
+
+[/if]
+[genFeature.featureRequirement()/]
+[/for]
+}
+[/template]
+
+[**
+ * Writes the final class of a class.
+ **/]
+[template public finalClassDeclaration(genClass : GenClass)]
+[if (genClass.hasSubclasses())]
+/// The implementation of the [genClass.name()/] protocol.
+[else]
+[documentationText(genClass, 'The ' + genClass.name() + ' class.\n\nPart of the ' + genClass.genPackage().name() + ' package.')/]
+[/if]
+[generatedTag()/]
+public final class [genClass.className()/]: [genClass.classConformances()/] {
+    /// The type of the metaclass of the object.
+    // @generated
+    public typealias Classifier = EClass
+
+    /// The unique identifier of the object.
+    // @generated
+    public let id: EUUID
+
+    /// The metaclass that describes the object.
+    // @generated
+    public var eClass: EClass { [genClass.genPackage().packageTypeName()/].shared.[genClass.descriptorName()/] }
+
+[if (genClass.hasWeakFeatures())]
+    /// A reference that does not keep the object it refers to alive.
+    // @generated
+    private struct EWeakReference: Sendable {
+        weak var object: (AnyObject & Sendable)?
+
+        init(_ object: (AnyObject & Sendable)?) { self.object = object }
+    }
+
+[/if]
+    /// The values of the features of the object.
+    // @generated
+    private struct EStorage: Sendable {
+[for (genFeature : GenFeature | genClass.implementedFeatures())]
+        var [genFeature.storedDeclaration()/]
+[/for]
+    }
+
+    /// The values of the features, guarded by a lock.
+    // @generated
+    private let eStorage: Mutex<EStorage>
+
+    /// Creates an object with all features at their defaults.
+    ///
+    /// - Parameter id: The unique identifier of the object; a new one by default.
+    // @generated
+    public init(id: EUUID = EUUID()) {
+        self.id = id
+        self.eStorage = Mutex(EStorage())
+    }
+
+[for (genFeature : GenFeature | genClass.implementedFeatures())]
+[genFeature.featureProperty()/]
+
+[/for]
+    /// Compares two objects by their identifiers.
+    ///
+    /// - Parameters:
+    ///   - lhs: The first object to compare.
+    ///   - rhs: The second object to compare.
+    /// - Returns: `true` if the identifiers match.
+    // @generated
+    public static func == (lhs: [genClass.className()/], rhs: [genClass.className()/]) -> Bool { lhs.id == rhs.id }
+
+    /// Hashes the identifier of the object.
+    ///
+    /// - Parameter hasher: The hasher to combine the identifier into.
+    // @generated
+    public func hash(into hasher: inout Hasher) { hasher.combine(id) }
+
+[genClass.reflectiveMethods()/]
+}
+[/template]
