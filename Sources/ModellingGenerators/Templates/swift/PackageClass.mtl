@@ -1,0 +1,208 @@
+[comment encoding = UTF-8 /]
+[**
+ * The Swift file that describes a generator package.
+ *
+ * The file declares a structure with one shared instance. It builds the Ecore package of the model, with the
+ * metaclass of every class, the enumerations and the data types, and offers each of them as a property. The
+ * objects of the package use these metaclasses to answer the reflective methods of the runtime.
+ **/]
+[module PackageClass('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import SwiftNames/]
+[import SwiftImports/]
+[import SwiftTypes/]
+[import SwiftDocumentation/]
+[import Header/]
+[import ClassQueries/]
+
+[comment Names of the values that build the package /]
+
+[**
+ * The name of the value that holds the identifier of a class while the package is built.
+ **/]
+[query public classIdentifierValue(genClass : GenClass) : String = 'classID_' + genClass.name()/]
+
+[**
+ * The name of the value that holds the metaclass of a class while the package is built.
+ **/]
+[query public classValue(genClass : GenClass) : String = 'class_' + genClass.name()/]
+
+[**
+ * The name of the value that holds the identifier of a feature while the package is built.
+ **/]
+[query public featureIdentifierValue(genFeature : GenFeature) : String = 'featureID_' + genFeature.genClass().name() + '_' + genFeature.name()/]
+
+[**
+ * Whether a classifier of the model belongs to a package.
+ **/]
+[query public belongsTo(classifier : OclAny, genPackage : GenPackage) : Boolean = if classifier.genClassifier().oclIsUndefined() then false else classifier.genClassifier().genPackage().packageDirectory() = genPackage.packageDirectory() endif/]
+
+[comment References to other elements /]
+
+[**
+ * The expression for a supertype of a class: the metaclass built before it when the package holds it, otherwise
+ * a placeholder that carries its name.
+ **/]
+[query public superReference(genSuper : GenClass, genPackage : GenPackage) : String = if genSuper.genPackage().packageDirectory() = genPackage.packageDirectory() then genSuper.classValue() else 'EClass(name: ' + swiftStringLiteral(genSuper.name()) + ')' endif/]
+
+[**
+ * The expression for the class that a reference points to: a placeholder with the identifier of the class when the
+ * package holds it, otherwise a placeholder that carries its name.
+ **/]
+[query public classReference(classifier : OclAny, genPackage : GenPackage) : String = if classifier.belongsTo(genPackage) then 'EClass(id: ' + classifier.genClassifier().classIdentifierValue() + ', name: ' + swiftStringLiteral(classifier.name) + ')' else 'EClass(name: ' + swiftStringLiteral(classifier.name) + ')' endif/]
+
+[**
+ * The expression for the data type of an attribute: the value built before it when the package holds the type,
+ * otherwise a placeholder that carries its name.
+ **/]
+[query public dataTypeReference(classifier : OclAny, genPackage : GenPackage) : String = if classifier.belongsTo(genPackage) and classifier.oclIsKindOf(EEnum) then 'enum_' + classifier.name else (if classifier.belongsTo(genPackage) then 'dataType_' + classifier.name else 'EDataType(name: ' + swiftStringLiteral(classifier.name) + ')' endif) endif/]
+
+[**
+ * The expression for the opposite of a reference: the identifier of the opposite when the package holds it.
+ **/]
+[query public oppositeReference(genFeature : GenFeature, genPackage : GenPackage) : String = if genFeature.isBidirectional() and not genFeature.reverseGenFeature().oclIsUndefined() and genFeature.reverseGenFeature().genClass().genPackage().packageDirectory() = genPackage.packageDirectory() then genFeature.reverseGenFeature().featureIdentifierValue() else 'nil' endif/]
+
+[**
+ * The default value literal of an attribute as an optional string.
+ **/]
+[query public defaultLiteralValue(genFeature : GenFeature) : String = if genFeature.hasDefault() then swiftStringLiteral(genFeature.defaultValueLiteral()) else 'nil' endif/]
+
+[comment Constructing the elements /]
+
+[**
+ * The statements that construct a feature in the list of features of its class.
+ **/]
+[template public featureConstruction(genFeature : GenFeature, genPackage : GenPackage)]
+[if (genFeature.isAttributeType())]
+                EAttribute(
+                    id: [genFeature.featureIdentifierValue()/], name: [swiftStringLiteral(genFeature.name())/],
+                    eType: [dataTypeReference(genFeature.featureClassifier(), genPackage)/],
+                    lowerBound: [genFeature.lowerBound()/], upperBound: [genFeature.upperBound()/],
+                    changeable: [genFeature.isChangeable()/], volatile: [genFeature.isVolatile()/], transient: [genFeature.isTransient()/],
+                    defaultValueLiteral: [genFeature.defaultLiteralValue()/], unsettable: [genFeature.isUnsettable()/], derived: [genFeature.isDerived()/]),
+[else]
+                EReference(
+                    id: [genFeature.featureIdentifierValue()/], name: [swiftStringLiteral(genFeature.name())/],
+                    eType: [classReference(genFeature.featureClassifier(), genPackage)/],
+                    lowerBound: [genFeature.lowerBound()/], upperBound: [genFeature.upperBound()/],
+                    changeable: [genFeature.isChangeable()/], volatile: [genFeature.isVolatile()/], transient: [genFeature.isTransient()/],
+                    containment: [genFeature.isContainment()/], opposite: [genFeature.oppositeReference(genPackage)/],
+                    resolveProxies: [genFeature.isResolveProxies()/], unsettable: [genFeature.isUnsettable()/], derived: [genFeature.isDerived()/],
+                    container: [genFeature.isContainer()/]),
+[/if]
+[/template]
+
+[**
+ * The statements that construct the metaclass of a class.
+ **/]
+[template public classConstruction(genClass : GenClass, genPackage : GenPackage)]
+        let [genClass.classValue()/] = EClass(
+            id: [genClass.classIdentifierValue()/], name: [swiftStringLiteral(genClass.name())/],
+            isAbstract: [genClass.isAbstract()/], isInterface: [genClass.isInterface()/],
+            eSuperTypes: ['['/][genClass.modelSupers()->collect(b | superReference(b, genPackage))->join(', ')/][']'/],
+            eStructuralFeatures: ['['/]
+[for (genFeature : GenFeature | genClass.genFeatures)]
+[genFeature.featureConstruction(genPackage)/]
+[/for]
+            [']'/])
+[/template]
+
+[**
+ * The statements that construct an enumeration.
+ **/]
+[template public enumConstruction(genEnum : GenEnum)]
+        let enum_[genEnum.name()/] = EEnum(
+            name: [swiftStringLiteral(genEnum.name())/],
+            literals: ['['/]
+[for (literal : GenEnumLiteral | genEnum.genEnumLiterals)]
+                EEnumLiteral(name: [swiftStringLiteral(literal.name())/], value: [literal.ecoreEnumLiteral.value/], literal: [swiftStringLiteral(literal.ecoreEnumLiteral.literal)/]),
+[/for]
+            [']'/])
+[/template]
+
+[**
+ * The complete text of the file that describes a generator package.
+ **/]
+[template public packageFile(genPackage : GenPackage)]
+[collect ('imports', Sequence{valueModule(), objectModule(), foundationModule()})/]
+[header(genPackage, genPackage.packageFileName())/]
+
+[emit ('imports') once][importBlock(items)/][/emit]
+/// The description of the [genPackage.name()/] package.
+///
+/// The shared instance builds the Ecore package of the model, with the metaclass of each class, enumeration and
+/// data type, which the objects of the package return as their metaclass.
+// @generated
+public struct [genPackage.packageTypeName()/]: Sendable {
+    /// The shared description of the package.
+    // @generated
+    public static let shared = [genPackage.packageTypeName()/]()
+
+    /// The Ecore package that holds the classifiers.
+    // @generated
+    public let ePackage: EPackage
+
+    /// The factory that creates the objects of the package.
+    // @generated
+    public var factory: [genPackage.factoryTypeName()/] { [genPackage.factoryTypeName()/].shared }
+[for (genClass : GenClass | genPackage.orderedGenClasses())]
+
+    /// The metaclass of the [genClass.name()/] class.
+    // @generated
+    public let [genClass.descriptorName()/]: EClass
+[/for]
+[for (genEnum : GenEnum | genPackage.genEnums)]
+
+    /// The Ecore enumeration of the [genEnum.name()/] enumeration.
+    // @generated
+    public let [genEnum.descriptorName()/]: EEnum
+[/for]
+[for (genDataType : GenDataType | genPackage.genDataTypes)]
+
+    /// The Ecore data type of the [genDataType.name()/] data type.
+    // @generated
+    public let [genDataType.descriptorName()/]: EDataType
+[/for]
+
+    /// Builds the Ecore package and its classifiers.
+    // @generated
+    private init() {
+[for (genClass : GenClass | genPackage.orderedGenClasses())]
+        let [genClass.classIdentifierValue()/] = EUUID()
+[for (genFeature : GenFeature | genClass.genFeatures)]
+        let [genFeature.featureIdentifierValue()/] = EUUID()
+[/for]
+[/for]
+[for (genEnum : GenEnum | genPackage.genEnums)]
+[genEnum.enumConstruction()/]
+[/for]
+[for (genDataType : GenDataType | genPackage.genDataTypes)]
+        let dataType_[genDataType.name()/] = EDataType(name: [swiftStringLiteral(genDataType.name())/], instanceClassName: [swiftStringLiteral(genDataType.ecoreDataType.instanceClassName)/])
+[/for]
+[for (genClass : GenClass | genPackage.orderedGenClasses())]
+[genClass.classConstruction(genPackage)/]
+[/for]
+        self.ePackage = EPackage(
+            name: [swiftStringLiteral(genPackage.name())/], nsURI: [swiftStringLiteral(genPackage.ecorePackage.nsURI)/], nsPrefix: [swiftStringLiteral(genPackage.ecorePackage.nsPrefix)/],
+            eClassifiers: ['['/]
+[for (genClass : GenClass | genPackage.orderedGenClasses())]
+                [genClass.classValue()/],
+[/for]
+[for (genEnum : GenEnum | genPackage.genEnums)]
+                enum_[genEnum.name()/],
+[/for]
+[for (genDataType : GenDataType | genPackage.genDataTypes)]
+                dataType_[genDataType.name()/],
+[/for]
+            [']'/])
+[for (genClass : GenClass | genPackage.orderedGenClasses())]
+        self.[genClass.descriptorName()/] = [genClass.classValue()/]
+[/for]
+[for (genEnum : GenEnum | genPackage.genEnums)]
+        self.[genEnum.descriptorName()/] = enum_[genEnum.name()/]
+[/for]
+[for (genDataType : GenDataType | genPackage.genDataTypes)]
+        self.[genDataType.descriptorName()/] = dataType_[genDataType.name()/]
+[/for]
+    }
+}
+[/template]

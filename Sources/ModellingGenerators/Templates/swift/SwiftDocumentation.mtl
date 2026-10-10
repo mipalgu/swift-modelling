@@ -1,0 +1,46 @@
+[comment encoding = UTF-8 /]
+[**
+ * Documentation comments, literals and file headers in generated Swift code.
+ *
+ * The queries here write the pieces that surround generated declarations: documentation comments taken from
+ * the documentation of the model, the tag that marks a member as generated, and string literals with their escapes.
+ **/]
+[module SwiftDocumentation('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import SwiftNames/]
+
+[comment Literals and escapes /]
+
+[**
+ * Whether a text consists only of printable ASCII characters other than backslash and quotes.
+ **/]
+[query public isPlainText(text : String) : Boolean = text.matches('^[ -!#-\\[\\]-~]*$')/]
+
+[**
+ * Escapes one character code for a string literal: the usual escapes for quotes, backslash and line breaks, and
+ * a Unicode escape for control characters. Other characters are written as they are.
+ **/]
+[query public escapeCode(code : Integer) : String = if code = 9 then '\\t' else (if code = 10 then '\\n' else (if code = 13 then '\\r' else (if code = 34 then '\\"' else (if code = 92 then '\\\\' else (if code < 32 or code = 127 then '\\u{' + code.toHexString(1) + '}' else code.fromCharacterCode() endif) endif) endif) endif) endif) endif/]
+
+[**
+ * A string literal for a text; a missing text becomes nil.
+ **/]
+[query public swiftStringLiteral(text : OclAny) : String = if text.oclIsUndefined() then 'nil' else '"' + (if text.isPlainText() then text else text.characterCodes()->collect(c | escapeCode(c))->join('') endif) + '"' endif/]
+
+[comment Documentation comments /]
+
+[**
+ * A text as documentation comment lines. The template writer indents every line but the first like the line that
+ * the first one stands on.
+ **/]
+[query public docComment(text : String) : String = text.lines()->collect(l | if l.trim().size() = 0 then '///' else '/// ' + l endif)->join('\n')/]
+
+[**
+ * The documentation comment of an element: its model documentation, otherwise the fallback text.
+ **/]
+[query public documentationText(element : OclAny, fallback : String) : String = if element.hasDocumentation() then element.documentation().docComment() else fallback.docComment() endif/]
+
+[**
+ * The tag that tells the generator to regenerate the member that follows. It stands in a comment of its own, so
+ * that it does not become part of the documentation.
+ **/]
+[query public generatedTag() : String = '// @generated'/]

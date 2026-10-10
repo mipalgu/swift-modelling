@@ -1,0 +1,218 @@
+[comment encoding = UTF-8 /]
+[**
+ * C types for the elements of a generator model.
+ *
+ * The queries here map built-in model data types to C types with the table that the template set bundles, derive
+ * the C type that a data type, enumeration or class stands for, and decide how a feature is kept: as a value that is
+ * copied, as an owned string or byte array, or as a pointer. They also turn the default value literal of a model
+ * into a C expression.
+ **/]
+[module CTypes('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CNames/]
+[import CDocumentation/]
+
+[comment Built-in data types /]
+
+[**
+ * The entry of the type table for a built-in model type, found by its name.
+ **/]
+[query public typeMapping(modelType : String) : OclAny = languageTable().mappings->select(m | m.modelType = modelType)->first()/]
+
+[**
+ * The entry of the type table for the class of the instances that a model names for a data type.
+ **/]
+[query public instanceMapping(instanceClass : String) : OclAny = languageTable().mappings->select(m | m.instanceClass = instanceClass)->first()/]
+
+[**
+ * The entry of the type table that describes a data type: the entry for its instance class if the model
+ * names one that the table knows, otherwise the entry for its name.
+ **/]
+[query public dataTypeMapping(dataType : OclAny) : OclAny = if isBlank(dataType.instanceClassName) or instanceMapping(dataType.instanceClassName).oclIsUndefined() then typeMapping(dataType.name) else instanceMapping(dataType.instanceClassName) endif/]
+
+[**
+ * The entry of the type table for objects of the model: the type of every reference to a class that has no
+ * structure of its own.
+ **/]
+[query public objectMapping() : OclAny = typeMapping('EObject')/]
+
+[**
+ * The entry of the type table for values of a data type that the table does not know.
+ **/]
+[query public anyValueMapping() : OclAny = typeMapping('EJavaObject')/]
+
+[**
+ * Whether a classifier of the model is one that the Ecore package provides.
+ **/]
+[query public isEcoreClassifier(classifier : OclAny) : Boolean = if classifier.genClassifier().oclIsUndefined() then true else classifier.genClassifier().genPackage().isEcorePackage() endif/]
+
+[**
+ * A declaration of a name with a type: the type and the name, separated by a space unless the type ends in an
+ * asterisk, which binds to the name.
+ **/]
+[query public declare(typeName : String, name : String) : String = if typeName.endsWith('*') then typeName + name else typeName + ' ' + name endif/]
+
+[comment Features /]
+
+[**
+ * Whether a feature can hold several values.
+ **/]
+[query public isMany(genFeature : GenFeature) : Boolean = genFeature.isListType()/]
+
+[**
+ * The native classifier of the type of a feature.
+ **/]
+[query public featureClassifier(genFeature : GenFeature) : OclAny = genFeature.ecoreFeature.eType/]
+
+[**
+ * Whether a feature is an attribute whose values are literals of an enumeration.
+ **/]
+[query public isEnumFeature(genFeature : GenFeature) : Boolean = genFeature.isAttributeType() and genFeature.featureClassifier().oclIsKindOf(EEnum)/]
+
+[**
+ * The table entry for the data type of an attribute; undefined for references and enumerations. A data type that
+ * the table does not know is kept as a pointer that the object does not own.
+ **/]
+[query public featureMapping(genFeature : GenFeature) : OclAny = if genFeature.isAttributeType() and genFeature.featureClassifier().oclIsKindOf(EDataType) and not genFeature.featureClassifier().oclIsKindOf(EEnum) then (if genFeature.featureClassifier().dataTypeMapping().oclIsUndefined() then anyValueMapping() else genFeature.featureClassifier().dataTypeMapping() endif) else null endif/]
+
+[**
+ * Whether an object owns the objects that a reference points to, so that destroying the object destroys them.
+ **/]
+[query public isOwning(genFeature : GenFeature) : Boolean = genFeature.isReferenceType() and genFeature.isContainment()/]
+
+[**
+ * How an object keeps the value of a feature: scalar, string, bytes or pointer.
+ **/]
+[query public storage(genFeature : GenFeature) : String = if genFeature.isReferenceType() then 'pointer' else (if genFeature.isEnumFeature() then 'scalar' else genFeature.featureMapping().storage endif) endif/]
+
+[**
+ * Whether an object keeps the value of a feature as an owned copy of a text.
+ **/]
+[query public storesText(genFeature : GenFeature) : Boolean = genFeature.storage() = 'string'/]
+
+[**
+ * Whether an object keeps the value of a feature as an owned copy of bytes.
+ **/]
+[query public storesBytes(genFeature : GenFeature) : Boolean = genFeature.storage() = 'bytes'/]
+
+[**
+ * Whether an object keeps the value of a feature as a plain value that is copied by assignment.
+ **/]
+[query public storesScalar(genFeature : GenFeature) : Boolean = genFeature.storage() = 'scalar'/]
+
+[**
+ * Whether the values of a feature are copied when they are stored: the text or bytes of the caller are duplicated.
+ **/]
+[query public copiesValue(genFeature : GenFeature) : Boolean = genFeature.storesText() or genFeature.storesBytes()/]
+
+[comment Types /]
+
+[**
+ * The C type of the objects that a reference points to: the plain object type for a class of Ecore or a class that
+ * has no structure of its own, otherwise a pointer to the structure of the class.
+ **/]
+[query public referenceTypeName(genFeature : GenFeature) : String = if genFeature.featureClassifier().isEcoreClassifier() or genFeature.featureClassifier().genClassifier().isProtocol() then objectMapping().targetType else genFeature.featureClassifier().genClassifier().className() + ' *' endif/]
+
+[**
+ * The C type of an enumeration, or the type of an integer if the generator model does not describe it.
+ **/]
+[query public enumTypeName(classifier : OclAny) : String = if classifier.genClassifier().oclIsUndefined() then enumStorageType() else classifier.genClassifier().classifierName() endif/]
+
+[**
+ * The C type that stores a single value of a feature, as it is written in the declaration of a field.
+ **/]
+[query public itemTypeName(genFeature : GenFeature) : String = if genFeature.isReferenceType() then genFeature.referenceTypeName() else (if genFeature.isEnumFeature() then enumTypeName(genFeature.featureClassifier()) else (if genFeature.featureClassifier().isEcoreClassifier() then genFeature.featureMapping().targetType else genFeature.featureClassifier().classifierName() endif) endif) endif/]
+
+[**
+ * The C type of a single value of a feature in the parameters and results of accessors: a constant string for the
+ * owned text of a field, otherwise the type of the field.
+ **/]
+[query public valueTypeName(genFeature : GenFeature) : String = if genFeature.isAttributeType() and not genFeature.isEnumFeature() and not genFeature.featureMapping().parameterType.isBlank() then genFeature.featureMapping().parameterType else (if genFeature.isAttributeType() and not genFeature.isEnumFeature() then genFeature.featureMapping().targetType else genFeature.itemTypeName() endif) endif/]
+
+[**
+ * The type of the field of a feature: the type of its value, or a list of such values.
+ **/]
+[query public fieldTypeName(genFeature : GenFeature) : String = if genFeature.isMany() then listMacro() + '(' + genFeature.itemTypeName() + ')' else genFeature.itemTypeName() endif/]
+
+[**
+ * The name of the macro of the support header that declares a list of values.
+ **/]
+[query public listMacro() : String = 'EList'/]
+
+[**
+ * The name of the member of a list that holds the memory with its values.
+ **/]
+[query public itemsMember() : String = 'items'/]
+
+[**
+ * The name of the member of a list that holds the number of its values.
+ **/]
+[query public countMember() : String = 'count'/]
+
+[**
+ * The name of the member of a list that holds the number of values that fit into its memory.
+ **/]
+[query public capacityMember() : String = 'capacity'/]
+
+[**
+ * The value that stands for a missing value of a feature, such as the item at a position that does not exist.
+ **/]
+[query public zeroValue(genFeature : GenFeature) : String = if genFeature.isReferenceType() then objectMapping().zeroValue else (if genFeature.isEnumFeature() then '(' + enumTypeName(genFeature.featureClassifier()) + ')0' else genFeature.featureMapping().zeroValue endif) endif/]
+
+[comment Default values /]
+
+[**
+ * Whether the enumeration that is the type of a feature has literals, so that one of them can be the default.
+ **/]
+[query public hasEnumDefault(genFeature : GenFeature) : Boolean = genFeature.isEnumFeature() and not genFeature.featureClassifier().genClassifier().oclIsUndefined() and genFeature.featureClassifier().genClassifier().genEnumLiterals->notEmpty()/]
+
+[**
+ * The enumeration literal that a feature uses as its default: the literal that the model names, otherwise the first.
+ **/]
+[query public defaultLiteral(genFeature : GenFeature) : OclAny = if genFeature.hasDefault() and not genFeature.featureClassifier().genClassifier().genEnumLiterals->select(l | l.ecoreEnumLiteral.literal = genFeature.defaultValueLiteral() or l.name() = genFeature.defaultValueLiteral())->isEmpty() then genFeature.featureClassifier().genClassifier().genEnumLiterals->select(l | l.ecoreEnumLiteral.literal = genFeature.defaultValueLiteral() or l.name() = genFeature.defaultValueLiteral())->first() else genFeature.featureClassifier().genClassifier().genEnumLiterals->first() endif/]
+
+[**
+ * The C literal for a default value literal of the model, or an empty text if the table has no way to write one.
+ * Numbers lose their leading zeros, which C would read as octal digits.
+ **/]
+[query public literalExpression(literal : String, style : OclAny) : String = if isBlank(style) then '' else (if style = 'string' then cStringLiteral(literal) else (if style = 'boolean' then (if literal.toLower() = 'true' or literal.toLower() = 'false' then literal.toLower() else '' endif) else (if style = 'number' then (if literal.matches('^-?[0-9]+([.][0-9]+)?([eE][-+]?[0-9]+)?$') then literal.replaceAll('^(-?)0+([0-9])', '$1$2') else '' endif) else (if style = 'character' and literal.size() > 0 then literal.characterCodes()->first().toString() else '' endif) endif) endif) endif) endif/]
+
+[**
+ * The C literal of the default text of an attribute that is kept as an owned string, or an empty text if the model
+ * gives no default.
+ **/]
+[query public stringDefault(genFeature : GenFeature) : String = if genFeature.isMany() or not genFeature.storesText() or not genFeature.hasDefault() then '' else literalExpression(genFeature.defaultValueLiteral(), genFeature.featureMapping().literalStyle) endif/]
+
+[**
+ * The expression that initialises a field that is copied, or that is a pointer: the default of the model, the
+ * first literal of an enumeration, or the zero value.
+ **/]
+[query public defaultExpression(genFeature : GenFeature) : String = if genFeature.isEnumFeature() then (if genFeature.hasEnumDefault() then literalConstant(genFeature.featureClassifier().genClassifier(), genFeature.defaultLiteral()) else '0' endif) else (if genFeature.isReferenceType() or not genFeature.storesScalar() then genFeature.zeroValue() else genFeature.mappedDefault() endif) endif/]
+
+[query mappedDefault(genFeature : GenFeature) : String = if genFeature.hasDefault() and not literalExpression(genFeature.defaultValueLiteral(), genFeature.featureMapping().literalStyle).isBlank() then literalExpression(genFeature.defaultValueLiteral(), genFeature.featureMapping().literalStyle) else genFeature.featureMapping().zeroValue endif/]
+
+[comment Includes /]
+
+[**
+ * The include directive for the header that a feature needs, seen from a package: the header of another package
+ * that declares its enumeration or data type, or the header of the type table for its data type. Empty if
+ * the headers that every file includes provide what the feature needs.
+ **/]
+[query public featureInclude(genFeature : GenFeature, genPackage : GenPackage) : String = if genFeature.isReferenceType() then '' else (if genFeature.featureClassifier().isEcoreClassifier() then (if genFeature.featureMapping().oclIsUndefined() or isBlank(genFeature.featureMapping().module) then '' else genFeature.featureMapping().module endif) else (if genFeature.featureClassifier().genClassifier().genPackage().isSamePackage(genPackage) then '' else genFeature.featureClassifier().genClassifier().genPackage().headerInclude() endif) endif) endif/]
+
+[comment Enumerations and data types /]
+
+[**
+ * The C type that represents an enumeration in a declaration: a type that every constant of the enumeration fits.
+ **/]
+[query public enumStorageType() : String = 'int'/]
+
+[**
+ * The type that a data type of the model is an alias of.
+ **/]
+[query public aliasedTypeName(genDataType : GenDataType) : String = if genDataType.ecoreDataType.dataTypeMapping().oclIsUndefined() then anyValueMapping().targetType else genDataType.ecoreDataType.dataTypeMapping().targetType endif/]
+
+[**
+ * The include directive for the header that the alias of a data type needs, or an empty text if the headers that
+ * every file includes provide it.
+ **/]
+[query public dataTypeInclude(genDataType : GenDataType) : String = if genDataType.ecoreDataType.dataTypeMapping().oclIsUndefined() or isBlank(genDataType.ecoreDataType.dataTypeMapping().module) then '' else genDataType.ecoreDataType.dataTypeMapping().module endif/]

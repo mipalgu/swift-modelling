@@ -1,0 +1,173 @@
+[comment encoding = UTF-8 /]
+[**
+ * The declarations of a generator class.
+ *
+ * A class that has instances gets a structure that starts with the object header and holds the values of all its
+ * features, inherited ones included, and the declarations of the functions that create and destroy its objects and
+ * read and change its features. Every class gets the declaration of the constant that describes it.
+ **/]
+[module ClassHeader('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CNames/]
+[import CTypes/]
+[import CDocumentation/]
+[import ClassQueries/]
+
+[**
+ * Writes the forward declaration of the structure of a class.
+ **/]
+[template public structureForward(genClass : GenClass)]
+[let typeName : String = genClass.className()]
+/// @brief The [genClass.name()/] class.
+[generatedTag()/]
+typedef struct [typeName/] [typeName/];
+[/let]
+[/template]
+
+[**
+ * Writes the declaration of the structure of a class that has instances.
+ **/]
+[template public structureDeclaration(genClass : GenClass)]
+[documentationText(genClass, 'The ' + genClass.name() + ' class.\n\nPart of the ' + genClass.genPackage().name() + ' package.\nThe object owns the text, the bytes and the contained objects that its fields refer to.')/]
+[generatedTag()/]
+struct [genClass.className()/] {
+    /// @brief The header that every model object starts with, which refers to the description of the class.
+    [generatedTag()/]
+    EObject eObject;
+[for (genFeature : GenFeature | genClass.implementedFeatures())]
+
+    [documentationText(genFeature, genFeature.featureSummary())/]
+    [generatedTag()/]
+    [declare(genFeature.fieldTypeName(), genClass.fieldName(genFeature))/];
+[/for]
+};
+[/template]
+
+[**
+ * Writes the declarations of the functions that create and destroy the objects of a class.
+ **/]
+[template public lifecycleDeclarations(genClass : GenClass)]
+[let typeName : String = genClass.className()]
+/// @brief Creates a [genClass.name()/] object with all features at their defaults.
+///
+/// The caller owns the object and releases it with [genClass.destroyName()/].
+///
+/// @return The new object; the null pointer if the memory could not be allocated.
+[generatedTag()/]
+[typeName/] *[genClass.createName()/](void);
+
+/// @brief Destroys a [genClass.name()/] object together with the strings, byte arrays and contained objects that it owns.
+///
+/// @param self The object to destroy; may be the null pointer, which is ignored.
+[generatedTag()/]
+void [genClass.destroyName()/]([typeName/] *self);
+[/let]
+[/template]
+
+[**
+ * Writes the declarations of the functions that read and change a feature.
+ **/]
+[template public accessorDeclarations(genClass : GenClass, genFeature : GenFeature)]
+[let typeName : String = genClass.className()]
+[let valueType : String = genFeature.valueTypeName()]
+[let copies : Boolean = genFeature.copiesValue()]
+[let releases : Boolean = genFeature.releasesValues()]
+[if (genFeature.isMany())]
+/// @brief Returns the number of values of the [genFeature.name()/] [genFeature.featureKind()/].
+///
+/// @param self The object to read.
+/// @return The number of values.
+[generatedTag()/]
+size_t [genClass.countName(genFeature)/](const [typeName/] *self);
+
+/// @brief Returns a value of the [genFeature.name()/] [genFeature.featureKind()/].
+///
+/// @param self The object to read.
+/// @param index The position of the value, counted from zero.
+/// @return The value; the zero value if there is none at the position.
+[generatedTag()/]
+[declare(valueType, genClass.itemName(genFeature))/](const [typeName/] *self, size_t index);
+
+/// @brief Appends a value to the [genFeature.name()/] [genFeature.featureKind()/].
+///
+[if (copies)]
+/// The object keeps a copy of the value.
+[elseif (genFeature.isOwning())]
+/// The object takes ownership of the value when this succeeds, and destroys it with the object.
+[else]
+/// The object does not take ownership of the value.
+[/if]
+///
+/// @param self The object to change.
+/// @param value The value to append.
+/// @return `false` if the memory could not be allocated or the list cannot grow; `true` otherwise.
+[generatedTag()/]
+bool [genClass.addName(genFeature)/]([typeName/] *self, [declare(valueType, 'value')/]);
+
+/// @brief Removes a value from the [genFeature.name()/] [genFeature.featureKind()/].
+///
+[if (releases)]
+/// The object releases the value that it owns.
+[else]
+/// The value that was removed stays alive.
+[/if]
+///
+/// @param self The object to change.
+/// @param index The position of the value, counted from zero.
+/// @return `false` if there is no value at the position; `true` otherwise.
+[generatedTag()/]
+bool [genClass.removeName(genFeature)/]([typeName/] *self, size_t index);
+
+/// @brief Removes all values from the [genFeature.name()/] [genFeature.featureKind()/].
+///
+[if (releases)]
+/// The object releases the values that it owns.
+[else]
+/// The values that were removed stay alive.
+[/if]
+///
+/// @param self The object to change.
+[generatedTag()/]
+void [genClass.clearName(genFeature)/]([typeName/] *self);
+[else]
+/// @brief Returns the value of the [genFeature.name()/] [genFeature.featureKind()/].
+///
+/// @param self The object to read.
+/// @return The value[if (copies)]; it belongs to the object and stays valid until the feature changes or the object is destroyed[/if].
+[generatedTag()/]
+[declare(valueType, genClass.getterName(genFeature))/](const [typeName/] *self);
+
+/// @brief Sets the value of the [genFeature.name()/] [genFeature.featureKind()/].
+///
+[if (copies)]
+/// The object keeps a copy of the value and releases the previous one.
+///
+[elseif (genFeature.isOwning())]
+/// The object takes ownership of the value and destroys the previous one, unless it is the same object.
+///
+[/if]
+/// @param self The object to change.
+/// @param value The new value.
+[if (copies)]
+/// @return `false` if the memory could not be allocated, leaving the previous value; `true` otherwise.
+[/if]
+[generatedTag()/]
+[if (copies)]bool[else]void[/if] [genClass.setterName(genFeature)/]([typeName/] *self, [declare(valueType, 'value')/]);
+[/if]
+[/let]
+[/let]
+[/let]
+[/let]
+[/template]
+
+[**
+ * Writes the declaration of the constant that describes a class.
+ **/]
+[template public descriptorDeclaration(genClass : GenClass)]
+[if (genClass.isInstantiable())]
+/// @brief The description of the [genClass.name()/] class.
+[else]
+[documentationText(genClass, 'The ' + genClass.name() + ' class.\n\nPart of the ' + genClass.genPackage().name() + ' package.\nThe class has no instances, so references to it hold plain objects.')/]
+[/if]
+[generatedTag()/]
+extern const EClassInfo [genClass.descriptorName()/];
+[/template]

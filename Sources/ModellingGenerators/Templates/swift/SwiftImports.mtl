@@ -1,0 +1,54 @@
+[comment encoding = UTF-8 /]
+[**
+ * Import handling for Swift source files.
+ *
+ * A template collects the names of the modules a file needs, with the module of each mapped type as well as the
+ * modules that every file of its kind uses, and writes them as import statements at the position of an emit block.
+ * The statements are sorted by module name.
+ **/]
+[module SwiftImports('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import SwiftNames/]
+[import SwiftTypes/]
+
+[**
+ * The name of the runtime module that provides the base protocols of values, such as the protocol of Ecore values.
+ **/]
+[query public valueModule() : String = 'EMFBase'/]
+
+[**
+ * The name of the runtime module that provides the base protocol of model objects and the metaclasses.
+ **/]
+[query public objectModule() : String = 'ECore'/]
+
+[**
+ * The name of the module of the standard library for mutual exclusion, which holds the values of an object.
+ **/]
+[query public lockModule() : String = 'Synchronization'/]
+
+[**
+ * The name of the module with the foundation types, such as identifiers and dates.
+ **/]
+[query public foundationModule() : String = 'Foundation'/]
+
+[**
+ * The sorted names of the modules to import, without repetitions.
+ **/]
+[query public importedModules(names : OclAny) : OclAny = names->asSet()->sortedBy(n | n)/]
+
+[**
+ * Registers the module that provides the type of the values of a feature, if the language does not provide it.
+ **/]
+[template public collectFeatureModule(genFeature : GenFeature)]
+[if (not genFeature.featureModule().isBlank())]
+[collect ('imports', genFeature.featureModule())/]
+[/if]
+[/template]
+
+[**
+ * Writes the import statements, one on each line.
+ **/]
+[template public importBlock(names : OclAny)]
+[for (n | importedModules(names))]
+import [n/]
+[/for]
+[/template]

@@ -35,8 +35,8 @@ struct GenerateCommandTests {
         let result = try await executeSwiftATL(command: "generate", arguments: ["--help"])
 
         #expect(result.succeeded)
-        #expect(result.stdout.contains("Bundled languages: genmodel, java."))
-        #expect(!result.stdout.contains("swift, cpp, c"))
+        #expect(result.stdout.contains("Bundled languages: genmodel, c, cpp, java, swift."))
+        #expect(!result.stdout.contains("llvm"))
         for option in [
             "--transformations", "--language", "--base-package", "--prefix", "--jdk-level",
             "--template-path", "--force-overwrite", "--diff", "--output",
@@ -51,13 +51,13 @@ struct GenerateCommandTests {
         let fixture = try LibraryFixture.make()
         defer { fixture.remove() }
 
-        for language in ["swift", "cpp", "c", "cobol"] {
+        for language in ["llvm", "cobol"] {
             let result = try await executeSwiftATL(
                 command: "generate", arguments: [fixture.ecore.path, "--language", language])
 
             #expect(!result.succeeded, "\(language) is not a template language")
             #expect(result.stderr.contains("Unsupported target language: \(language)"))
-            #expect(result.stderr.contains("genmodel, java"))
+            #expect(result.stderr.contains("genmodel, c, cpp, java, swift"))
         }
     }
 

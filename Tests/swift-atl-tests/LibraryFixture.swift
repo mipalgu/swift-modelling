@@ -38,7 +38,10 @@ struct LibraryFixture {
         let fixture = LibraryFixture(scratch: scratch)
         try FileManager.default.copyItem(
             at: fixtureRoot.appendingPathComponent("library"), to: fixture.project)
-        for expectation in ["expected", "expected-java", "expected-java-project", "expected-java-variants"] {
+        for expectation in [
+            "expected", "expected-java", "expected-java-project", "expected-java-variants", "expected-swift", "swift-check", "expected-c", "c-check",
+            "expected-cpp", "cpp-check",
+        ] {
             try? FileManager.default.removeItem(at: fixture.project.appendingPathComponent(expectation))
         }
         return fixture

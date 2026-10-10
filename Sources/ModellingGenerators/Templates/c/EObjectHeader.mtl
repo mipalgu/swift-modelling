@@ -1,0 +1,296 @@
+[comment encoding = UTF-8 /]
+[**
+ * The support header of generated C code.
+ *
+ * The header declares what every generated package header builds on: the header that starts every model object, the
+ * descriptions of classes, features and packages that make the objects reflective, the list type that holds the
+ * values of many-valued features, and the helper functions that copy text and bytes, grow lists and destroy objects.
+ * It does not depend on any model, so every model that is generated into one directory writes the same file.
+ **/]
+[module EObjectHeader('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CNames/]
+[import CTypes/]
+[import CIncludes/]
+[import CDocumentation/]
+[import Header/]
+
+[**
+ * The complete text of the support header.
+ **/]
+[template public supportHeader()]
+[collect ('includes', supportHeaderIncludes())/]
+[header(null, supportHeaderName())/]
+
+#ifndef [supportGuard()/]
+#define [supportGuard()/]
+
+[emit ('includes') once][includeBlock(items)/][/emit]
+#ifdef __cplusplus
+[generatedTag()/]
+extern "C" {
+#endif
+
+/// @brief The description of a class of a model, shared by all objects of the class.
+[generatedTag()/]
+typedef struct EClassInfo EClassInfo;
+
+/// @brief The header that every model object starts with.
+///
+/// Because the header is the first member of the structure of every class, a pointer to an object of any class
+/// converts to a pointer to its header and back.
+[generatedTag()/]
+typedef struct EObject EObject;
+
+/// @brief The header that every model object starts with.
+[generatedTag()/]
+struct EObject {
+    /// @brief The description of the class of the object.
+    [generatedTag()/]
+    const EClassInfo *eClass;
+};
+
+/// @brief The kinds of features that a class description lists.
+[generatedTag()/]
+enum EFeatureKind {
+    /// @brief A feature that holds values of a data type or an enumeration.
+    [generatedTag()/]
+    EFeatureKind_Attribute,
+
+    /// @brief A feature that refers to objects without owning them.
+    [generatedTag()/]
+    EFeatureKind_Reference,
+
+    /// @brief A feature that refers to objects that the object owns.
+    [generatedTag()/]
+    EFeatureKind_Containment
+};
+
+/// @brief The kinds of features that a class description lists.
+[generatedTag()/]
+typedef enum EFeatureKind EFeatureKind;
+
+/// @brief The description of a feature of a class.
+[generatedTag()/]
+typedef struct EFeatureInfo EFeatureInfo;
+
+/// @brief The description of a feature of a class.
+[generatedTag()/]
+struct EFeatureInfo {
+    /// @brief The name of the feature in the model.
+    [generatedTag()/]
+    const char *name;
+
+    /// @brief Whether the feature is an attribute, a reference or a containment.
+    [generatedTag()/]
+    EFeatureKind kind;
+
+    /// @brief Whether the feature holds any number of values.
+    [generatedTag()/]
+    bool isMany;
+
+    /// @brief The name in the model of the type of the values of the feature.
+    [generatedTag()/]
+    const char *typeName;
+};
+
+/// @brief The description of a class of a model, shared by all objects of the class.
+///
+/// A class that cannot have instances has no functions that create and destroy objects.
+[generatedTag()/]
+struct EClassInfo {
+    /// @brief The name of the class in the model.
+    [generatedTag()/]
+    const char *name;
+
+    /// @brief Whether the class cannot have instances of its own.
+    [generatedTag()/]
+    bool isAbstract;
+
+    /// @brief The descriptions of the direct supertypes of the class.
+    [generatedTag()/]
+    const EClassInfo *const *superTypes;
+
+    /// @brief The number of direct supertypes.
+    [generatedTag()/]
+    size_t superTypeCount;
+
+    /// @brief The descriptions of all features of the class, inherited ones first.
+    [generatedTag()/]
+    const EFeatureInfo *features;
+
+    /// @brief The number of features.
+    [generatedTag()/]
+    size_t featureCount;
+
+    /// @brief Creates an object of the class, or is the null pointer if the class has no instances.
+    [generatedTag()/]
+    EObject *(*create)(void);
+
+    /// @brief Destroys an object of the class, or is the null pointer if the class has no instances.
+    [generatedTag()/]
+    void (*destroy)(EObject *);
+};
+
+/// @brief The description of a package of a model.
+[generatedTag()/]
+typedef struct EPackageInfo EPackageInfo;
+
+/// @brief The description of a package of a model.
+[generatedTag()/]
+struct EPackageInfo {
+    /// @brief The name of the package.
+    [generatedTag()/]
+    const char *name;
+
+    /// @brief The namespace URI that identifies the package.
+    [generatedTag()/]
+    const char *nsURI;
+
+    /// @brief The prefix of the namespace of the package.
+    [generatedTag()/]
+    const char *nsPrefix;
+
+    /// @brief The descriptions of the classes of the package.
+    [generatedTag()/]
+    const EClassInfo *const *classes;
+
+    /// @brief The number of classes.
+    [generatedTag()/]
+    size_t classCount;
+};
+
+/// @brief A byte array that an object owns.
+[generatedTag()/]
+typedef struct EByteArray EByteArray;
+
+/// @brief A byte array that an object owns.
+[generatedTag()/]
+struct EByteArray {
+    /// @brief The bytes, or the null pointer if there are none.
+    [generatedTag()/]
+    uint8_t *bytes;
+
+    /// @brief The number of bytes.
+    [generatedTag()/]
+    size_t length;
+};
+
+/// @brief Declares the type of a list of values.
+///
+/// The list holds the values, their number and the number of values that fit into the room reserved for them.
+[generatedTag()/]
+#define [listMacro()/](ItemType) struct { ItemType *[itemsMember()/]; size_t [countMember()/]; size_t [capacityMember()/]; }
+
+/// @brief Tells whether a class is a given class or has it among its supertypes, directly or not.
+///
+/// @param candidate The description of the class to look at.
+/// @param eClass The description of the class to look for.
+/// @return `true` if the class conforms; `false` if it does not, or if a description is missing.
+[generatedTag()/]
+static inline bool EClassInfo_conformsTo(const EClassInfo *candidate, const EClassInfo *eClass) {
+    if (candidate == NULL || eClass == NULL) {
+        return false;
+    }
+    if (candidate == eClass) {
+        return true;
+    }
+    for (size_t position = 0; position < candidate->superTypeCount; position++) {
+        if (EClassInfo_conformsTo(candidate->superTypes['['/]position], eClass)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/// @brief Tells whether an object belongs to a class or to one of its subclasses.
+///
+/// @param object The object to look at; may be the null pointer.
+/// @param eClass The description of the class to look for.
+/// @return `true` if the object conforms to the class; `false` if it does not, or if the object is the null pointer.
+[generatedTag()/]
+static inline bool EObject_isKindOf(const EObject *object, const EClassInfo *eClass) {
+    return object != NULL && EClassInfo_conformsTo(object->eClass, eClass);
+}
+
+/// @brief Destroys an object together with the objects that it owns.
+///
+/// @param object The object to destroy; may be the null pointer, which is ignored.
+[generatedTag()/]
+static inline void EObject_destroy(EObject *object) {
+    if (object != NULL && object->eClass != NULL && object->eClass->destroy != NULL) {
+        object->eClass->destroy(object);
+    }
+}
+
+/// @brief Copies a text into memory that the caller owns.
+///
+/// @param text The text to copy; may be the null pointer.
+/// @return The copy, which the caller releases with `free`; the null pointer if the text is the null pointer or the
+///         memory could not be allocated.
+[generatedTag()/]
+static inline char *EObject_duplicateString(const char *text) {
+    if (text == NULL) {
+        return NULL;
+    }
+    size_t size = strlen(text) + 1;
+    char *copy = (char *)malloc(size);
+    if (copy != NULL) {
+        memcpy(copy, text, size);
+    }
+    return copy;
+}
+
+/// @brief Copies bytes into memory that the caller owns.
+///
+/// @param value The bytes to copy.
+/// @param copy Receives the copy, which holds no bytes if there are none to copy.
+/// @return `false` if the memory could not be allocated; `true` otherwise.
+[generatedTag()/]
+static inline bool EObject_duplicateBytes(EByteArray value, EByteArray *copy) {
+    copy->bytes = NULL;
+    copy->length = 0;
+    if (value.bytes == NULL || value.length == 0) {
+        return true;
+    }
+    uint8_t *bytes = (uint8_t *)malloc(value.length);
+    if (bytes == NULL) {
+        return false;
+    }
+    memcpy(bytes, value.bytes, value.length);
+    copy->bytes = bytes;
+    copy->length = value.length;
+    return true;
+}
+
+/// @brief Makes room for more values in a list by doubling its capacity.
+///
+/// @param items The memory of the list, or the null pointer for a list without room.
+/// @param capacity The number of values that fit into the memory; increased if the memory could be grown.
+/// @param itemSize The size of one value in bytes.
+/// @return The grown memory, which holds the values of the list; the null pointer if the size would overflow or the
+///         memory could not be allocated, in which case the list and its capacity remain as they were.
+[generatedTag()/]
+static inline void *EObject_grown(void *items, size_t *capacity, size_t itemSize) {
+    size_t grown = 4;
+    if (*capacity > 0) {
+        if (*capacity > SIZE_MAX / 2) {
+            return NULL;
+        }
+        grown = *capacity * 2;
+    }
+    if (itemSize == 0 || grown > SIZE_MAX / itemSize) {
+        return NULL;
+    }
+    void *resized = realloc(items, grown * itemSize);
+    if (resized != NULL) {
+        *capacity = grown;
+    }
+    return resized;
+}
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+[/template]

@@ -71,18 +71,10 @@ enum GenerationError: Error, LocalizedError {
     /// The file format is not supported.
     case unsupportedFormat(String)
 
-    /// The target language is not supported.
-    case unsupportedLanguage(String)
-
-    /// No generator exists for the language and kind of input.
+    /// No template set exists for the language.
     ///
-    /// The first associated value is the language, the second the languages that have a generator.
+    /// The first associated value is the language, the second the languages that have a template set.
     case unknownLanguage(String, [String])
-
-    /// A generator model is needed for the language, but another kind of model was given.
-    ///
-    /// The associated value is the language.
-    case generatorModelRequired(String)
 
     /// A localised description of the error.
     var errorDescription: String? {
@@ -91,13 +83,8 @@ enum GenerationError: Error, LocalizedError {
             return "Input file not found: \(path)"
         case .unsupportedFormat(let format):
             return "Unsupported format: \(format)"
-        case .unsupportedLanguage(let language):
-            return "Unsupported language: \(language). Supported: swift, cpp, c, llvm"
         case .unknownLanguage(let language, let available):
             return "Unsupported language: \(language). Supported: " + available.joined(separator: ", ")
-        case .generatorModelRequired(let language):
-            return "Generating \(language) code needs a generator model (.genmodel) or an Ecore model "
-                + "(.ecore); create a generator model with the genmodel command"
         }
     }
 }

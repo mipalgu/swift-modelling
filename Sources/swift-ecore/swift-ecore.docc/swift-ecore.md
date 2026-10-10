@@ -129,25 +129,28 @@ Generate source code from models.
 swift-ecore generate <model> [options]
 ```
 
-Languages that have a template set, such as `java`, are generated from a generator model (`.genmodel`); an Ecore model is imported into a temporary generator model first. Swift, C++, C and LLVM are written by the built-in generator from Ecore, XMI or JSON models. A template set is a directory of templates and data files, so a new language needs no Swift code; see the `ModellingGenerators` documentation. The help (`swift-ecore generate --help`) lists the bundled template set languages; a language that `--template-path` adds is accepted but not listed there, and an unknown language is reported with every language that can be used, including those additions. `swift-atl generate` runs the same pipeline from the ATL tool.
+Every language has a template set (`c`, `cpp`, `java` and `swift` are bundled) and is generated from a generator model (`.genmodel`); an Ecore model is imported into a temporary generator model first. A template set is a directory of templates and data files, so a new language needs no Swift code; see the `ModellingGenerators` documentation. The help (`swift-ecore generate --help`) lists the bundled template set languages; a language that `--template-path` adds is accepted but not listed there, and an unknown language is reported with every language that can be used, including those additions. `swift-atl generate` runs the same pipeline from the ATL tool.
 
 **Options:**
 
-- `-l, --language <name>` - `swift`, `cpp`, `c`, `llvm`, or the name of a template set such as `java` (default: `swift`)
+- `-l, --language <name>` - the name of a template set, such as `swift`, `java`, `c` or `cpp` (default: `swift`)
 - `-o, --output <path>` - Directory to write below (default: the current directory)
 - `--template-path <path>` - Directory with template files that replace bundled templates (repeatable)
 - `--force-overwrite` - Replace existing files without merging
 - `--diff` - Write the generated text of existing files beside them as `.<name>.new`
 - `--model-directory` - Write below the model directory of the generator model
-- `--code-style <style>` - The layout of the generated text, one of the styles of the template set (`java`: `eclipse`, the default, or `emf`); rejected for the built-in languages
+- `--code-style <style>` - The layout of the generated text, one of the styles of the template set (`java`: `eclipse`, the default, or `emf`); rejected for sets that offer none, such as `swift`, `c` and `cpp`
 - `--defaults`, `--root-extends-class`, `--operation-reflection`, `--import-organizing` - The generator model defaults of an Ecore model that is imported for a template language, as for `genmodel`
 - `-v, --verbose` - Show every progress report
 
-Existing files are merged with the generated code: members tagged `@generated` are regenerated, members tagged `@generated NOT` and members without the tag are kept.
+Existing files are merged with the generated code: members tagged `@generated` are regenerated, members tagged `@generated NOT` and members without the tag are kept. The tag stands in a comment of its own above the member, `// @generated` in Swift files.
 
 **Examples:**
 
 ```bash
+# Generate Swift from an Ecore model (the default language)
+swift-ecore generate model/library.ecore --output Sources/Library
+
 # Generate Java from a generator model
 swift-ecore generate --language java model/library.genmodel --output src-gen
 

@@ -11,7 +11,7 @@ The `java` template set is written to reproduce the model code of the Eclipse Mo
 
 ### Defaults of the generator model
 
-`--defaults` chooses which Eclipse behaviour a new generator model follows. It is available on `swift-ecore genmodel`, on `swift-ecore generate` when the input is an Ecore model and the language is a template language such as `java`, and on `swift-atl generate` with an Ecore model. A generator model that already exists keeps its own settings, so these options are rejected with an error when the input is a `.genmodel` file or when the built-in language `swift`, `cpp`, `c` or `llvm` is generated.
+`--defaults` chooses which Eclipse behaviour a new generator model follows. It is available on `swift-ecore genmodel`, on `swift-ecore generate` when the input is an Ecore model and the language is a template language such as `java`, and on `swift-atl generate` with an Ecore model. A generator model that already exists keeps its own settings, so these options are rejected with an error when the input is a `.genmodel` file.
 
 | Setting | `--defaults headless` (the default) | `--defaults wizard` |
 | --- | --- | --- |

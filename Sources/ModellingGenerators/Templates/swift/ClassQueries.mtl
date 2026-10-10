@@ -1,0 +1,87 @@
+[comment encoding = UTF-8 /]
+[**
+ * Queries that decide what the Swift file of a generator class contains.
+ *
+ * The queries here answer the questions that the class template asks: which protocols a class refines or
+ * conforms to, which features it implements itself, how a feature is named and stored, and how a feature
+ * reaches its opposite.
+ **/]
+[module ClassQueries('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import SwiftNames/]
+[import SwiftTypes/]
+
+[comment Supertypes /]
+
+[**
+ * The protocols that the protocol of a class refines: the protocols of its generated supertypes, otherwise the
+ * base protocols of model objects. Model objects are class instances so that references between them can be weak.
+ **/]
+[query public protocolInheritance(genClass : GenClass) : String = if genClass.modelSupers()->isEmpty() then 'EObject, AnyObject' else genClass.modelSupers()->collect(b | b.interfaceName())->join(', ') endif/]
+
+[**
+ * The protocols that the final class of a class conforms to: its own protocol if it has one, otherwise the
+ * protocols of its generated supertypes.
+ **/]
+[query public classConformances(genClass : GenClass) : String = if genClass.hasSubclasses() then 'EObject, ' + genClass.interfaceName() else (if genClass.modelSupers()->isEmpty() then 'EObject' else 'EObject, ' + genClass.modelSupers()->collect(b | b.interfaceName())->join(', ') endif) endif/]
+
+[comment Features /]
+
+[**
+ * The features that the final class of a class implements: all that it declares or inherits.
+ **/]
+[query public implementedFeatures(genClass : GenClass) : OclAny = genClass.allGenFeatures()->reject(f | f.genClass().genPackage().isEcorePackage())/]
+
+[**
+ * The identifier of the property of a feature.
+ **/]
+[query public propertyName(genFeature : GenFeature) : String = safeName(genFeature.name())/]
+
+[**
+ * The word that documentation uses for a feature: attribute or reference.
+ **/]
+[query public featureKind(genFeature : GenFeature) : String = if genFeature.isAttributeType() then 'attribute' else 'reference' endif/]
+
+[**
+ * The documentation comment text of a feature that its model does not document.
+ **/]
+[query public featureSummary(genFeature : GenFeature) : String = 'The ' + genFeature.name() + ' ' + genFeature.featureKind() + '.'/]
+
+[**
+ * A type in the form that a conditional cast needs: an existential type between parentheses.
+ **/]
+[query public castType(typeName : String) : String = if typeName.startsWith('any ') then '(' + typeName + ')' else typeName endif/]
+
+[**
+ * Whether any feature that a class implements is held weakly.
+ **/]
+[query public hasWeakFeatures(genClass : GenClass) : Boolean = genClass.implementedFeatures()->exists(f | f.isWeak())/]
+
+[comment Opposites /]
+
+[**
+ * The opposite of a feature when setting the feature keeps the opposite in step: a single-valued reference whose
+ * opposite is a generated feature.
+ **/]
+[query public oppositeFeature(genFeature : GenFeature) : OclAny = if genFeature.isReferenceType() and not genFeature.isMany() and genFeature.isBidirectional() and not genFeature.reverseGenFeature().oclIsUndefined() then (if genFeature.reverseGenFeature().genClass().genPackage().isEcorePackage() then null else genFeature.reverseGenFeature() endif) else null endif/]
+
+[**
+ * Whether setting a feature keeps its opposite in step.
+ **/]
+[query public syncsOpposite(genFeature : GenFeature) : Boolean = not genFeature.oppositeFeature().oclIsUndefined()/]
+
+[comment Reading and writing values /]
+
+[**
+ * The expression that reads the value of a feature from the stored values, given the name of the stored values.
+ **/]
+[query public storedRead(genFeature : GenFeature, values : String) : String = if genFeature.isWeak() then values + '.' + genFeature.propertyName() + '.object as? ' + castType(genFeature.itemTypeName()) else values + '.' + genFeature.propertyName() endif/]
+
+[**
+ * The expression that wraps a new value of a feature for storing.
+ **/]
+[query public storedValue(genFeature : GenFeature, value : String) : String = if genFeature.isWeak() then 'EWeakReference(' + value + ')' else value endif/]
+
+[**
+ * The type declaration of a feature in the stored values, with its initial value.
+ **/]
+[query public storedDeclaration(genFeature : GenFeature) : String = if genFeature.isWeak() then genFeature.propertyName() + ' = EWeakReference(nil)' else genFeature.propertyName() + ': ' + genFeature.propertyType() + ' = ' + genFeature.defaultExpression() endif/]

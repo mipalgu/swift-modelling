@@ -1,0 +1,21 @@
+{
+  "name": "c",
+  "summary": "C11 model code with one header and one source file for each package",
+  "mainModule": "generate",
+  "mainTemplate": "generate",
+  "dataModels": [
+    {
+      "name": "types",
+      "metamodel": "TypeMapping.ecore",
+      "model": "c-types.xmi"
+    }
+  ],
+  "layout": {
+    "sourceRootSetting": "modelDirectory",
+    "includeSourceRoot": false
+  },
+  "options": {
+    "lineDelimiter": "\n"
+  },
+  "fileCountTemplate": "fileCount"
+}

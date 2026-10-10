@@ -109,11 +109,11 @@ The input is an Ecore model or a generator model. For an Ecore model the bundled
 
 #### swift-ecore generate
 
-`swift-ecore generate <input> [options]` generates code from a generator model or, with an Ecore model, from a temporary generator model. The input can also be an XMI or JSON model for the built-in languages `swift`, `cpp`, `c` and `llvm`, which this article does not cover.
+`swift-ecore generate <input> [options]` generates code from a generator model or, with an Ecore model, from a temporary generator model. The `swift`, `c` and `cpp` languages are template sets like `java`; see <doc:SwiftGeneration>, <doc:CGeneration> and <doc:CppGeneration>.
 
 | Option | Meaning |
 | --- | --- |
-| `-l, --language <name>` | The target language: `java`, the name of a template set that `--template-path` adds, or a built-in language. The default is `swift`, so give `--language java`. An unknown language is reported together with the list of languages that exist. |
+| `-l, --language <name>` | The target language: `java`, `swift`, `c`, `cpp` or the name of a template set that `--template-path` adds. The default is `swift`, so give `--language java`. An unknown language is reported together with the list of languages that exist. |
 | `-o, --output <dir>` | The directory to write below (default: the current directory). |
 | `--template-path <dir>` | A directory whose files replace bundled template files of the same name. Repeatable; later directories win. |
 | `--force-overwrite` | Replace existing files without merging. |
@@ -126,7 +126,7 @@ The input is an Ecore model or a generator model. For an Ecore model the bundled
 | `--version` | Show the version. |
 | `-h, --help` | Show help information. |
 
-The `--defaults` option and the overrides apply only when an Ecore model is imported. Giving them with a `.genmodel` input, or with a built-in language, is an error.
+The `--defaults` option and the overrides apply only when an Ecore model is imported. Giving them with a `.genmodel` input is an error.
 
 #### swift-atl generate
 
@@ -134,7 +134,7 @@ The `--defaults` option and the overrides apply only when an Ecore model is impo
 
 | Option | Meaning |
 | --- | --- |
-| `-l, --language <name>` | `genmodel` (the default) or the name of a template set, such as `java`. |
+| `-l, --language <name>` | `genmodel` (the default) or the name of a template set, such as `java` or `swift`. |
 | `-o, --output <path>` | The output directory (default `Generated`); for the language `genmodel`, the directory or `.genmodel` file to write, by default beside the Ecore model. |
 | `--transformations <path>` | An ATL file, or a directory that holds `Ecore2GenModel.atl`, that replaces the bundled transformation. |
 | `--base-package`, `--prefix`, `--model-project`, `--model-plugin-id`, `--copyright`, `--jdk-level` | As for `swift-ecore genmodel`. |

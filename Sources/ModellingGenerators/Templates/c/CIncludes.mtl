@@ -1,0 +1,58 @@
+[comment encoding = UTF-8 /]
+[**
+ * Include handling for C source files.
+ *
+ * A template collects the headers a file needs, with the header of each mapped type as well as the headers that
+ * every file of its kind uses, and writes them as include directives at the position of an emit block. The
+ * directives are sorted, so that the headers of the generated code come before those of the standard library.
+ **/]
+[module CIncludes('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CNames/]
+[import CTypes/]
+
+[**
+ * The text of the include directive that names the support header, with its quotes.
+ **/]
+[query public supportInclude() : String = '"' + supportHeaderName() + '"'/]
+
+[**
+ * The headers that every package header includes: the support header and the standard headers of the types that
+ * accessors and lists use.
+ **/]
+[query public headerIncludes() : OclAny = Sequence{supportInclude(), '<stdbool.h>', '<stddef.h>', '<stdint.h>'}/]
+
+[**
+ * The standard headers that every package source file includes: the allocation and string functions that the
+ * generated functions call.
+ **/]
+[query public sourceIncludes() : OclAny = Sequence{'<stdlib.h>', '<string.h>'}/]
+
+[**
+ * The sorted names of the headers to include, without repetitions.
+ **/]
+[query public includedHeaders(names : OclAny) : OclAny = names->asSet()->sortedBy(n | n)/]
+
+[**
+ * Registers the header that provides the type of the values of a feature, if the headers that every file includes
+ * do not provide it.
+ **/]
+[template public collectFeatureInclude(genFeature : GenFeature, genPackage : GenPackage)]
+[if (not genFeature.featureInclude(genPackage).isBlank())]
+[collect ('includes', genFeature.featureInclude(genPackage))/]
+[/if]
+[/template]
+
+[**
+ * Writes the include directives, one on each line.
+ **/]
+[template public includeBlock(names : OclAny)]
+[for (n | includedHeaders(names))]
+#include [n/]
+[/for]
+[/template]
+
+[**
+ * The standard headers that the support header includes: the types and the allocation and string functions that
+ * its helper functions use.
+ **/]
+[query public supportHeaderIncludes() : OclAny = Sequence{'<stdbool.h>', '<stddef.h>', '<stdint.h>', '<stdlib.h>', '<string.h>'}/]

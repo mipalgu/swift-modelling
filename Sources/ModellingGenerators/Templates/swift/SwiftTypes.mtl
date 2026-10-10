@@ -1,0 +1,129 @@
+[comment encoding = UTF-8 /]
+[**
+ * Swift types for the elements of a generator model.
+ *
+ * The queries here map built-in model data types to Swift types with the table that the template set
+ * bundles, derive the Swift type that a data type, enumeration or class stands for, and decide how a
+ * feature is stored: as a value that always exists, as an optional value, as an array, or as a weak
+ * reference. They also turn the default value literal of a model into a Swift expression.
+ **/]
+[module SwiftTypes('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import SwiftNames/]
+[import SwiftDocumentation/]
+
+[comment Built-in data types /]
+
+[**
+ * The entry of the type table for a built-in model type, found by its name.
+ **/]
+[query public typeMapping(modelType : String) : OclAny = languageTable().mappings->select(m | m.modelType = modelType)->first()/]
+
+[**
+ * The entry of the type table for the class of the instances that a model names for a data type.
+ **/]
+[query public instanceMapping(instanceClass : String) : OclAny = languageTable().mappings->select(m | m.instanceClass = instanceClass)->first()/]
+
+[**
+ * The entry of the type table that describes a data type: the entry for its instance class if the model
+ * names one that the table knows, otherwise the entry for its name.
+ **/]
+[query public dataTypeMapping(dataType : OclAny) : OclAny = if isBlank(dataType.instanceClassName) or instanceMapping(dataType.instanceClassName).oclIsUndefined() then typeMapping(dataType.name) else instanceMapping(dataType.instanceClassName) endif/]
+
+[**
+ * Whether a classifier of the model is one that the Ecore package provides.
+ **/]
+[query public isEcoreClassifier(classifier : OclAny) : Boolean = if classifier.genClassifier().oclIsUndefined() then true else classifier.genClassifier().genPackage().isEcorePackage() endif/]
+
+[**
+ * The type of an optional value: parentheses keep an existential type together with its question mark.
+ **/]
+[query public optionalType(typeName : String) : String = if typeName.startsWith('any ') then '(' + typeName + ')?' else typeName + '?' endif/]
+
+[comment Classifiers /]
+
+[**
+ * The Swift type that a model classifier stands for: the protocol or final class of a class, the enumeration of an
+ * enumeration, the alias of a data type that the model defines, or the type of the table for a data type of Ecore.
+ * Classifiers that the generator model does not describe are written as any object, or as any value for data types.
+ **/]
+[query public classifierTypeName(classifier : OclAny) : String = if classifier.oclIsUndefined() then 'any EObject' else (if classifier.oclIsKindOf(EClass) then classifier.classTypeName() else (if classifier.oclIsKindOf(EEnum) then classifier.enumTypeName() else classifier.dataTypeName() endif) endif) endif/]
+
+[query classTypeName(classifier : OclAny) : String = if classifier.isEcoreClassifier() then (if typeMapping(classifier.name).oclIsUndefined() then 'any EObject' else typeMapping(classifier.name).targetType endif) else classifier.genClassifier().referenceTypeName() endif/]
+
+[query enumTypeName(classifier : OclAny) : String = if classifier.genClassifier().oclIsUndefined() then 'String' else typeIdentifier(classifier.name) endif/]
+
+[query dataTypeName(classifier : OclAny) : String = if classifier.isEcoreClassifier() then (if classifier.dataTypeMapping().oclIsUndefined() then 'any EcoreValue' else classifier.dataTypeMapping().targetType endif) else typeIdentifier(classifier.name) endif/]
+
+[**
+ * The type that a data type of the model is an alias of.
+ **/]
+[query public aliasedTypeName(genDataType : GenDataType) : String = if genDataType.ecoreDataType.dataTypeMapping().oclIsUndefined() then 'any EcoreValue' else genDataType.ecoreDataType.dataTypeMapping().targetType endif/]
+
+[comment Features /]
+
+[**
+ * Whether a feature can hold several values.
+ **/]
+[query public isMany(genFeature : GenFeature) : Boolean = genFeature.isListType()/]
+
+[**
+ * The native classifier of the type of a feature.
+ **/]
+[query public featureClassifier(genFeature : GenFeature) : OclAny = genFeature.ecoreFeature.eType/]
+
+[**
+ * The table entry for the data type of an attribute; undefined for references and enumerations.
+ **/]
+[query public featureMapping(genFeature : GenFeature) : OclAny = if genFeature.isAttributeType() and genFeature.featureClassifier().oclIsKindOf(EDataType) and not genFeature.featureClassifier().oclIsKindOf(EEnum) then genFeature.featureClassifier().dataTypeMapping() else null endif/]
+
+[**
+ * The module that provides the type of the values of a feature, or an empty text if the language provides it.
+ **/]
+[query public featureModule(genFeature : GenFeature) : String = if genFeature.featureMapping().oclIsUndefined() then '' else (if isBlank(genFeature.featureMapping().module) then '' else genFeature.featureMapping().module endif) endif/]
+
+[**
+ * The Swift type of a single value of a feature.
+ **/]
+[query public itemTypeName(genFeature : GenFeature) : String = classifierTypeName(genFeature.featureClassifier())/]
+
+[**
+ * Whether the enumeration that is the type of a feature has literals, so that its first literal can be the default.
+ **/]
+[query public hasEnumDefault(genFeature : GenFeature) : Boolean = genFeature.isAttributeType() and genFeature.featureClassifier().oclIsKindOf(EEnum) and not genFeature.featureClassifier().genClassifier().oclIsUndefined() and genFeature.featureClassifier().genClassifier().genEnumLiterals->notEmpty()/]
+
+[**
+ * Whether a single-valued feature always has a value: an attribute of an enumeration with literals, or of a
+ * primitive type, which has a value of zero or false when the model sets none.
+ **/]
+[query public hasValue(genFeature : GenFeature) : Boolean = if genFeature.isMany() or not genFeature.isAttributeType() then false else (if genFeature.featureClassifier().oclIsKindOf(EEnum) then genFeature.hasEnumDefault() else (if genFeature.featureMapping().oclIsUndefined() then false else genFeature.featureMapping().zeroValue <> 'nil' endif) endif) endif/]
+
+[**
+ * The Swift type of the property of a feature: an array for many values, a plain type for a value that always
+ * exists, otherwise an optional type.
+ **/]
+[query public propertyType(genFeature : GenFeature) : String = if genFeature.isMany() then '[' + genFeature.itemTypeName() + ']' else (if genFeature.hasValue() then genFeature.itemTypeName() else optionalType(genFeature.itemTypeName()) endif) endif/]
+
+[**
+ * Whether a feature refers weakly to the object it points to: a single reference to a generated class that does not
+ * contain it.
+ **/]
+[query public isWeak(genFeature : GenFeature) : Boolean = genFeature.isReferenceType() and not genFeature.isMany() and not genFeature.isContainment() and not genFeature.featureClassifier().isEcoreClassifier()/]
+
+[comment Default values /]
+
+[**
+ * The enumeration literal that a feature uses as its default: the literal that the model names, otherwise the first.
+ **/]
+[query public defaultLiteral(genFeature : GenFeature) : OclAny = if genFeature.hasDefault() and not genFeature.featureClassifier().genClassifier().genEnumLiterals->select(l | l.ecoreEnumLiteral.literal = genFeature.defaultValueLiteral() or l.name() = genFeature.defaultValueLiteral())->isEmpty() then genFeature.featureClassifier().genClassifier().genEnumLiterals->select(l | l.ecoreEnumLiteral.literal = genFeature.defaultValueLiteral() or l.name() = genFeature.defaultValueLiteral())->first() else genFeature.featureClassifier().genClassifier().genEnumLiterals->first() endif/]
+
+[**
+ * The Swift literal for a default value literal of the model, or an empty text if the table has no way to write one.
+ **/]
+[query public literalExpression(literal : String, style : OclAny) : String = if isBlank(style) then '' else (if style = 'string' then swiftStringLiteral(literal) else (if style = 'boolean' then (if literal.toLower() = 'true' or literal.toLower() = 'false' then literal.toLower() else '' endif) else (if style = 'number' then (if literal.matches('^-?[0-9]+([.][0-9]+)?([eE][-+]?[0-9]+)?$') then literal else '' endif) else (if style = 'character' and literal.size() > 0 then swiftStringLiteral(literal.first(1)) else '' endif) endif) endif) endif) endif/]
+
+[**
+ * The expression that initialises the property of a feature and that restores it when the feature is unset.
+ **/]
+[query public defaultExpression(genFeature : GenFeature) : String = if genFeature.isMany() then '[]' else (if genFeature.hasEnumDefault() then '.' + genFeature.defaultLiteral().caseName() else (if genFeature.featureMapping().oclIsUndefined() then 'nil' else genFeature.mappedDefault() endif) endif) endif/]
+
+[query mappedDefault(genFeature : GenFeature) : String = if genFeature.hasDefault() and not literalExpression(genFeature.defaultValueLiteral(), genFeature.featureMapping().literalStyle).isBlank() then literalExpression(genFeature.defaultValueLiteral(), genFeature.featureMapping().literalStyle) else genFeature.featureMapping().zeroValue endif/]

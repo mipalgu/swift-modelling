@@ -1,0 +1,210 @@
+[comment encoding = UTF-8 /]
+[**
+ * C naming conventions for the elements of a generator model.
+ *
+ * The queries here decide how model names become C identifiers, file names, include guards and function names:
+ * which words must be avoided, where the files of a package live, which classes have a structure of their own and
+ * the names of the generated functions. Language independent name formatting comes from the generator model
+ * services.
+ **/]
+[module CNames('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+
+[**
+ * The language table that the template set bundles: type mappings and reserved words.
+ **/]
+[query public languageTable() : OclAny = templateData('types')->first()/]
+
+[**
+ * Whether a text is missing or empty.
+ **/]
+[query public isBlank(text : OclAny) : Boolean = if text.oclIsUndefined() then true else text.size() = 0 endif/]
+
+[comment Making names safe /]
+
+[**
+ * Whether the language table lists a name as reserved in any way: as a keyword, as a name of the standard library or
+ * the support header, or as a name that the generated code claims.
+ **/]
+[query public isReserved(name : String) : Boolean = languageTable().reservedWords->exists(r | (' ' + r.words + ' ').contains(' ' + name + ' '))/]
+
+[**
+ * The identifier for a type, field or parameter: a reserved word gets a trailing underscore. Function names are
+ * composed of several words and never need this.
+ **/]
+[query public safeName(name : String) : String = if isReserved(name) then name + '_' else name endif/]
+
+[comment Support files /]
+
+[**
+ * The name of the header that declares the types that every generated package header builds on.
+ **/]
+[query public supportHeaderName() : String = 'EObject.h'/]
+
+[**
+ * The extension of the header of a package, with its dot.
+ **/]
+[query public headerExtension() : String = '.h'/]
+
+[**
+ * The extension of the source file of a package, with its dot.
+ **/]
+[query public sourceExtension() : String = '.c'/]
+
+[comment Packages /]
+
+[**
+ * The relative path of the directory that holds the files of a package: the names of its containing
+ * packages and its own, separated by slashes.
+ **/]
+[query public packageDirectory(genPackage : GenPackage) : String = if genPackage.parentGenPackage().oclIsUndefined() then genPackage.name() else genPackage.parentGenPackage().packageDirectory() + '/' + genPackage.name() endif/]
+
+[**
+ * The text before a name that a package puts before the names of its description and factory.
+ **/]
+[query public prefixedName(genPackage : GenPackage, name : String) : String = if isBlank(genPackage.setting('prefix')) then name else genPackage.setting('prefix') + name endif/]
+
+[**
+ * The name of the constant that describes a package and its classes.
+ **/]
+[query public packageInfoName(genPackage : GenPackage) : String = safeName(genPackage.prefixedName('Package'))/]
+
+[**
+ * The name of the function that creates the objects of a package for a metaclass.
+ **/]
+[query public factoryFunctionName(genPackage : GenPackage) : String = genPackage.prefixedName('Factory') + '_create'/]
+
+[**
+ * The name of the array that lists the metaclasses of a package.
+ **/]
+[query public classListName(genPackage : GenPackage) : String = genPackage.prefixedName('Package') + '_classes'/]
+
+[**
+ * The relative path of the header of a package.
+ **/]
+[query public headerPath(genPackage : GenPackage) : String = genPackage.packageDirectory() + '/' + genPackage.name() + headerExtension()/]
+
+[**
+ * The relative path of the source file of a package.
+ **/]
+[query public sourcePath(genPackage : GenPackage) : String = genPackage.packageDirectory() + '/' + genPackage.name() + sourceExtension()/]
+
+[**
+ * The text of the include directive that names the header of a package.
+ **/]
+[query public headerInclude(genPackage : GenPackage) : String = '"' + genPackage.headerPath() + '"'/]
+
+[**
+ * The name of the macro that guards the header of a package against repeated inclusion: the path of the header in
+ * upper case, with every character that an identifier cannot hold written as an underscore.
+ **/]
+[query public includeGuard(genPackage : GenPackage) : String = genPackage.headerPath().replaceAll('[^A-Za-z0-9]', '_').toUpper()/]
+
+[**
+ * Whether a package has anything to generate: a class, an enumeration or a data type.
+ **/]
+[query public hasClassifiers(genPackage : GenPackage) : Boolean = genPackage.genClasses->notEmpty() or genPackage.genEnums->notEmpty() or genPackage.genDataTypes->notEmpty()/]
+
+[**
+ * Whether two packages are the same package.
+ **/]
+[query public isSamePackage(genPackage : GenPackage, other : GenPackage) : Boolean = genPackage.packageDirectory() = other.packageDirectory()/]
+
+[**
+ * The namespace of the Ecore metamodel, whose classifiers the support header stands in for.
+ **/]
+[query public ecoreNamespace() : String = 'http://www.eclipse.org/emf/2002/Ecore'/]
+
+[**
+ * Whether a package is the Ecore package itself.
+ **/]
+[query public isEcorePackage(genPackage : GenPackage) : Boolean = genPackage.ecorePackage.nsURI = ecoreNamespace()/]
+
+[comment Classes /]
+
+[**
+ * The supertypes of a class that are generated: the Ecore root class is left out.
+ **/]
+[query public modelSupers(genClass : GenClass) : OclAny = genClass.baseGenClasses()->reject(b | b.genPackage().isEcorePackage())/]
+
+[**
+ * Whether another class of the generator model extends a class.
+ **/]
+[query public hasSubclasses(genClass : GenClass) : Boolean = genClass.genModel().allGenPackages()->exists(p | p.genClasses->exists(c | c.modelSupers()->includes(genClass)))/]
+
+[**
+ * Whether references to a class are held as plain objects: the class is abstract or an interface, or other classes
+ * extend it. The structures of such a class and its subclasses are separate, so only the object header is common.
+ **/]
+[query public isProtocol(genClass : GenClass) : Boolean = genClass.isInterface() or genClass.isAbstract() or genClass.hasSubclasses()/]
+
+[**
+ * Whether a class has instances, and so a structure and functions that create, change and destroy it.
+ **/]
+[query public isInstantiable(genClass : GenClass) : Boolean = not (genClass.isInterface() or genClass.isAbstract())/]
+
+[**
+ * The identifier of the type of a class.
+ **/]
+[query public className(genClass : GenClass) : String = safeName(genClass.name())/]
+
+[**
+ * The name of the constant that describes the metaclass of a class.
+ **/]
+[query public descriptorName(genClass : GenClass) : String = genClass.className() + '_class'/]
+
+[**
+ * The name of the function that creates an object of a class.
+ **/]
+[query public createName(genClass : GenClass) : String = genClass.className() + '_create'/]
+
+[**
+ * The name of the function that destroys an object of a class.
+ **/]
+[query public destroyName(genClass : GenClass) : String = genClass.className() + '_destroy'/]
+
+[**
+ * The name of the table that lists the features of a class.
+ **/]
+[query public featureTableName(genClass : GenClass) : String = genClass.className() + '_features'/]
+
+[**
+ * The name of the table that lists the supertypes of a class.
+ **/]
+[query public superTableName(genClass : GenClass) : String = genClass.className() + '_superTypes'/]
+
+[**
+ * The name of the function that creates an object for the metaclass table of a class.
+ **/]
+[query public tableCreateName(genClass : GenClass) : String = genClass.className() + '_create_object'/]
+
+[**
+ * The name of the function that destroys an object for the metaclass table of a class.
+ **/]
+[query public tableDestroyName(genClass : GenClass) : String = genClass.className() + '_destroy_object'/]
+
+[comment Enumerations /]
+
+[**
+ * The identifier of the type of an enumeration or data type.
+ **/]
+[query public classifierName(classifier : OclAny) : String = safeName(classifier.name())/]
+
+[**
+ * The name of the constant of an enumeration literal.
+ **/]
+[query public literalConstant(genEnum : GenEnum, genLiteral : GenEnumLiteral) : String = genEnum.classifierName() + '_' + genLiteral.name()/]
+
+[**
+ * The name of the function that returns the text of an enumeration literal.
+ **/]
+[query public literalFunctionName(genEnum : GenEnum) : String = genEnum.classifierName() + '_literal'/]
+
+[**
+ * The name of the function that finds an enumeration literal by its text.
+ **/]
+[query public fromLiteralFunctionName(genEnum : GenEnum) : String = genEnum.classifierName() + '_from_literal'/]
+
+[**
+ * The name of the macro that guards the support header against repeated inclusion.
+ **/]
+[query public supportGuard() : String = supportHeaderName().replaceAll('[^A-Za-z0-9]', '_').toUpper()/]

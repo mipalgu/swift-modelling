@@ -1,0 +1,95 @@
+[comment encoding = UTF-8 /]
+[**
+ * The header of a generator package.
+ *
+ * The header declares everything that the package defines: the structures of its classes that have instances, its
+ * enumerations and data types, the functions that create, destroy and change objects, the description of every class
+ * and of the package, and the factory function. Classes of other packages that the structures refer to are declared
+ * but not defined, so that headers do not include each other for classes. The declarations stand in a block that
+ * C++ includes read with C linkage.
+ **/]
+[module PackageHeader('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CNames/]
+[import CTypes/]
+[import CIncludes/]
+[import CDocumentation/]
+[import Header/]
+[import ClassQueries/]
+[import ClassHeader/]
+[import EnumDeclaration/]
+[import DataTypeDeclaration/]
+
+[**
+ * The complete text of the header of a generator package.
+ **/]
+[template public packageHeader(genPackage : GenPackage)]
+[collect ('includes', headerIncludes())/]
+[for (genClass : GenClass | genPackage.instantiableClasses())]
+[for (genFeature : GenFeature | genClass.implementedFeatures())]
+[genFeature.collectFeatureInclude(genPackage)/]
+[/for]
+[/for]
+[for (genDataType : GenDataType | genPackage.genDataTypes)]
+[if (not genDataType.dataTypeInclude().isBlank())]
+[collect ('includes', genDataType.dataTypeInclude())/]
+[/if]
+[/for]
+[header(genPackage, genPackage.name() + headerExtension())/]
+
+#ifndef [genPackage.includeGuard()/]
+#define [genPackage.includeGuard()/]
+
+[emit ('includes') once][includeBlock(items)/][/emit]
+#ifdef __cplusplus
+[generatedTag()/]
+extern "C" {
+#endif
+[for (genClass : GenClass | genPackage.instantiableClasses())]
+
+[genClass.structureForward()/]
+[/for]
+[for (genClass : GenClass | genPackage.foreignClasses())]
+
+[genClass.structureForward()/]
+[/for]
+[for (genEnum : GenEnum | genPackage.genEnums)]
+
+[genEnum.enumDeclaration()/]
+[/for]
+[for (genDataType : GenDataType | genPackage.genDataTypes)]
+
+[genDataType.dataTypeDeclaration()/]
+[/for]
+[for (genClass : GenClass | genPackage.orderedGenClasses())]
+
+[genClass.descriptorDeclaration()/]
+[if (genClass.isInstantiable())]
+
+[genClass.structureDeclaration()/]
+
+[genClass.lifecycleDeclarations()/]
+[for (genFeature : GenFeature | genClass.implementedFeatures())]
+
+[genClass.accessorDeclarations(genFeature)/]
+[/for]
+[/if]
+[/for]
+
+/// @brief The description of the [genPackage.name()/] package and its classes.
+[generatedTag()/]
+extern const EPackageInfo [genPackage.packageInfoName()/];
+
+/// @brief Creates an object for a class of the [genPackage.name()/] package.
+///
+/// @param eClass The description of the class to create an object of.
+/// @return The new object, which the caller releases with EObject_destroy; the null pointer if the class does not
+///         belong to the package, has no instances, or the memory could not be allocated.
+[generatedTag()/]
+EObject *[genPackage.factoryFunctionName()/](const EClassInfo *eClass);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+[/template]

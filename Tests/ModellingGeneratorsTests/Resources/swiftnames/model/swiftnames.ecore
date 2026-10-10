@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
+    name="swiftnames" nsURI="http://swift-modelling.org/test/swiftnames" nsPrefix="sn">
+  <eClassifiers xsi:type="ecore:EClass" name="Type" abstract="true">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="A kind of thing.&#xA;&#xA;The name of this class is a word that Swift reserves."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" defaultValueLiteral="say &quot;hi&quot;&#xA;\there"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="default"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Vehicle" eSuperTypes="#//Type">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="A vehicle, which other classes extend."/>
+    </eAnnotations>
+    <eOperations name="start" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="guard"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="class"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="operator"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="repeat"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="where"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="in"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="protocol"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="id"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="hash"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="hue" eType="#//Hue"
+        defaultValueLiteral="green"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="shades" upperBound="-1" eType="#//Hue"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="driver" eType="#//Driver"
+        eOpposite="#//Driver/vehicle"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="kinds" upperBound="-1" eType="#//Type"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="wheels" upperBound="-1"
+        eType="#//parts/Wheel" containment="true" eOpposite="#//parts/Wheel/vehicle"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Truck" eSuperTypes="#//Vehicle">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="load"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble" defaultValueLiteral="2.5"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="plate"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" defaultValueLiteral="N/A"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="trailer" eType="#//Truck"
+        eOpposite="#//Truck/towedBy"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="towedBy" eType="#//Truck"
+        eOpposite="#//Truck/trailer"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Driver">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="vehicle" eType="#//Vehicle"
+        eOpposite="#//Vehicle/driver"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Date">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="when"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDate"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="text"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Package"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Values">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="big"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="money"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigDecimal"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="bytes"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EByteArray"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="initial"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EChar" defaultValueLiteral="x"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="payload"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EJavaObject"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="ratio"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EFloat" defaultValueLiteral="0.5"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="small"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EShort"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="tiny"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EByte"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="huge"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//ELong" defaultValueLiteral="99999999999"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="flag"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBooleanObject"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="count"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EIntegerObject" defaultValueLiteral="7"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="stamp" eType="#//Stamp"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="mood" eType="#//Mood"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="Hue">
+    <eLiterals name="red"/>
+    <eLiterals name="green" value="2"/>
+    <eLiterals name="blue" value="3"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="Mood"/>
+  <eClassifiers xsi:type="ecore:EDataType" name="Stamp" instanceClassName="java.util.Date"/>
+  <eSubpackages name="parts" nsURI="http://swift-modelling.org/test/swiftnames/parts" nsPrefix="parts">
+    <eClassifiers xsi:type="ecore:EClass" name="Wheel">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="size"
+          eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="vehicle" eType="#//Vehicle"
+          eOpposite="#//Vehicle/wheels"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Self"/>
+    <eClassifiers xsi:type="ecore:EClass" name="Protocol"/>
+    <eClassifiers xsi:type="ecore:EClass" name="String"/>
+  </eSubpackages>
+</ecore:EPackage>

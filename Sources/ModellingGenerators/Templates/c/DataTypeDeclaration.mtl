@@ -1,0 +1,20 @@
+[comment encoding = UTF-8 /]
+[**
+ * The declaration of a generator data type.
+ *
+ * A data type that a model defines becomes a type definition for the C type that its instance class maps to, so that
+ * the fields of the model read with the names of the model.
+ **/]
+[module DataTypeDeclaration('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CNames/]
+[import CTypes/]
+[import CDocumentation/]
+
+[**
+ * Writes the type definition of a data type, for the header of a package.
+ **/]
+[template public dataTypeDeclaration(genDataType : GenDataType)]
+[documentationText(genDataType, 'The ' + genDataType.name() + ' data type.')/]
+[generatedTag()/]
+typedef [declare(genDataType.aliasedTypeName(), genDataType.classifierName())/];
+[/template]

@@ -1,0 +1,122 @@
+[comment encoding = UTF-8 /]
+[**
+ * Queries that decide what the declarations and definitions of a generator class contain.
+ *
+ * The queries here answer the questions that the class templates ask: which features the structure of a class holds,
+ * how the functions of a feature are named, how a value of a feature is released, and which classes and headers a
+ * package refers to.
+ **/]
+[module ClassQueries('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CNames/]
+[import CTypes/]
+[import CDocumentation/]
+
+[comment Features /]
+
+[**
+ * The classes of a package that have instances.
+ **/]
+[query public instantiableClasses(genPackage : GenPackage) : OclAny = genPackage.orderedGenClasses()->select(c | c.isInstantiable())/]
+
+[**
+ * The features that the structure of a class holds: all that it declares or inherits, inherited ones first.
+ **/]
+[query public implementedFeatures(genClass : GenClass) : OclAny = genClass.allGenFeatures()->reject(f | f.genClass().genPackage().isEcorePackage())/]
+
+[**
+ * The identifiers of the classifiers that the features of a class refer to. The fields of the structure of the class
+ * use some of them as types, so no field may be named like one.
+ **/]
+[query public usedTypeNames(genClass : GenClass) : OclAny = genClass.implementedFeatures()->collect(f | safeName(f.featureClassifier().name))->asSet()/]
+
+[**
+ * The identifier of the field of a feature in the structure of a class. A name that a type of the structure already
+ * uses gets a trailing underscore as well, because C++ does not allow a member to take the meaning of a type name
+ * back.
+ **/]
+[query public fieldName(genClass : GenClass, genFeature : GenFeature) : String = if genClass.usedTypeNames()->includes(safeName(genFeature.name())) then safeName(genFeature.name()) + '_' else safeName(genFeature.name()) endif/]
+
+[**
+ * The word that documentation uses for a feature: attribute or reference.
+ **/]
+[query public featureKind(genFeature : GenFeature) : String = if genFeature.isAttributeType() then 'attribute' else 'reference' endif/]
+
+[**
+ * The documentation comment text of a feature that its model does not document.
+ **/]
+[query public featureSummary(genFeature : GenFeature) : String = 'The ' + genFeature.name() + ' ' + genFeature.featureKind() + '.'/]
+
+[**
+ * The name of the constant of the support header that tells which kind of feature a description stands for.
+ **/]
+[query public featureKindConstant(genFeature : GenFeature) : String = if genFeature.isAttributeType() then 'EFeatureKind_Attribute' else (if genFeature.isContainment() then 'EFeatureKind_Containment' else 'EFeatureKind_Reference' endif) endif/]
+
+[comment Names of the functions of a feature /]
+
+[**
+ * The name of the function that reads a single-valued feature.
+ **/]
+[query public getterName(genClass : GenClass, genFeature : GenFeature) : String = genClass.className() + '_get_' + genFeature.name()/]
+
+[**
+ * The name of the function that writes a single-valued feature.
+ **/]
+[query public setterName(genClass : GenClass, genFeature : GenFeature) : String = genClass.className() + '_set_' + genFeature.name()/]
+
+[**
+ * The name of the function that counts the values of a many-valued feature.
+ **/]
+[query public countName(genClass : GenClass, genFeature : GenFeature) : String = genClass.className() + '_count_' + genFeature.name()/]
+
+[**
+ * The name of the function that reads one value of a many-valued feature.
+ **/]
+[query public itemName(genClass : GenClass, genFeature : GenFeature) : String = genClass.className() + '_item_' + genFeature.name()/]
+
+[**
+ * The name of the function that appends a value to a many-valued feature.
+ **/]
+[query public addName(genClass : GenClass, genFeature : GenFeature) : String = genClass.className() + '_add_' + genFeature.name()/]
+
+[**
+ * The name of the function that removes a value from a many-valued feature.
+ **/]
+[query public removeName(genClass : GenClass, genFeature : GenFeature) : String = genClass.className() + '_remove_' + genFeature.name()/]
+
+[**
+ * The name of the function that removes all values of a many-valued feature.
+ **/]
+[query public clearName(genClass : GenClass, genFeature : GenFeature) : String = genClass.className() + '_clear_' + genFeature.name()/]
+
+[comment Releasing values /]
+
+[**
+ * The statement that releases a value that an object owns, given the expression for the value: strings and bytes
+ * are freed, contained objects are destroyed, and nothing is done for other values. Empty if there is nothing to
+ * release.
+ **/]
+[query public releaseStatement(genFeature : GenFeature, value : String) : String = if genFeature.storesText() then 'free(' + value + ');' else (if genFeature.storesBytes() then 'free(' + value + '.bytes);' else (if genFeature.isOwning() then 'EObject_destroy((EObject *)' + value + ');' else '' endif) endif) endif/]
+
+[**
+ * Whether destroying or removing a value of a feature has anything to release.
+ **/]
+[query public releasesValues(genFeature : GenFeature) : Boolean = not genFeature.releaseStatement('value').isBlank()/]
+
+[comment References to other packages /]
+
+[**
+ * Whether a feature is a reference that points to objects through the structure of a generated class: a class that
+ * is neither one of Ecore nor without a structure of its own.
+ **/]
+[query public pointsToStructure(genFeature : GenFeature) : Boolean = genFeature.isReferenceType() and not genFeature.featureClassifier().isEcoreClassifier() and not genFeature.featureClassifier().genClassifier().isProtocol()/]
+
+[**
+ * The classes of other packages whose structures the structures of a package refer to, sorted by name.
+ **/]
+[query public foreignClasses(genPackage : GenPackage) : OclAny = genPackage.instantiableClasses()->collect(c | c.implementedFeatures())->select(f | f.pointsToStructure() and not f.featureClassifier().genClassifier().genPackage().isSamePackage(genPackage))->collect(f | f.featureClassifier().genClassifier())->asSet()->sortedBy(c | c.name())/]
+
+[**
+ * The headers of other packages that declare the supertypes of the classes of a package, which the source file
+ * needs to refer to their metaclasses.
+ **/]
+[query public foreignSuperHeaders(genPackage : GenPackage) : OclAny = genPackage.orderedGenClasses()->collect(c | c.modelSupers())->reject(s | s.genPackage().isSamePackage(genPackage))->collect(s | s.genPackage().headerInclude())/]

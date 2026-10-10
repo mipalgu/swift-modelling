@@ -45,7 +45,9 @@ struct FixtureProject {
         let root = scratch.appendingPathComponent(name)
         try FileManager.default.createDirectory(at: scratch, withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: source, to: root)
-        for expectation in ["expected", "expected-java"] {
+        for expectation in [
+            "expected", "expected-java", "expected-swift", "swift-check", "expected-c", "c-check", "expected-cpp", "cpp-check",
+        ] {
             try? FileManager.default.removeItem(at: root.appendingPathComponent(expectation))
         }
         return FixtureProject(root: root)

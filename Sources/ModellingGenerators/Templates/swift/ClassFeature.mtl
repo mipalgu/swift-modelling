@@ -1,0 +1,61 @@
+[comment encoding = UTF-8 /]
+[**
+ * The requirements and properties of the features of a class.
+ *
+ * The templates here write, for one feature, the requirement in a protocol, the declaration of the value in the
+ * stored values of a final class, and the property that reads and writes it under the lock, including the code that
+ * keeps the opposite of a reference in step.
+ **/]
+[module ClassFeature('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import SwiftNames/]
+[import SwiftTypes/]
+[import SwiftDocumentation/]
+[import ClassQueries/]
+
+[**
+ * Writes the requirement of a protocol for a feature.
+ **/]
+[template public featureRequirement(genFeature : GenFeature)]
+    [documentationText(genFeature, genFeature.featureSummary())/]
+    [generatedTag()/]
+    var [genFeature.propertyName()/]: [genFeature.propertyType()/] { get set }
+[/template]
+
+[**
+ * Writes the property of a feature in a final class.
+ **/]
+[template public featureProperty(genFeature : GenFeature)]
+    [documentationText(genFeature, genFeature.featureSummary())/]
+    [generatedTag()/]
+    public var [genFeature.propertyName()/]: [genFeature.propertyType()/] {
+        get { eStorage.withLock { [genFeature.storedRead('$0')/] } }
+[if (genFeature.syncsOpposite())]
+        set {
+            let previous = eStorage.withLock { values -> [optionalType(genFeature.itemTypeName())/] in
+                let old = [genFeature.storedRead('values')/]
+                values.[genFeature.propertyName()/] = [genFeature.storedValue('newValue')/]
+                return old
+            }
+            guard previous !== newValue else { return }
+[genFeature.oppositeUpdate()/]
+        }
+[else]
+        set { eStorage.withLock { $0.[genFeature.propertyName()/] = [genFeature.storedValue('newValue')/] } }
+[/if]
+    }
+[/template]
+
+[**
+ * Writes the statements that remove an object from the old opposite of a reference and add it to the new one.
+ **/]
+[template public oppositeUpdate(genFeature : GenFeature)]
+[let opposite : GenFeature = genFeature.oppositeFeature()]
+[if (opposite.isMany())]
+            previous?.[opposite.propertyName()/].removeAll { $0 === self }
+            if let newValue, !newValue.[opposite.propertyName()/].contains(where: { $0 === self }) { newValue.[opposite.propertyName()/].append(self) }
+[else]
+            if let previous, previous.[opposite.propertyName()/] === self { previous.[opposite.propertyName()/] = nil }
+            if let newValue, newValue.[opposite.propertyName()/] !== self { newValue.[opposite.propertyName()/] = self }
+[/if]
+[/let]
+[/template]

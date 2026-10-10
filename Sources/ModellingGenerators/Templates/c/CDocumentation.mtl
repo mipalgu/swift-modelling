@@ -1,0 +1,49 @@
+[comment encoding = UTF-8 /]
+[**
+ * Documentation comments and string literals in generated C code.
+ *
+ * The queries here write the pieces that surround generated declarations: documentation comments taken from the
+ * documentation of the model, the tag that marks a member as generated, and string literals with their escapes.
+ **/]
+[module CDocumentation('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CNames/]
+
+[comment Literals and escapes /]
+
+[**
+ * Whether a text holds only characters that a string literal can contain as they are: no control characters,
+ * backslashes, quotes or question marks (two of which could form a trigraph).
+ **/]
+[query public isPlainText(text : String) : Boolean = text.matches('^[^\\x00-\\x1F\\x7F\\\\"?]*$')/]
+
+[**
+ * Escapes one character of a string literal, given as text and as its first UTF-16 code: the usual escapes for
+ * quotes, backslash and line breaks, a three digit octal escape for other control characters, an escaped question
+ * mark, and any other character as it is.
+ **/]
+[query public escapeCode(code : Integer, character : String) : String = if code = 9 then '\\t' else (if code = 10 then '\\n' else (if code = 13 then '\\r' else (if code = 34 then '\\"' else (if code = 63 then '\\?' else (if code = 92 then '\\\\' else (if code < 32 or code = 127 then '\\' + code.toOctalString(3) else character endif) endif) endif) endif) endif) endif) endif/]
+
+[**
+ * A string literal for a text. A missing text becomes the null pointer.
+ **/]
+[query public cStringLiteral(text : OclAny) : String = if text.oclIsUndefined() then 'NULL' else '"' + (if text.isPlainText() then text else text.characters()->collect(c | escapeCode(c.characterCodes()->first(), c))->join('') endif) + '"' endif/]
+
+[comment Documentation comments /]
+
+[**
+ * A text as documentation comment lines. The first paragraph is introduced with a brief tag, unless the text
+ * starts with a tag of its own. The template writer indents every line but the first like the line that the first
+ * one stands on.
+ **/]
+[query public docComment(text : String) : String = (if text.trim().startsWith('@') then text.trim() else '@brief ' + text.trim() endif).lines()->collect(l | if l.trim().size() = 0 then '///' else '/// ' + l endif)->join('\n')/]
+
+[**
+ * The documentation comment of an element: its model documentation, otherwise the fallback text.
+ **/]
+[query public documentationText(element : OclAny, fallback : String) : String = if element.hasDocumentation() then element.documentation().docComment() else fallback.docComment() endif/]
+
+[**
+ * The tag that tells the generator to regenerate the member that follows. It stands in a comment of its own, so
+ * that it does not become part of the documentation.
+ **/]
+[query public generatedTag() : String = '// @generated'/]

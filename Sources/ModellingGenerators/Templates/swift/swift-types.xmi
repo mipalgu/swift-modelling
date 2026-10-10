@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<typemapping:TypeTable xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:typemapping="http://swift-modelling.org/typemapping/1.0" language="swift">
+  <mappings modelType="EString" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="String" zeroValue="nil" instanceClass="java.lang.String" literalStyle="string"/>
+  <mappings modelType="EBoolean" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="Bool" zeroValue="false" instanceClass="boolean" literalStyle="boolean"/>
+  <mappings modelType="EBooleanObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="Bool" zeroValue="nil" instanceClass="java.lang.Boolean" literalStyle="boolean"/>
+  <mappings modelType="EByte" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="Int8" zeroValue="0" instanceClass="byte" literalStyle="number"/>
+  <mappings modelType="EByteObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="Int8" zeroValue="nil" instanceClass="java.lang.Byte" literalStyle="number"/>
+  <mappings modelType="EByteArray" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="[Int8]" zeroValue="nil" instanceClass="byte[]"/>
+  <mappings modelType="EChar" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="Character" zeroValue='"\u{0}"' instanceClass="char" literalStyle="character"/>
+  <mappings modelType="ECharacterObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="Character" zeroValue="nil" instanceClass="java.lang.Character" literalStyle="character"/>
+  <mappings modelType="EDouble" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="Double" zeroValue="0.0" instanceClass="double" literalStyle="number"/>
+  <mappings modelType="EDoubleObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="Double" zeroValue="nil" instanceClass="java.lang.Double" literalStyle="number"/>
+  <mappings modelType="EFloat" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="Float" zeroValue="0.0" instanceClass="float" literalStyle="number"/>
+  <mappings modelType="EFloatObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="Float" zeroValue="nil" instanceClass="java.lang.Float" literalStyle="number"/>
+  <mappings modelType="EInt" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="Int" zeroValue="0" instanceClass="int" literalStyle="number"/>
+  <mappings modelType="EIntegerObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="Int" zeroValue="nil" instanceClass="java.lang.Integer" literalStyle="number"/>
+  <mappings modelType="ELong" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="Int64" zeroValue="0" instanceClass="long" literalStyle="number"/>
+  <mappings modelType="ELongObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="Int64" zeroValue="nil" instanceClass="java.lang.Long" literalStyle="number"/>
+  <mappings modelType="EShort" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="Int16" zeroValue="0" instanceClass="short" literalStyle="number"/>
+  <mappings modelType="EShortObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="Int16" zeroValue="nil" instanceClass="java.lang.Short" literalStyle="number"/>
+  <mappings modelType="EBigDecimal" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="Decimal" zeroValue="nil" instanceClass="java.math.BigDecimal" module="Foundation"/>
+  <mappings modelType="EBigInteger" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EBigInteger" zeroValue="nil" instanceClass="java.math.BigInteger" module="EMFBase"/>
+  <mappings modelType="EDate" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="Date" zeroValue="nil" instanceClass="java.util.Date" module="Foundation"/>
+  <mappings modelType="EJavaObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="any EcoreValue" zeroValue="nil" instanceClass="java.lang.Object" module="EMFBase"/>
+  <mappings modelType="EObject" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="any EObject" zeroValue="nil" module="ECore"/>
+  <mappings modelType="EClass" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EClass" zeroValue="nil" module="ECore"/>
+  <mappings modelType="EPackage" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EPackage" zeroValue="nil" module="ECore"/>
+  <mappings modelType="EAttribute" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EAttribute" zeroValue="nil" module="ECore"/>
+  <mappings modelType="EReference" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EReference" zeroValue="nil" module="ECore"/>
+  <mappings modelType="EOperation" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EOperation" zeroValue="nil" module="ECore"/>
+  <mappings modelType="EEnum" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EEnum" zeroValue="nil" module="ECore"/>
+  <mappings modelType="EEnumLiteral" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EEnumLiteral" zeroValue="nil" module="ECore"/>
+  <mappings modelType="EDataType" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EDataType" zeroValue="nil" module="ECore"/>
+  <mappings modelType="EFactory" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EFactory" zeroValue="nil" module="ECore"/>
+  <mappings modelType="EAnnotation" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="EAnnotation" zeroValue="nil" module="ECore"/>
+  <mappings modelType="EClassifier" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="any EClassifier" zeroValue="nil" module="ECore"/>
+  <mappings modelType="EStructuralFeature" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="any EStructuralFeature" zeroValue="nil" module="ECore"/>
+  <mappings modelType="ENamedElement" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="any ENamedElement" zeroValue="nil" module="ECore"/>
+  <mappings modelType="EModelElement" modelPackage="http://www.eclipse.org/emf/2002/Ecore" targetType="any EModelElement" zeroValue="nil" module="ECore"/>
+  <reservedWords word="associatedtype" kind="keyword"/>
+  <reservedWords word="class" kind="keyword"/>
+  <reservedWords word="deinit" kind="keyword"/>
+  <reservedWords word="enum" kind="keyword"/>
+  <reservedWords word="extension" kind="keyword"/>
+  <reservedWords word="fileprivate" kind="keyword"/>
+  <reservedWords word="func" kind="keyword"/>
+  <reservedWords word="import" kind="keyword"/>
+  <reservedWords word="init" kind="keyword"/>
+  <reservedWords word="inout" kind="keyword"/>
+  <reservedWords word="internal" kind="keyword"/>
+  <reservedWords word="let" kind="keyword"/>
+  <reservedWords word="open" kind="keyword"/>
+  <reservedWords word="operator" kind="keyword"/>
+  <reservedWords word="private" kind="keyword"/>
+  <reservedWords word="precedencegroup" kind="keyword"/>
+  <reservedWords word="protocol" kind="keyword"/>
+  <reservedWords word="public" kind="keyword"/>
+  <reservedWords word="rethrows" kind="keyword"/>
+  <reservedWords word="static" kind="keyword"/>
+  <reservedWords word="struct" kind="keyword"/>
+  <reservedWords word="subscript" kind="keyword"/>
+  <reservedWords word="typealias" kind="keyword"/>
+  <reservedWords word="var" kind="keyword"/>
+  <reservedWords word="break" kind="keyword"/>
+  <reservedWords word="case" kind="keyword"/>
+  <reservedWords word="catch" kind="keyword"/>
+  <reservedWords word="continue" kind="keyword"/>
+  <reservedWords word="default" kind="keyword"/>
+  <reservedWords word="defer" kind="keyword"/>
+  <reservedWords word="do" kind="keyword"/>
+  <reservedWords word="else" kind="keyword"/>
+  <reservedWords word="fallthrough" kind="keyword"/>
+  <reservedWords word="for" kind="keyword"/>
+  <reservedWords word="guard" kind="keyword"/>
+  <reservedWords word="if" kind="keyword"/>
+  <reservedWords word="in" kind="keyword"/>
+  <reservedWords word="repeat" kind="keyword"/>
+  <reservedWords word="return" kind="keyword"/>
+  <reservedWords word="throw" kind="keyword"/>
+  <reservedWords word="switch" kind="keyword"/>
+  <reservedWords word="where" kind="keyword"/>
+  <reservedWords word="while" kind="keyword"/>
+  <reservedWords word="Any" kind="keyword"/>
+  <reservedWords word="as" kind="keyword"/>
+  <reservedWords word="await" kind="keyword"/>
+  <reservedWords word="false" kind="keyword"/>
+  <reservedWords word="is" kind="keyword"/>
+  <reservedWords word="nil" kind="keyword"/>
+  <reservedWords word="super" kind="keyword"/>
+  <reservedWords word="self" kind="keyword"/>
+  <reservedWords word="Self" kind="keyword"/>
+  <reservedWords word="throws" kind="keyword"/>
+  <reservedWords word="true" kind="keyword"/>
+  <reservedWords word="try" kind="keyword"/>
+  <reservedWords word="_" kind="keyword"/>
+  <reservedWords word="Type" kind="keyword"/>
+  <reservedWords word="Protocol" kind="keyword"/>
+  <reservedWords word="package" kind="keyword"/>
+  <reservedWords word="any" kind="keyword"/>
+  <reservedWords word="some" kind="keyword"/>
+  <reservedWords word="async" kind="keyword"/>
+  <reservedWords word="actor" kind="keyword"/>
+  <reservedWords word="String" kind="type"/>
+  <reservedWords word="Int" kind="type"/>
+  <reservedWords word="Int8" kind="type"/>
+  <reservedWords word="Int16" kind="type"/>
+  <reservedWords word="Int32" kind="type"/>
+  <reservedWords word="Int64" kind="type"/>
+  <reservedWords word="UInt" kind="type"/>
+  <reservedWords word="Bool" kind="type"/>
+  <reservedWords word="Double" kind="type"/>
+  <reservedWords word="Float" kind="type"/>
+  <reservedWords word="Character" kind="type"/>
+  <reservedWords word="Date" kind="type"/>
+  <reservedWords word="Decimal" kind="type"/>
+  <reservedWords word="Data" kind="type"/>
+  <reservedWords word="UUID" kind="type"/>
+  <reservedWords word="URL" kind="type"/>
+  <reservedWords word="Array" kind="type"/>
+  <reservedWords word="Dictionary" kind="type"/>
+  <reservedWords word="Set" kind="type"/>
+  <reservedWords word="Optional" kind="type"/>
+  <reservedWords word="Result" kind="type"/>
+  <reservedWords word="Error" kind="type"/>
+  <reservedWords word="Void" kind="type"/>
+  <reservedWords word="Never" kind="type"/>
+  <reservedWords word="Hasher" kind="type"/>
+  <reservedWords word="Sendable" kind="type"/>
+  <reservedWords word="Classifier" kind="type"/>
+  <reservedWords word="ID" kind="type"/>
+  <reservedWords word="Hashable" kind="type"/>
+  <reservedWords word="Equatable" kind="type"/>
+  <reservedWords word="Codable" kind="type"/>
+  <reservedWords word="CaseIterable" kind="type"/>
+  <reservedWords word="AnyObject" kind="type"/>
+  <reservedWords word="Mutex" kind="type"/>
+  <reservedWords word="EStorage" kind="type"/>
+  <reservedWords word="EWeakReference" kind="type"/>
+  <reservedWords word="EObject" kind="type"/>
+  <reservedWords word="EClass" kind="type"/>
+  <reservedWords word="EPackage" kind="type"/>
+  <reservedWords word="EUUID" kind="type"/>
+  <reservedWords word="EcoreValue" kind="type"/>
+  <reservedWords word="EcoreValueArray" kind="type"/>
+  <reservedWords word="EStructuralFeature" kind="type"/>
+  <reservedWords word="EClassifier" kind="type"/>
+  <reservedWords word="EAttribute" kind="type"/>
+  <reservedWords word="EReference" kind="type"/>
+  <reservedWords word="EDataType" kind="type"/>
+  <reservedWords word="EEnum" kind="type"/>
+  <reservedWords word="EEnumLiteral" kind="type"/>
+  <reservedWords word="EFactory" kind="type"/>
+  <reservedWords word="EBigInteger" kind="type"/>
+  <reservedWords word="id" kind="member"/>
+  <reservedWords word="eClass" kind="member"/>
+  <reservedWords word="eGet" kind="member"/>
+  <reservedWords word="eSet" kind="member"/>
+  <reservedWords word="eIsSet" kind="member"/>
+  <reservedWords word="eUnset" kind="member"/>
+  <reservedWords word="eStorage" kind="member"/>
+  <reservedWords word="hash" kind="member"/>
+  <reservedWords word="hashValue" kind="member"/>
+</typemapping:TypeTable>

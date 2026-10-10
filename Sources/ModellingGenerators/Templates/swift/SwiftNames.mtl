@@ -1,0 +1,160 @@
+[comment encoding = UTF-8 /]
+[**
+ * Swift naming conventions for the elements of a generator model.
+ *
+ * The queries here decide how model names become Swift identifiers and file names: keyword quoting,
+ * the names of types that would hide a type of the runtime, the directory of a package, and which
+ * classes are written as protocols. Language independent name formatting (capitalisation, word
+ * splitting) comes from the generator model services.
+ **/]
+[module SwiftNames('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+
+[**
+ * The language table that the template set bundles: type mappings and reserved words.
+ **/]
+[query public languageTable() : OclAny = templateData('types')->first()/]
+
+[**
+ * Whether a text is missing or empty.
+ **/]
+[query public isBlank(text : OclAny) : Boolean = if text.oclIsUndefined() then true else text.size() = 0 endif/]
+
+[comment Making names safe /]
+
+[**
+ * Whether the language table lists a name as reserved in a way: keyword, type or member.
+ **/]
+[query public isReservedAs(name : String, kind : String) : Boolean = languageTable().reservedWords->exists(w | w.word = name and w.kind = kind)/]
+
+[**
+ * A name between backticks if it is a keyword of the language, otherwise the name itself.
+ **/]
+[query public quoted(name : String) : String = if isReservedAs(name, 'keyword') then '`' + name + '`' else name endif/]
+
+[**
+ * A name for a generated type without quoting: a name that would hide a type of the runtime or the standard
+ * library gets a trailing underscore.
+ **/]
+[query public plainTypeName(name : String) : String = if isReservedAs(name, 'type') then name + '_' else name endif/]
+
+[**
+ * A name for a generated property without quoting: a name that the runtime protocol claims gets a trailing underscore.
+ **/]
+[query public plainMemberName(name : String) : String = if isReservedAs(name, 'member') then name + '_' else name endif/]
+
+[**
+ * The identifier for a type name, quoted if it is a keyword.
+ **/]
+[query public typeIdentifier(name : String) : String = quoted(plainTypeName(name))/]
+
+[**
+ * The identifier for a property, enumeration case or other member name, quoted if it is a keyword.
+ **/]
+[query public safeName(name : String) : String = quoted(plainMemberName(name))/]
+
+[**
+ * The identifier for an enumeration case: the name of the literal, with a single underscore doubled
+ * because the language does not allow it as a name.
+ **/]
+[query public caseName(genEnumLiteral : GenEnumLiteral) : String = quoted(if genEnumLiteral.name() = '_' then '__' else genEnumLiteral.name() endif)/]
+
+[comment Packages /]
+
+[**
+ * The relative path of the directory that holds the files of a package: the names of its containing
+ * packages and its own, separated by slashes.
+ **/]
+[query public packageDirectory(genPackage : GenPackage) : String = if genPackage.parentGenPackage().oclIsUndefined() then genPackage.name() else genPackage.parentGenPackage().packageDirectory() + '/' + genPackage.name() endif/]
+
+[**
+ * The text before a name that a package puts before the names of its factory and package classes.
+ **/]
+[query public prefixedName(genPackage : GenPackage, name : String) : String = if isBlank(genPackage.setting('prefix')) then name else genPackage.setting('prefix') + name endif/]
+
+[**
+ * The name of the type that describes a package and its classifiers.
+ **/]
+[query public packageTypeName(genPackage : GenPackage) : String = typeIdentifier(genPackage.prefixedName('Package'))/]
+
+[**
+ * The name of the type that creates the objects of a package.
+ **/]
+[query public factoryTypeName(genPackage : GenPackage) : String = typeIdentifier(genPackage.prefixedName('Factory'))/]
+
+[**
+ * The file name, without extension, of the package description of a package.
+ **/]
+[query public packageFileName(genPackage : GenPackage) : String = plainTypeName(genPackage.prefixedName('Package'))/]
+
+[**
+ * The file name, without extension, of the factory of a package.
+ **/]
+[query public factoryFileName(genPackage : GenPackage) : String = plainTypeName(genPackage.prefixedName('Factory'))/]
+
+[**
+ * Whether a package has anything to generate: a class, an enumeration or a data type.
+ **/]
+[query public hasClassifiers(genPackage : GenPackage) : Boolean = genPackage.genClasses->notEmpty() or genPackage.genEnums->notEmpty() or genPackage.genDataTypes->notEmpty()/]
+
+[**
+ * The namespace of the Ecore metamodel, whose classifiers the runtime provides.
+ **/]
+[query public ecoreNamespace() : String = 'http://www.eclipse.org/emf/2002/Ecore'/]
+
+[**
+ * Whether a package is the Ecore package itself, which the runtime provides.
+ **/]
+[query public isEcorePackage(genPackage : GenPackage) : Boolean = genPackage.ecorePackage.nsURI = ecoreNamespace()/]
+
+[comment Classifiers /]
+
+[**
+ * The name of the file of a classifier, without extension.
+ **/]
+[query public classifierFileName(classifier : OclAny) : String = plainTypeName(classifier.name())/]
+
+[**
+ * The supertypes of a class that are generated: the Ecore root class, which the runtime provides, is left out.
+ **/]
+[query public modelSupers(genClass : GenClass) : OclAny = genClass.baseGenClasses()->reject(b | b.genPackage().isEcorePackage())/]
+
+[**
+ * Whether another class of the generator model extends a class.
+ **/]
+[query public hasSubclasses(genClass : GenClass) : Boolean = genClass.genModel().allGenPackages()->exists(p | p.genClasses->exists(c | c.modelSupers()->includes(genClass)))/]
+
+[**
+ * Whether a class is declared as a protocol: a class that is abstract or an interface, or that other classes extend.
+ * Other classes are final classes, because the runtime requires model objects to be sendable.
+ **/]
+[query public isProtocol(genClass : GenClass) : Boolean = genClass.isInterface() or genClass.isAbstract() or genClass.hasSubclasses()/]
+
+[**
+ * Whether a class has instances, and so a final class that implements it.
+ **/]
+[query public isInstantiable(genClass : GenClass) : Boolean = not (genClass.isInterface() or genClass.isAbstract())/]
+
+[**
+ * The suffix of the name of the final class that implements a protocol of a class that is not abstract.
+ **/]
+[query public implementationSuffix() : String = 'Impl'/]
+
+[**
+ * The identifier of the protocol of a class, or of its final class if it is not a protocol.
+ **/]
+[query public interfaceName(genClass : GenClass) : String = typeIdentifier(genClass.name())/]
+
+[**
+ * The identifier of the final class that implements a class.
+ **/]
+[query public className(genClass : GenClass) : String = if genClass.hasSubclasses() then typeIdentifier(genClass.name() + implementationSuffix()) else typeIdentifier(genClass.name()) endif/]
+
+[**
+ * The name by which a class is written in the type of a property: a protocol is written as an existential type.
+ **/]
+[query public referenceTypeName(genClass : GenClass) : String = if genClass.isProtocol() then 'any ' + genClass.interfaceName() else genClass.interfaceName() endif/]
+
+[**
+ * The name of the property of a package description that holds the metaclass of a class.
+ **/]
+[query public descriptorName(classifier : OclAny) : String = if classifier.name() = 'Package' then 'ePackage_' else 'e' + classifier.name() endif/]

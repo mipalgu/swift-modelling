@@ -49,8 +49,11 @@ struct GeneratedProject {
     /// The generator model that was written beside the source model.
     let genModel: URL
 
-    /// The directory that Java is generated into.
-    var output: URL { project.root.appendingPathComponent("java") }
+    /// The language that the project is generated into by default; it also names the output directory.
+    var language: String = "java"
+
+    /// The directory that code is generated into.
+    var output: URL { project.root.appendingPathComponent(language) }
 
     /// The location of a generated file.
     ///
@@ -93,60 +96,73 @@ struct GeneratedProject {
     ///   - fixture: The name of the fixture directory.
     ///   - stem: The file stem of the source model.
     ///   - options: The import options.
+    ///   - language: The language that the project is generated into by default.
     /// - Returns: The project with its generator model.
     @MainActor
     static func make(
-        _ fixture: String, stem: String, options: GenModelImportOptions = GenModelImportOptions()
+        _ fixture: String, stem: String, options: GenModelImportOptions = GenModelImportOptions(),
+        language: String = "java"
     ) async throws -> GeneratedProject {
         let project = try FixtureProject.make(fixture)
         let result = try await GenerationPipeline.ecoreToGenModel(
             ecoreURLs: [project.model("\(stem).ecore")], options: options)
-        return GeneratedProject(project: project, genModel: result.url)
+        return GeneratedProject(project: project, genModel: result.url, language: language)
     }
 
     /// Generates code with a template set.
     ///
     /// - Parameters:
-    ///   - language: The language of the template set.
+    ///   - language: The language of the template set; the language of the project if left out.
     ///   - options: The generation options.
     ///   - progress: A receiver of progress reports.
     /// - Returns: The result of the generation.
     @MainActor
     @discardableResult
     func generate(
-        language: String = "java", options: GenerationOptions = GenerationOptions(),
+        language: String? = nil, options: GenerationOptions = GenerationOptions(),
         progress: @escaping GenerationProgressReporter = { _ in }
     ) async throws -> GenerationResult {
         try await GenerationPipeline.generate(
-            genModelURL: genModel, language: language, outputDirectory: output, options: options,
-            progress: progress)
+            genModelURL: genModel, language: language ?? self.language, outputDirectory: output,
+            options: options, progress: progress)
     }
 
     /// Removes the scratch copy.
     func remove() { project.remove() }
 }
 
-/// Runs template text against a generator model by overriding the main module of the Java template set.
+/// Runs template text against a generator model by overriding the main module of a template set.
 struct TemplateHarness {
-    /// The imports that every harness module declares.
+    /// The imports that every harness module of the Java template set declares.
     static let importedModules = [
         "JavaNames", "JavaImports", "JavaTypes", "JavaDocumentation", "Header", "EnumClass", "ClassQueries",
         "ClassModelInfo", "ClassFeature", "ClassOperation", "PackageNames",
     ]
 
+    /// The imports that every harness module of the Swift template set declares.
+    static let swiftModules = [
+        "SwiftNames", "SwiftImports", "SwiftTypes", "SwiftDocumentation", "Header", "EnumClass", "ClassQueries",
+        "ClassFeature", "ClassReflection", "PackageClass", "FactoryClass", "DataTypeFile", "Class",
+    ]
+
     /// The generator project the templates run against.
     let generated: GeneratedProject
 
+    /// The modules that the main module of the harness imports.
+    var modules: [String] = TemplateHarness.importedModules
+
     /// Creates the override directory for a main template body.
     ///
-    /// - Parameter body: The text of the main template. It receives `genModel`.
+    /// - Parameters:
+    ///   - body: The text of the main template. It receives `genModel`.
+    ///   - modules: The modules that the main module imports.
     /// - Returns: The directory to pass as a template path.
-    static func overrideDirectory(body: String) throws -> URL {
+    static func overrideDirectory(body: String, modules: [String] = importedModules) throws -> URL {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("swift-modelling-harness")
             .appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let imports = importedModules.map { "[import \($0)/]" }.joined(separator: "\n")
+        let imports = modules.map { "[import \($0)/]" }.joined(separator: "\n")
         let module = """
             [module generate('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
             \(imports)
@@ -170,7 +186,7 @@ struct TemplateHarness {
     /// - Returns: The text that the template wrote.
     @MainActor
     func run(_ body: String) async throws -> String {
-        let directory = try Self.overrideDirectory(body: body)
+        let directory = try Self.overrideDirectory(body: body, modules: modules)
         defer { try? FileManager.default.removeItem(at: directory) }
         try await generated.generate(options: GenerationOptions(templatePaths: [directory]))
         return try generated.text("result.txt")

@@ -1,0 +1,97 @@
+[comment encoding = UTF-8 /]
+[**
+ * The declarations and definitions of a generator enumeration.
+ *
+ * An enumeration becomes a C enumeration with one constant for every literal, so that literals that repeat a value
+ * stay available, and two functions that convert between the literals and the text that stands for them in a
+ * serialised model. An enumeration without literals is a plain integer type.
+ **/]
+[module EnumDeclaration('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CNames/]
+[import CTypes/]
+[import CDocumentation/]
+
+[**
+ * The documentation comment text of a literal that its model does not document: a literal that repeats the value
+ * of an earlier literal says so.
+ **/]
+[query public literalSummary(genEnum : GenEnum, genLiteral : GenEnumLiteral) : String = if genEnum.uniqueValuedGenEnumLiterals()->includes(genLiteral) then 'The ' + genLiteral.name() + ' literal.' else 'The ' + genLiteral.name() + ' literal, which has the value of ' + genEnum.uniqueValuedGenEnumLiterals()->select(u | u.ecoreEnumLiteral.value = genLiteral.ecoreEnumLiteral.value)->first().name() + '.' endif/]
+
+[**
+ * Writes the declaration of an enumeration and of its conversion functions, for the header of a package.
+ **/]
+[template public enumDeclaration(genEnum : GenEnum)]
+[if (genEnum.genEnumLiterals->isEmpty())]
+[documentationText(genEnum, 'The ' + genEnum.name() + ' enumeration.\n\nIt has no literals, so any integer is a value.')/]
+[generatedTag()/]
+typedef [enumStorageType()/] [genEnum.classifierName()/];
+[else]
+[documentationText(genEnum, 'The ' + genEnum.name() + ' enumeration.')/]
+[generatedTag()/]
+enum [genEnum.classifierName()/] {
+[for (literal : GenEnumLiteral | genEnum.genEnumLiterals)]
+    [documentationText(literal, genEnum.literalSummary(literal))/]
+    [generatedTag()/]
+    [genEnum.literalConstant(literal)/] = [literal.ecoreEnumLiteral.value/],
+[if (i < genEnum.genEnumLiterals->size())]
+
+[/if]
+[/for]
+};
+
+/// @brief The [genEnum.name()/] enumeration.
+[generatedTag()/]
+typedef enum [genEnum.classifierName()/] [genEnum.classifierName()/];
+[/if]
+
+/// @brief Returns the text that stands for a literal of the [genEnum.name()/] enumeration in a serialised model.
+///
+/// @param value The value to look up.
+/// @return The text of the first literal that has the value; the null pointer if no literal has it.
+[generatedTag()/]
+const char *[genEnum.literalFunctionName()/]([genEnum.classifierName()/] value);
+
+/// @brief Finds the literal of the [genEnum.name()/] enumeration that a text stands for.
+///
+/// @param literal The text of the literal in a serialised model.
+/// @param value Receives the literal if the text stands for one; left alone otherwise.
+/// @return `true` if the text stands for a literal; `false` otherwise.
+[generatedTag()/]
+bool [genEnum.fromLiteralFunctionName()/](const char *literal, [genEnum.classifierName()/] *value);
+[/template]
+
+[**
+ * Writes the definitions of the conversion functions of an enumeration, for the source file of a package.
+ **/]
+[template public enumDefinition(genEnum : GenEnum)]
+[generatedTag()/]
+const char *[genEnum.literalFunctionName()/]([genEnum.classifierName()/] value) {
+[if (genEnum.uniqueValuedGenEnumLiterals()->isEmpty())]
+    (void)value;
+    return NULL;
+[else]
+    switch (value) {
+[for (literal : GenEnumLiteral | genEnum.uniqueValuedGenEnumLiterals())]
+    case [genEnum.literalConstant(literal)/]:
+        return [cStringLiteral(literal.ecoreEnumLiteral.literal)/];
+[/for]
+    default:
+        return NULL;
+    }
+[/if]
+}
+
+[generatedTag()/]
+bool [genEnum.fromLiteralFunctionName()/](const char *literal, [genEnum.classifierName()/] *value) {
+    if (literal == NULL || value == NULL) {
+        return false;
+    }
+[for (literal : GenEnumLiteral | genEnum.genEnumLiterals)]
+    if (strcmp(literal, [cStringLiteral(literal.ecoreEnumLiteral.literal)/]) == 0) {
+        *value = [genEnum.literalConstant(literal)/];
+        return true;
+    }
+[/for]
+    return false;
+}
+[/template]

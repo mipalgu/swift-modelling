@@ -1,0 +1,33 @@
+[comment encoding = UTF-8 /]
+[**
+ * The header of a generator data type.
+ *
+ * A data type that a model defines becomes an alias of the C++ type that its instance class maps to, so that the
+ * features of the model read with the names of the model.
+ **/]
+[module DataTypeFile('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CppNames/]
+[import CppIncludes/]
+[import CppTypes/]
+[import CppDocumentation/]
+[import Header/]
+
+[**
+ * The complete text of the header that declares an alias for a generator data type.
+ **/]
+[template public dataTypeFile(genDataType : GenDataType)]
+[genDataType.ecoreDataType.dataTypeMapping().collectMappingHeaders()/]
+#pragma once
+
+[header(genDataType, genDataType.classifierFileName())/]
+
+[emit ('includes') once][includeBlock(items)/][/emit]
+[generatedTag()/]
+namespace [genDataType.genPackage().namespacePath()/] {
+
+[documentationText(genDataType, 'The ' + genDataType.name() + ' data type.')/]
+[generatedTag()/]
+using [typeIdentifier(genDataType.name())/] = [genDataType.aliasedTypeName()/];
+
+}
+[/template]

@@ -1,0 +1,57 @@
+[comment encoding = UTF-8 /]
+[**
+ * The main module of the C++ template set.
+ *
+ * It writes the model code of a generator model: the support header that every other header includes, then one header
+ * for each classifier and two for each package, the description of the package with the classes of its
+ * classifiers, and its factory. Headers that exist already are merged: members whose comment carries the generated
+ * tag are regenerated, members marked as not generated are kept, and members without a tag are kept.
+ **/]
+[module generate('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[merge ('//', '', '@generated', '@generated NOT', 'braces', 'terminators=\n;', 'quotes="', 'files=*.hpp')/]
+[import CppNames/]
+[import CppIncludes/]
+[import SupportHeader/]
+[import EnumClass/]
+[import DataTypeFile/]
+[import Class/]
+[import PackageClass/]
+[import FactoryClass/]
+
+[**
+ * Writes the model code of every package of a generator model, nested packages included, and the support header.
+ **/]
+[template public generate(genModel : GenModel)]
+[file (headerFileName(supportHeaderName()), false, 'UTF-8')][supportHeader()/][/file]
+[for (genPackage : GenPackage | genModel.allGenPackages())]
+[genPackage.generatePackage()/]
+[/for]
+[/template]
+
+[**
+ * Writes the files of one generator package.
+ **/]
+[template public generatePackage(genPackage : GenPackage)]
+[if (genPackage.hasClassifiers())]
+[file (genPackage.packageHeader(), false, 'UTF-8')][genPackage.packageFile()/][/file]
+[file (genPackage.packageDirectory() + '/' + headerFileName(genPackage.factoryFileName()), false, 'UTF-8')][genPackage.factoryFile()/][/file]
+[/if]
+[for (genClass : GenClass | genPackage.orderedGenClasses())]
+[file (genClass.classifierHeader(), false, 'UTF-8')][genClass.classFile()/][/file]
+[/for]
+[for (genEnum : GenEnum | genPackage.genEnums)]
+[file (genEnum.classifierHeader(), false, 'UTF-8')][genEnum.enumFile()/][/file]
+[/for]
+[for (genDataType : GenDataType | genPackage.genDataTypes)]
+[file (genDataType.classifierHeader(), false, 'UTF-8')][genDataType.dataTypeFile()/][/file]
+[/for]
+[/template]
+
+[**
+ * The number of files that this module writes for a generator model, used to report progress.
+ **/]
+[template public fileCount(genModel : GenModel)]
+[file ('count')]
+[1 + genModel.allGenPackages()->collect(p | p.genClasses->size() + p.genEnums->size() + p.genDataTypes->size() + (if p.hasClassifiers() then 2 else 0 endif))->sum()/]
+[/file]
+[/template]

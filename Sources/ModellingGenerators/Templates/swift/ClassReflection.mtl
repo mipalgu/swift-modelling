@@ -1,0 +1,84 @@
+[comment encoding = UTF-8 /]
+[**
+ * The reflective methods of a final class.
+ *
+ * The runtime reads and writes the features of an object by name: the methods here switch on the name of the
+ * feature that they are given and read or write the property of the same name. Many-valued features travel as
+ * arrays of Ecore values.
+ **/]
+[module ClassReflection('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import SwiftNames/]
+[import SwiftTypes/]
+[import SwiftDocumentation/]
+[import ClassQueries/]
+
+[**
+ * The expression that reads a feature as an Ecore value.
+ **/]
+[query public reflectiveRead(genFeature : GenFeature) : String = if genFeature.isMany() then 'EcoreValueArray(self.' + genFeature.propertyName() + '.map { $0 as any EcoreValue })' else 'self.' + genFeature.propertyName() endif/]
+
+[**
+ * The statement that assigns an Ecore value to a feature, converting it to the type of the feature.
+ **/]
+[query public reflectiveWrite(genFeature : GenFeature) : String = if genFeature.isMany() then (if genFeature.itemTypeName() = 'any EcoreValue' then 'self.' + genFeature.propertyName() + ' = (value as? EcoreValueArray)?.values ?? []' else 'self.' + genFeature.propertyName() + ' = (value as? EcoreValueArray)?.values.compactMap { $0 as? ' + castType(genFeature.itemTypeName()) + ' } ?? []' endif) else (if genFeature.hasValue() then 'self.' + genFeature.propertyName() + ' = (value as? ' + castType(genFeature.itemTypeName()) + ') ?? ' + genFeature.defaultExpression() else (if genFeature.itemTypeName() = 'any EcoreValue' then 'self.' + genFeature.propertyName() + ' = value' else (if genFeature.defaultExpression() = 'nil' then 'self.' + genFeature.propertyName() + ' = value as? ' + castType(genFeature.itemTypeName()) else 'self.' + genFeature.propertyName() + ' = (value as? ' + castType(genFeature.itemTypeName()) + ') ?? ' + genFeature.defaultExpression() endif) endif) endif) endif/]
+
+[**
+ * The expression that tells whether a feature differs from its default.
+ **/]
+[query public reflectiveIsSet(genFeature : GenFeature) : String = if genFeature.isMany() then '!self.' + genFeature.propertyName() + '.isEmpty' else 'self.' + genFeature.propertyName() + ' != ' + genFeature.defaultExpression() endif/]
+
+[**
+ * Writes the reflective methods.
+ **/]
+[template public reflectiveMethods(genClass : GenClass)]
+    /// Reflectively retrieves the value of a feature.
+    ///
+    /// - Parameter feature: The structural feature whose value to retrieve.
+    /// - Returns: The current value of the feature, or `nil` if the class has no such feature.
+    // @generated
+    public func eGet(_ feature: some EStructuralFeature) -> (any EcoreValue)? {
+        switch feature.name {
+[for (genFeature : GenFeature | genClass.implementedFeatures())]
+        case [swiftStringLiteral(genFeature.name())/]: return [genFeature.reflectiveRead()/]
+[/for]
+        default: return nil
+        }
+    }
+
+    /// Reflectively sets the value of a feature.
+    ///
+    /// - Parameters:
+    ///   - feature: The structural feature to modify.
+    ///   - value: The new value; `nil`, or a value of the wrong type, resets the feature to its default.
+    // @generated
+    public func eSet(_ feature: some EStructuralFeature, _ value: (any EcoreValue)?) {
+        switch feature.name {
+[for (genFeature : GenFeature | genClass.implementedFeatures())]
+        case [swiftStringLiteral(genFeature.name())/]: [genFeature.reflectiveWrite()/]
+[/for]
+        default: break
+        }
+    }
+
+    /// Checks whether a feature differs from its default value.
+    ///
+    /// - Parameter feature: The structural feature to check.
+    /// - Returns: `true` if the feature has been set to something other than its default.
+    // @generated
+    public func eIsSet(_ feature: some EStructuralFeature) -> Bool {
+        switch feature.name {
+[for (genFeature : GenFeature | genClass.implementedFeatures())]
+        case [swiftStringLiteral(genFeature.name())/]: return [genFeature.reflectiveIsSet()/]
+[/for]
+        default: return false
+        }
+    }
+
+    /// Returns a feature to its default value.
+    ///
+    /// - Parameter feature: The structural feature to unset.
+    // @generated
+    public func eUnset(_ feature: some EStructuralFeature) {
+        eSet(feature, nil)
+    }
+[/template]

@@ -1,0 +1,113 @@
+[comment encoding = UTF-8 /]
+[**
+ * The accessors and storage of the features of a class.
+ *
+ * The templates here write, for one feature, the pure virtual accessors of an abstract base class, the accessors
+ * of a concrete class that read and write its storage, and the declaration of the storage itself.
+ **/]
+[module ClassFeature('http://www.eclipse.org/emf/2002/GenModel', 'http://swift-modelling.org/typemapping/1.0')/]
+[import CppNames/]
+[import CppTypes/]
+[import CppDocumentation/]
+[import ClassQueries/]
+
+[**
+ * The type that the mutable getter of a many-valued feature returns.
+ **/]
+[query public mutableAccessType(genFeature : GenFeature, context : GenPackage) : String = genFeature.storageType(context) + ' &'/]
+
+[**
+ * The type that the constant getter of a many-valued feature returns.
+ *
+ * A caller that only reads the values uses this overload, which the mutable one does not hide.
+ **/]
+[query public constantAccessType(genFeature : GenFeature, context : GenPackage) : String = constReference(genFeature.storageType(context))/]
+
+[**
+ * The expression that reads the storage of a feature as the getter returns it: a weak pointer is locked.
+ *
+ * The storage of a single weak reference holds a weak pointer, which the getter turns into a shared pointer that is
+ * null once the target is gone. All other storage is returned as it is.
+ **/]
+[query public storedRead(genFeature : GenFeature) : String = if genFeature.isWeak() and not genFeature.isMany() then genFeature.storageName() + '.lock()' else genFeature.storageName() endif/]
+
+[**
+ * The specifier that a concrete class gives to the accessors of a feature: it overrides the accessors when an abstract
+ * base class declares them, which is the case for inherited features and for the features of a class that has an
+ * abstract base class of its own.
+ **/]
+[query public overrideSpecifier(genFeature : GenFeature, genClass : GenClass) : String = if genClass.isProtocol() or genFeature.genClass() <> genClass then ' override' else '' endif/]
+
+[**
+ * Writes the pure virtual accessors of a feature in an abstract base class.
+ *
+ * A single-valued feature has a getter and a setter. A many-valued feature has a getter that returns the vector for
+ * modification and one that returns it as a constant, and no setter.
+ **/]
+[template public pureAccessors(genFeature : GenFeature, context : GenPackage)]
+[if (genFeature.isMany())]
+    [documentationText(genFeature, genFeature.featureSummary())/]
+    /// @return The values of the [genFeature.name()/] [genFeature.featureKind()/], which the caller can change.
+    [generatedTag()/]
+    virtual [declarator(genFeature.mutableAccessType(context), genFeature.getterName())/]() = 0;
+
+    [documentationText(genFeature, genFeature.featureSummary())/]
+    /// @return The values of the [genFeature.name()/] [genFeature.featureKind()/].
+    [generatedTag()/]
+    virtual [declarator(genFeature.constantAccessType(context), genFeature.getterName())/]() const = 0;
+[else]
+    [documentationText(genFeature, genFeature.featureSummary())/]
+    /// @return The current value of the [genFeature.name()/] [genFeature.featureKind()/].
+    [generatedTag()/]
+    virtual [declarator(genFeature.valueTypeName(context), genFeature.getterName())/]() const = 0;
+
+    /// @brief Changes the [genFeature.name()/] [genFeature.featureKind()/].
+    /// @param value The new value.
+    [generatedTag()/]
+    virtual void [genFeature.setterName()/]([declarator(genFeature.parameterTypeName(context), 'value')/]) = 0;
+[/if]
+[/template]
+
+[**
+ * Writes the accessors of a feature in a concrete class.
+ *
+ * The accessors override those of an abstract base class where there is one, and read and write the storage of the
+ * feature.
+ **/]
+[template public concreteAccessors(genFeature : GenFeature, genClass : GenClass)]
+[let context : GenPackage = genClass.genPackage()]
+[if (genFeature.isMany())]
+    [documentationText(genFeature, genFeature.featureSummary())/]
+    /// @return The values of the [genFeature.name()/] [genFeature.featureKind()/], which the caller can change.
+    [generatedTag()/]
+    [declarator(genFeature.mutableAccessType(context), genFeature.getterName())/]()[genFeature.overrideSpecifier(genClass)/] { return [genFeature.storedRead()/]; }
+
+    [documentationText(genFeature, genFeature.featureSummary())/]
+    /// @return The values of the [genFeature.name()/] [genFeature.featureKind()/].
+    [generatedTag()/]
+    [declarator(genFeature.constantAccessType(context), genFeature.getterName())/]() const[genFeature.overrideSpecifier(genClass)/] { return [genFeature.storedRead()/]; }
+[else]
+    [documentationText(genFeature, genFeature.featureSummary())/]
+    /// @return The current value of the [genFeature.name()/] [genFeature.featureKind()/].
+    [generatedTag()/]
+    [declarator(genFeature.valueTypeName(context), genFeature.getterName())/]() const[genFeature.overrideSpecifier(genClass)/] { return [genFeature.storedRead()/]; }
+
+    /// @brief Changes the [genFeature.name()/] [genFeature.featureKind()/].
+    /// @param value The new value.
+    [generatedTag()/]
+    void [genFeature.setterName()/]([declarator(genFeature.parameterTypeName(context), 'value')/])[genFeature.overrideSpecifier(genClass)/] { [genFeature.storageName()/] = value; }
+[/if]
+[/let]
+[/template]
+
+[**
+ * Writes the storage of a feature in a concrete class.
+ *
+ * The documentation comment, the tag and the declaration with the initial value of the feature stand on separate
+ * lines, so that the merge can regenerate the member.
+ **/]
+[template public storage(genFeature : GenFeature, context : GenPackage)]
+    /// @brief The storage of the [genFeature.name()/] [genFeature.featureKind()/].
+    [generatedTag()/]
+    [genFeature.storageDeclaration(context)/]
+[/template]

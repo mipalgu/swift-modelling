@@ -11,8 +11,8 @@ import ModellingGenerators
 ///
 /// A template set may offer several code styles, such as different indentation and brace
 /// placement for the code it writes. The option names one of them; without it the template set
-/// applies its default style. Built-in languages have no code styles, so commands reject the option
-/// for them.
+/// applies its default style. A template set that offers no code styles, such as `swift`, `c` or `cpp`,
+/// rejects the option.
 ///
 /// Commands include the option with `@OptionGroup`, and apply it to their generation options with
 /// ``apply(to:)``.
