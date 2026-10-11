@@ -199,6 +199,8 @@ swift-ecore convert Tests/ECoreTests/Resources/xmi/team.xmi team.json --verbose
 
 **Round-trip compatibility:** XMI ↔ JSON conversions maintain full fidelity with cross-references, containment relationships, and all data types.
 
+**Metamodel-aware JSON:** JSON output gives each object a package-qualified `eClass`, and references between objects are written as `{"$ref": ...}` objects. When loading JSON, classes and references are resolved against the metamodels in use, including for `swift-mtl --model model.json`.
+
 ### Generate Command
 
 Generate source code in several programming languages from Ecore metamodels or generator models.
