@@ -360,4 +360,165 @@ struct ATLAdvanced01Tests {
         // Member_borrowedBooks table should have member_id and borrowedBooks columns
         #expect(content.contains("<tables name=\"Member_borrowedBooks\""))
     }
+
+    // MARK: - Section 7: Transformation Parsing and Execution
+
+    /// A relational schema reduced to what the tutorial compares: the type names and, for each table,
+    /// its columns with their type names and whether they are a primary key.
+    struct SchemaSummary: Equatable {
+        struct Column: Equatable {
+            let name: String
+            let typeName: String
+            let isKey: Bool
+        }
+        struct Table: Equatable {
+            let name: String
+            let columns: [Column]
+        }
+        let schemaName: String
+        let typeNames: [String]
+        let tables: [Table]
+    }
+
+    /// Summarises a relational model, whether the columns record their type and primary key as attributes
+    /// (the tutorial's expected output) or as child elements (the output of swift-atl).
+    static func summary(of xml: String) -> SchemaSummary {
+        func attribute(_ name: String, in line: String) -> String? {
+            guard let start = line.range(of: " \(name)=\"") else { return nil }
+            let rest = line[start.upperBound...]
+            return rest.firstIndex(of: "\"").map { String(rest[..<$0]) }
+        }
+        func typeIndex(_ reference: String) -> Int? {
+            reference.range(of: "@types.").flatMap { Int(reference[$0.upperBound...]) }
+        }
+        var schemaName = ""
+        var typeNames: [String] = []
+        var tables: [(name: String, columns: [(name: String, type: Int, isKey: Bool)])] = []
+        var column: (name: String, type: Int, isKey: Bool)?
+        func finishColumn() {
+            if let finished = column, !tables.isEmpty { tables[tables.count - 1].columns.append(finished) }
+            column = nil
+        }
+        for line in xml.split(whereSeparator: \.isNewline).map({ $0.trimmingCharacters(in: .whitespaces) }) {
+            if line.contains(":Schema "), let name = attribute("name", in: line) {
+                schemaName = name
+            } else if line.hasPrefix("<types "), let name = attribute("name", in: line) {
+                typeNames.append(name)
+            } else if line.hasPrefix("<tables "), let name = attribute("name", in: line) {
+                finishColumn()
+                tables.append((name: name, columns: []))
+            } else if line.hasPrefix("<columns "), let name = attribute("name", in: line) {
+                finishColumn()
+                let type = attribute("type", in: line).flatMap(typeIndex) ?? -1
+                column = (name: name, type: type, isKey: attribute("keyOf", in: line) != nil)
+                if line.hasSuffix("/>") { finishColumn() }
+            } else if line.hasPrefix("<type "), let reference = attribute("href", in: line) {
+                column?.type = typeIndex(reference) ?? -1
+            } else if line.hasPrefix("<keyOf ") {
+                column?.isKey = true
+            } else if line == "</columns>" {
+                finishColumn()
+            }
+        }
+        finishColumn()
+        return SchemaSummary(
+            schemaName: schemaName,
+            typeNames: typeNames,
+            tables: tables.map { table in
+                SchemaSummary.Table(
+                    name: table.name,
+                    columns: table.columns.map { column in
+                        SchemaSummary.Column(
+                            name: column.name,
+                            typeName: typeNames.indices.contains(column.type) ? typeNames[column.type] : "",
+                            isKey: column.isKey)
+                    })
+            })
+    }
+
+    @Test("CLI: Parse the transformation via swift-atl")
+    @MainActor
+    func testCLIParseTransformation() async throws {
+        let result = try await ATLAdvanced02Tests.execute(
+            tool: "swift-atl",
+            arguments: ["parse", Self.tutorialCodePath.appendingPathComponent("class2relational.atl").path])
+        #expect(result.succeeded, "The transformation should parse: \(result.stdout)\(result.stderr)")
+    }
+
+    @Test("CLI: Validate the transformation via swift-atl")
+    @MainActor
+    func testCLIValidateTransformation() async throws {
+        let result = try await ATLAdvanced02Tests.execute(
+            tool: "swift-atl",
+            arguments: ["validate", Self.tutorialCodePath.appendingPathComponent("class2relational.atl").path])
+        #expect(result.succeeded, "The transformation should validate: \(result.stdout)\(result.stderr)")
+    }
+
+    @Test("ATL: The metamodel directives are relative to the transformation")
+    func testMetamodelDirectives() throws {
+        let content = try String(
+            contentsOf: Self.tutorialCodePath.appendingPathComponent("class2relational.atl"), encoding: .utf8)
+        #expect(content.contains("-- @path Class=class.ecore"))
+        #expect(content.contains("-- @path Relational=relational.ecore"))
+        #expect(!content.contains("/Class2Relational/"))
+    }
+
+    @Test("Content: The expected output summarises to six tables, 25 columns and four types")
+    func testExpectedOutputSummary() throws {
+        let expected = Self.summary(
+            of: try String(
+                contentsOf: Self.tutorialCodePath.appendingPathComponent("expected-output.xmi"), encoding: .utf8))
+        #expect(expected.schemaName == "library")
+        #expect(expected.typeNames == ["INTEGER", "VARCHAR(255)", "BOOLEAN", "DATE"])
+        #expect(expected.tables.count == 6)
+        #expect(expected.tables.reduce(0) { $0 + $1.columns.count } == 25)
+        let loan = try #require(expected.tables.first { $0.name == "Loan" })
+        #expect(loan.columns.first == SchemaSummary.Column(name: "id", typeName: "INTEGER", isKey: true))
+        #expect(loan.columns.contains(SchemaSummary.Column(name: "book_id", typeName: "INTEGER", isKey: false)))
+    }
+
+    @Test("CLI: The transformation produces the expected schema")
+    @MainActor
+    func testCLITransformMatchesExpectedOutput() async throws {
+        let workspace = FileManager.default.temporaryDirectory
+            .resolvingSymlinksInPath()
+            .appendingPathComponent("swift-modelling-tutorial-tests")
+            .appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: workspace, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: workspace) }
+        for name in ["class.ecore", "relational.ecore", "class2relational.atl", "sample-classes.xmi"] {
+            try FileManager.default.copyItem(
+                at: Self.tutorialCodePath.appendingPathComponent(name),
+                to: workspace.appendingPathComponent(name))
+        }
+
+        let result = try await ATLAdvanced02Tests.execute(
+            tool: "swift-atl",
+            arguments: [
+                "transform", "class2relational.atl",
+                "--source", "IN=sample-classes.xmi",
+                "--target", "OUT=output-relational.xmi",
+            ],
+            in: workspace)
+        #expect(result.succeeded, "The transformation should run: \(result.stdout)\(result.stderr)")
+
+        let actual = Self.summary(
+            of: try String(
+                contentsOf: workspace.appendingPathComponent("output-relational.xmi"), encoding: .utf8))
+        let expected = Self.summary(
+            of: try String(
+                contentsOf: Self.tutorialCodePath.appendingPathComponent("expected-output.xmi"), encoding: .utf8))
+        #expect(actual.tables.count == 6)
+        #expect(actual == expected)
+    }
+
+    @Test("Script: The run script uses the documented command")
+    func testRunScript() throws {
+        let content = try String(
+            contentsOf: Self.tutorialCodePath.appendingPathComponent("atl-advanced-01-run.sh"), encoding: .utf8)
+        #expect(content.contains("swift-atl transform class2relational.atl"))
+        #expect(content.contains("--source IN=sample-classes.xmi"))
+        #expect(content.contains("--target OUT=output-relational.xmi"))
+        #expect(!content.contains("--transformation"))
+    }
 }

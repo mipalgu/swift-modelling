@@ -1,8 +1,8 @@
 -- ATL Transformation: Class to Relational
 -- This transformation converts a simplified UML class model into a relational database schema
 -- Based on the classic TTC benchmark case
--- @path Class=/Class2Relational/class.ecore
--- @path Relational=/Class2Relational/relational.ecore
+-- @path Class=class.ecore
+-- @path Relational=relational.ecore
 
 module Class2Relational;
 create OUT: Relational from IN: Class;
@@ -51,7 +51,9 @@ rule Package2Schema {
     to
         s: Relational!Schema (
             name <- p.name,
-            tables <- p.classifiers->select(c | c.oclIsTypeOf(Class!Class)),
+            tables <- p.classifiers
+                ->select(c | c.oclIsTypeOf(Class!Class) and not c.isAbstract)
+                ->union(Class!Attribute.allInstances()->select(a | a.multiValued and a.type.isDataType)),
             types <- p.classifiers->select(c | c.oclIsTypeOf(Class!DataType))
         )
 }
@@ -80,7 +82,7 @@ rule Class2Table {
         t: Relational!Table (
             name <- c.name,
             columns <- Sequence{key}->union(
-                c.allAttributes->select(a | not a.multiValued and a.type.isDataType)
+                c.allAttributes->select(a | not a.multiValued)
             ),
             key <- Sequence{key}
         ),

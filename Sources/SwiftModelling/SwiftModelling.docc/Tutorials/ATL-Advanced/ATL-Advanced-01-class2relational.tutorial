@@ -86,7 +86,7 @@
 
                 @Code(name: "sample-classes.xmi", file: sample-classes.xmi)
 
-                This model represents a library system with Author, Book, Member, and Loan classes. Note the multi-valued 'keywords' and 'borrowedBooks' attributes.
+                This model represents a library system with Author, Book, Member, and Loan classes. Note the multi-valued 'keywords' and 'borrowedBooks' attributes. The model leaves isAbstract and multiValued unset where they are false, as the Eclipse Modeling Framework does when it saves a model.
             }
 
             @Step {
@@ -94,7 +94,7 @@
 
                 @Code(name: "Terminal", file: atl-advanced-01-run.sh)
 
-                Execute swift-atl with the transformation and input model. The output shows the generated relational schema.
+                Execute swift-atl with the transformation and the input model. The -- @path directives at the top of the transformation name the two metamodels beside it, so the command needs only the source and target models. The comments in the script describe the generated relational schema.
             }
 
             @Step {
@@ -102,7 +102,7 @@
 
                 @Code(name: "expected-output.xmi", file: expected-output.xmi)
 
-                Notice how classes became tables with id columns, multi-valued attributes created separate tables (Book_keywords, Member_borrowedBooks), and class references became foreign key columns.
+                Notice how classes became tables with id columns, multi-valued attributes created separate tables (Book_keywords, Member_borrowedBooks), and class references became foreign key columns. The tables for multi-valued attributes follow the class tables because the Package2Schema rule adds them to the schema after the tables for the classes. The file shows the schema in containment form; swift-atl also writes the opposite references, so its own output is longer but holds the same tables, columns and types.
             }
         }
     }

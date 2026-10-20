@@ -1,23 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
-    xmlns:class="http://www.example.org/class">
+    xmlns:class="http://www.example.org/class"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <!-- Sample Class Model: Library Management System -->
   <class:Package name="library">
     <!-- Primitive DataTypes -->
-    <classifiers xsi:type="class:DataType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Integer"/>
-    <classifiers xsi:type="class:DataType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="String"/>
-    <classifiers xsi:type="class:DataType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Boolean"/>
-    <classifiers xsi:type="class:DataType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Date"/>
+    <classifiers xsi:type="class:DataType" name="Integer"/>
+    <classifiers xsi:type="class:DataType" name="String"/>
+    <classifiers xsi:type="class:DataType" name="Boolean"/>
+    <classifiers xsi:type="class:DataType" name="Date"/>
 
     <!-- Author Class -->
-    <classifiers xsi:type="class:Class" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Author">
+    <classifiers xsi:type="class:Class" name="Author">
       <attributes name="firstName" type="//@classifiers.1"/>
       <attributes name="lastName" type="//@classifiers.1"/>
       <attributes name="birthYear" type="//@classifiers.0"/>
     </classifiers>
 
     <!-- Book Class -->
-    <classifiers xsi:type="class:Class" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Book">
+    <classifiers xsi:type="class:Class" name="Book">
       <attributes name="title" type="//@classifiers.1"/>
       <attributes name="isbn" type="//@classifiers.1"/>
       <attributes name="pageCount" type="//@classifiers.0"/>
@@ -27,7 +28,7 @@
     </classifiers>
 
     <!-- Member Class -->
-    <classifiers xsi:type="class:Class" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Member">
+    <classifiers xsi:type="class:Class" name="Member">
       <attributes name="memberNumber" type="//@classifiers.1"/>
       <attributes name="name" type="//@classifiers.1"/>
       <attributes name="email" type="//@classifiers.1"/>
@@ -36,7 +37,7 @@
     </classifiers>
 
     <!-- Loan Class -->
-    <classifiers xsi:type="class:Class" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Loan">
+    <classifiers xsi:type="class:Class" name="Loan">
       <attributes name="loanDate" type="//@classifiers.3"/>
       <attributes name="dueDate" type="//@classifiers.3"/>
       <attributes name="returned" type="//@classifiers.2"/>
