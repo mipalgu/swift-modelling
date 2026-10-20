@@ -39,6 +39,8 @@ struct GenModelCommand: AsyncParsableCommand {
             import organising on, and a root class with a container), and --root-extends-class, \
             --operation-reflection and --import-organizing (or their --no- forms) override single \
             settings of either preset.
+
+            \(UnsetFeatureOptions.discussion(reader: "the rules of the import transformation"))
             """
     )
 
@@ -89,6 +91,10 @@ struct GenModelCommand: AsyncParsableCommand {
     @OptionGroup(title: "Generator model defaults")
     var genModelDefaults: GenModelDefaultsOptions
 
+    /// How the rules of the import transformation read features that a model does not set.
+    @OptionGroup(title: "Evaluation")
+    var unsetFeatureOptions: UnsetFeatureOptions
+
     /// Enable verbose output.
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose: Bool = false
@@ -133,6 +139,7 @@ struct GenModelCommand: AsyncParsableCommand {
         options.reload = reload.map { URL(fileURLWithPath: $0) }
         options.output = output.map { URL(fileURLWithPath: $0) }
         genModelDefaults.apply(to: &options)
+        unsetFeatureOptions.apply(to: &options)
         return options
     }
 }

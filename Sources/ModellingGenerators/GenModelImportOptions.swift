@@ -4,6 +4,7 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import ECore
 import Foundation
 
 /// The settings of an import of Ecore models into a generator model.
@@ -92,6 +93,14 @@ public struct GenModelImportOptions: Sendable, Equatable {
     /// Whether the generated code organises its imports; `nil` takes the value of the preset.
     public var importOrganizing: Bool?
 
+    /// How the transformation reads structural features that a source model does not set.
+    ///
+    /// With ``UnsetFeatureReads/defaults``, the default, an unset attribute reads as its
+    /// declared default or the default of its data type, and an unset many-valued feature as an
+    /// empty collection, as in the Eclipse Modeling Framework. With
+    /// ``UnsetFeatureReads/undefined`` every unset feature reads as undefined.
+    public var unsetFeatureReads: UnsetFeatureReads
+
     /// Creates options with the importer's defaults.
     ///
     /// - Parameters:
@@ -110,6 +119,7 @@ public struct GenModelImportOptions: Sendable, Equatable {
     ///   - operationReflection: Whether generated models include operation reflection, overriding the preset.
     ///   - rootExtendsClass: The class that generated root objects extend, overriding the preset.
     ///   - importOrganizing: Whether the generated code organises its imports, overriding the preset.
+    ///   - unsetFeatureReads: How the transformation reads features that a source model does not set.
     public init(
         basePackage: String? = nil,
         prefix: String? = nil,
@@ -125,7 +135,8 @@ public struct GenModelImportOptions: Sendable, Equatable {
         defaults: GenModelDefaults? = nil,
         operationReflection: Bool? = nil,
         rootExtendsClass: String? = nil,
-        importOrganizing: Bool? = nil
+        importOrganizing: Bool? = nil,
+        unsetFeatureReads: UnsetFeatureReads = .defaults
     ) {
         self.basePackage = basePackage
         self.prefix = prefix
@@ -142,6 +153,7 @@ public struct GenModelImportOptions: Sendable, Equatable {
         self.operationReflection = operationReflection
         self.rootExtendsClass = rootExtendsClass
         self.importOrganizing = importOrganizing
+        self.unsetFeatureReads = unsetFeatureReads
     }
 
     /// Applies a prefix given as text.

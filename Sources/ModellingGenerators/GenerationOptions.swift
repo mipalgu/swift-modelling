@@ -4,6 +4,7 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import ECore
 import Foundation
 
 /// The settings of generating code from a generator model.
@@ -56,6 +57,14 @@ public struct GenerationOptions: Sendable, Equatable {
     /// the default style of the template set.
     public var codeStyle: String?
 
+    /// How the templates read structural features that a model does not set.
+    ///
+    /// With ``UnsetFeatureReads/defaults``, the default, an unset attribute reads as its
+    /// declared default or the default of its data type, and an unset many-valued feature as an
+    /// empty collection, as in the Eclipse Modeling Framework. With
+    /// ``UnsetFeatureReads/undefined`` every unset feature reads as undefined.
+    public var unsetFeatureReads: UnsetFeatureReads
+
     /// Creates a set of options.
     ///
     /// - Parameters:
@@ -66,10 +75,12 @@ public struct GenerationOptions: Sendable, Equatable {
     ///   - includeSourceRoot: Whether the source directory is part of the output location.
     ///   - lineDelimiter: The line delimiter to write.
     ///   - codeStyle: The name of the code style to write.
+    ///   - unsetFeatureReads: How the templates read features that a model does not set.
     public init(
         templatePaths: [URL] = [], forceOverwrite: Bool = false, diff: Bool = false,
         redirectionPattern: String? = nil, includeSourceRoot: Bool? = nil,
-        lineDelimiter: String? = nil, codeStyle: String? = nil
+        lineDelimiter: String? = nil, codeStyle: String? = nil,
+        unsetFeatureReads: UnsetFeatureReads = .defaults
     ) {
         self.templatePaths = templatePaths
         self.forceOverwrite = forceOverwrite
@@ -78,6 +89,7 @@ public struct GenerationOptions: Sendable, Equatable {
         self.includeSourceRoot = includeSourceRoot
         self.lineDelimiter = lineDelimiter
         self.codeStyle = codeStyle
+        self.unsetFeatureReads = unsetFeatureReads
     }
 
     /// The redirection pattern that applies, if any.

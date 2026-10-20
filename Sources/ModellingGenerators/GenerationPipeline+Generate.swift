@@ -79,7 +79,8 @@ extension GenerationPipeline {
             }
         }
         let total = try await expectedFileCount(
-            of: module, descriptor: templateSet.descriptor, root: root, services: services, models: models)
+            of: module, descriptor: templateSet.descriptor, root: root, services: services, models: models,
+            unsetFeatureReads: options.unsetFeatureReads)
 
         var generatorOptions = MTLGeneratorOptions(
             forceOverwrite: options.forceOverwrite, redirectionPattern: options.effectiveRedirectionPattern,
@@ -90,7 +91,9 @@ extension GenerationPipeline {
         let strategy = GenerationProgressStrategy(
             wrapping: MTLFileSystemStrategy(basePath: base.path, options: generatorOptions),
             outputDirectory: base, total: total, report: progress)
-        let generator = MTLGenerator(module: module, generationStrategy: strategy, serviceProviders: services)
+        let generator = MTLGenerator(
+            module: module, generationStrategy: strategy, serviceProviders: services,
+            unsetFeatureReads: options.unsetFeatureReads)
 
         progress(GenerationProgressUpdate(message: "Generating \(language) code", total: total))
         do {
@@ -198,10 +201,22 @@ extension GenerationPipeline {
         return base
     }
 
+    /// The number of files that the template set will write, from its file count template.
+    ///
+    /// - Parameters:
+    ///   - module: The parsed main module of the template set.
+    ///   - descriptor: The descriptor of the template set.
+    ///   - root: The root object of the generator model.
+    ///   - services: The services available to the templates.
+    ///   - models: The models available to the templates, by alias.
+    ///   - unsetFeatureReads: How the templates read features that a model does not set.
+    /// - Returns: The number of files, or `nil` if the template set has no file count template.
+    /// - Throws: ``GenerationError`` if the file count template is missing or fails.
     @MainActor
     private static func expectedFileCount(
         of module: MTLModule, descriptor: TemplateSetDescriptor, root: DynamicEObject,
-        services: [any AQLServiceProvider], models: [String: Resource]
+        services: [any AQLServiceProvider], models: [String: Resource],
+        unsetFeatureReads: UnsetFeatureReads
     ) async throws -> Int? {
         guard let name = descriptor.fileCountTemplate else { return nil }
         guard !module.templates(named: name).isEmpty else {
@@ -209,7 +224,9 @@ extension GenerationPipeline {
                 descriptor.name, "the file count template '\(name)' is missing")
         }
         let counting = MTLInMemoryStrategy()
-        let generator = MTLGenerator(module: module, generationStrategy: counting, serviceProviders: services)
+        let generator = MTLGenerator(
+            module: module, generationStrategy: counting, serviceProviders: services,
+            unsetFeatureReads: unsetFeatureReads)
         do {
             try await generator.generate(mainTemplate: name, arguments: [root], models: models)
         } catch {

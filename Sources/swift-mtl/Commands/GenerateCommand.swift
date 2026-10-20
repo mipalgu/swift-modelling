@@ -11,6 +11,7 @@ import ECore
 import EMFBase
 import Foundation
 import MTL
+import ModellingCommandLine
 import ModellingGenerators
 
 /// Command for generating text from models using MTL templates.
@@ -34,6 +35,8 @@ struct GenerateCommand: AsyncParsableCommand {
             files are merged with the generated text when the module declares a merge, and \
             replaced otherwise; --force-overwrite always replaces them, and --diff keeps them and \
             writes the generated text beside them.
+
+            \(UnsetFeatureOptions.discussion(reader: "the templates"))
 
             Examples:
                 # Basic generation
@@ -73,6 +76,9 @@ struct GenerateCommand: AsyncParsableCommand {
 
                 # Keep existing files, writing new text beside them as .<name>.new
                 swift-mtl generate template.mtl --model input.xmi --diff --output generated/
+
+                # Read unset features as undefined instead of their defaults
+                swift-mtl generate template.mtl --model input.xmi --unset-features undefined
 
                 # Verbose output
                 swift-mtl generate template.mtl \\
@@ -133,6 +139,10 @@ struct GenerateCommand: AsyncParsableCommand {
 
     @Flag(help: "Write the generated text of existing files beside them as .<name>.new")
     var diff: Bool = false
+
+    /// How the templates read features that a model does not set.
+    @OptionGroup(title: "Evaluation")
+    var unsetFeatureOptions: UnsetFeatureOptions
 
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose: Bool = false
@@ -278,7 +288,8 @@ struct GenerateCommand: AsyncParsableCommand {
         let strategy = MTLFileSystemStrategy(
             basePath: output, options: generatorOptions, standardOutput: .capture)
         let generator = MTLGenerator(
-            module: mtlModule, generationStrategy: strategy, serviceProviders: [parameters])
+            module: mtlModule, generationStrategy: strategy, serviceProviders: [parameters],
+            unsetFeatureReads: unsetFeatureOptions.unsetFeatures)
         parameters.bind(to: generator)
 
         // Template arguments are the root objects of each model in command line order

@@ -42,6 +42,7 @@ and the [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec
 - **Advanced OCL**: Let expressions, tuple expressions, iterate operations, lambda expressions
 - **Helper Functions**: Context and standalone helper functions
 - **Module Parameters**: Values for `-- @param` declarations with `swift-atl transform --param name=value`
+- **Unset Features**: Unset features read as in the Eclipse Modeling Framework (an attribute as its default, a many-valued feature as an empty collection); `--unset-features undefined` reads them as undefined instead
 - **Built-in Metamodels**: The Ecore and generator metamodels resolve from `-- @nsURI` directives without metamodel files
 - **Reflection**: `refImmediateComposite()`, `refGetValue`, `refSetValue`, `refUnsetValue` and `refInvokeOperation` for container navigation without opposite references
 - **Code Generation**: `swift-atl generate` turns Ecore models into generator models and generated code with the shared pipeline
@@ -53,6 +54,7 @@ and the [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec
 - **Expression Language**: Full AQL (Acceleo Query Language) integration for expressions
 - **Advanced Features**: File blocks, protected areas, queries, macros, control flow
 - **CLI Tool**: Generate, parse, and validate MTL templates from the command line, with template search paths, parameters and merge or diff handling of existing files
+- **Unset Features**: Templates read unset features as in the Eclipse Modeling Framework, or as undefined with `swift-mtl generate --unset-features undefined`
 - **Standard Compliance**: Implements OMG MOFM2T v1.0 with compatibility for Acceleo-specific extensions
 
 ## Requirements
@@ -416,6 +418,8 @@ swift-atl transform Ecore2GenModel.atl --source IN=library.ecore --target OUT=li
 
 **Parameters.** `--param name=value` binds a value to a module parameter declared in the transformation with `-- @param name : Type [= default]`. The text is converted to the declared type (`String`, `Integer`, `Real`, `Boolean`); the value is everything after the first `=`, and an undeclared name, a value of the wrong type, a missing required parameter or an argument without `name=` is an error. Inside the transformation a parameter is read as `thisModule.name`.
 
+**Unset features.** `--unset-features defaults|undefined` chooses how the rules read features that a model does not set. With `defaults`, the default, they read as the Eclipse Modeling Framework's `eGet` reports them: an unset attribute as its declared default or the default of its data type (`false`, `0`, `0.0` or the first enumeration literal), an unset many-valued feature as an empty collection, and an unset string or reference as undefined. With `undefined`, every unset feature reads as undefined, so a guard such as `t.done = false` no longer matches a task that leaves `done` unset. `swift-atl generate`, `swift-ecore generate` and `swift-ecore genmodel` accept the option too, for the import transformation and the templates.
+
 **Built-in metamodels.** The Ecore metamodel (`http://www.eclipse.org/emf/2002/Ecore`) and the generator metamodel (`http://www.eclipse.org/emf/2002/GenModel`) are built in. A transformation names them with directives, so no metamodel file is needed:
 
 ```text
@@ -517,6 +521,8 @@ swift-mtl generate template.mtl \
 **Template path.** `--template-path <dir>` (repeatable) adds directories in which `[import ...]` looks for modules, after the directory of the template itself. A directory that does not exist is an error.
 
 **Parameters.** `--param name=value` (repeatable) is available to every template as the bare variable `[name/]` and through two services: `parameter('name')` returns the value (`null` if it was not given) and `hasParameter('name')` tells whether it was given. A name must be an identifier that is not an MTL or AQL reserved keyword. A value is a boolean when it reads `true` or `false`, an integer when it is a whole number, and a string otherwise, so `[if (parameter('verbose'))]` and `[parameter('count') + 1/]` work. The value is everything after the first `=`, and a later argument replaces an earlier one of the same name.
+
+**Unset features.** `--unset-features defaults|undefined` chooses how templates read features that a model does not set. With `defaults`, the default, `[c.count/]` writes `0` for an unset integer, as the Eclipse Modeling Framework and Acceleo do; with `undefined` it writes nothing, because every unset feature reads as undefined.
 
 **Existing files.** A file that exists is merged with the generated text when the module declares a merge, and replaced otherwise. `--force-overwrite` always replaces it. `--diff` keeps it and writes the generated text beside it as `.<name>.new`; `--force-overwrite` wins when both are given.
 

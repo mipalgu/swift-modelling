@@ -93,7 +93,9 @@ public enum GenerationPipeline {
             foreignModels: sources.map { URIReference.relativise($0.absoluteString, against: output.absoluteString) })
         for (index, source) in loaded.enumerated() {
             progress("Transforming \(source.url.lastPathComponent) (\(index + 1) of \(loaded.count))")
-            try await transformation.run(source: source.resource, target: target, parameters: parameters)
+            try await transformation.run(
+                source: source.resource, target: target, parameters: parameters,
+                unsetFeatureReads: options.unsetFeatureReads)
         }
         try await mergeGenModels(in: target)
 

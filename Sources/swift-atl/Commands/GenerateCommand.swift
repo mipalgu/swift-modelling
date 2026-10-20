@@ -46,6 +46,8 @@ struct GenerateCommand: AsyncParsableCommand {
             template set offers (\(CodeStyleOptions.bundledStyleList())); the language genmodel \
             has none.
 
+            \(UnsetFeatureOptions.discussion(reader: "the import transformation and the templates"))
+
             Bundled languages: \(availableLanguageList()). A directory that holds a template set and \
             is given with --template-path adds its language.
 
@@ -118,6 +120,10 @@ struct GenerateCommand: AsyncParsableCommand {
     /// The code style of the generated text.
     @OptionGroup(title: "Code style")
     var codeStyle: CodeStyleOptions
+
+    /// How the import transformation and the templates read features that a model does not set.
+    @OptionGroup(title: "Evaluation")
+    var unsetFeatureOptions: UnsetFeatureOptions
 
     /// Directories whose template files replace the bundled templates.
     @Option(
@@ -216,6 +222,7 @@ struct GenerateCommand: AsyncParsableCommand {
         options.copyright = copyright
         options.complianceLevel = jdkLevel
         genModelDefaults.apply(to: &options)
+        unsetFeatureOptions.apply(to: &options)
         if let transformations {
             guard FileManager.default.fileExists(atPath: transformations) else {
                 throw ValidationError("The transformation '\(transformations)' does not exist")
@@ -266,6 +273,7 @@ struct GenerateCommand: AsyncParsableCommand {
             templatePaths: templateURLs, forceOverwrite: forceOverwrite, diff: diff)
         if useModelDirectory { options.includeSourceRoot = true }
         codeStyle.apply(to: &options)
+        unsetFeatureOptions.apply(to: &options)
         let directory = URL(fileURLWithPath: output ?? Self.defaultOutputDirectory)
         if verbose {
             print("Generating \(language) code from: \(inputURL.path)")

@@ -10,6 +10,7 @@ import ArgumentParser
 import ECore
 import Foundation
 import GenModel
+import ModellingCommandLine
 import OrderedCollections
 
 /// Command for executing model transformations.
@@ -67,6 +68,8 @@ struct TransformCommand: AsyncParsableCommand {
             with -- @nsURI directives, without a metamodel file. Targets that are instances of a \
             built-in metamodel are written in the layout of the Eclipse Modeling Framework, with \
             references to other models as uri#fragment attribute values.
+
+            \(UnsetFeatureOptions.discussion(reader: "the rules of the transformation"))
             """
     )
 
@@ -151,6 +154,10 @@ struct TransformCommand: AsyncParsableCommand {
         name: .long,
         help: "Value for a module parameter as name=value (can be specified multiple times)")
     var param: [String] = []
+
+    /// How the transformation reads features that a model does not set.
+    @OptionGroup(title: "Evaluation")
+    var unsetFeatureOptions: UnsetFeatureOptions
 
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose: Bool = false
@@ -321,7 +328,10 @@ struct TransformCommand: AsyncParsableCommand {
                 print("\n=== Executing Transformation ===")
             }
 
-            let virtualMachine = await MainActor.run { ATLVirtualMachine(module: module) }
+            let unsetFeatureReads = unsetFeatureOptions.unsetFeatures
+            let virtualMachine = await MainActor.run {
+                ATLVirtualMachine(module: module, unsetFeatureReads: unsetFeatureReads)
+            }
 
             // Enable debug mode if requested
             if debug {

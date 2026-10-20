@@ -273,7 +273,7 @@ struct GenerateOptionsTests {
         let result = try await executeSwiftMTL(command: "generate", arguments: ["--help"])
 
         #expect(result.succeeded)
-        for option in ["--template-path", "--param", "--force-overwrite", "--diff"] {
+        for option in ["--template-path", "--param", "--force-overwrite", "--diff", "--unset-features"] {
             #expect(result.stdout.contains(option), "\(option) is missing from the help")
         }
     }

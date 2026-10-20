@@ -87,13 +87,16 @@ struct GenModelTransformation {
     ///   - source: The resource holding the source model.
     ///   - target: The resource that receives the generator model.
     ///   - parameters: The values of the module parameters.
+    ///   - unsetFeatureReads: How the transformation reads features that the source model does
+    ///     not set.
     /// - Throws: ``GenerationError/transformationFailed(_:)`` if the transformation fails.
     @MainActor
     func run(
-        source: Resource, target: Resource, parameters: [String: any EcoreValue]
+        source: Resource, target: Resource, parameters: [String: any EcoreValue],
+        unsetFeatureReads: UnsetFeatureReads = .defaults
     ) async throws {
         do {
-            try await ATLVirtualMachine(module: module).execute(
+            try await ATLVirtualMachine(module: module, unsetFeatureReads: unsetFeatureReads).execute(
                 sources: [GenModelImportConstants.sourceAlias: source],
                 targets: [GenModelImportConstants.targetAlias: target],
                 parameters: parameters)

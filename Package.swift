@@ -66,6 +66,7 @@ let package = Package(
             name: "ModellingCommandLine",
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                .product(name: "ECore", package: "swift-ecore"),
                 "ModellingGenerators",
             ],
             swiftSettings: [
@@ -103,6 +104,7 @@ let package = Package(
             dependencies: [
                 .product(name: "MTL", package: "swift-mtl"),
                 "ModellingGenerators",
+                "ModellingCommandLine",
                 .product(name: "ECore", package: "swift-ecore"),
                 .product(name: "EMFBase", package: "swift-ecore"),
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),

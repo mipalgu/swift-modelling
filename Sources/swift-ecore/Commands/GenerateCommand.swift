@@ -38,6 +38,8 @@ struct GenerateCommand: AsyncParsableCommand {
             and --import-organizing (or their --no- forms) override single settings.
 
             Code styles of the template sets (--code-style): \(CodeStyleOptions.bundledStyleList())
+
+            \(UnsetFeatureOptions.discussion(reader: "the import transformation and the templates"))
             """
     )
 
@@ -69,6 +71,10 @@ struct GenerateCommand: AsyncParsableCommand {
     /// The code style of the generated text.
     @OptionGroup(title: "Code style")
     var codeStyle: CodeStyleOptions
+
+    /// How the import transformation and the templates read features that a model does not set.
+    @OptionGroup(title: "Evaluation")
+    var unsetFeatureOptions: UnsetFeatureOptions
 
     /// Directories whose template files replace the bundled templates.
     @Option(
@@ -125,8 +131,10 @@ struct GenerateCommand: AsyncParsableCommand {
             templatePaths: templateURLs, forceOverwrite: forceOverwrite, diff: diff)
         if useModelDirectory { options.includeSourceRoot = true }
         codeStyle.apply(to: &options)
+        unsetFeatureOptions.apply(to: &options)
         var importOptions = GenModelImportOptions()
         genModelDefaults.apply(to: &importOptions)
+        unsetFeatureOptions.apply(to: &importOptions)
         let bar = GenerationProgressBar(verbose: verbose)
         if verbose {
             print("Generating \(language) code from: \(input.path)")
