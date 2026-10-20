@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="Organisation" nsURI="http://www.example.org/organisation" nsPrefix="organisation">
+  <!-- Named: Base class for everything with a name -->
+  <eClassifiers xsi:type="ecore:EClass" name="Named" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <!-- Company: Root of the containment hierarchy -->
+  <eClassifiers xsi:type="ecore:EClass" name="Company" eSuperTypes="#//Named">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="departments" upperBound="-1"
+        eType="#//Department" containment="true"/>
+  </eClassifiers>
+  <!-- Department: Contains teams; no reference leads back to the company -->
+  <eClassifiers xsi:type="ecore:EClass" name="Department" eSuperTypes="#//Named">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="teams" upperBound="-1"
+        eType="#//Team" containment="true"/>
+  </eClassifiers>
+  <!-- Team: Contains employees; no reference leads back to the department -->
+  <eClassifiers xsi:type="ecore:EClass" name="Team" eSuperTypes="#//Named">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="members" upperBound="-1"
+        eType="#//Employee" containment="true"/>
+  </eClassifiers>
+  <!-- Employee: A leaf with a role; no reference leads back to the team -->
+  <eClassifiers xsi:type="ecore:EClass" name="Employee" eSuperTypes="#//Named">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="role"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+</ecore:EPackage>

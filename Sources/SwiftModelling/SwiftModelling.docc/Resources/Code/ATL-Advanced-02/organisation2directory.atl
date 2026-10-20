@@ -1,0 +1,53 @@
+-- ATL Transformation: Organisation to Directory
+-- Navigates from an element to its container with refImmediateComposite()
+-- and uses the reflective operations refGetValue, refSetValue and
+-- refInvokeOperation. The metamodel needs no opposite references.
+-- @path Organisation=organisation.ecore
+-- @path Directory=directory.ecore
+
+module Organisation2Directory;
+create OUT: Directory from IN: Organisation;
+
+-- The team that contains the employee
+helper context Organisation!Employee def : team : Organisation!Team =
+    self.refImmediateComposite();
+
+-- The department that contains the team of the employee
+helper context Organisation!Employee def : department : Organisation!Department =
+    self.team.refImmediateComposite();
+
+-- The company that contains the department of the employee
+helper context Organisation!Employee def : company : Organisation!Company =
+    self.department.refImmediateComposite();
+
+-- A one-line description, called by name through refInvokeOperation
+helper context Organisation!Employee def : describe() : String =
+    self.name + ' (' + self.role + ') in ' + self.team.name;
+
+rule Company2Directory {
+    from
+        c: Organisation!Company
+    to
+        d: Directory!Directory (
+            name <- c.name,
+            entries <- c.departments->collect(dep |
+                dep.teams->collect(t | t.members)->flatten()
+            )->flatten()
+        )
+}
+
+rule Employee2Entry {
+    from
+        e: Organisation!Employee
+    to
+        entry: Directory!Entry (
+            name <- e.refGetValue('name'),
+            team <- e.team.name,
+            department <- e.department.name,
+            company <- e.company.name,
+            description <- e.refInvokeOperation('describe', Sequence{})
+        )
+    do {
+        entry.refSetValue('headcount', e.team.members->size());
+    }
+}

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<directory:Directory xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:directory="http://www.example.org/directory" name="Harbour Logistics">
+    <entries name="Ayesha Rahman" team="Dispatch" department="Operations" company="Harbour Logistics" description="Ayesha Rahman (Coordinator) in Dispatch" headcount="2"/>
+    <entries name="Tom Nguyen" team="Dispatch" department="Operations" company="Harbour Logistics" description="Tom Nguyen (Planner) in Dispatch" headcount="2"/>
+    <entries name="Maria Rossi" team="Fleet" department="Operations" company="Harbour Logistics" description="Maria Rossi (Mechanic) in Fleet" headcount="1"/>
+    <entries name="Kofi Mensah" team="Payroll" department="Finance" company="Harbour Logistics" description="Kofi Mensah (Analyst) in Payroll" headcount="2"/>
+    <entries name="Lena Fischbach" team="Payroll" department="Finance" company="Harbour Logistics" description="Lena Fischbach (Manager) in Payroll" headcount="2"/>
+</directory:Directory>

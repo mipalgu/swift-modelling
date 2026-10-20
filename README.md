@@ -43,6 +43,7 @@ and the [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec
 - **Helper Functions**: Context and standalone helper functions
 - **Module Parameters**: Values for `-- @param` declarations with `swift-atl transform --param name=value`
 - **Built-in Metamodels**: The Ecore and generator metamodels resolve from `-- @nsURI` directives without metamodel files
+- **Reflection**: `refImmediateComposite()`, `refGetValue`, `refSetValue`, `refUnsetValue` and `refInvokeOperation` for container navigation without opposite references
 - **Code Generation**: `swift-atl generate` turns Ecore models into generator models and generated code with the shared pipeline
 
 ### MOFM2T Support

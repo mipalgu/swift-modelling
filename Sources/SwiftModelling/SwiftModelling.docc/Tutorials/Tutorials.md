@@ -107,5 +107,6 @@ Deep-dive tutorials covering advanced model transformation techniques.
 
 @Links(visualStyle: detailedGrid) {
    - <doc:ATL-Advanced-01-class2relational>
+   - <doc:ATL-Advanced-02-container-navigation>
    - <doc:MTL-Advanced-01-uml2swift>
 }

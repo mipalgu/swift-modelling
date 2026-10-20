@@ -1,0 +1,212 @@
+@Tutorial(time: 30) {
+    @Intro(title: "Container Navigation and Reflection in ATL") {
+        Ask an element for the element that contains it, and read and write features by name, without changing your metamodel.
+
+        Standard OCL cannot navigate from an object to its container unless the metamodel declares an opposite reference. In this advanced tutorial you will transform a nested company structure into a flat staff directory, where every entry needs to know its team, department and company. You will learn:
+        - Why a containment hierarchy has no path upwards
+        - How `refImmediateComposite()` replaces parameter threading
+        - How `refGetValue`, `refSetValue` and `refInvokeOperation` work by feature and helper name
+        - Which of these operations apply to source models and which to target models
+
+        @Image(source: "atl-transformations.svg", alt: "ATL Transformation Pipeline")
+    }
+
+    @Section(title: "Metamodels Without a Path Upwards") {
+        @ContentAndMedia {
+            The **Organisation** metamodel nests a company, its departments, their teams and their employees purely through containment references. None of them declares an `eOpposite`, so nothing leads from an employee back to its team.
+
+            The **Directory** metamodel is flat: a directory holds entries, and each entry records the names of the team, department and company of one employee, together with the size of the team.
+        }
+
+        @Steps {
+            @Step {
+                Examine the Organisation (source) metamodel.
+
+                @Code(name: "organisation.ecore", file: organisation.ecore)
+
+                Company contains departments, Department contains teams, Team contains members, and an Employee has a name and a role. Every reference points downwards. Adding a reference upwards only for the sake of a transformation would pollute a metamodel that other tools share.
+            }
+
+            @Step {
+                Examine the Directory (target) metamodel.
+
+                @Code(name: "directory.ecore", file: directory.ecore)
+
+                Each Entry carries a team, department and company name, a headcount and a one-line description. Producing them for an employee requires knowing all of its ancestors.
+            }
+        }
+    }
+
+    @Section(title: "The Cost of Threading Parents") {
+        @ContentAndMedia {
+            Without a way to ask for the container, a transformation has to carry every ancestor down by hand. The parents become parameters of rules and helpers, and every caller must supply them.
+
+            ATL offers `refImmediateComposite()` for the purpose, but it is an engine extension: not every ATL virtual machine provides it, and EMFTVM in particular does not. Authors who must stay portable therefore thread parents, or add opposite references to the metamodel.
+        }
+
+        @Steps {
+            @Step {
+                Review the portable version, which passes the team, department and company into a lazy rule and the team into a helper.
+
+                @Code(name: "organisation2directory-threaded.atl", file: organisation2directory-threaded.atl)
+
+                The Company2Directory rule has to walk the whole hierarchy itself, calling the Entry rule with four arguments for every employee. Every new piece of information about an ancestor adds a parameter to every call along the way.
+            }
+
+            @Step {
+                Replace the parameters with helpers that ask for the container.
+
+                @Code(name: "organisation2directory.atl", file: organisation2directory.atl)
+
+                The team helper is just `self.refImmediateComposite()`. The department chains on it with `self.team.refImmediateComposite()`, and the company on that. Each helper is defined once and the rules use them like attributes. The EMF spellings `eContainer()`, `eContainingFeature()`, `eContents()` and `eAllContents()` behave in the same way.
+            }
+        }
+    }
+
+    @Section(title: "Reflection by Name") {
+        @ContentAndMedia {
+            Reflective operations take a feature or helper name as a string. They are useful when the name is only known at run time, and they keep generic rules short.
+
+            - `refGetValue(name)` reads a feature
+            - `refSetValue(name, value)` writes a feature of a target element; source models are read-only, so setting a feature of a source element is an error
+            - `refUnsetValue(name)` resets a feature of a target element
+            - `refInvokeOperation(name, args)` calls the helper of that name with a sequence of arguments
+        }
+
+        @Steps {
+            @Step {
+                Read a feature of the source element by name.
+
+                @Code(name: "organisation2directory.atl", file: organisation2directory.atl)
+
+                The Employee2Entry rule binds `name <- e.refGetValue('name')`. This is equivalent to `e.name`, but the feature name could just as well come from a parameter or a table.
+            }
+
+            @Step {
+                Call a helper by name and set a feature of the target in a `do` block.
+
+                @Code(name: "organisation2directory.atl", file: organisation2directory.atl)
+
+                The description binding calls `e.refInvokeOperation('describe', Sequence{})`, which runs the describe helper without arguments. The `do` block then sets the headcount of the entry with `entry.refSetValue('headcount', e.team.members->size())`. The target element is the one being built, so it may be modified; the employee is a source element, which may not.
+            }
+        }
+    }
+
+    @Section(title: "Running the Transformation") {
+        @ContentAndMedia {
+            Run the transformation on a small company. The metamodels are found through the `-- @path` directives in the transformation, which name the two `.ecore` files beside it.
+        }
+
+        @Steps {
+            @Step {
+                Create a sample organisation.
+
+                @Code(name: "sample-company.xmi", file: sample-company.xmi)
+
+                The company has two departments, three teams and five employees. Note that nothing in the model points upwards.
+            }
+
+            @Step {
+                Run the transformation.
+
+                @Code(name: "Terminal", file: atl-advanced-02-run.sh)
+
+                Execute swift-atl with the transformation, binding the source model to the IN alias and the target model to the OUT alias of its create statement.
+            }
+
+            @Step {
+                Examine the output directory.
+
+                @Code(name: "expected-output.xmi", file: expected-output.xmi)
+
+                Every employee became an entry that names its team, department and company, and the headcount of an entry is the size of its team. The threaded version produces the same entries.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            Why can plain OCL not ask an Employee for its Team in the Organisation metamodel?
+
+            @Choice(isCorrect: true) {
+                Containment references only lead downwards, and no opposite reference is declared
+
+                @Justification(reaction: "Correct!") {
+                    A navigation expression follows a feature of the metamodel. Without an eOpposite there is no feature that leads from an employee to its team.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Employees are not contained by anything
+
+                @Justification(reaction: "Not correct!") {
+                    Every employee is contained by a team. The container exists, but the metamodel gives no name to the path back to it.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                ATL forbids helpers on leaf elements
+
+                @Justification(reaction: "Not quite!") {
+                    Helpers can have any element type as their context. The problem is the missing navigation feature.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What does the department helper compute with `self.team.refImmediateComposite()`?
+
+            @Choice(isCorrect: false) {
+                The team that contains the employee
+
+                @Justification(reaction: "Not quite!") {
+                    That is the team helper. The department helper starts from the team.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                The department that contains the team of the employee
+
+                @Justification(reaction: "Exactly!") {
+                    The immediate container of the team is the department, so chaining the operation climbs the hierarchy one level at a time.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                All departments of the company
+
+                @Justification(reaction: "Incorrect!") {
+                    The operation returns the single immediate container, not a collection.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Why is `refSetValue` used on the entry and not on the employee?
+
+            @Choice(isCorrect: true) {
+                Source models are read-only; only target elements can be modified
+
+                @Justification(reaction: "Correct!") {
+                    A transformation reads its sources and builds its targets. Setting a feature of a source element is an error.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Employees have no headcount feature, so the call would be ignored
+
+                @Justification(reaction: "Not correct!") {
+                    The failure would not be silent, and the reason is not the feature but the read-only source.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `refSetValue` works only inside a helper
+
+                @Justification(reaction: "Try again!") {
+                    It is used here in a `do` block of a rule, which is a natural place for imperative updates of target elements.
+                }
+            }
+        }
+    }
+}

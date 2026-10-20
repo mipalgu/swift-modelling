@@ -1,0 +1,46 @@
+-- ATL Transformation: Organisation to Directory (threaded version)
+-- The metamodel has no reference from an element to its container, so every
+-- parent is passed down through rule and helper parameters instead.
+-- @path Organisation=organisation.ecore
+-- @path Directory=directory.ecore
+
+module Organisation2DirectoryThreaded;
+create OUT: Directory from IN: Organisation;
+
+-- Describe an employee; the team has to be handed in by the caller
+helper def: describe(e: Organisation!Employee, t: Organisation!Team): String =
+    e.name + ' (' + e.role + ') in ' + t.name;
+
+rule Company2Directory {
+    from
+        c: Organisation!Company
+    to
+        d: Directory!Directory (
+            name <- c.name,
+            entries <- c.departments->collect(dep |
+                dep.teams->collect(t |
+                    t.members->collect(e |
+                        thisModule.Entry(e, t, dep, c)
+                    )
+                )
+            )->flatten()->flatten()
+        )
+}
+
+-- Every ancestor of the employee is a parameter, because none can be asked for
+lazy rule Entry {
+    from
+        e: Organisation!Employee,
+        t: Organisation!Team,
+        dep: Organisation!Department,
+        c: Organisation!Company
+    to
+        entry: Directory!Entry (
+            name <- e.name,
+            team <- t.name,
+            department <- dep.name,
+            company <- c.name,
+            headcount <- t.members->size(),
+            description <- thisModule.describe(e, t)
+        )
+}

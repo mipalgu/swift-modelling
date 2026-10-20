@@ -97,6 +97,7 @@
         @Image(source: "advanced-tutorials.svg", alt: "Advanced MDE Tutorials")
 
         @TutorialReference(tutorial: "doc:ATL-Advanced-01-class2relational")
+        @TutorialReference(tutorial: "doc:ATL-Advanced-02-container-navigation")
         @TutorialReference(tutorial: "doc:MTL-Advanced-01-uml2swift")
     }
 }
