@@ -1,3 +1,0 @@
-error: Unexpected argument 'Tests/swift-ecore-tests/CodeGenerationTests.swift'
-Usage: swift test <options> <subcommand>
-  See 'test -help' for more information.
