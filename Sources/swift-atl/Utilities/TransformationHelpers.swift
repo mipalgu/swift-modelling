@@ -9,6 +9,7 @@ import ATL
 import ECore
 import Foundation
 import GenModel
+import ModellingCommandLine
 import OrderedCollections
 
 // MARK: - Model Format Detection
@@ -131,11 +132,9 @@ func loadModelsFromMapping(
     // Create a ResourceSet if we have metamodels to register
     var resourceSet: ResourceSet? = nil
     if let metamodels = metamodels {
-        resourceSet = ResourceSet()
-        // Register metamodel packages with the resource set
-        for (_, package) in metamodels {
-            await resourceSet?.registerMetamodel(package, uri: package.nsURI)
-        }
+        let set = ResourceSet()
+        await MetamodelRegistration.register(metamodels.values, into: set)
+        resourceSet = set
     }
 
     var models: OrderedDictionary<String, Resource> = [:]
@@ -261,6 +260,8 @@ func mapFilesToAliases(
 ///   - verbose: Whether to print verbose output during saving.
 ///   - emfLayout: Whether an XMI model is written in the layout of the Eclipse Modeling Framework,
 ///     with references to other models as `uri#fragment` attribute values.
+///   - xmiOptions: The options with which a model that is not written in the layout of the
+///     Eclipse Modeling Framework is written as XMI.
 /// - Throws: Serialisation errors if saving fails.
 func saveModel(
     _ resource: Resource,
@@ -268,7 +269,8 @@ func saveModel(
     format: ModelFormat,
     explicitFormat: String? = nil,
     verbose: Bool,
-    emfLayout: Bool = false
+    emfLayout: Bool = false,
+    xmiOptions: XMISerializationOptions = .legacy
 ) async throws {
     let url = URL(fileURLWithPath: path)
 
@@ -292,8 +294,8 @@ func saveModel(
         }
         return
     case .xmi:
-        let serializer = XMISerializer()
-        content = try await serializer.serialize(resource)
+        let serializer = XMISerializer(options: xmiOptions)
+        content = try await serializer.serialize(resource, relativeTo: url)
     case .json:
         let serializer = JSONSerializer()
         content = try await serializer.serialize(resource)
@@ -319,13 +321,15 @@ func saveModel(
 ///   - verbose: Whether to print verbose output during saving
 ///   - emfLayoutAliases: The aliases of the targets that are written in the layout of the
 ///     Eclipse Modeling Framework, because they are instances of a built-in metamodel
+///   - xmiOptions: The options with which the other targets are written as XMI
 /// - Throws: Serialisation errors if saving fails
 func saveTargetModelsFromMapping(
     _ targets: OrderedDictionary<String, Resource>,
     mapping: OrderedDictionary<String, String>,
     explicitFormat: String? = nil,
     verbose: Bool,
-    emfLayoutAliases: Set<String> = []
+    emfLayoutAliases: Set<String> = [],
+    xmiOptions: XMISerializationOptions = .legacy
 ) async throws {
     if verbose && !mapping.isEmpty {
         print("Saving target models...")
@@ -346,7 +350,8 @@ func saveTargetModelsFromMapping(
             format: format,
             explicitFormat: explicitFormat,
             verbose: verbose,
-            emfLayout: emfLayoutAliases.contains(alias)
+            emfLayout: emfLayoutAliases.contains(alias),
+            xmiOptions: xmiOptions
         )
     }
 }

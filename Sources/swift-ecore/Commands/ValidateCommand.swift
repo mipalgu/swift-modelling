@@ -8,11 +8,14 @@
 import ArgumentParser
 import ECore
 import Foundation
+import ModellingCommandLine
 
 /// Command for validating models and metamodels for correctness.
 ///
 /// The validate command checks the structural integrity and compliance of model files,
-/// supporting XMI, JSON, and Ecore formats.
+/// supporting XMI, JSON, and Ecore formats. With one or more `--metamodel` files, a model is
+/// read with the classes and data types of those metamodels, and a JSON model whose classes
+/// they do not define is rejected.
 struct ValidateCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "validate",
@@ -23,9 +26,8 @@ struct ValidateCommand: AsyncParsableCommand {
     @Argument(help: "Path to the model file to validate")
     var inputPath: String
 
-    /// Optional metamodel file for validation.
-    @Option(name: .shortAndLong, help: "Metamodel file for validation (optional)")
-    var metamodel: String?
+    /// The metamodels that the model is validated against.
+    @OptionGroup var metamodelOptions: MetamodelOptions
 
     /// Enable verbose output.
     @Flag(name: .shortAndLong, help: "Enable verbose output")
@@ -39,7 +41,7 @@ struct ValidateCommand: AsyncParsableCommand {
     func run() async throws {
         if verbose {
             print("Validating: \(inputPath)")
-            if let metamodel = metamodel {
+            for metamodel in metamodelOptions.metamodels {
                 print("Using metamodel: \(metamodel)")
             }
         }
@@ -50,32 +52,37 @@ struct ValidateCommand: AsyncParsableCommand {
             throw ValidationError.fileNotFound(inputPath)
         }
 
+        let resourceSet = try await metamodelOptions.resourceSet(verbose: verbose)
+
         // Determine file type
         let fileExtension = inputURL.pathExtension.lowercased()
 
         switch fileExtension {
         case "xmi":
-            try await validateXMI(at: inputURL)
+            try await validateXMI(at: inputURL, resourceSet: resourceSet)
         case "json":
-            try await validateJSON(at: inputURL)
+            try await validateJSON(at: inputURL, resourceSet: resourceSet)
         case "ecore":
-            try await validateEcore(at: inputURL)
+            try await validateEcore(at: inputURL, resourceSet: resourceSet)
         default:
             throw ValidationError.unsupportedFormat(fileExtension)
         }
+        withExtendedLifetime(resourceSet) {}
 
         print("Validation completed successfully")
     }
 
     /// Validates an XMI file.
     ///
-    /// - Parameter url: The URL of the XMI file to validate.
+    /// - Parameters:
+    ///   - url: The URL of the XMI file to validate.
+    ///   - resourceSet: The resource set with the registered metamodels, if any were given.
     /// - Throws: `ValidationError.parsingFailed` if parsing fails.
-    private func validateXMI(at url: URL) async throws {
+    private func validateXMI(at url: URL, resourceSet: ResourceSet?) async throws {
         if verbose { print("Validating XMI file...") }
 
         _ = Resource(uri: url.absoluteString)
-        let parser = XMIParser()
+        let parser = XMIParser(resourceSet: resourceSet)
 
         do {
             let parsedResource = try await parser.parse(url)
@@ -96,13 +103,19 @@ struct ValidateCommand: AsyncParsableCommand {
 
     /// Validates a JSON file.
     ///
-    /// - Parameter url: The URL of the JSON file to validate.
+    /// With registered metamodels, the classes of the document must be classes of those
+    /// metamodels.
+    ///
+    /// - Parameters:
+    ///   - url: The URL of the JSON file to validate.
+    ///   - resourceSet: The resource set with the registered metamodels, if any were given.
     /// - Throws: `ValidationError.parsingFailed` if parsing fails.
-    private func validateJSON(at url: URL) async throws {
+    private func validateJSON(at url: URL, resourceSet: ResourceSet?) async throws {
         if verbose { print("Validating JSON file...") }
 
         _ = Resource(uri: url.absoluteString)
-        let parser = JSONParser()
+        let parser = JSONParser(
+            resourceSet: resourceSet, options: JSONParseOptions(requiresMetamodel: resourceSet != nil))
 
         do {
             let parsedResource = try await parser.parse(url)
@@ -123,13 +136,16 @@ struct ValidateCommand: AsyncParsableCommand {
 
     /// Validates an Ecore metamodel file.
     ///
-    /// - Parameter url: The URL of the Ecore file to validate.
+    /// - Parameters:
+    ///   - url: The URL of the Ecore file to validate.
+    ///   - resourceSet: The resource set with the registered metamodels that the metamodel may
+    ///     refer to, if any were given.
     /// - Throws: `ValidationError.parsingFailed` if parsing fails.
-    private func validateEcore(at url: URL) async throws {
+    private func validateEcore(at url: URL, resourceSet: ResourceSet?) async throws {
         if verbose { print("Validating Ecore metamodel...") }
 
         _ = Resource(uri: url.absoluteString)
-        let parser = XMIParser()
+        let parser = XMIParser(resourceSet: resourceSet)
 
         do {
             let parsedResource = try await parser.parse(url)

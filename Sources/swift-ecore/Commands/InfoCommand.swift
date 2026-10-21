@@ -27,6 +27,7 @@ struct InfoCommand: AsyncParsableCommand {
             Available commands:
               validate    Validate models and metamodels
               convert     Convert between formats (XMI <-> JSON)
+              genmodel    Write a generator model for an Ecore model
               generate    Generate code from models
               query       Query models and metamodels
 

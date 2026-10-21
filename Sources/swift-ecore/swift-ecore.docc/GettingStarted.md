@@ -6,8 +6,8 @@ with Ecore metamodels and models.
 ## Overview
 
 The swift-ecore CLI provides essential operations for Ecore
-metamodel and model management: format conversion, validation,
-inspection, creation, and merging. This guide walks through common
+metamodel and model management: validation, format conversion,
+queries, and the creation of generator models and code. This guide walks through common
 use cases to get you started quickly.
 
 ## Installation
@@ -34,118 +34,93 @@ The executable will be available at:
 
 ## First Steps
 
-### Inspecting a Metamodel
+### Validating Models
 
-Start by examining an Ecore metamodel:
-
-```bash
-swift-ecore inspect Company.ecore
-```
-
-Output:
-```
-Metamodel: Company
-Package URI: http://example.com/company
-Classes: 3
-  - Company
-  - Department  - Employee
-Attributes: 5
-References: 3
-```
-
-For detailed information:
+Check that a model can be read, against the metamodel that defines
+its classes:
 
 ```bash
-swift-ecore inspect Company.ecore --detail full \
-    --show-references --show-attributes
+swift-ecore validate company.xmi \
+    --metamodel Company.ecore
 ```
+
+The command reports an error if the model cannot be read, or if one
+of its classes is not defined by any of the metamodels. `--verbose`
+shows what was read.
 
 ### Converting Between Formats
 
-Convert XMI models to JSON:
+Convert an XMI model to JSON, with the formats inferred from the
+file extensions:
 
 ```bash
-swift-ecore convert company.xmi --output company.json --pretty
+swift-ecore convert company.xmi company.json \
+    --metamodel Company.ecore
 ```
 
 Convert JSON back to XMI:
 
 ```bash
-swift-ecore convert company.json --output company.xmi
-```
-
-### Validating Models
-
-Ensure a model conforms to its metamodel:
-
-```bash
-swift-ecore validate company.xmi \
+swift-ecore convert company.json company.xmi \
     --metamodel Company.ecore
 ```
 
-For detailed validation reports:
+With the metamodel, the model is read with the classes and data
+types it defines, and written with package-qualified classes and
+typed references. `--force` overwrites an existing output file, and
+`--input-format` and `--output-format` override the file extensions.
+
+### Querying Models
+
+Show the classes and root objects of a model:
 
 ```bash
-swift-ecore validate company.xmi \
-    --metamodel Company.ecore \
-    --strict \
-    --report validation-results.json \
-    --format json
+swift-ecore query company.xmi
+swift-ecore query company.xmi --query "find Company"
 ```
 
 ## Common Operations
 
-### Creating Empty Models
+### Converting Without a Metamodel
 
-Create a new model instance:
+Without `--metamodel`, the classes of a model are inferred from the
+document. Whatever the conversion cannot keep, such as a class that
+no metamodel defines, is reported on standard error as a line
+starting with `warning:`, followed by a `hint:` line suggesting
+`--metamodel`. The warnings do not change the exit status.
+
+### Writing XMI for Eclipse
+
+Eclipse writes a reference to an object of the same XMI model file
+as the fragment alone, such as `//@departments.0`. With
+`--reference-style plain`, `swift-ecore convert` writes XMI in that
+layout:
 
 ```bash
-swift-ecore create \
+swift-ecore convert company.json company.xmi \
     --metamodel Company.ecore \
-    --output new-company.xmi \
-    --root-class Company
+    --reference-style plain
 ```
 
-This creates an empty model with a Company root element that
-you can populate programmatically or with other tools.
+The default, `encoded`, keeps the leading `#` of such fragments.
+Both styles load again.
 
-### Merging Multiple Models
+### Creating Generator Models and Code
 
-Combine several models into one:
+Create an Eclipse-compatible generator model beside an Ecore model,
+then generate code from it:
 
 ```bash
-swift-ecore merge dept1.xmi dept2.xmi dept3.xmi \
-    --output all-departments.xmi \
-    --strategy merge \
-    --validate \
-    --metamodel Company.ecore
+swift-ecore genmodel Company.ecore
+swift-ecore generate Company.genmodel --language java \
+    --output src/
 ```
-
-The `--strategy` option controls how conflicts are resolved:
-- `append` - Add all elements
-- `replace` - Later files override earlier ones
-- `merge` - Intelligent merging based on identifiers
-
-### Converting with Validation
-
-Ensure data integrity during format conversion:
-
-```bash
-swift-ecore convert legacy-data.xmi \
-    --output validated-data.json \
-    --pretty \
-    --validate \
-    --metamodel Company.ecore
-```
-
-The conversion stops with an error if validation fails,
-preventing corrupted data from being written.
 
 ## Integration with Other Tools
 
 ### Using with swift-atl
 
-Transform a model then validate the output:
+Transform a model, then validate the result:
 
 ```bash
 # Transform using ATL
@@ -155,21 +130,21 @@ swift-atl transform Company2Database.atl \
 
 # Validate the transformation result
 swift-ecore validate database.xmi \
-    --metamodel Database.ecore \
-    --strict
+    --metamodel Database.ecore
 ```
 
 ### Using with swift-mtl
 
-Validate a model before code generation:
+Validate a model before generating text from it:
 
 ```bash
 # Validate model first
 swift-ecore validate company.xmi \
     --metamodel Company.ecore
 
-# Generate code if valid
+# Generate text if valid
 swift-mtl generate GenerateSwift.mtl \
+    --metamodel Company.ecore \
     --model company.xmi \
     --output generated/
 ```
@@ -182,7 +157,8 @@ Process multiple files with shell scripts:
 # Convert all XMI files to JSON
 for file in models/*.xmi; do
     output="json/$(basename "$file" .xmi).json"
-    swift-ecore convert "$file" --output "$output" --pretty
+    swift-ecore convert "$file" "$output" \
+        --metamodel schema.ecore
 done
 ```
 

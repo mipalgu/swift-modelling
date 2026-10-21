@@ -196,11 +196,23 @@ swift-ecore convert input.xmi output.json --verbose
 # Force overwrite existing output file
 swift-ecore convert input.json output.xmi --force
 
+# Read and write the model with the classes and references of its metamodel (repeatable)
+swift-ecore convert library.xmi library.json --metamodel library.ecore
+
+# Write same-document references as Eclipse writes XMI model files (//@classifiers.0)
+swift-ecore convert library.json library.xmi --metamodel library.ecore --reference-style plain
+
 # Example: Convert team model from XMI to JSON
 swift-ecore convert Tests/ECoreTests/Resources/xmi/team.xmi team.json --verbose
 ```
 
-**Round-trip compatibility:** XMI ↔ JSON conversions maintain full fidelity with cross-references, containment relationships, and all data types.
+**Metamodels.** `-m, --metamodel file.ecore` (repeatable) registers the metamodel of the model, so it is read with the classes and data types the metamodel defines and written with package-qualified classes and typed references. Without a metamodel, classes are inferred from the document.
+
+**Round-trip compatibility:** With the metamodel of the model, XMI ↔ JSON conversions keep cross-references, containment relationships and all data types.
+
+**Warnings.** Whatever a conversion cannot keep, such as a class that no metamodel defines or a reference that cannot be written as a fragment, is reported once on standard error as a line starting with `warning:`. When the model was converted without `--metamodel`, the warnings are followed by a `hint:` line suggesting it. Warnings do not change the exit status, and the completion message stays on standard output.
+
+**Reference style.** `--reference-style encoded|plain` chooses how an XMI output spells references to objects of the same document. With `encoded`, the default, the output keeps its usual layout and the fragment keeps its leading `#` (`#//@classifiers.0`). With `plain`, the output is written in the layout of the Eclipse Modeling Framework, with references as attribute values holding the fragment alone (`type="cls:DataType //@classifiers.0"`), as Eclipse writes XMI model files. Both styles load again.
 
 **Metamodel-aware JSON:** JSON output gives each object a package-qualified `eClass`, and references between objects are written as `{"$ref": ...}` objects. When loading JSON, classes and references are resolved against the metamodels in use, including for `swift-mtl --model model.json`.
 
@@ -414,6 +426,10 @@ swift-atl transform Families2Persons.atl --source families.xmi --target persons.
 # Values for the parameters a transformation declares with -- @param (repeatable)
 swift-atl transform Ecore2GenModel.atl --source IN=library.ecore --target OUT=library.genmodel \
   --param basePackage=org.example --param prefix=Library
+
+# Write same-document references of an XMI target as Eclipse writes XMI model files
+swift-atl transform Families2Persons.atl --source families.xmi --target persons.xmi \
+  --reference-style plain
 ```
 
 **Parameters.** `--param name=value` binds a value to a module parameter declared in the transformation with `-- @param name : Type [= default]`. The text is converted to the declared type (`String`, `Integer`, `Real`, `Boolean`); the value is everything after the first `=`, and an undeclared name, a value of the wrong type, a missing required parameter or an argument without `name=` is an error. Inside the transformation a parameter is read as `thisModule.name`.
@@ -429,7 +445,9 @@ module Tiny;
 create OUT : GenModel from IN : Ecore;
 ```
 
-**Output layout.** A target that is an instance of a built-in metamodel is written in the layout of the Eclipse Modeling Framework: references to other models are `uri#fragment` attribute values (`ecorePackage="library.ecore#/"`), with relative URIs and name-based fragments, so that the result opens unchanged in the Eclipse tooling. Other targets are written as before.
+**Output layout.** A target that is an instance of a built-in metamodel is written in the layout of the Eclipse Modeling Framework: references to other models are `uri#fragment` attribute values (`ecorePackage="library.ecore#/"`), with relative URIs and name-based fragments, so that the result opens unchanged in the Eclipse tooling. Other targets are written as before, unless `--reference-style plain` is given: such an XMI target is then also written in the layout of the Eclipse Modeling Framework, and a reference into the same document holds the fragment alone (`peer="/0"`) rather than `#/0`, as Eclipse writes XMI model files. `encoded`, the default, keeps the usual layout. Both styles load again.
+
+**Empty targets.** A transformation whose rules match nothing still succeeds and writes each target as an empty model: an XMI document holding only the `xmi:XMI` element, or an empty JSON array.
 
 ### Query Command
 

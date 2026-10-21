@@ -7,7 +7,8 @@ Work with Ecore metamodels and model instances.
 The `swift-ecore` command-line tool provides comprehensive
 utilities for working with Ecore metamodels and model instances
 in both XMI and JSON formats. It supports format conversion, model
-validation, metamodel inspection, and model manipulation operations.
+validation, queries of models, and the creation of generator models
+and source code from Ecore models.
 
 The tool is built on the swift-ecore package
 (https://github.com/mipalgu/swift-ecore), which provides a pure
@@ -21,34 +22,56 @@ Swift implementation of the Eclipse Modeling Framework
 Convert models between XMI and JSON formats.
 
 ```bash
-swift-ecore convert <input-file> [options]
+swift-ecore convert <input-file> <output-file> [options]
 ```
 
 **Options:**
 
-- `--output <path>` - Output file path (required)
-- `--format <xmi|json>` - Output format (auto-detected from extension if not specified)
-- `--pretty` - Pretty-print JSON output with indentation
-- `--validate` - Validate model during conversion
-- `--metamodel <path>` - Path to metamodel file for validation
+- `--input-format <xmi|json>` - Input format (inferred from the extension if not specified)
+- `--output-format <xmi|json>` - Output format (inferred from the extension if not specified)
+- `-m, --metamodel <file.ecore>` - An Ecore metamodel of the model (can be given several times)
+- `--reference-style <encoded|plain>` - How an XMI output spells references into itself
+  (default `encoded`)
+- `--force` - Overwrite the output file if it exists
+- `-v, --verbose` - Show progress
+
+With a metamodel, the model is read with the classes and data types the metamodel defines,
+and JSON is written with package-qualified classes (`"eClass": "<nsURI>#//<Class>"`) and
+non-containment references as `{"$ref": "<fragment>"}` entries. Without one, the classes are
+inferred from the document.
+
+Whatever the conversion cannot keep, such as a class that no metamodel defines or a reference
+that cannot be written as a fragment, is reported once on standard error as a line starting
+with `warning:`. Without `--metamodel`, the warnings are followed by a `hint:` line suggesting
+it. Warnings do not change the exit status, and the completion message stays on standard
+output.
+
+With `--reference-style encoded`, the default, an XMI output keeps its usual layout, and a
+reference to an object of the same document keeps the leading `#` of its fragment
+(`#//@classifiers.0`). With `plain`, the output is written in the layout of the Eclipse Modeling
+Framework, with references as attribute values holding the fragment alone
+(`type="cls:DataType //@classifiers.0"`), as Eclipse writes XMI model files. Both styles load
+again.
 
 **Examples:**
 
 ```bash
 # Convert XMI to JSON
-swift-ecore convert model.xmi --output model.json --pretty
+swift-ecore convert model.xmi model.json
 
-# Convert JSON to XMI with validation
-swift-ecore convert model.json --output model.xmi \
-    --validate --metamodel MyMetamodel.ecore
+# Convert with the metamodel, so classes and references are typed
+swift-ecore convert model.xmi model.json --metamodel MyMetamodel.ecore
 
-# Convert with explicit format specification
-swift-ecore convert data.txt --output result.xmi --format xmi
+# Convert with explicit formats
+swift-ecore convert data.txt result.xmi --input-format json --output-format xmi
+
+# Write XMI whose same-document references match the files Eclipse writes
+swift-ecore convert model.json model.xmi --metamodel MyMetamodel.ecore --reference-style plain
 ```
 
 ### validate
 
-Validate that a model conforms to its metamodel.
+Validate that a model can be read, optionally against its metamodel.
 
 ```bash
 swift-ecore validate <model-file> [options]
@@ -56,23 +79,21 @@ swift-ecore validate <model-file> [options]
 
 **Options:**
 
-- `--metamodel <path>` - Path to metamodel file (required)
-- `--strict` - Enable strict validation mode
-- `--report <path>` - Write validation report to file
-- `--format <text|json|xml>` - Report format (default: text)
+- `-m, --metamodel <file.ecore>` - An Ecore metamodel of the model (can be given several times)
+- `-v, --verbose` - Show the root objects that were read
+
+With a metamodel, the model is read with the classes and data types the metamodel defines. A
+JSON model is rejected if a value cannot be read by the data type of its attribute, or if a
+class is not defined by any of the metamodels.
 
 **Examples:**
 
 ```bash
-# Basic validation
-swift-ecore validate model.xmi --metamodel MyMetamodel.ecore
+# Check that a model can be read
+swift-ecore validate model.xmi
 
-# Strict validation with JSON report
-swift-ecore validate model.xmi \
-    --metamodel MyMetamodel.ecore \
-    --strict \
-    --report validation-report.json \
-    --format json
+# Validate a JSON model against its metamodel
+swift-ecore validate model.json --metamodel MyMetamodel.ecore
 ```
 
 ### genmodel
@@ -159,98 +180,53 @@ swift-ecore generate --language java model/library.genmodel -o src-gen \
     --template-path my-templates --diff
 ```
 
-### inspect
+### info
 
-Display information about a metamodel or model.
+Show the version of the tool and its main commands.
 
 ```bash
-swift-ecore inspect <file> [options]
+swift-ecore info
 ```
+
+The command takes no options. `swift-ecore --version` prints the version alone.
+
+### query
+
+Query the root objects of a model.
+
+```bash
+swift-ecore query <model> [options]
+```
+
+The model is an XMI (`.xmi`), JSON (`.json`) or Ecore (`.ecore`) file, chosen by its extension.
+Its classes are inferred from the document, and each query looks at the root objects of the model.
 
 **Options:**
 
-- `--detail <summary|full>` - Level of detail (default: summary)
-- `--format <text|json>` - Output format (default: text)
-- `--output <path>` - Write output to file instead of stdout
-- `--show-references` - Include reference information
-- `--show-attributes` - Include attribute details
+- `-q, --query <query>` - The query to run (default: `info`)
+- `-v, --verbose` - Show the file and the query before the result
+
+**Queries:**
+
+- `info` - The number of root objects, and the number of root objects of each class
+- `count` - The number of root objects
+- `list-classes` - The classes of the root objects
+- `find <class>` - The root objects of a class, with up to three of their features each
+- `tree` - The root objects as a list of tree branches
+
+Queries and class names are matched without regard to case.
 
 **Examples:**
 
 ```bash
-# Inspect metamodel summary
-swift-ecore inspect MyMetamodel.ecore
+# Count the root objects of each class
+swift-ecore query model.xmi
 
-# Full inspection with references
-swift-ecore inspect MyMetamodel.ecore \
-    --detail full \
-    --show-references
+# List the root objects that are companies
+swift-ecore query company.xmi --query "find Company"
 
-# Export inspection as JSON
-swift-ecore inspect model.xmi \
-    --format json \
-    --output inspection.json
-```
-
-### create
-
-Create a new empty model conforming to a metamodel.
-
-```bash
-swift-ecore create [options]
-```
-
-**Options:**
-
-- `--metamodel <path>` - Path to metamodel file (required)
-- `--output <path>` - Output file path (required)
-- `--format <xmi|json>` - Output format (default: xmi)
-- `--root-class <name>` - Root element class name
-
-**Examples:**
-
-```bash
-# Create empty XMI model
-swift-ecore create \
-    --metamodel MyMetamodel.ecore \
-    --output new-model.xmi \
-    --root-class MyRootClass
-
-# Create empty JSON model
-swift-ecore create \
-    --metamodel MyMetamodel.ecore \
-    --output new-model.json \
-    --format json
-```
-
-### merge
-
-Merge multiple model files into a single model.
-
-```bash
-swift-ecore merge <input-files...> [options]
-```
-
-**Options:**
-
-- `--output <path>` - Output file path (required)
-- `--strategy <append|replace|merge>` - Merge strategy (default: append)
-- `--validate` - Validate result after merge
-- `--metamodel <path>` - Path to metamodel for validation
-
-**Examples:**
-
-```bash
-# Merge multiple models
-swift-ecore merge model1.xmi model2.xmi model3.xmi \
-    --output merged.xmi
-
-# Merge with validation
-swift-ecore merge model1.xmi model2.xmi \
-    --output merged.xmi \
-    --validate \
-    --metamodel MyMetamodel.ecore \
-    --strategy merge
+# Show the root objects as a tree
+swift-ecore query model.json -q tree
 ```
 
 ## Common Workflows
@@ -258,34 +234,16 @@ swift-ecore merge model1.xmi model2.xmi \
 ### Converting Legacy XMI to JSON
 
 ```bash
-# Convert with validation and pretty printing
-swift-ecore convert legacy-model.xmi \
-    --output modern-model.json \
-    --pretty \
-    --validate \
-    --metamodel schema.ecore
+# Check that the model reads with its metamodel, then convert it
+swift-ecore validate legacy-model.xmi --metamodel schema.ecore
+swift-ecore convert legacy-model.xmi modern-model.json --metamodel schema.ecore
 ```
 
 ### Validating Model Conformance
 
 ```bash
-# Strict validation with detailed report
-swift-ecore validate production-model.xmi \
-    --metamodel schema.ecore \
-    --strict \
-    --report validation-report.json \
-    --format json
-```
-
-### Inspecting Metamodel Structure
-
-```bash
-# Full inspection with all details
-swift-ecore inspect MyMetamodel.ecore \
-    --detail full \
-    --show-references \
-    --show-attributes \
-    --output metamodel-structure.txt
+# Validate against the metamodel, with details of what was read
+swift-ecore validate production-model.xmi --metamodel schema.ecore --verbose
 ```
 
 ## Topics

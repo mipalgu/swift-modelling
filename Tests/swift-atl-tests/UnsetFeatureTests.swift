@@ -9,7 +9,7 @@ struct UnsetFeatureTests {
     private static let option = "--unset-features"
 
     /// A metamodel of tasks that have a name and a Boolean without a declared default.
-    private static let tasks = """
+    static let tasks = """
         <?xml version="1.0" encoding="UTF-8"?>
         <ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -25,7 +25,7 @@ struct UnsetFeatureTests {
         """
 
     /// A metamodel of report entries that have a name.
-    private static let reports = """
+    static let reports = """
         <?xml version="1.0" encoding="UTF-8"?>
         <ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -39,7 +39,7 @@ struct UnsetFeatureTests {
         """
 
     /// Two tasks: one leaves `done` unset, the other sets it to `true`.
-    private static let model = """
+    static let model = """
         <?xml version="1.0" encoding="UTF-8"?>
         <xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
             xmlns="http://www.example.org/tasks">
@@ -49,7 +49,7 @@ struct UnsetFeatureTests {
         """
 
     /// A transformation that reports the tasks that are not done and the tasks that are.
-    private static let transformation = """
+    static let transformation = """
         -- @path Tasks=/Tasks.ecore
         -- @path Reports=/Reports.ecore
 

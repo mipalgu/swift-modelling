@@ -26,7 +26,7 @@ struct QueryCommand: AsyncParsableCommand {
     /// Query expression to execute.
     @Option(
         name: .shortAndLong,
-        help: "Query expression (e.g., 'count(*)', 'find(Person)', 'list-classes')")
+        help: "Query expression: info, count, list-classes, find <class> or tree")
     var query: String = "info"
 
     /// Enable verbose output.

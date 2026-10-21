@@ -69,6 +69,11 @@ struct TransformCommand: AsyncParsableCommand {
             built-in metamodel are written in the layout of the Eclipse Modeling Framework, with \
             references to other models as uri#fragment attribute values.
 
+            A transformation whose rules match nothing writes each target as an empty model: an \
+            XMI document without elements, or an empty JSON array.
+
+            \(ReferenceStyleOptions.discussion(written: "target models of metamodels that are not built in"))
+
             \(UnsetFeatureOptions.discussion(reader: "the rules of the transformation"))
             """
     )
@@ -158,6 +163,9 @@ struct TransformCommand: AsyncParsableCommand {
     /// How the transformation reads features that a model does not set.
     @OptionGroup(title: "Evaluation")
     var unsetFeatureOptions: UnsetFeatureOptions
+
+    /// How XMI target models spell references into themselves.
+    @OptionGroup var referenceStyleOptions: ReferenceStyleOptions
 
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose: Bool = false
@@ -311,11 +319,15 @@ struct TransformCommand: AsyncParsableCommand {
                 verbose: verbose
             )
 
+            // Target resources carry their metamodels, so they are written in their namespaces
+            let targetResourceSet = ResourceSet()
+            await MetamodelRegistration.register(module.targetMetamodels.values, into: targetResourceSet)
             var targetModels: OrderedDictionary<String, Resource> = [:]
             for (alias, path) in targetMapping {
                 let builtIn = module.targetMetamodels[alias].map(isBuiltIn) ?? false
                 let resource = Resource(
                     uri: builtIn ? URL(fileURLWithPath: path).absoluteString : "file://\(path)")
+                await resource.setResourceSet(targetResourceSet)
                 targetModels[alias] = resource
 
                 if verbose {
@@ -358,8 +370,10 @@ struct TransformCommand: AsyncParsableCommand {
                 explicitFormat: outputFormat,
                 verbose: verbose,
                 emfLayoutAliases: Set(
-                    module.targetMetamodels.filter { isBuiltIn($0.value) }.map(\.key))
+                    module.targetMetamodels.filter { isBuiltIn($0.value) }.map(\.key)),
+                xmiOptions: referenceStyleOptions.serializationOptions
             )
+            withExtendedLifetime(targetResourceSet) {}
 
             // Step 6: Display execution statistics
             if verbose {

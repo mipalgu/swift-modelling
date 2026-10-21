@@ -179,3 +179,132 @@ struct ValidateHelpTests {
         #expect(result.stdout.contains("--verbose") || result.stdout.contains("option"))
     }
 }
+
+// MARK: - Metamodel Validation Tests
+
+@Suite("swift-ecore validate - Metamodels")
+struct ValidateMetamodelTests {
+    /// The long name of the option that registers a metamodel.
+    static let option = "--metamodel"
+
+    /// The short name of the option that registers a metamodel.
+    static let shortOption = "-m"
+
+    /// The namespace URI of the classifier metamodel.
+    static let namespace = "http://example.org/classifiers"
+
+    /// A package whose class gives its integer `rank` a value that is not a number.
+    static let mistypedRank = """
+        {
+          "eClass": "http://example.org/classifiers#//Package",
+          "name": "library",
+          "classifiers": [
+            { "eClass": "http://example.org/classifiers#//Class", "name": "Book", "rank": "many" }
+          ]
+        }
+        """
+
+    /// A root whose class the classifier metamodel does not define.
+    static let undefinedClass = """
+        { "eClass": "http://example.org/classifiers#//Widget", "name": "gadget" }
+        """
+
+    /// A package that conforms to the classifier metamodel.
+    static let conforming = """
+        {
+          "eClass": "http://example.org/classifiers#//Package",
+          "name": "library",
+          "classifiers": [
+            { "eClass": "http://example.org/classifiers#//Class", "name": "Book", "rank": 3 }
+          ]
+        }
+        """
+
+    /// Validates a JSON document, optionally with the classifier metamodel.
+    ///
+    /// - Parameters:
+    ///   - json: The text of the JSON document.
+    ///   - metamodelOption: The spelling of the metamodel option, or `nil` to validate without one.
+    /// - Returns: The result of the command.
+    @MainActor
+    private func validate(json: String, metamodelOption: String?) async throws -> SubprocessResult {
+        let tempDir = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(tempDir) }
+        let file = tempDir.appendingPathComponent("model.json")
+        try json.write(to: file, atomically: true, encoding: .utf8)
+        var arguments = [file.path]
+        if let metamodelOption {
+            let metamodel = try loadTestResource(named: "classifiers.ecore", subdirectory: "ecore")
+            arguments += [metamodelOption, metamodel.path]
+        }
+        return try await executeSwiftEcore(command: "validate", arguments: arguments)
+    }
+
+    @Test("accepts a JSON model that conforms to the metamodel", arguments: [option, shortOption])
+    @MainActor
+    func conformingJSON(option: String) async throws {
+        let result = try await validate(json: Self.conforming, metamodelOption: option)
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+    }
+
+    @Test("rejects a JSON value that the data type of the metamodel cannot read", arguments: [option, shortOption])
+    @MainActor
+    func mistypedValue(option: String) async throws {
+        let without = try await validate(json: Self.mistypedRank, metamodelOption: nil)
+        let with = try await validate(json: Self.mistypedRank, metamodelOption: option)
+
+        #expect(without.succeeded, "\(without.stdout)\(without.stderr)")
+        #expect(!with.succeeded)
+        #expect(with.stderr.contains("JSON"), "\(with.stderr)")
+    }
+
+    @Test("rejects a JSON class that the metamodel does not define")
+    @MainActor
+    func undefinedJSONClass() async throws {
+        let without = try await validate(json: Self.undefinedClass, metamodelOption: nil)
+        let with = try await validate(json: Self.undefinedClass, metamodelOption: Self.option)
+
+        #expect(without.succeeded, "\(without.stdout)\(without.stderr)")
+        #expect(!with.succeeded)
+        #expect(with.stderr.contains("Widget"), "\(with.stderr)")
+    }
+
+    @Test("reads an XMI model with the classes of the metamodel")
+    @MainActor
+    func xmiWithMetamodel() async throws {
+        let metamodel = try loadTestResource(named: "classifiers.ecore", subdirectory: "ecore")
+        let xmiFile = try loadTestResource(named: "classifiers-two-roots.xmi", subdirectory: "xmi")
+
+        let result = try await executeSwiftEcore(
+            command: "validate", arguments: [xmiFile.path, Self.option, metamodel.path, "--verbose"])
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+        #expect(result.stdout.contains("Found 2 root object(s)"))
+        #expect(result.stdout.contains(Self.namespace), "\(result.stdout)")
+    }
+
+    @Test("reports a metamodel file that does not exist")
+    @MainActor
+    func missingMetamodel() async throws {
+        let xmiFile = try loadTestResource(named: "valid-model.xmi", subdirectory: "xmi")
+        let missing = "/tmp/nonexistent-metamodel-\(UUID().uuidString).ecore"
+
+        let result = try await executeSwiftEcore(
+            command: "validate", arguments: [xmiFile.path, Self.option, missing])
+
+        #expect(!result.succeeded)
+        #expect(result.stderr.contains("File not found"), "\(result.stderr)")
+        #expect(result.stderr.contains(missing))
+    }
+
+    @Test("lists --metamodel in the help")
+    @MainActor
+    func helpListsMetamodel() async throws {
+        let result = try await executeSwiftEcore(command: "validate", arguments: ["--help"])
+
+        #expect(result.succeeded)
+        #expect(result.stdout.contains(Self.option))
+        #expect(result.stdout.contains(Self.shortOption))
+    }
+}

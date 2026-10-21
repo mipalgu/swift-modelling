@@ -206,11 +206,14 @@ struct GenerateCommand: AsyncParsableCommand {
 
             // First pass: register metamodels (--metamodel files and .ecore --model files)
             for metamodelPath in metamodel {
-                _ = try await registerMetamodel(at: metamodelPath, role: .registeredOnly, resourceSet: resourceSet, verbose: verbose)
+                try await MetamodelRegistration.registerMetamodel(
+                    at: metamodelPath, into: resourceSet,
+                    announcement: MetamodelRole.registeredOnly.announcement, verbose: verbose)
             }
-            for (index, modelPath) in model.enumerated() where isEcoreFile(modelPath) {
-                let package = try await registerMetamodel(
-                    at: modelPath, role: .registeredAndInput, resourceSet: resourceSet, verbose: verbose)
+            for (index, modelPath) in model.enumerated() where MetamodelRegistration.isEcoreFile(modelPath) {
+                let package = try await MetamodelRegistration.registerMetamodel(
+                    at: modelPath, into: resourceSet,
+                    announcement: MetamodelRole.registeredAndInput.announcement, verbose: verbose)
                 let modelURL = URL(fileURLWithPath: modelPath)
                 let resource = await resourceSet.createResource(uri: modelURL.absoluteString)
                 await resource.add(package)
@@ -221,7 +224,7 @@ struct GenerateCommand: AsyncParsableCommand {
             // Second pass: load instance models (non-ecore files)
             for (index, modelPath) in model.enumerated() {
                 let modelURL = URL(fileURLWithPath: modelPath)
-                guard !isEcoreFile(modelPath) else { continue }
+                guard !MetamodelRegistration.isEcoreFile(modelPath) else { continue }
                 guard FileManager.default.fileExists(atPath: modelPath) else {
                     throw ValidationError.fileNotFound(modelPath)
                 }
@@ -337,44 +340,6 @@ enum MetamodelRole {
         case .registeredAndInput: return "Loading metamodel (registered and used as input model)"
         }
     }
-}
-
-/// Reports whether a path names an Ecore metamodel file.
-///
-/// - Parameter path: The file path to examine.
-/// - Returns: `true` if the file extension is `ecore` (case-insensitive).
-func isEcoreFile(_ path: String) -> Bool {
-    URL(fileURLWithPath: path).pathExtension.lowercased() == "ecore"
-}
-
-/// Loads an Ecore metamodel and registers it with a resource set.
-///
-/// - Parameters:
-///   - path: The path to the `.ecore` file.
-///   - role: The role the metamodel plays, used for verbose output.
-///   - resourceSet: The resource set in which to register the metamodel.
-///   - verbose: Whether to print progress.
-/// - Returns: The loaded root package.
-/// - Throws: `ValidationError.fileNotFound` if the file does not exist, or any loading error.
-@MainActor
-func registerMetamodel(
-    at path: String,
-    role: MetamodelRole,
-    resourceSet: ResourceSet,
-    verbose: Bool = false
-) async throws -> EPackage {
-    guard FileManager.default.fileExists(atPath: path) else {
-        throw ValidationError.fileNotFound(path)
-    }
-    if verbose {
-        print("\(role.announcement): \(path)")
-    }
-    let package = try await EPackage(url: URL(fileURLWithPath: path), enableDebugging: verbose)
-    await resourceSet.registerMetamodel(package, uri: package.nsURI)
-    if verbose {
-        print("  ✓ Registered metamodel '\(package.name)' with URI: \(package.nsURI)")
-    }
-    return package
 }
 
 /// Model format enumeration.
