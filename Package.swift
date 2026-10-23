@@ -15,6 +15,10 @@ let package = Package(
             name: "ModellingGenerators",
             targets: ["ModellingGenerators"]
         ),
+        .library(
+            name: "ModellingPipeline",
+            targets: ["ModellingPipeline"]
+        ),
         .executable(
             name: "swift-ecore",
             targets: ["swift-ecore"]
@@ -57,6 +61,19 @@ let package = Package(
             resources: [
                 .copy("Transformations"),
                 .copy("Templates"),
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency")
+            ]
+        ),
+        .target(
+            name: "ModellingPipeline",
+            dependencies: [
+                .product(name: "ECore", package: "swift-ecore"),
+                .product(name: "EMFBase", package: "swift-ecore"),
+                .product(name: "ATL", package: "swift-atl"),
+                .product(name: "MTL", package: "swift-mtl"),
+                "ModellingGenerators",
             ],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency")
@@ -123,6 +140,20 @@ let package = Package(
             ],
             resources: [
                 .copy("Resources")
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency")
+            ]
+        ),
+        .testTarget(
+            name: "ModellingPipelineTests",
+            dependencies: [
+                "ModellingPipeline",
+                "ModellingGenerators",
+                .product(name: "ECore", package: "swift-ecore"),
+                .product(name: "EMFBase", package: "swift-ecore"),
+                .product(name: "ATL", package: "swift-atl"),
+                .product(name: "MTL", package: "swift-mtl"),
             ],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency")
