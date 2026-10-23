@@ -60,8 +60,8 @@ extension GenerationPipeline {
             throw GenerationError.genModelUnreadable(source.path, "the document is not a generator model")
         }
 
-        let data = try await loadDataModels(of: templateSet, into: resourceSet)
-        let module = try await parseMainModule(of: templateSet)
+        let data = try await TemplateRun.loadDataModels(of: templateSet, into: resourceSet)
+        let module = try await TemplateRun.parseMainModule(of: templateSet)
         let base = outputBase(
             for: genModel, descriptor: templateSet.descriptor, in: outputDirectory, options: options)
         let services: [any AQLServiceProvider] = [
@@ -70,17 +70,15 @@ extension GenerationPipeline {
                 includesSourceRoot: includesSourceRoot(descriptor: templateSet.descriptor, options: options)),
         ]
         var models: [String: Resource] = [TemplateSetConstants.genModelAlias: document.resource]
-        for (index, resource) in data.resources.enumerated() {
-            models["\(TemplateSetConstants.dataModelAliasPrefix)\(index)"] = resource
-        }
+        models.merge(data.models) { _, data in data }
         for (index, package) in document.foreignPackages.sorted(by: { $0.key.path < $1.key.path }).enumerated() {
             if let resource = await resourceSet.getResource(uri: package.key.absoluteString) {
                 models["ECORE_\(index)"] = resource
             }
         }
-        let total = try await expectedFileCount(
-            of: module, descriptor: templateSet.descriptor, root: root, services: services, models: models,
-            unsetFeatureReads: options.unsetFeatureReads)
+        let total = try await TemplateRun.expectedFileCount(
+            of: module, descriptor: templateSet.descriptor, arguments: [root], services: services,
+            models: models, unsetFeatureReads: options.unsetFeatureReads)
 
         var generatorOptions = MTLGeneratorOptions(
             forceOverwrite: options.forceOverwrite, redirectionPattern: options.effectiveRedirectionPattern,
@@ -88,21 +86,13 @@ extension GenerationPipeline {
             templateSearchPaths: options.templatePaths.map(\.path))
         if options.forceOverwrite { generatorOptions.redirectionPattern = nil }
         generatorOptions.layout = layout
-        let strategy = GenerationProgressStrategy(
-            wrapping: MTLFileSystemStrategy(basePath: base.path, options: generatorOptions),
-            outputDirectory: base, total: total, report: progress)
-        let generator = MTLGenerator(
-            module: module, generationStrategy: strategy, serviceProviders: services,
-            unsetFeatureReads: options.unsetFeatureReads)
 
         progress(GenerationProgressUpdate(message: "Generating \(language) code", total: total))
-        do {
-            try await generator.generate(
-                mainTemplate: templateSet.descriptor.mainTemplate, arguments: [root], models: models)
-        } catch {
-            throw GenerationError.generationFailed(String(describing: error))
-        }
-        let files = await strategy.completedFiles
+        let files = try await TemplateRun.run(
+            module: module, mainTemplate: templateSet.descriptor.mainTemplate, arguments: [root],
+            models: models, services: services, options: generatorOptions, outputDirectory: base,
+            total: total, unsetFeatureReads: options.unsetFeatureReads, progress: progress
+        ).files
         progress(GenerationProgressUpdate(message: "Done", completed: files.count, total: total ?? files.count))
         return GenerationResult(
             outputDirectory: base, files: files, language: templateSet.descriptor.name,
@@ -137,48 +127,7 @@ extension GenerationPipeline {
         return names
     }
 
-    /// The loaded data models of a template set.
-    struct DataModels {
-        /// The root objects of each model by its name in the template set.
-        var roots: [String: [DynamicEObject]] = [:]
-        /// The resources that hold the models.
-        var resources: [Resource] = []
-    }
-
-    private static func loadDataModels(of set: TemplateSet, into resourceSet: ResourceSet) async throws
-        -> DataModels
-    {
-        var result = DataModels()
-        for entry in set.descriptor.dataModels {
-            let metamodelURL = set.directory.appendingPathComponent(entry.metamodel)
-            let modelURL = set.directory.appendingPathComponent(entry.model)
-            do {
-                let metamodelResource = try await resourceSet.loadEcoreResource(uri: metamodelURL.absoluteString)
-                for case let package as EPackage in await metamodelResource.getRootObjects() {
-                    await resourceSet.registerMetamodel(package, uri: package.nsURI)
-                }
-                let model = try await resourceSet.loadXMIResource(uri: modelURL.absoluteString)
-                result.roots[entry.name] = await model.getRootObjects().compactMap { $0 as? DynamicEObject }
-                result.resources.append(model)
-                result.resources.append(metamodelResource)
-            } catch {
-                throw GenerationError.templateSetInvalid(
-                    set.descriptor.name, "the data model '\(entry.name)' cannot be loaded: \(error)")
-            }
-        }
-        return result
-    }
-
-    private static func parseMainModule(of set: TemplateSet) async throws -> MTLModule {
-        do {
-            return try await MTLParser(searchPaths: [set.directory]).parse(set.mainModuleURL)
-        } catch {
-            throw GenerationError.templateSetInvalid(
-                set.descriptor.name, "the templates cannot be parsed: \(error)")
-        }
-    }
-
-    // MARK: - Layout and counting
+    // MARK: - Layout
 
     private static func includesSourceRoot(
         descriptor: TemplateSetDescriptor, options: GenerationOptions
@@ -199,42 +148,5 @@ extension GenerationPipeline {
             if !relative.isEmpty { base = base.appendingPathComponent(String(relative)) }
         }
         return base
-    }
-
-    /// The number of files that the template set will write, from its file count template.
-    ///
-    /// - Parameters:
-    ///   - module: The parsed main module of the template set.
-    ///   - descriptor: The descriptor of the template set.
-    ///   - root: The root object of the generator model.
-    ///   - services: The services available to the templates.
-    ///   - models: The models available to the templates, by alias.
-    ///   - unsetFeatureReads: How the templates read features that a model does not set.
-    /// - Returns: The number of files, or `nil` if the template set has no file count template.
-    /// - Throws: ``GenerationError`` if the file count template is missing or fails.
-    @MainActor
-    private static func expectedFileCount(
-        of module: MTLModule, descriptor: TemplateSetDescriptor, root: DynamicEObject,
-        services: [any AQLServiceProvider], models: [String: Resource],
-        unsetFeatureReads: UnsetFeatureReads
-    ) async throws -> Int? {
-        guard let name = descriptor.fileCountTemplate else { return nil }
-        guard !module.templates(named: name).isEmpty else {
-            throw GenerationError.templateSetInvalid(
-                descriptor.name, "the file count template '\(name)' is missing")
-        }
-        let counting = MTLInMemoryStrategy()
-        let generator = MTLGenerator(
-            module: module, generationStrategy: counting, serviceProviders: services,
-            unsetFeatureReads: unsetFeatureReads)
-        do {
-            try await generator.generate(mainTemplate: name, arguments: [root], models: models)
-        } catch {
-            throw GenerationError.generationFailed(String(describing: error))
-        }
-        let counts = await counting.getGeneratedFiles().values.compactMap {
-            Int($0.trimmingCharacters(in: .whitespacesAndNewlines))
-        }
-        return counts.first
     }
 }

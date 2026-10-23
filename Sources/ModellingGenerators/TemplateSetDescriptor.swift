@@ -35,6 +35,13 @@ import MTL
 /// }
 /// ```
 ///
+/// ## Shared modules
+///
+/// The optional `imports` section lists directories, relative to the template set, whose modules
+/// the set imports, such as `["../expressions"]`. They are copied beside the assembled set, so
+/// that a module of the set writes `[import expressions::c/]` to import the module `c.mtl` of the
+/// directory `expressions`. See ``imports``.
+///
 /// ## Code styles
 ///
 /// A template set writes its text in one layout. The optional `styles` section names other layouts
@@ -279,6 +286,13 @@ public struct TemplateSetDescriptor: Codable, Sendable, Equatable {
     /// the templates write it.
     public var defaultStyle: String?
 
+    /// The directories, relative to the template set, whose modules the set imports.
+    ///
+    /// Each directory is made available under its own name, so that a module of the set imports
+    /// the module `c.mtl` of the directory `../expressions` as `[import expressions::c/]`. Empty
+    /// if the set imports no shared modules.
+    public var imports: [String]
+
     /// The names of the code styles, sorted.
     public var styleNames: [String] { styles.keys.sorted() }
 
@@ -295,10 +309,12 @@ public struct TemplateSetDescriptor: Codable, Sendable, Equatable {
     ///   - options: The generator options.
     ///   - styles: The code styles by name.
     ///   - defaultStyle: The name of the style that applies by default.
+    ///   - imports: The directories, relative to the set, whose modules the set imports.
     public init(
         name: String, summary: String? = nil, mainModule: String, mainTemplate: String,
         fileCountTemplate: String? = nil, dataModels: [DataModel] = [], layout: Layout = Layout(),
-        options: Options = Options(), styles: [String: Style] = [:], defaultStyle: String? = nil
+        options: Options = Options(), styles: [String: Style] = [:], defaultStyle: String? = nil,
+        imports: [String] = []
     ) {
         self.name = name
         self.summary = summary
@@ -310,6 +326,7 @@ public struct TemplateSetDescriptor: Codable, Sendable, Equatable {
         self.options = options
         self.styles = styles
         self.defaultStyle = defaultStyle
+        self.imports = imports
     }
 
     /// Reads a descriptor, with optional members at their defaults.
@@ -325,6 +342,7 @@ public struct TemplateSetDescriptor: Codable, Sendable, Equatable {
         options = try container.decodeIfPresent(Options.self, forKey: .options) ?? Options()
         styles = try container.decodeIfPresent([String: Style].self, forKey: .styles) ?? [:]
         defaultStyle = try container.decodeIfPresent(String.self, forKey: .defaultStyle)
+        imports = try container.decodeIfPresent([String].self, forKey: .imports) ?? []
         if let defaultStyle, styles[defaultStyle] == nil {
             throw DecodingError.dataCorruptedError(
                 forKey: .defaultStyle, in: container,

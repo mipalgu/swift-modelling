@@ -11,12 +11,14 @@ import MTL
 ///
 /// The strategy wraps another strategy, normally the file system strategy. It remembers the files
 /// that were completed and tells a progress receiver about each of them. Text that a template
-/// writes outside any file block is kept in memory and discarded, so that it never reaches the disk.
+/// writes outside any file block is kept in memory and discarded, so that it never reaches the disk,
+/// unless the strategy is told to pass it on to the wrapped strategy.
 actor GenerationProgressStrategy: MTLGenerationStrategy {
     private let base: any MTLGenerationStrategy
     private let outputDirectory: URL
     private let total: Int?
     private let report: GenerationProgressReporter
+    private let keepsStandardOutput: Bool
     private let discarding = MTLInMemoryStrategy()
     private var discarded: Set<ObjectIdentifier> = []
     private var targets: [ObjectIdentifier: String] = [:]
@@ -35,15 +37,30 @@ actor GenerationProgressStrategy: MTLGenerationStrategy {
     ///   - outputDirectory: The directory that relative file names are resolved against.
     ///   - total: The number of files that will be written, if known.
     ///   - report: The receiver of progress reports.
+    ///   - keepsStandardOutput: Whether text written outside any file block is passed on to the
+    ///     wrapped strategy instead of being discarded.
     init(
         wrapping base: any MTLGenerationStrategy, outputDirectory: URL, total: Int?,
-        report: @escaping GenerationProgressReporter
+        report: @escaping GenerationProgressReporter, keepsStandardOutput: Bool = false
     ) {
         self.base = base
         self.generatorOptions = base.generatorOptions
         self.outputDirectory = outputDirectory
         self.total = total
         self.report = report
+        self.keepsStandardOutput = keepsStandardOutput
+    }
+
+    /// Passes the text written outside any file block on to the wrapped strategy, or discards it.
+    ///
+    /// - Parameter text: The complete text written outside any file block.
+    @MainActor
+    func writeStandardOutput(_ text: String) async throws {
+        if keepsStandardOutput {
+            try await base.writeStandardOutput(text)
+        } else {
+            try await discarding.writeStandardOutput(text)
+        }
     }
 
     @MainActor

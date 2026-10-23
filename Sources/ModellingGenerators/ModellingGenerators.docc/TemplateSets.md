@@ -60,6 +60,25 @@ A style with equal indentation units and `ownLine` selects the layout that the t
 
 ``GenerationOptions/templatePaths`` lists directories that are searched before the bundled set. A file in such a directory replaces the bundled file of the same relative path. A directory either holds a directory named after the language, or the files of the set itself. Later directories win over earlier ones. ``TemplateSet/assemble(language:templatePaths:)`` copies the bundled files and the overrides into a scratch directory, so that modules import each other with the replacements in place.
 
+### Shared modules
+
+The optional `imports` member of the descriptor lists directories, relative to the set, whose modules the set imports. Each directory is copied beside the assembled set under its own name, and the directory that holds the copies is searched for imported modules (see ``TemplateSet/searchPaths``), so a module of the set imports the module `c.mtl` of `../expressions` as `[import expressions::c/]`:
+
+```json
+{
+  "name": "c",
+  "mainModule": "generate",
+  "mainTemplate": "generate",
+  "imports": ["../expressions"]
+}
+```
+
+An import is resolved against the directory of each part of the set that has a descriptor, the latest override first, and must name an existing directory whose name differs from the language and from the other imports.
+
+### Template sets of other packages
+
+A package can ship template sets of its own in a resource directory that is laid out like the bundled one, with a directory for each language. ``TemplateSet/assemble(language:templatePaths:bundledRoots:)`` and ``TemplateSet/availableLanguages(templatePaths:bundledRoots:)`` search such directories in order; every directory that holds the language contributes its files, a later one replacing the files of an earlier one. ``TemplateSet/defaultBundledRoots`` holds the directory of the bundled sets, which the forms without roots search. The `ModellingPipeline` library wraps the roots in a `TemplateSetLocator` and runs a set on models held in memory.
+
 ### Modules
 
 Modules are written in the Acceleo dialect of the Model-to-Text language. The module header names the metamodels that the templates use: the generator metamodel (`http://www.eclipse.org/emf/2002/GenModel`) and the namespace of each data model. Imports are not transitive.
