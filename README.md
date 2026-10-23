@@ -393,7 +393,11 @@ my-templates/
 swift-ecore generate --language outline model/library.genmodel -o out --template-path my-templates
 ```
 
-A file in a template path replaces the bundled file of the same relative name. Later paths take precedence, so individual modules can be customised without copying the whole set. The [Template Sets article](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/templatesets/index.html) is the reference for descriptors, code styles, merge declarations, data models and services. [Java Generation](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/javageneration/index.html) describes the bundled Java modules and project files.
+A file in a template path replaces the bundled file of the same relative name. Later paths take precedence, so individual modules can be customised without copying the whole set.
+
+A set can share modules with other sets: the optional `imports` list of its descriptor names directories relative to the set, such as `"imports": ["../expressions"]`, and a module of the set then imports `expressions/c.mtl` as `[import expressions::c/]`. `swift-mtl generate --template-set <directory|language>` runs any template set on the models given with `--model`.
+
+The [Template Sets article](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/templatesets/index.html) is the reference for descriptors, code styles, merge declarations, data models and services. [Java Generation](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/javageneration/index.html) describes the bundled Java modules and project files.
 
 ### Generating with ATL: `swift-atl generate`
 
@@ -525,6 +529,11 @@ swift-mtl generate template.mtl \
   --param package=org.example --param verbose=true \
   --output generated/
 
+# Run a template set instead of a single template: a directory with a templateset.json,
+# or the language of a bundled set, in the code style of your choice
+swift-mtl generate --template-set my-set/ --model input.xmi --output generated/
+swift-mtl generate --template-set my-set/ --model input.xmi --code-style tabs --output generated/
+
 # Keep existing files and write the new text beside them as .<name>.new, or replace them all
 swift-mtl generate template.mtl --model input.xmi --diff --output generated/
 swift-mtl generate template.mtl --model input.xmi --force-overwrite --output generated/
@@ -537,6 +546,8 @@ swift-mtl generate template.mtl \
 ```
 
 **Template path.** `--template-path <dir>` (repeatable) adds directories in which `[import ...]` looks for modules, after the directory of the template itself. A directory that does not exist is an error.
+
+**Template sets.** `--template-set <directory|language>` runs a template set instead of a template file; the two are mutually exclusive. A directory must hold a `templateset.json` descriptor; a plain name is the language of a bundled set. The main template of the set receives the root objects of the models in command line order, and the data models of the set are available through `templateData('name')`. With a template set, a file in a `--template-path` directory replaces the file of the set with the same relative path, and `--code-style <style>` chooses one of the code styles that the descriptor declares; `--template` does not apply, as the descriptor names the main template.
 
 **Parameters.** `--param name=value` (repeatable) is available to every template as the bare variable `[name/]` and through two services: `parameter('name')` returns the value (`null` if it was not given) and `hasParameter('name')` tells whether it was given. A name must be an identifier that is not an MTL or AQL reserved keyword. A value is a boolean when it reads `true` or `false`, an integer when it is a whole number, and a string otherwise, so `[if (parameter('verbose'))]` and `[parameter('count') + 1/]` work. The value is everything after the first `=`, and a later argument replaces an earlier one of the same name.
 
@@ -698,6 +709,11 @@ done
 - **swift-ecore executable**: Command-line tool for validation, conversion, and code generation
 - **swift-atl executable**: Command-line tool for ATL transformation
 - **swift-mtl executable**: Command-line tool for MTL text generation
+
+Besides the tools, the package offers these library products:
+- **ModellingGenerators**: the generator model pipeline and the bundled template sets for Swift, Java, C and C++
+- **ModellingPipeline**: steps for running ATL transformations and MTL generations on models in memory, a locator for template sets in the resource directories of other packages, and a pipeline that loads, transforms, generates from and saves models in sequence
+- **ModellingCommandLine**: the option groups that the tools share, such as `--param`, `--template-path`, `--metamodel` and `--code-style`, and a parser for families of `name=value` options, for command-line tools of other packages
 
 All types are value types (structs) for thread safety, with ID-based reference resolution for bidirectional relationships.
 Resources provide EMF-compliant object ownership and cross-reference resolution using actor-based concurrency.
