@@ -13,12 +13,14 @@ import Foundation
 import MTL
 import ModellingCommandLine
 import ModellingGenerators
+import ModellingPipeline
 
 /// Command for generating text from models using MTL templates.
 ///
 /// The generate command executes MTL templates to produce text output from
 /// models, supporting code generation, documentation generation, and other
-/// model-to-text transformations.
+/// model-to-text transformations. The templates are either a single template
+/// file or a template set, named by its directory or by its bundled language.
 struct GenerateCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "generate",
@@ -35,6 +37,14 @@ struct GenerateCommand: AsyncParsableCommand {
             files are merged with the generated text when the module declares a merge, and \
             replaced otherwise; --force-overwrite always replaces them, and --diff keeps them and \
             writes the generated text beside them.
+
+            Instead of a template file, --template-set names a template set: a directory with a \
+            templateset.json descriptor, or the language of a bundled set \
+            (\(GenerateCommand.bundledLanguageList())). The main template of the set receives the \
+            root objects of the models, and the data models of the set are available to its \
+            templates. Files in the --template-path directories replace the files of the set with \
+            the same relative path. --code-style chooses one of the code styles of the set \
+            (\(CodeStyleOptions.bundledStyleList())).
 
             \(UnsetFeatureOptions.discussion(reader: "the templates"))
 
@@ -74,6 +84,11 @@ struct GenerateCommand: AsyncParsableCommand {
                   --param package=org.example \\
                   --output generated/
 
+                # Run a template set, from its directory or by the name of a bundled set
+                swift-mtl generate --template-set my-set/ \\
+                  --model input.xmi \\
+                  --output generated/
+
                 # Keep existing files, writing new text beside them as .<name>.new
                 swift-mtl generate template.mtl --model input.xmi --diff --output generated/
 
@@ -89,7 +104,15 @@ struct GenerateCommand: AsyncParsableCommand {
     )
 
     @Argument(help: "MTL template file (.mtl)")
-    var templateFile: String
+    var templateFile: String?
+
+    /// The template set to run instead of a template file.
+    @Option(
+        name: .customLong("template-set"),
+        help: ArgumentHelp(
+            "A template set directory, or the language of a bundled template set, instead of a template file",
+            valueName: "directory|language"))
+    var templateSet: String?
 
     @Option(
         name: .long,
@@ -134,12 +157,46 @@ struct GenerateCommand: AsyncParsableCommand {
     @OptionGroup(title: "Evaluation")
     var unsetFeatureOptions: UnsetFeatureOptions
 
+    /// The code style of the text that a template set generates.
+    @OptionGroup(title: "Code style")
+    var codeStyle: CodeStyleOptions
+
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose: Bool = false
 
+    /// The languages of the bundled template sets, as text for the help.
+    ///
+    /// - Returns: The names of the languages, separated by commas.
+    static func bundledLanguageList() -> String {
+        TemplateSetLocator().availableLanguages().joined(separator: ", ")
+    }
+
+    /// Checks that the command line names either a template file or a template set.
+    ///
+    /// - Throws: A validation error if both or neither are given, or if an option that applies
+    ///   to only one of them is given with the other.
+    func validate() throws {
+        switch (templateFile, templateSet) {
+        case (nil, nil):
+            throw ArgumentParser.ValidationError("Give a template file or --template-set")
+        case (.some, .some):
+            throw ArgumentParser.ValidationError("Give either a template file or --template-set, not both")
+        case (.some, nil) where codeStyle.isGiven:
+            throw ArgumentParser.ValidationError("--code-style only applies to a template set")
+        case (nil, .some) where template != nil:
+            throw ArgumentParser.ValidationError("--template does not apply to a template set, which names its main template")
+        default:
+            break
+        }
+    }
+
     @MainActor
     func run() async throws {
-        try await generate(templateFile: templateFile)
+        if let templateSet {
+            try await generate(templateSet: templateSet)
+        } else if let templateFile {
+            try await generate(templateFile: templateFile)
+        }
     }
 
     /// Generates text with a single template file.
@@ -239,6 +296,49 @@ struct GenerateCommand: AsyncParsableCommand {
             print("✓ Generation successful")
             print("  Templates executed: \(stats.templatesExecuted)")
             print("  Execution time: \(String(format: "%.3f", stats.executionTime * 1000))ms")
+        } else {
+            print("✓ Generation complete")
+        }
+    }
+
+    /// Generates text with a template set.
+    ///
+    /// - Parameter templateSet: The directory of the template set, or the language of a bundled set.
+    @MainActor
+    private func generate(templateSet: String) async throws {
+        if verbose {
+            print("Template Set: \(templateSet)")
+            print("Metamodels: \(metamodel.joined(separator: ", "))")
+            print("Input Models: \(model.joined(separator: ", "))")
+            print("Output Directory: \(output)")
+        }
+        let templateURLs = try templatePathOptions.directories()
+        let parameters = try parameterOptions.values
+        let inputs = try await loadModels()
+        try createOutputDirectory()
+
+        if verbose {
+            print("\n=== Executing Generation ===")
+        }
+        let step = GenerationStep(
+            templates: .templateSet(templateSet, codeStyle: codeStyle.codeStyle), templatePaths: templateURLs,
+            parameters: parameters, outputDirectory: URL(fileURLWithPath: output),
+            generatorOptions: generatorOptions, unsetFeatureReads: unsetFeatureOptions.unsetFeatures)
+        let verbose = self.verbose
+        let result = try await step.run(
+            arguments: inputs.arguments, models: inputs.models, resourceSet: inputs.resourceSet,
+            progress: { update in if verbose { print("  \(update.message)") } })
+        if let text = result.standardOutput {
+            let url = URL(fileURLWithPath: output).appendingPathComponent(MTLStandardOutput.fileName)
+            try text.write(to: url, atomically: true, encoding: .utf8)
+        }
+
+        if verbose {
+            print("\n=== Generation Complete ===")
+            print("✓ Generation successful")
+            print("  Template set: \(result.templateSet ?? templateSet)")
+            print("  Main template: \(result.mainTemplate)")
+            print("  Files written: \(result.files.count)")
         } else {
             print("✓ Generation complete")
         }

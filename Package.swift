@@ -127,6 +127,7 @@ let package = Package(
             dependencies: [
                 .product(name: "MTL", package: "swift-mtl"),
                 "ModellingGenerators",
+                "ModellingPipeline",
                 "ModellingCommandLine",
                 .product(name: "ECore", package: "swift-ecore"),
                 .product(name: "EMFBase", package: "swift-ecore"),

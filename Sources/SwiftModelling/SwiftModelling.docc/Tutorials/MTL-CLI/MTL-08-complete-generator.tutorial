@@ -41,6 +41,32 @@
         }
     }
 
+    @Section(title: "Packaging the Generator as a Template Set") {
+        @ContentAndMedia {
+            A template set is a directory that holds the modules of a generator together with a descriptor, `templateset.json`, that names its main module and main template.
+
+            Packaged as a set, the generator runs by the name of its directory, and the files of another directory can replace single modules of the set without copying the rest.
+        }
+
+        @Steps {
+            @Step {
+                Describe the set in a descriptor.
+
+                @Code(name: "templateset.json", file: mtl-step-41-templateset.json)
+
+                Put the descriptor and `SwiftGenerator.mtl` in a directory named `SwiftGenerator`. The main template receives the root objects of the models, just as when the template file is given.
+            }
+
+            @Step {
+                Run the template set.
+
+                @Code(name: "Terminal", file: mtl-step-42-generate-template-set.sh)
+
+                `--template-set` takes the place of the template file. A file in a `--template-path` directory replaces the file of the set with the same relative path, and `--code-style` chooses one of the code styles that a descriptor declares.
+            }
+        }
+    }
+
     @Assessments {
         @MultipleChoice {
             Why use helper templates instead of putting everything in main?

@@ -1,0 +1,6 @@
+{
+  "name": "SwiftGenerator",
+  "summary": "Swift structs for the classes of an Ecore package",
+  "mainModule": "SwiftGenerator",
+  "mainTemplate": "main"
+}

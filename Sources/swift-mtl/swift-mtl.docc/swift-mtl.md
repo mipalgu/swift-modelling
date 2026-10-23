@@ -24,6 +24,7 @@ Execute an MTL template to generate text from models.
 
 ```bash
 swift-mtl generate <template-file> [options]
+swift-mtl generate --template-set <directory|language> [options]
 ```
 
 **Options:**
@@ -32,13 +33,17 @@ swift-mtl generate <template-file> [options]
 - `--metamodel <path>` - Ecore metamodel to register without passing it to the template (repeatable)
 - `-o, --output <path>` - Output directory for generated files (default: the current directory)
 - `-t, --template <name>` - Main template to run (default: the template marked `@main`, otherwise the first)
-- `--template-path <directory>` - Directory searched for imported modules after the directory of the template (repeatable)
+- `--template-set <directory|language>` - Template set to run instead of a template file: a directory with a `templateset.json` descriptor, or the language of a bundled set
+- `--template-path <directory>` - Directory searched for imported modules after the directory of the template (repeatable); with a template set, its files replace the files of the set with the same relative path
 - `--param <name=value>` - Parameter for the templates (repeatable)
 - `--force-overwrite` - Replace existing files without merging
 - `--diff` - Write the generated text of existing files beside them as `.<name>.new` and leave the files alone
+- `--code-style <style>` - One of the code styles that the descriptor of a template set declares
 - `-v, --verbose` - Enable verbose output
 
 **Template path.** Imported modules (`[import shared::Common/]`) are searched in the directory of the template and then in the `--template-path` directories, in order. A directory that does not exist is an error.
+
+**Template sets.** `--template-set` runs a template set instead of a single template file; give one or the other. A path names a directory that holds a `templateset.json` descriptor, and a plain name is the language of a bundled set. The main template of the set, named by its descriptor, receives the root objects of the models in command line order, and the data models of the set are available through `templateData('name')`. The modules that the descriptor lists under `imports` are copied beside the set, so that its modules import them by qualified name. `--code-style` chooses one of the code styles of the set; `--template` does not apply to a set.
 
 **Parameters.** Every `--param name=value` is available to the templates in three ways: as the bare variable `[name/]`, through `parameter('name')`, which returns the value or `null`, and through `hasParameter('name')`, which tells whether it was given. The value is a boolean for `true` and `false`, an integer for a whole number, and a string otherwise. The value is everything after the first `=`, and a later argument replaces an earlier one of the same name. A name must be an identifier (a letter or underscore followed by letters, digits or underscores) that is not an MTL or AQL reserved keyword; an invalid name, a reserved keyword, or an argument without a name or without `=` is rejected with an error before generation starts.
 
@@ -72,6 +77,9 @@ swift-mtl generate GenerateCode.mtl --model input.xmi --output src/ --diff
 
 # An Ecore model passed to the template as its EPackage
 swift-mtl generate ecore2dot.mtl --model library.ecore --output generated/
+
+# A template set, from its directory, in one of its code styles
+swift-mtl generate --template-set report-set/ --model input.xmi --output generated/ --code-style tabs
 ```
 
 ### validate
