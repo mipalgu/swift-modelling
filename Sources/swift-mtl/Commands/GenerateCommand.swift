@@ -118,21 +118,11 @@ struct GenerateCommand: AsyncParsableCommand {
     @Option(name: .shortAndLong, help: "Main template name to execute (auto-detect if not specified)")
     var template: String?
 
-    @Option(
-        name: .customLong("template-path"),
-        help: "A directory to search for imported modules (can be specified multiple times)")
-    var templatePaths: [String] = []
+    /// The directories searched for imported modules.
+    @OptionGroup var templatePathOptions: TemplatePathOptions
 
-    @Option(
-        name: .long,
-        help: """
-            A parameter for the templates as name=value (can be specified multiple times). \
-            Templates read it as the variable [name/] or with parameter('name'), and test for \
-            it with hasParameter('name'). The name must be an identifier that is not a reserved \
-            keyword.
-            """
-    )
-    var param: [String] = []
+    /// The parameters of the templates.
+    @OptionGroup var parameterOptions: TemplateParameterOptions
 
     @Flag(name: .customLong("force-overwrite"), help: "Replace existing files without merging")
     var forceOverwrite: Bool = false
@@ -149,6 +139,14 @@ struct GenerateCommand: AsyncParsableCommand {
 
     @MainActor
     func run() async throws {
+        try await generate(templateFile: templateFile)
+    }
+
+    /// Generates text with a single template file.
+    ///
+    /// - Parameter templateFile: The path of the template file.
+    @MainActor
+    private func generate(templateFile: String) async throws {
         // Print configuration if verbose
         if verbose {
             print("MTL Template: \(templateFile)")
@@ -170,16 +168,8 @@ struct GenerateCommand: AsyncParsableCommand {
             throw ValidationError.fileNotFound(templateFile)
         }
 
-        let searchURLs = templatePaths.map { URL(fileURLWithPath: $0) }
-        for url in searchURLs {
-            var isDirectory: ObjCBool = false
-            guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
-                isDirectory.boolValue
-            else {
-                throw ValidationError.templatePathInvalid(url.path)
-            }
-        }
-        let parameters = try TemplateParameterServices(arguments: param)
+        let searchURLs = try templatePathOptions.directories()
+        let parameters = try parameterOptions.services
         let parser = MTLParser(enableDebugging: verbose, searchPaths: searchURLs)
         let mtlModule: MTLModule
         do {
@@ -195,63 +185,7 @@ struct GenerateCommand: AsyncParsableCommand {
             print("  Macros: \(mtlModule.macros.count)")
         }
 
-        // Load models
-        var loadedModels: [String: Resource] = [:]
-        var rootObjectsByModel: [Int: [any EcoreValue]] = [:]
-        let resourceSet = ResourceSet()
-        if !metamodel.isEmpty || !model.isEmpty {
-            if verbose {
-                print("\n=== Loading Models ===")
-            }
-
-            // First pass: register metamodels (--metamodel files and .ecore --model files)
-            for metamodelPath in metamodel {
-                try await MetamodelRegistration.registerMetamodel(
-                    at: metamodelPath, into: resourceSet,
-                    announcement: MetamodelRole.registeredOnly.announcement, verbose: verbose)
-            }
-            for (index, modelPath) in model.enumerated() where MetamodelRegistration.isEcoreFile(modelPath) {
-                let package = try await MetamodelRegistration.registerMetamodel(
-                    at: modelPath, into: resourceSet,
-                    announcement: MetamodelRole.registeredAndInput.announcement, verbose: verbose)
-                let modelURL = URL(fileURLWithPath: modelPath)
-                let resource = await resourceSet.createResource(uri: modelURL.absoluteString)
-                await resource.add(package)
-                loadedModels[modelURL.deletingPathExtension().lastPathComponent] = resource
-                rootObjectsByModel[index] = await resource.getRootObjects()
-            }
-
-            // Second pass: load instance models (non-ecore files)
-            for (index, modelPath) in model.enumerated() {
-                let modelURL = URL(fileURLWithPath: modelPath)
-                guard !MetamodelRegistration.isEcoreFile(modelPath) else { continue }
-                guard FileManager.default.fileExists(atPath: modelPath) else {
-                    throw ValidationError.fileNotFound(modelPath)
-                }
-
-                // Detect format based on extension
-                let format = detectFormat(from: modelPath)
-
-                if verbose {
-                    print("Loading input model \(index + 1): \(modelPath) (format: \(format))")
-                }
-
-                let resource = try await loadModel(from: modelPath, format: format, verbose: verbose, resourceSet: resourceSet)
-
-                // Use filename without extension as model name
-                let modelName = modelURL.deletingPathExtension().lastPathComponent
-                if verbose, loadedModels[modelName] != nil {
-                    print("  ! Model name '\(modelName)' is already in use: replacing the earlier model")
-                }
-                loadedModels[modelName] = resource
-                rootObjectsByModel[index] = await resource.getRootObjects()
-
-                if verbose {
-                    let count = await resource.count()
-                    print("  ✓ Loaded \(count) objects")
-                }
-            }
-        }
+        let inputs = try await loadModels()
 
         // Determine main template
         let mainTemplateName: String
@@ -277,17 +211,9 @@ struct GenerateCommand: AsyncParsableCommand {
             print("Output directory: \(output)")
         }
 
-        // Create output directory if needed
-        if !FileManager.default.fileExists(atPath: output) {
-            let outputURL = URL(fileURLWithPath: output)
-            try FileManager.default.createDirectory(at: outputURL, withIntermediateDirectories: true)
-        }
+        try createOutputDirectory()
 
         // Execute generation
-        let generatorOptions = MTLGeneratorOptions(
-            forceOverwrite: forceOverwrite,
-            redirectionPattern: diff && !forceOverwrite ? TemplateSetConstants.diffRedirectionPattern : nil,
-            templateSearchPaths: templatePaths)
         let strategy = MTLFileSystemStrategy(
             basePath: output, options: generatorOptions, standardOutput: .capture)
         let generator = MTLGenerator(
@@ -295,16 +221,11 @@ struct GenerateCommand: AsyncParsableCommand {
             unsetFeatureReads: unsetFeatureOptions.unsetFeatures)
         parameters.bind(to: generator)
 
-        // Template arguments are the root objects of each model in command line order
-        let rootObjects: [(any EcoreValue)?] = model.indices.flatMap { index in
-            (rootObjectsByModel[index] ?? []).map { Optional($0) }
-        }
-
         do {
             try await generator.generate(
                 mainTemplate: mainTemplateName,
-                arguments: rootObjects,
-                models: loadedModels
+                arguments: inputs.arguments,
+                models: inputs.models
             )
         } catch {
             throw ValidationError.generationFailed(error.localizedDescription)
@@ -321,6 +242,112 @@ struct GenerateCommand: AsyncParsableCommand {
         } else {
             print("✓ Generation complete")
         }
+    }
+
+    /// The options of the generator, from the command line.
+    private var generatorOptions: MTLGeneratorOptions {
+        MTLGeneratorOptions(
+            forceOverwrite: forceOverwrite,
+            redirectionPattern: diff && !forceOverwrite ? TemplateSetConstants.diffRedirectionPattern : nil,
+            templateSearchPaths: templatePathOptions.templatePaths)
+    }
+
+    /// Creates the output directory if it does not exist.
+    private func createOutputDirectory() throws {
+        if !FileManager.default.fileExists(atPath: output) {
+            let outputURL = URL(fileURLWithPath: output)
+            try FileManager.default.createDirectory(at: outputURL, withIntermediateDirectories: true)
+        }
+    }
+
+    /// The models of a run and the arguments of its main template.
+    struct Inputs {
+        /// The loaded models by the name of their file without its extension.
+        var models: [String: Resource] = [:]
+
+        /// The root objects of each model, in command line order.
+        var arguments: [(any EcoreValue)?] = []
+
+        /// The resource set with the registered metamodels.
+        var resourceSet = ResourceSet()
+    }
+
+    /// Registers the metamodels and loads the models given on the command line.
+    ///
+    /// An Ecore file given with `--model` is registered as a metamodel and its package is passed
+    /// to the template. Every other model is read as JSON if its extension is `json`, and as XMI
+    /// otherwise; a JSON model is read without the registered metamodels.
+    ///
+    /// - Returns: The models, the arguments of the main template and the resource set.
+    /// - Throws: ``ValidationError/fileNotFound(_:)`` if a model does not exist, and the errors of
+    ///   the parsers.
+    @MainActor
+    private func loadModels() async throws -> Inputs {
+        var inputs = Inputs()
+        var rootObjectsByModel: [Int: [any EcoreValue]] = [:]
+        let resourceSet = inputs.resourceSet
+        if !metamodel.isEmpty || !model.isEmpty {
+            if verbose {
+                print("\n=== Loading Models ===")
+            }
+
+            // First pass: register metamodels (--metamodel files and .ecore --model files)
+            for metamodelPath in metamodel {
+                try await MetamodelRegistration.registerMetamodel(
+                    at: metamodelPath, into: resourceSet,
+                    announcement: MetamodelRole.registeredOnly.announcement, verbose: verbose)
+            }
+            for (index, modelPath) in model.enumerated() where MetamodelRegistration.isEcoreFile(modelPath) {
+                let package = try await MetamodelRegistration.registerMetamodel(
+                    at: modelPath, into: resourceSet,
+                    announcement: MetamodelRole.registeredAndInput.announcement, verbose: verbose)
+                let modelURL = URL(fileURLWithPath: modelPath)
+                let resource = await resourceSet.createResource(uri: modelURL.absoluteString)
+                await resource.add(package)
+                inputs.models[modelURL.deletingPathExtension().lastPathComponent] = resource
+                rootObjectsByModel[index] = await resource.getRootObjects()
+            }
+
+            // Second pass: load instance models (non-ecore files)
+            for (index, modelPath) in model.enumerated() {
+                let modelURL = URL(fileURLWithPath: modelPath)
+                guard !MetamodelRegistration.isEcoreFile(modelPath) else { continue }
+                guard FileManager.default.fileExists(atPath: modelPath) else {
+                    throw ValidationError.fileNotFound(modelPath)
+                }
+
+                let format = ModelFileFormat.instanceFormat(of: modelURL)
+
+                if verbose {
+                    print("Loading input model \(index + 1): \(modelPath) (format: \(format.rawValue))")
+                }
+
+                let options = ModelIO.LoadOptions(requiresMetamodel: false, enableDebugging: verbose)
+                let resource = try await ModelIO.load(
+                    url: modelURL, format: format,
+                    resourceSet: format == .json ? ResourceSet() : resourceSet, options: options
+                ).resource
+
+                // Use filename without extension as model name
+                let modelName = modelURL.deletingPathExtension().lastPathComponent
+                if verbose, inputs.models[modelName] != nil {
+                    print("  ! Model name '\(modelName)' is already in use: replacing the earlier model")
+                }
+                inputs.models[modelName] = resource
+                rootObjectsByModel[index] = await resource.getRootObjects()
+
+                if verbose {
+                    let count = await resource.count()
+                    print("  ✓ Loaded \(count) objects")
+                }
+            }
+        }
+
+        // Template arguments are the root objects of each model in command line order
+        inputs.arguments = model.indices.flatMap { index in
+            (rootObjectsByModel[index] ?? []).map { Optional($0) }
+        }
+        return inputs
     }
 }
 
@@ -342,61 +369,6 @@ enum MetamodelRole {
     }
 }
 
-/// Model format enumeration.
-enum ModelFormat: String {
-    case xmi
-    case json
-
-    var description: String {
-        switch self {
-        case .xmi: return "XMI"
-        case .json: return "JSON"
-        }
-    }
-}
-
-/// Detects the model format based on file extension.
-func detectFormat(from path: String) -> ModelFormat {
-    let pathExtension = URL(fileURLWithPath: path).pathExtension.lowercased()
-    switch pathExtension {
-    case "xmi", "ecore":
-        return .xmi
-    case "json":
-        return .json
-    default:
-        return .xmi  // Default to XMI
-    }
-}
-
-/// Loads a model from a file using the appropriate parser.
-///
-/// - Parameters:
-///   - path: The path to the model file.
-///   - format: The format of the model file (XMI or JSON).
-///   - verbose: Whether to enable verbose debugging output.
-///   - resourceSet: An optional `ResourceSet` for metamodel-guided parsing.
-/// - Returns: The loaded `Resource` containing the model objects.
-func loadModel(
-    from path: String,
-    format: ModelFormat,
-    verbose: Bool,
-    resourceSet: ResourceSet? = nil
-) async throws -> Resource {
-    let url = URL(fileURLWithPath: path)
-
-    let resource: Resource
-    switch format {
-    case .xmi:
-        let parser = XMIParser(resourceSet: resourceSet, enableDebugging: verbose)
-        resource = try await parser.parse(url)
-    case .json:
-        let parser = JSONParser()
-        resource = try await parser.parse(url)
-    }
-
-    return resource
-}
-
 // MARK: - Error Types
 
 /// Validation errors for the generate command.
@@ -404,10 +376,6 @@ enum ValidationError: Error, CustomStringConvertible {
     case fileNotFound(String)
     case parseFailed(String, String)
     case generationFailed(String)
-    case invalidParameter(String)
-    case invalidParameterName(String)
-    case reservedParameterName(String)
-    case templatePathInvalid(String)
 
     var description: String {
         switch self {
@@ -417,14 +385,6 @@ enum ValidationError: Error, CustomStringConvertible {
             return "Failed to parse \(path): \(message)"
         case .generationFailed(let message):
             return "Generation failed: \(message)"
-        case .invalidParameter(let argument):
-            return "Invalid parameter '\(argument)': expected name=value"
-        case .invalidParameterName(let name):
-            return "Invalid parameter name '\(name)': it is not a valid identifier"
-        case .reservedParameterName(let name):
-            return "Invalid parameter name '\(name)': it is a reserved keyword of MTL or AQL"
-        case .templatePathInvalid(let path):
-            return "The template path '\(path)' is not a directory"
         }
     }
 }

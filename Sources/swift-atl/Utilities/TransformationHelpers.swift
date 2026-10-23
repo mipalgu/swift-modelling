@@ -12,54 +12,19 @@ import GenModel
 import ModellingCommandLine
 import OrderedCollections
 
-// MARK: - Model Format Detection
-
-/// Detects the model format based on file extension or explicit override.
-///
-/// Examines the file extension of the provided path and returns the corresponding
-/// model format. Supports XMI, Ecore, and JSON file extensions. If an explicit
-/// format is provided, it takes precedence over the file extension.
-///
-/// - Parameters:
-///   - path: The file path to analyse.
-///   - explicitFormat: Optional explicit format override (e.g., "xmi", "json").
-/// - Returns: The detected or specified model format.
-func detectFormat(from path: String, explicitFormat: String? = nil) -> ModelFormat {
-    if let explicit = explicitFormat?.lowercased() {
-        switch explicit {
-        case "xmi", "ecore":
-            return .xmi
-        case "json":
-            return .json
-        default:
-            return .xmi  // Default to XMI for unknown formats
-        }
-    }
-
-    let pathExtension = URL(fileURLWithPath: path).pathExtension.lowercased()
-    switch pathExtension {
-    case "xmi", "ecore":
-        return .xmi
-    case "json":
-        return .json
-    default:
-        return .xmi  // Default to XMI
-    }
-}
-
 // MARK: - Model Loading
 
 /// Loads a model from a file using the appropriate parser.
 ///
-/// This function automatically detects the model format based on the file
-/// extension and uses the corresponding parser to load the resource. An
-/// explicit format can be provided to override the automatic detection.
-/// Provides verbose output when requested, displaying the number of objects
+/// The model is read in the format that the explicit format names or, without one, in the
+/// format that the file extension names, as ``ModelFileFormat/instanceFormat(of:explicit:)``
+/// chooses it. Classes that the registered metamodels do not define are read from the
+/// document itself. Provides verbose output when requested, displaying the number of objects
 /// loaded.
 ///
 /// - Parameters:
 ///   - path: The file path to load from.
-///   - format: The model format to use for parsing (can be overridden by explicitFormat).
+///   - resourceSet: The resource set with the registered metamodels, if any.
 ///   - explicitFormat: Optional explicit format string override (e.g., "xmi", "json").
 ///   - verbose: Whether to print verbose output.
 ///   - debug: Whether to enable debug mode for parsers.
@@ -67,7 +32,6 @@ func detectFormat(from path: String, explicitFormat: String? = nil) -> ModelForm
 /// - Throws: `TransformationError.modelFileNotFound` if the file doesn't exist.
 func loadModel(
     from path: String,
-    format: ModelFormat,
     resourceSet: ResourceSet? = nil,
     explicitFormat: String? = nil,
     verbose: Bool,
@@ -79,25 +43,20 @@ func loadModel(
         throw TransformationError.modelFileNotFound(path)
     }
 
-    let actualFormat = explicitFormat != nil ? detectFormat(from: path, explicitFormat: explicitFormat) : format
+    let format = ModelFileFormat.instanceFormat(of: url, explicit: explicitFormat)
 
     if verbose {
         if let explicit = explicitFormat {
-            print("  Loading \(actualFormat.description) model (format override: \(explicit)) from: \(path)")
+            print("  Loading \(format.description) model (format override: \(explicit)) from: \(path)")
         } else {
-            print("  Loading \(actualFormat.description) model from: \(path)")
+            print("  Loading \(format.description) model from: \(path)")
         }
     }
 
-    let resource: Resource
-    switch actualFormat {
-    case .xmi:
-        let parser = XMIParser(resourceSet: resourceSet, enableDebugging: debug)
-        resource = try await parser.parse(url)
-    case .json:
-        let parser = JSONParser(resourceSet: resourceSet)
-        resource = try await parser.parse(url)
-    }
+    let options = ModelIO.LoadOptions(requiresMetamodel: false, enableDebugging: debug)
+    let resource = try await ModelIO.load(
+        url: url, format: format, resourceSet: resourceSet ?? ResourceSet(), options: options
+    ).resource
 
     if verbose {
         let count = await resource.count()
@@ -144,10 +103,8 @@ func loadModelsFromMapping(
             print("Loading model '\(alias)' from: \(path)")
         }
 
-        let format = detectFormat(from: path, explicitFormat: explicitFormat)
         let resource = try await loadModel(
             from: path,
-            format: format,
             resourceSet: resourceSet,
             explicitFormat: explicitFormat,
             verbose: verbose,
@@ -247,15 +204,14 @@ func mapFilesToAliases(
 
 /// Saves a resource to a file using the appropriate serialiser.
 ///
-/// Serialises the provided resource to the specified file path using either
-/// XMI or JSON format based on the format parameter. An explicit format can
-/// be provided to override the format determined from the file extension.
-/// Provides verbose output when requested.
+/// Serialises the provided resource in the format that the explicit format names or, without
+/// one, in the format that the file extension names, as
+/// ``ModelFileFormat/instanceFormat(of:explicit:)`` chooses it. Provides verbose output when
+/// requested.
 ///
 /// - Parameters:
 ///   - resource: The resource to save.
 ///   - path: The destination file path.
-///   - format: The model format to use for serialisation (can be overridden by explicitFormat).
 ///   - explicitFormat: Optional explicit format string override (e.g., "xmi", "json").
 ///   - verbose: Whether to print verbose output during saving.
 ///   - emfLayout: Whether an XMI model is written in the layout of the Eclipse Modeling Framework,
@@ -266,7 +222,6 @@ func mapFilesToAliases(
 func saveModel(
     _ resource: Resource,
     to path: String,
-    format: ModelFormat,
     explicitFormat: String? = nil,
     verbose: Bool,
     emfLayout: Bool = false,
@@ -274,34 +229,22 @@ func saveModel(
 ) async throws {
     let url = URL(fileURLWithPath: path)
 
-    let actualFormat = explicitFormat != nil ? detectFormat(from: path, explicitFormat: explicitFormat) : format
+    let format = ModelFileFormat.instanceFormat(of: url, explicit: explicitFormat)
 
     if verbose {
         let count = await resource.count()
         if let explicit = explicitFormat {
-            print("  Saving \(count) objects to \(actualFormat.description) file (format override: \(explicit)): \(path)")
+            print("  Saving \(count) objects to \(format.description) file (format override: \(explicit)): \(path)")
         } else {
-            print("  Saving \(count) objects to \(actualFormat.description) file: \(path)")
+            print("  Saving \(count) objects to \(format.description) file: \(path)")
         }
     }
 
-    let content: String
-    switch actualFormat {
-    case .xmi where emfLayout:
+    if format == .xmi && emfLayout {
         try await GenModelResource.save(resource, to: url)
-        if verbose {
-            print("    Saved successfully")
-        }
-        return
-    case .xmi:
-        let serializer = XMISerializer(options: xmiOptions)
-        content = try await serializer.serialize(resource, relativeTo: url)
-    case .json:
-        let serializer = JSONSerializer()
-        content = try await serializer.serialize(resource)
+    } else {
+        try await ModelIO.save(resource, to: url, format: format, xmiOptions: xmiOptions)
     }
-
-    try content.write(to: url, atomically: true, encoding: .utf8)
 
     if verbose {
         print("    Saved successfully")
@@ -343,11 +286,9 @@ func saveTargetModelsFromMapping(
             continue
         }
 
-        let format = detectFormat(from: path, explicitFormat: explicitFormat)
         try await saveModel(
             resource,
             to: path,
-            format: format,
             explicitFormat: explicitFormat,
             verbose: verbose,
             emfLayout: emfLayoutAliases.contains(alias),
@@ -379,6 +320,12 @@ func isBuiltIn(_ package: EPackage) -> Bool {
     [EcorePackage.instance.nsURI, GenModelConstants.nsURI].contains(package.nsURI)
 }
 
+/// The family of `name=value` arguments that give values to module parameters.
+///
+/// The value is everything after the first `=`, so it can itself contain `=`; it is converted to
+/// the declared type of the parameter by the module.
+let moduleParameterArguments = KeyValueOption<String>(noun: "parameter")
+
 /// Splits `name=value` arguments into module parameter values.
 ///
 /// The value is everything after the first `=`, so it can itself contain `=`. A later argument
@@ -388,12 +335,9 @@ func isBuiltIn(_ package: EPackage) -> Bool {
 /// - Returns: The textual values by parameter name.
 /// - Throws: `TransformationError.invalidParameterArgument` if an argument has no name or no `=`.
 func parseParameters(_ arguments: [String]) throws -> [String: String] {
-    var values: [String: String] = [:]
-    for argument in arguments {
-        guard let separator = argument.firstIndex(of: "="), separator != argument.startIndex else {
-            throw TransformationError.invalidParameterArgument(argument)
-        }
-        values[String(argument[..<separator])] = String(argument[argument.index(after: separator)...])
+    do {
+        return try moduleParameterArguments.values(from: arguments)
+    } catch KeyValueOptionError.missingSeparator(_, let text, _) {
+        throw TransformationError.invalidParameterArgument(text)
     }
-    return values
 }

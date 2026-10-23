@@ -19,6 +19,10 @@ let package = Package(
             name: "ModellingPipeline",
             targets: ["ModellingPipeline"]
         ),
+        .library(
+            name: "ModellingCommandLine",
+            targets: ["ModellingCommandLine"]
+        ),
         .executable(
             name: "swift-ecore",
             targets: ["swift-ecore"]
@@ -84,6 +88,8 @@ let package = Package(
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "ECore", package: "swift-ecore"),
+                .product(name: "EMFBase", package: "swift-ecore"),
+                .product(name: "MTL", package: "swift-mtl"),
                 "ModellingGenerators",
             ],
             swiftSettings: [
@@ -153,6 +159,19 @@ let package = Package(
                 .product(name: "ECore", package: "swift-ecore"),
                 .product(name: "EMFBase", package: "swift-ecore"),
                 .product(name: "ATL", package: "swift-atl"),
+                .product(name: "MTL", package: "swift-mtl"),
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency")
+            ]
+        ),
+        .testTarget(
+            name: "ModellingCommandLineTests",
+            dependencies: [
+                "ModellingCommandLine",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                .product(name: "ECore", package: "swift-ecore"),
+                .product(name: "EMFBase", package: "swift-ecore"),
                 .product(name: "MTL", package: "swift-mtl"),
             ],
             swiftSettings: [

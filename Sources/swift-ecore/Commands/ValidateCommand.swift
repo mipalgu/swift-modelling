@@ -57,14 +57,14 @@ struct ValidateCommand: AsyncParsableCommand {
         // Determine file type
         let fileExtension = inputURL.pathExtension.lowercased()
 
-        switch fileExtension {
-        case "xmi":
+        switch ModelFormat.detect(url: inputURL) {
+        case .xmi:
             try await validateXMI(at: inputURL, resourceSet: resourceSet)
-        case "json":
+        case .json:
             try await validateJSON(at: inputURL, resourceSet: resourceSet)
-        case "ecore":
+        case .ecore:
             try await validateEcore(at: inputURL, resourceSet: resourceSet)
-        default:
+        case nil:
             throw ValidationError.unsupportedFormat(fileExtension)
         }
         withExtendedLifetime(resourceSet) {}
@@ -81,11 +81,8 @@ struct ValidateCommand: AsyncParsableCommand {
     private func validateXMI(at url: URL, resourceSet: ResourceSet?) async throws {
         if verbose { print("Validating XMI file...") }
 
-        _ = Resource(uri: url.absoluteString)
-        let parser = XMIParser(resourceSet: resourceSet)
-
         do {
-            let parsedResource = try await parser.parse(url)
+            let parsedResource = try await load(url, format: .xmi, resourceSet: resourceSet)
             let objects = await parsedResource.getRootObjects()
 
             if verbose {
@@ -113,12 +110,8 @@ struct ValidateCommand: AsyncParsableCommand {
     private func validateJSON(at url: URL, resourceSet: ResourceSet?) async throws {
         if verbose { print("Validating JSON file...") }
 
-        _ = Resource(uri: url.absoluteString)
-        let parser = JSONParser(
-            resourceSet: resourceSet, options: JSONParseOptions(requiresMetamodel: resourceSet != nil))
-
         do {
-            let parsedResource = try await parser.parse(url)
+            let parsedResource = try await load(url, format: .json, resourceSet: resourceSet)
             let objects = await parsedResource.getRootObjects()
 
             if verbose {
@@ -144,11 +137,8 @@ struct ValidateCommand: AsyncParsableCommand {
     private func validateEcore(at url: URL, resourceSet: ResourceSet?) async throws {
         if verbose { print("Validating Ecore metamodel...") }
 
-        _ = Resource(uri: url.absoluteString)
-        let parser = XMIParser(resourceSet: resourceSet)
-
         do {
-            let parsedResource = try await parser.parse(url)
+            let parsedResource = try await load(url, format: .xmi, resourceSet: resourceSet)
             let packages = await parsedResource.getRootObjects().compactMap { $0 as? EPackage }
 
             if verbose {
@@ -162,5 +152,24 @@ struct ValidateCommand: AsyncParsableCommand {
         } catch {
             throw ValidationError.parsingFailed("Ecore", error.localizedDescription)
         }
+    }
+
+    /// Reads a document in a given format.
+    ///
+    /// With registered metamodels, the classes of a JSON document must be classes of those
+    /// metamodels. An Ecore document is read as XMI.
+    ///
+    /// - Parameters:
+    ///   - url: The URL of the document.
+    ///   - format: The format in which the document is read, ``ECore/ModelFormat/xmi`` or
+    ///     ``ECore/ModelFormat/json``.
+    ///   - resourceSet: The resource set with the registered metamodels, if any were given.
+    /// - Returns: The resource that holds the objects of the document.
+    /// - Throws: The error of the file system or of the parser.
+    private func load(_ url: URL, format: ModelFormat, resourceSet: ResourceSet?) async throws -> Resource {
+        let options = ModelIO.LoadOptions(requiresMetamodel: resourceSet != nil)
+        return try await ModelIO.load(
+            url: url, format: format, resourceSet: resourceSet ?? ResourceSet(), options: options
+        ).resource
     }
 }

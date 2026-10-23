@@ -303,27 +303,3 @@ struct HelperAnalysis {
     /// Average number of parameters per helper.
     let averageParameters: Double
 }
-
-// MARK: - Model Format
-
-/// Supported model file formats for transformation operations.
-///
-/// Represents the different file formats that can be used for loading
-/// and saving models during ATL transformations.
-enum ModelFormat {
-    /// XMI format (XML Metadata Interchange).
-    case xmi
-
-    /// JSON format for model representation.
-    case json
-
-    /// Human-readable description of the format.
-    ///
-    /// - Returns: A string describing the format
-    var description: String {
-        switch self {
-        case .xmi: return "XMI"
-        case .json: return "JSON"
-        }
-    }
-}

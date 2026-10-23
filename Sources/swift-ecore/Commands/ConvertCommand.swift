@@ -123,39 +123,24 @@ struct ConvertCommand: AsyncParsableCommand {
         let resourceSet = try await metamodelOptions.resourceSet(verbose: verbose)
 
         // Load input, collecting what the parser could not keep
-        let resource: Resource
-        var diagnostics = ConversionDiagnostics()
-
-        switch inputFormatToUse {
-        case "xmi":
-            if verbose { print("Reading XMI...") }
-            let parser = XMIParser(resourceSet: resourceSet)
-            resource = try await parser.parse(inputURL)
-            diagnostics.merge(await parser.diagnostics)
-        case "json":
-            if verbose { print("Reading JSON...") }
-            let parser = JSONParser(resourceSet: resourceSet)
-            resource = try await parser.parse(inputURL)
-            diagnostics.merge(await parser.diagnostics)
-        default:
-            throw ConversionError.unsupportedInputFormat(inputFormatToUse)
+        let readFormat = try Self.instanceFormat(named: inputFormatToUse) {
+            ConversionError.unsupportedInputFormat($0)
         }
+        if verbose { print("Reading \(readFormat.description)...") }
+        let loaded = try await ModelIO.load(
+            url: inputURL, format: readFormat, resourceSet: resourceSet ?? ResourceSet(),
+            options: ModelIO.LoadOptions(requiresMetamodel: false))
+        let resource = loaded.resource
+        var diagnostics = loaded.diagnostics
 
         // Save output
-        let content: String
-        switch outputFormatToUse {
-        case "xmi":
-            if verbose { print("Writing XMI...") }
-            let serializer = XMISerializer(options: referenceStyleOptions.serializationOptions)
-            content = try await serializer.serialize(resource, relativeTo: outputURL, diagnostics: &diagnostics)
-        case "json":
-            if verbose { print("Writing JSON...") }
-            let serializer = JSONSerializer()
-            content = try await serializer.serialize(resource, diagnostics: &diagnostics)
-        default:
-            throw ConversionError.unsupportedOutputFormat(outputFormatToUse)
+        let writeFormat = try Self.instanceFormat(named: outputFormatToUse) {
+            ConversionError.unsupportedOutputFormat($0)
         }
-        try content.write(to: outputURL, atomically: true, encoding: .utf8)
+        if verbose { print("Writing \(writeFormat.description)...") }
+        try await ModelIO.save(
+            resource, to: outputURL, format: writeFormat,
+            xmiOptions: referenceStyleOptions.serializationOptions, diagnostics: &diagnostics)
         withExtendedLifetime(resourceSet) {}
         ConversionWarningReport.write(diagnostics, metamodelGiven: metamodelOptions.isGiven)
 
@@ -165,5 +150,17 @@ struct ConvertCommand: AsyncParsableCommand {
         }
 
         print("Conversion completed: \(outputPath)")
+    }
+
+    /// The model instance format that a format name denotes.
+    ///
+    /// - Parameters:
+    ///   - name: The name of the format, in lower case, such as `xmi` or `json`.
+    ///   - unsupported: Creates the error for a name that denotes no model instance format.
+    /// - Returns: ``ECore/ModelFormat/xmi`` or ``ECore/ModelFormat/json``.
+    /// - Throws: The error of `unsupported` for any other name, including `ecore`.
+    static func instanceFormat(named name: String, unsupported: (String) -> ConversionError) throws -> ModelFormat {
+        guard let format = ModelFormat(fileExtension: name), format != .ecore else { throw unsupported(name) }
+        return format
     }
 }
