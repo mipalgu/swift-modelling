@@ -53,7 +53,7 @@ struct PipelineFixture {
     func write(_ text: String, to url: URL) throws {
         try FileManager.default.createDirectory(
             at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try text.write(to: url, atomically: true, encoding: .utf8)
+        try Data(text.utf8).write(to: url)
     }
 
     /// The text of a file.
