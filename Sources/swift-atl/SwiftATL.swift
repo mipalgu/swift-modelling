@@ -67,7 +67,7 @@ struct SwiftATLCommand: AsyncParsableCommand {
             transformations while providing enhanced performance through Swift's concurrent
             execution model and type safety.
             """,
-        version: "0.5.5",
+        version: "0.6.0",
         subcommands: [
             ParseCommand.self,
             ValidateCommand.self,
