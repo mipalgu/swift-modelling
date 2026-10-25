@@ -235,7 +235,7 @@ struct CppGenerateCommandTests {
 
         #expect(result.succeeded)
         let line = try #require(
-            result.stdout.components(separatedBy: "\n").first { $0.hasPrefix("Languages with a template set:") })
+            result.stdout.split(whereSeparator: \.isNewline).first { $0.hasPrefix("Languages with a template set:") })
         #expect(line.contains("cpp"))
     }
 }
