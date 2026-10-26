@@ -286,8 +286,8 @@ struct ValidateCommand: AsyncParsableCommand {
                 ))
         }
 
-        // Check for missing metamodels
-        if module.sourceMetamodels.isEmpty {
+        // Check for missing metamodels; a query unit needs neither source nor target models
+        if !module.isQuery, module.sourceMetamodels.isEmpty {
             errors.append(
                 ValidationIssue(
                     type: .error,
@@ -297,7 +297,7 @@ struct ValidateCommand: AsyncParsableCommand {
                 ))
         }
 
-        if module.targetMetamodels.isEmpty {
+        if !module.isQuery, module.targetMetamodels.isEmpty {
             errors.append(
                 ValidationIssue(
                     type: .error,
