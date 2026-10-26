@@ -3,4 +3,5 @@ Sources/ModellingGenerators/Templates/** -text
 Sources/ModellingGenerators/Transformations/** -text
 Tests/**/Resources/** -text
 Tests/**/Fixtures/** -text
+Sources/SwiftModelling/SwiftModelling.docc/Resources/Code/**/expected-* -text
 *.sh text eol=lf

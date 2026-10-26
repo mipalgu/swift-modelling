@@ -142,3 +142,18 @@ func executeSwiftEcore(
         stderr: captureOutput ? (result.standardError ?? "") : ""
     )
 }
+
+/// Text as a command-line tool prints it on this platform.
+///
+/// Standard output ends each line with the platform's line terminator, which is a carriage
+/// return and line feed on Windows and a line feed elsewhere.
+///
+/// - Parameter text: The text with line feeds between its lines.
+/// - Returns: The text with the platform's line terminator between its lines.
+func consoleText(_ text: String) -> String {
+    #if os(Windows)
+    return text.replacingOccurrences(of: "\n", with: "\r\n")
+    #else
+    return text
+    #endif
+}

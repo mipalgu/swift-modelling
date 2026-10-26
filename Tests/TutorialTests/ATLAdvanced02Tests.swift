@@ -367,7 +367,7 @@ struct ATLAdvanced02Tests {
             ],
             in: workspace)
         #expect(result.succeeded, "The query should run: \(result.stdout)\(result.stderr)")
-        #expect(result.stdout == "true\n")
+        #expect(result.stdout == consoleText("true\n"))
 
         let actual = try String(
             contentsOf: workspace.appendingPathComponent("charts/organisation.dot"), encoding: .utf8)

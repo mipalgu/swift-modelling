@@ -131,7 +131,7 @@ struct QueryCommandTests {
 
         #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
         #expect(project.text(of: "flow.dot", in: output) == FlowProject.expectedDot)
-        #expect(result.stdout == "true\n")
+        #expect(result.stdout == consoleText("true\n"))
     }
 
     @Test("writes relative to the current directory by default")
@@ -167,12 +167,12 @@ struct QueryCommandTests {
         let printed = try await executeSwiftATL(
             command: "query", arguments: [dot.path, "--source", "Flow=\(project.modelFile.path)"])
         #expect(printed.succeeded, "\(printed.stdout)\(printed.stderr)")
-        #expect(printed.stdout == FlowProject.expectedDot)
+        #expect(printed.stdout == consoleText(FlowProject.expectedDot))
 
         let listed = try await executeSwiftATL(
             command: "query", arguments: [names.path, "--source", project.modelFile.path])
         #expect(listed.succeeded, "\(listed.stdout)\(listed.stderr)")
-        #expect(listed.stdout == "Sequence{'Receive', 'Pack', 'Ship'}\n")
+        #expect(listed.stdout == consoleText("Sequence{'Receive', 'Pack', 'Ship'}\n"))
 
         let quiet = try await executeSwiftATL(
             command: "query",
@@ -243,7 +243,7 @@ struct QueryCommandTests {
             ])
 
         #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
-        #expect(result.stdout == "13\n")
+        #expect(result.stdout == consoleText("13\n"))
     }
 
     @Test("reports a metamodel without a package")
