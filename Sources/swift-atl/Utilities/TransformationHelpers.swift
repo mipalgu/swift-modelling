@@ -297,6 +297,73 @@ func saveTargetModelsFromMapping(
     }
 }
 
+// MARK: - Metamodel Search Paths
+
+/// The environment variable that lists metamodel directories, separated by colons.
+let metamodelSearchPathVariable = "ECOREPATH"
+
+/// Builds the directories searched for the metamodels named by `-- @path` directives.
+///
+/// Directories given on the command line come first, followed by those listed in the
+/// `ECOREPATH` environment variable. Only when neither names a directory are the
+/// default directories used: the directory of the ATL file, common `Resources`
+/// directories near it, and the current directory.
+///
+/// - Parameters:
+///   - atlFile: The path of the ATL file whose directives are resolved.
+///   - explicit: The directories given with `--metamodel-path`, in order.
+/// - Returns: The directories to search, in order.
+func metamodelSearchPaths(for atlFile: String, explicit: [String]) -> [String] {
+    var searchPaths: [String] = []
+    var hasUserSpecifiedPaths = false
+
+    // Priority 1: CLI arguments
+    if !explicit.isEmpty {
+        searchPaths.append(contentsOf: explicit)
+        hasUserSpecifiedPaths = true
+    }
+
+    // Priority 2: ECOREPATH environment variable
+    if let ecorepath = ProcessInfo.processInfo.environment[metamodelSearchPathVariable],
+        !ecorepath.isEmpty
+    {
+        let paths = ecorepath.split(separator: ":").map(String.init)
+        searchPaths.append(contentsOf: paths)
+        hasUserSpecifiedPaths = true
+    }
+
+    // Only add default search paths if user hasn't specified any
+    if !hasUserSpecifiedPaths {
+        let atlURL = URL(fileURLWithPath: atlFile)
+        let atlDirectory = atlURL.deletingLastPathComponent().path
+
+        // Default priority 1: ATL file's directory
+        searchPaths.append(atlDirectory)
+
+        // Default priority 2: Common metamodel directories relative to ATL file
+        let atlParentDir = URL(fileURLWithPath: atlDirectory).deletingLastPathComponent().path
+        let commonPaths = [
+            "\(atlParentDir)", // Parent of ATL directory
+            "\(atlParentDir)/Resources", // Common Resources directory
+            "\(atlDirectory)/../Resources", // Resources at same level
+            "\(atlDirectory)/../../Resources" // Resources two levels up (for test structures)
+        ]
+        for path in commonPaths {
+            let normalized = URL(fileURLWithPath: path).standardizedFileURL.path
+            if !searchPaths.contains(normalized) {
+                searchPaths.append(normalized)
+            }
+        }
+
+        // Default priority 3: Current working directory
+        let currentDirectory = FileManager.default.currentDirectoryPath
+        if currentDirectory != atlDirectory {
+            searchPaths.append(currentDirectory)
+        }
+    }
+    return searchPaths
+}
+
 // MARK: - Built-in Metamodels and Parameters
 
 /// The metamodels that the tool provides without a metamodel file.

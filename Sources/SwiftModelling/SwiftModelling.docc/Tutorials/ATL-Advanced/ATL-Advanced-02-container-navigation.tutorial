@@ -1,4 +1,4 @@
-@Tutorial(time: 30) {
+@Tutorial(time: 35) {
     @Intro(title: "Container Navigation and Reflection in ATL") {
         Ask an element for the element that contains it, and read and write features by name, without changing your metamodel.
 
@@ -7,6 +7,7 @@
         - How `refImmediateComposite()` replaces parameter threading
         - How `refGetValue`, `refSetValue` and `refInvokeOperation` work by feature and helper name
         - Which of these operations apply to source models and which to target models
+        - How an ATL query computes a value from the same model and writes a Graphviz file with `writeTo`
 
         @Image(source: "atl-transformations.svg", alt: "ATL Transformation Pipeline")
     }
@@ -124,6 +125,40 @@
         }
     }
 
+    @Section(title: "Querying the Organisation") {
+        @ContentAndMedia {
+            A transformation builds a target model. When all you need is a single value, such as a report or a diagram, an ATL query is simpler: a query unit starts with `query Name = expression;` instead of a module header, contains only helpers besides its query, and has no target model.
+
+            A query can write a string to a file with `writeTo(path)`, or `writeToWithCharset(path, charset)` for another character encoding. `swift-atl query` lets it write only inside an output directory, the current directory unless `--output-directory` names another; absolute paths and paths that lead outside the directory are rejected unless `--allow-unrestricted-paths` is given.
+        }
+
+        @Steps {
+            @Step {
+                Examine a query that describes the organisation chart in the Graphviz dot language.
+
+                @Code(name: "organisation2dot.atl", file: organisation2dot.atl)
+
+                The query builds the text of every company with the chart helper and ends with `writeTo('organisation.dot')`. The edge helper is declared once for the abstract Named class, so companies, departments and teams share it. The metamodel is named by the `-- @path` directive, and the model is bound to it by its name, Organisation.
+            }
+
+            @Step {
+                Run the query.
+
+                @Code(name: "Terminal", file: atl-advanced-02-query.sh)
+
+                The input model is matched to the Organisation metamodel. The query writes the chart below the charts directory and prints its value, which is `true` because `writeTo` returns `true`. A query without `writeTo` prints its value instead, so you can also redirect the output of a query to a file.
+            }
+
+            @Step {
+                Examine the chart.
+
+                @Code(name: "organisation.dot", file: expected-organisation.dot)
+
+                Every department, team and employee appears once, below the element that contains it. Graphviz draws the graph as an organisation chart.
+            }
+        }
+    }
+
     @Assessments {
         @MultipleChoice {
             Why can plain OCL not ask an Employee for its Team in the Organisation metamodel?
@@ -205,6 +240,34 @@
 
                 @Justification(reaction: "Try again!") {
                     It is used here in a `do` block of a rule, which is a natural place for imperative updates of target elements.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Where may the query write when it is run with `swift-atl query organisation2dot.atl --source sample-company.xmi --output-directory charts`?
+
+            @Choice(isCorrect: true) {
+                Only inside the charts directory
+
+                @Justification(reaction: "Correct!") {
+                    Relative paths are resolved against the output directory, and paths that lead outside it are rejected unless `--allow-unrestricted-paths` is given.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Anywhere the user may write
+
+                @Justification(reaction: "Not quite!") {
+                    That needs `--allow-unrestricted-paths`, which you should give only for queries you trust.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Nowhere, because queries cannot write files
+
+                @Justification(reaction: "Try again!") {
+                    Queries, helpers and `do` blocks can all call `writeTo`; the command decides where the files may go.
                 }
             }
         }

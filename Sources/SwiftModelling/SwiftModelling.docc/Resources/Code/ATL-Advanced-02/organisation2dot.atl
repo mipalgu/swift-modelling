@@ -1,0 +1,29 @@
+-- ATL Query: Organisation to Graphviz
+-- Describes the organisation chart of every company as a Graphviz graph,
+-- with an edge from each company, department and team to what it
+-- contains, and writes the graphs to organisation.dot.
+-- @path Organisation=organisation.ecore
+
+query Organisation2Dot =
+    Organisation!Company.allInstances()->iterate(c; text : String = '' | text + c.chart)
+        .writeTo('organisation.dot');
+
+-- The Graphviz graph of a company
+helper context Organisation!Company def : chart : String =
+    'digraph ' + self.name.quoted() + ' {\n'
+    + '  node [shape=box];\n'
+    + self.departments->iterate(d; text : String = '' | text + self.edge(d) + d.edges)
+    + '}\n';
+
+-- The edges from a department to its teams, and from each team to its members
+helper context Organisation!Department def : edges : String =
+    self.teams->iterate(t; text : String = '' |
+        text + self.edge(t) + t.members->iterate(e; lines : String = '' | lines + t.edge(e)));
+
+-- One edge from a named element to an element it contains
+helper context Organisation!Named def : edge(child : Organisation!Named) : String =
+    '  ' + self.name.quoted() + ' -> ' + child.name.quoted() + ';\n';
+
+-- A string in double quotes, as Graphviz writes names
+helper context String def : quoted() : String =
+    '"' + self + '"';

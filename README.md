@@ -46,6 +46,7 @@ and the [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec
 - **Built-in Metamodels**: The Ecore and generator metamodels resolve from `-- @nsURI` directives without metamodel files
 - **Reflection**: `refImmediateComposite()`, `refGetValue`, `refSetValue`, `refUnsetValue` and `refInvokeOperation` for container navigation without opposite references
 - **Code Generation**: `swift-atl generate` turns Ecore models into generator models and generated code with the shared pipeline
+- **Queries**: `swift-atl query` evaluates ATL query units, such as one that builds a Graphviz file from a model with `writeTo`, writing only inside an output directory unless told otherwise
 
 ### MOFM2T Support
 - **MTL Parser**: Parse MTL templates from text files following the OMG MOFM2T v1.0 specification
@@ -452,6 +453,27 @@ create OUT : GenModel from IN : Ecore;
 **Output layout.** A target that is an instance of a built-in metamodel is written in the layout of the Eclipse Modeling Framework: references to other models are `uri#fragment` attribute values (`ecorePackage="library.ecore#/"`), with relative URIs and name-based fragments, so that the result opens unchanged in the Eclipse tooling. Other targets are written as before, unless `--reference-style plain` is given: such an XMI target is then also written in the layout of the Eclipse Modeling Framework, and a reference into the same document holds the fragment alone (`peer="/0"`) rather than `#/0`, as Eclipse writes XMI model files. `encoded`, the default, keeps the usual layout. Both styles load again.
 
 **Empty targets.** A transformation whose rules match nothing still succeeds and writes each target as an empty model: an XMI document holding only the `xmi:XMI` element, or an empty JSON array.
+
+### ATL Queries: `swift-atl query`
+
+An ATL query unit starts with `query Name = expression;` instead of a module header and contains only helpers besides its query. `swift-atl query` evaluates it over its input models and prints its value; `transform` rejects a query unit, and `query` rejects a module.
+
+```bash
+# Write the dot file that the query builds, below graphs/
+swift-atl query Flow2Dot.atl --source order.xmi --output-directory graphs
+
+# Print the value of a query that does not write a file, and keep it
+swift-atl query FlowText.atl --source Flow=order.xmi > order.txt
+
+# Name the model IN, of the metamodel Flow given on the command line
+swift-atl query Count.atl --metamodel Flow=Flow.ecore --source IN:Flow=order.xmi --param offset=10
+```
+
+**Input models.** A query has no `from` clause. Its metamodels are named by `-- @path` and `-- @nsURI` directives or given with `--metamodel NAME=file.ecore` (a bare `--metamodel file.ecore` uses the name of the package), and each metamodel is an input model of the same name. `--source path` binds the models in the order of their metamodels, `--source Name=path` binds a model by metamodel name, and `--source IN:Name=path` names the model `IN`, for `allInstancesFrom('IN')`, and binds it to the metamodel `Name`. `--param`, `--input-format`, `--metamodel-path` and `--unset-features` work as for `transform`.
+
+**Writing files.** A query can write a string to a file with `writeTo(path)`, or with `writeToWithCharset(path, charset)` in another character encoding; both return `true`, replace an existing file, create missing directories and add no line break. Relative paths are resolved against the output directory, which is the current directory unless `--output-directory` names another. Absolute paths and paths that lead outside the output directory, through `..` or through symbolic links, are rejected with an error that names the path, unless `--allow-unrestricted-paths` is given. Eclipse ATL resolves relative paths against the workspace or the working directory of the Java process and accepts any path; give `--allow-unrestricted-paths` only for queries you trust. `swift-atl transform` does not enable file output, so a transformation that calls `writeTo` fails.
+
+**Result.** Eclipse ATL returns the value of a query to the program that launched it and its launcher discards it. `swift-atl query` prints it to standard output: a string as it is, followed by a line break unless it ends with one, and any other value as ATL writes it, such as `true`, `42` or `Sequence{'a', 'b'}`. A query that ends with `writeTo` therefore prints `true`. `--no-print-result` prints nothing. Messages, including `--verbose` progress, go to standard error.
 
 ### Query Command
 

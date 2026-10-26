@@ -6,9 +6,9 @@ Transform models with the Atlas Transformation Language.
 
 The `swift-atl` command-line tool executes ATL (Atlas
 Transformation Language) transformations to convert models from
-one metamodel to another. It also parses, validates, tests,
-analyses and compiles ATL files, and generates generator models and
-source code from Ecore models.
+one metamodel to another, and evaluates ATL queries. It also parses,
+validates, tests, analyses and compiles ATL files, and generates
+generator models and source code from Ecore models.
 
 The tool is built on the swift-atl package
 (https://github.com/mipalgu/swift-atl), which provides a pure
@@ -60,6 +60,50 @@ swift-atl transform Library2Report.atl \
     --source IN=library.xmi \
     --target OUT=report.xmi \
     --param title=Catalogue --param limit=10
+```
+
+### query
+
+Evaluate an ATL query unit over its input models and print its value.
+
+```bash
+swift-atl query <query-file> [options]
+```
+
+A query unit starts with `query Name = expression;` instead of a module header, and contains only helpers besides its query. `transform` rejects a query unit, and `query` rejects a module.
+
+**Options:**
+
+- `--source <[NAME[:METAMODEL]=]path>` - Input model file; repeat for several models. A bare path is matched to the metamodels of the query in order, `NAME=path` binds the model of the metamodel `NAME`, and `NAME:METAMODEL=path` names the model `NAME` and binds it to `METAMODEL`
+- `-m, --metamodel <[NAME=]file.ecore>` - Ecore metamodel bound to the metamodel name `NAME`, or to the name of its package (repeatable)
+- `--output-directory <directory>` - Directory that `writeTo` and `writeToWithCharset` write into (default: the current directory)
+- `--allow-unrestricted-paths` - Let `writeTo` and `writeToWithCharset` write to absolute paths and outside the output directory
+- `--print-result` / `--no-print-result` - Print the value of the query to standard output (default: print)
+- `--param <name=value>` - Value for a parameter declared with `-- @param` (repeatable)
+- `--input-format <xmi|json>` - Format of the input models (default: from the file extension)
+- `--metamodel-path <directory>` - Directory searched for metamodels named by `-- @path` directives (repeatable)
+- `--unset-features <defaults|undefined>` - How the query reads features that a model does not set
+- `--verbose` - Write progress to standard error
+- `--debug` - Trace the execution
+
+**Input models.** A query has no `from` clause. Its metamodels are those named by its `-- @path` and `-- @nsURI` directives, followed by those given with `--metamodel`, and each is an input model of the same name. Type references such as `Flow!Step` resolve through the metamodel name, `allInstances()` collects the instances of every model of that metamodel, and `allInstancesFrom('IN')` selects the model named `IN`.
+
+**Writing files.** `writeTo(path)` writes a string in UTF-8, and `writeToWithCharset(path, charset)` in `UTF-8`, `UTF-16`, `UTF-16BE`, `UTF-16LE`, `UTF-32`, `UTF-32BE`, `UTF-32LE`, `ISO-8859-1` or `US-ASCII`. Both return `true`, replace an existing file, create missing directories and add no line break. Relative paths are resolved against the output directory. Absolute paths and paths that lead outside the output directory, through `..` or through symbolic links, are rejected with an error that names the path, unless `--allow-unrestricted-paths` is given. Transformations run by `transform` cannot write files.
+
+**Result.** The value of the query is printed to standard output: a string as it is, followed by a line break unless it ends with one, and any other value as ATL writes it, such as `true`, `42` or `Sequence{'a', 'b'}`. A query that ends with `writeTo` prints `true`. Eclipse ATL returns the value to the program that launched the query, and its launcher discards it.
+
+**Examples:**
+
+```bash
+# Write the dot file that the query builds, below graphs/
+swift-atl query Flow2Dot.atl --source order.xmi --output-directory graphs
+
+# Print the value of a query to a file instead
+swift-atl query FlowText.atl --source Flow=order.xmi > order.txt
+
+# Name the model and give the metamodel on the command line
+swift-atl query Count.atl --metamodel Flow=Flow.ecore \
+    --source IN:Flow=order.xmi --param offset=10
 ```
 
 ### generate

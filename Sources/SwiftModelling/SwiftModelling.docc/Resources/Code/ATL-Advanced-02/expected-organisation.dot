@@ -1,0 +1,13 @@
+digraph "Harbour Logistics" {
+  node [shape=box];
+  "Harbour Logistics" -> "Operations";
+  "Operations" -> "Dispatch";
+  "Dispatch" -> "Ayesha Rahman";
+  "Dispatch" -> "Tom Nguyen";
+  "Operations" -> "Fleet";
+  "Fleet" -> "Maria Rossi";
+  "Harbour Logistics" -> "Finance";
+  "Finance" -> "Payroll";
+  "Payroll" -> "Kofi Mensah";
+  "Payroll" -> "Lena Fischbach";
+}

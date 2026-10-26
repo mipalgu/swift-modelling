@@ -40,6 +40,9 @@ struct ATLAdvanced02Tests {
         "sample-company.xmi",
         "expected-output.xmi",
         "atl-advanced-02-run.sh",
+        "organisation2dot.atl",
+        "atl-advanced-02-query.sh",
+        "expected-organisation.dot",
     ]
 
     static func resource(_ name: String) -> URL {
@@ -319,6 +322,65 @@ struct ATLAdvanced02Tests {
             contentsOf: workspace.appendingPathComponent("output-directory.xmi"), encoding: .utf8)
         let expected = try Self.text(of: "expected-output.xmi")
         #expect(Self.entries(in: actual) == Self.entries(in: expected))
+    }
+
+    // MARK: - Query
+
+    @Test("ATL: The query is a query unit that writes a dot file")
+    func testQueryContent() throws {
+        let content = try Self.text(of: "organisation2dot.atl")
+        #expect(content.contains("query Organisation2Dot ="))
+        #expect(!content.contains("module "))
+        #expect(!content.contains("create "))
+        #expect(content.contains("-- @path Organisation=organisation.ecore"))
+        #expect(content.contains(".writeTo('organisation.dot')"))
+        #expect(content.contains("helper context Organisation!Named def : edge(child : Organisation!Named) : String ="))
+    }
+
+    @Test("CLI: Validate the query via swift-atl")
+    @MainActor
+    func testCLIValidateQuery() async throws {
+        let result = try await Self.execute(
+            tool: "swift-atl", arguments: ["validate", Self.resource("organisation2dot.atl").path])
+        #expect(result.succeeded, "The query should validate: \(result.stdout)\(result.stderr)")
+    }
+
+    @Test("CLI: The query writes the expected organisation chart")
+    @MainActor
+    func testCLIQueryMatchesExpectedChart() async throws {
+        let workspace = FileManager.default.temporaryDirectory
+            .resolvingSymlinksInPath()
+            .appendingPathComponent("swift-modelling-tutorial-tests")
+            .appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: workspace, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: workspace) }
+        for name in ["organisation.ecore", "organisation2dot.atl", "sample-company.xmi"] {
+            try FileManager.default.copyItem(at: Self.resource(name), to: workspace.appendingPathComponent(name))
+        }
+
+        let result = try await Self.execute(
+            tool: "swift-atl",
+            arguments: [
+                "query", "organisation2dot.atl",
+                "--source", "sample-company.xmi",
+                "--output-directory", "charts",
+            ],
+            in: workspace)
+        #expect(result.succeeded, "The query should run: \(result.stdout)\(result.stderr)")
+        #expect(result.stdout == "true\n")
+
+        let actual = try String(
+            contentsOf: workspace.appendingPathComponent("charts/organisation.dot"), encoding: .utf8)
+        #expect(actual == (try Self.text(of: "expected-organisation.dot")))
+    }
+
+    @Test("Script: The query script uses the documented command")
+    func testQueryScript() throws {
+        let content = try Self.text(of: "atl-advanced-02-query.sh")
+        #expect(content.contains("swift-atl query organisation2dot.atl"))
+        #expect(content.contains("--source sample-company.xmi"))
+        #expect(content.contains("--output-directory charts"))
+        #expect(content.contains("charts/organisation.dot"))
     }
 
     @Test("Script: The run script uses the documented command")
