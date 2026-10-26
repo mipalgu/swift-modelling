@@ -259,7 +259,8 @@ swift-atl transform Ecore2GenModel.atl \
 Beyond `validate` and `transform`, the tool offers `parse` to
 display the structure of a transformation, `analyze` for
 complexity metrics, `test` to run tests over files or a directory,
-`compile` to compile a transformation, and `generate` to create
+`compile` to compile a transformation, `query` to evaluate an ATL
+query and write the files it produces, and `generate` to create
 generator models and source code from Ecore models. See
 <doc:swift-atl> for the options of each command.
 

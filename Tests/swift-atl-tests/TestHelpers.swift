@@ -169,13 +169,15 @@ func cleanupTemporaryDirectory(_ url: URL) {
 ///   - command: The command to execute (e.g., "parse", "validate").
 ///   - arguments: Additional arguments for the command.
 ///   - captureOutput: Whether to capture stdout and stderr (default: true).
+///   - workingDirectory: The directory to run the tool in (default: the current directory).
 /// - Returns: The subprocess execution result.
 /// - Throws: Errors from subprocess execution or executable path resolution.
 @MainActor
 func executeSwiftATL(
     command: String,
     arguments: [String] = [],
-    captureOutput: Bool = true
+    captureOutput: Bool = true,
+    workingDirectory: URL? = nil
 ) async throws -> SubprocessResult {
     // Given
     let executablePath = try swiftATLExecutablePath()
@@ -188,6 +190,7 @@ func executeSwiftATL(
     let result = try await Subprocess.run(
         .path(FilePath(executablePath)),
         arguments: Arguments(allArgs),
+        workingDirectory: workingDirectory.map { FilePath($0.path) },
         output: .string(limit: 16384),
         error: .string(limit: 16384)
     )

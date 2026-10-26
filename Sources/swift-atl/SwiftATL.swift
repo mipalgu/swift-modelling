@@ -22,6 +22,7 @@ import ArgumentParser
 /// - **analyze**: Analyse ATL transformation files for complexity and metrics
 /// - **compile**: Compile ATL transformation files to executable modules
 /// - **transform**: Execute model transformations using compiled ATL modules
+/// - **query**: Evaluate ATL query units and write the files they produce
 /// - **generate**: Create generator models and generate code from Ecore models with the shared pipeline
 ///
 /// ## Example Usage
@@ -46,6 +47,9 @@ import ArgumentParser
 /// swift-atl transform families2persons.atlc \
 ///   --source families.xmi --target persons.xmi
 ///
+/// # Evaluate a query that writes a Graphviz file
+/// swift-atl query Flow2Dot.atl --source order.xmi --output-directory graphs
+///
 /// # Generate Java from an Ecore model
 /// swift-atl generate library.ecore --language java --output src-gen
 /// ```
@@ -61,7 +65,7 @@ struct SwiftATLCommand: AsyncParsableCommand {
             Swift ATL provides support for model transformation using ATL, the
             Atlas Transformation Language. It enables parsing, validation, testing,
             analysis, compilation of ATL transformations, execution of model-to-model
-            transformations, and generation of code from models.
+            transformations and queries, and generation of code from models.
 
             The tool supports standard ATL syntax for compatibility with existing Eclipse ATL
             transformations while providing enhanced performance through Swift's concurrent
@@ -75,6 +79,7 @@ struct SwiftATLCommand: AsyncParsableCommand {
             AnalyzeCommand.self,
             CompileCommand.self,
             TransformCommand.self,
+            QueryCommand.self,
             GenerateCommand.self,
         ],
         defaultSubcommand: nil

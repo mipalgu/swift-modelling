@@ -191,51 +191,7 @@ struct TransformCommand: AsyncParsableCommand {
 
         do {
             // Step 1: Build metamodel search paths
-            var searchPaths: [String] = []
-            var hasUserSpecifiedPaths = false
-
-            // Priority 1: CLI arguments
-            if !metamodelPath.isEmpty {
-                searchPaths.append(contentsOf: metamodelPath)
-                hasUserSpecifiedPaths = true
-            }
-
-            // Priority 2: ECOREPATH environment variable
-            if let ecorepath = ProcessInfo.processInfo.environment["ECOREPATH"], !ecorepath.isEmpty {
-                let paths = ecorepath.split(separator: ":").map(String.init)
-                searchPaths.append(contentsOf: paths)
-                hasUserSpecifiedPaths = true
-            }
-
-            // Only add default search paths if user hasn't specified any
-            if !hasUserSpecifiedPaths {
-                let atlURL = URL(fileURLWithPath: transformation)
-                let atlDirectory = atlURL.deletingLastPathComponent().path
-
-                // Default priority 1: ATL file's directory
-                searchPaths.append(atlDirectory)
-
-                // Default priority 2: Common metamodel directories relative to ATL file
-                let atlParentDir = URL(fileURLWithPath: atlDirectory).deletingLastPathComponent().path
-                let commonPaths = [
-                    "\(atlParentDir)", // Parent of ATL directory
-                    "\(atlParentDir)/Resources", // Common Resources directory
-                    "\(atlDirectory)/../Resources", // Resources at same level
-                    "\(atlDirectory)/../../Resources" // Resources two levels up (for test structures)
-                ]
-                for path in commonPaths {
-                    let normalized = URL(fileURLWithPath: path).standardizedFileURL.path
-                    if !searchPaths.contains(normalized) {
-                        searchPaths.append(normalized)
-                    }
-                }
-
-                // Default priority 3: Current working directory
-                let currentDirectory = FileManager.default.currentDirectoryPath
-                if currentDirectory != atlDirectory {
-                    searchPaths.append(currentDirectory)
-                }
-            }
+            let searchPaths = metamodelSearchPaths(for: transformation, explicit: metamodelPath)
 
             if verbose && !searchPaths.isEmpty {
                 print("Metamodel search paths:")
@@ -257,6 +213,11 @@ struct TransformCommand: AsyncParsableCommand {
                 searchPaths: searchPaths,
                 continueAfterErrors: continueAfterErrors,
                 metamodelRegistry: try await builtInMetamodelRegistry())
+            guard !module.isQuery else {
+                throw ValidationError(
+                    "'\(transformation)' is a query unit; run it with 'swift-atl \(QueryCommand.configuration.commandName ?? "")'"
+                )
+            }
             let parameterValues = try module.parameterValues(fromText: parseParameters(param))
 
             if verbose {
