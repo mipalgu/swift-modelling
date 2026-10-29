@@ -5,7 +5,9 @@
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
 import ECore
+import EMFBase
 import Foundation
+import MTL
 
 /// The settings of generating code from a generator model.
 ///
@@ -65,6 +67,13 @@ public struct GenerationOptions: Sendable, Equatable {
     /// ``UnsetFeatureReads/undefined`` every unset feature reads as undefined.
     public var unsetFeatureReads: UnsetFeatureReads
 
+    /// How a typed `let` in the templates treats a value that does not conform to its declared type.
+    ///
+    /// With `MTLLetTypeMismatches.error`, the default, a mismatch fails the generation. With
+    /// `MTLLetTypeMismatches.skip` the `let` block is skipped, as in Acceleo 3, and a warning is
+    /// returned in ``GenerationResult/warnings``.
+    public var letTypeMismatches: MTLLetTypeMismatches
+
     /// Creates a set of options.
     ///
     /// - Parameters:
@@ -76,11 +85,13 @@ public struct GenerationOptions: Sendable, Equatable {
     ///   - lineDelimiter: The line delimiter to write.
     ///   - codeStyle: The name of the code style to write.
     ///   - unsetFeatureReads: How the templates read features that a model does not set.
+    ///   - letTypeMismatches: How a typed `let` treats a value that does not conform to its type.
     public init(
         templatePaths: [URL] = [], forceOverwrite: Bool = false, diff: Bool = false,
         redirectionPattern: String? = nil, includeSourceRoot: Bool? = nil,
         lineDelimiter: String? = nil, codeStyle: String? = nil,
-        unsetFeatureReads: UnsetFeatureReads = .defaults
+        unsetFeatureReads: UnsetFeatureReads = .defaults,
+        letTypeMismatches: MTLLetTypeMismatches = .error
     ) {
         self.templatePaths = templatePaths
         self.forceOverwrite = forceOverwrite
@@ -90,6 +101,7 @@ public struct GenerationOptions: Sendable, Equatable {
         self.lineDelimiter = lineDelimiter
         self.codeStyle = codeStyle
         self.unsetFeatureReads = unsetFeatureReads
+        self.letTypeMismatches = letTypeMismatches
     }
 
     /// The redirection pattern that applies, if any.
@@ -150,4 +162,10 @@ public struct GenerationResult: Sendable, Equatable {
 
     /// The number of generator packages that were processed.
     public let packageCount: Int
+
+    /// The distinct warnings of the templates, in the order in which they were first reported.
+    ///
+    /// Each warning is a `SourceDiagnostic`, such as a `let` block that was skipped because its
+    /// value does not conform to the declared type of its variable.
+    public internal(set) var warnings: [SourceDiagnostic] = []
 }

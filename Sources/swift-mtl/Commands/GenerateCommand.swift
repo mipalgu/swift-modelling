@@ -48,6 +48,8 @@ struct GenerateCommand: AsyncParsableCommand {
 
             \(UnsetFeatureOptions.discussion(reader: "the templates"))
 
+            \(LetTypeMismatchOptions.discussion(reader: "the templates"))
+
             Examples:
                 # Basic generation
                 swift-mtl generate template.mtl \\
@@ -94,6 +96,9 @@ struct GenerateCommand: AsyncParsableCommand {
 
                 # Read unset features as undefined instead of their defaults
                 swift-mtl generate template.mtl --model input.xmi --unset-features undefined
+
+                # Skip typed lets of another type with a warning, as Acceleo 3 does
+                swift-mtl generate template.mtl --model input.xmi --let-type-mismatches skip
 
                 # Verbose output
                 swift-mtl generate template.mtl \\
@@ -156,6 +161,10 @@ struct GenerateCommand: AsyncParsableCommand {
     /// How the templates read features that a model does not set.
     @OptionGroup(title: "Evaluation")
     var unsetFeatureOptions: UnsetFeatureOptions
+
+    /// How a typed let treats a value that does not conform to its declared type.
+    @OptionGroup(title: "Evaluation")
+    var letTypeMismatchOptions: LetTypeMismatchOptions
 
     /// The code style of the text that a template set generates.
     @OptionGroup(title: "Code style")
@@ -275,7 +284,8 @@ struct GenerateCommand: AsyncParsableCommand {
             basePath: output, options: generatorOptions, standardOutput: .capture)
         let generator = MTLGenerator(
             module: mtlModule, generationStrategy: strategy, serviceProviders: [parameters],
-            unsetFeatureReads: unsetFeatureOptions.unsetFeatures)
+            unsetFeatureReads: unsetFeatureOptions.unsetFeatures,
+            letTypeMismatches: letTypeMismatchOptions.letTypeMismatches)
         parameters.bind(to: generator)
 
         do {
@@ -285,8 +295,10 @@ struct GenerateCommand: AsyncParsableCommand {
                 models: inputs.models
             )
         } catch {
+            GenerationWarningReport.write(generator.statistics.warnings)
             throw ValidationError.generationFailed(error.localizedDescription)
         }
+        GenerationWarningReport.write(generator.statistics.warnings)
         try await writeStandardOutput(of: strategy)
 
         // Display results
@@ -323,11 +335,13 @@ struct GenerateCommand: AsyncParsableCommand {
         let step = GenerationStep(
             templates: .templateSet(templateSet, codeStyle: codeStyle.codeStyle), templatePaths: templateURLs,
             parameters: parameters, outputDirectory: URL(fileURLWithPath: output),
-            generatorOptions: generatorOptions, unsetFeatureReads: unsetFeatureOptions.unsetFeatures)
+            generatorOptions: generatorOptions, unsetFeatureReads: unsetFeatureOptions.unsetFeatures,
+            letTypeMismatches: letTypeMismatchOptions.letTypeMismatches)
         let verbose = self.verbose
         let result = try await step.run(
             arguments: inputs.arguments, models: inputs.models, resourceSet: inputs.resourceSet,
             progress: { update in if verbose { print("  \(update.message)") } })
+        GenerationWarningReport.write(result.warnings)
         if let text = result.standardOutput {
             let url = URL(fileURLWithPath: output).appendingPathComponent(MTLStandardOutput.fileName)
             try text.write(to: url, atomically: true, encoding: .utf8)

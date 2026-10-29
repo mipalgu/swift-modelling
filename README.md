@@ -56,6 +56,7 @@ and the [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec
 - **Advanced Features**: File blocks, protected areas, queries, macros, control flow
 - **CLI Tool**: Generate, parse, and validate MTL templates from the command line, with template search paths, parameters and merge or diff handling of existing files
 - **Unset Features**: Templates read unset features as in the Eclipse Modeling Framework, or as undefined with `swift-mtl generate --unset-features undefined`
+- **Typed Let Blocks**: A value that does not conform to the declared type of a `let` variable is an error, or, with `--let-type-mismatches skip`, skips the block with a warning, as in Acceleo 3
 - **Standard Compliance**: Implements OMG MOFM2T v1.0 with compatibility for Acceleo-specific extensions
 
 ## Requirements
@@ -574,6 +575,8 @@ swift-mtl generate template.mtl \
 **Parameters.** `--param name=value` (repeatable) is available to every template as the bare variable `[name/]` and through two services: `parameter('name')` returns the value (`null` if it was not given) and `hasParameter('name')` tells whether it was given. A name must be an identifier that is not an MTL or AQL reserved keyword. A value is a boolean when it reads `true` or `false`, an integer when it is a whole number, and a string otherwise, so `[if (parameter('verbose'))]` and `[parameter('count') + 1/]` work. The value is everything after the first `=`, and a later argument replaces an earlier one of the same name.
 
 **Unset features.** `--unset-features defaults|undefined` chooses how templates read features that a model does not set. With `defaults`, the default, `[c.count/]` writes `0` for an unset integer, as the Eclipse Modeling Framework and Acceleo do; with `undefined` it writes nothing, because every unset feature reads as undefined.
+
+**Typed let blocks.** `--let-type-mismatches error|skip` chooses what happens when a typed `let`, such as `[let n : Integer = c.name]...[/let]`, receives a value that does not conform to the declared type. With `error`, the default, the generation stops with an error that names the variable and both types. With `skip`, the `let` block is skipped and the generation continues, as Acceleo 3 treats a typed `let` as a type test, and a line such as `warning: line 4, column 1: Variable 'n' of type Integer cannot hold a value of type String, so the let block is skipped` is written to standard error; a mismatch that recurs, for instance in a loop, is reported once. `null` conforms to every type. `swift-ecore generate` and `swift-atl generate` accept the option too, for the templates.
 
 **Existing files.** A file that exists is merged with the generated text when the module declares a merge, and replaced otherwise. `--force-overwrite` always replaces it. `--diff` keeps it and writes the generated text beside it as `.<name>.new`; `--force-overwrite` wins when both are given.
 

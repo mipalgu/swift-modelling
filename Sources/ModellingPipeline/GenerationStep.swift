@@ -64,6 +64,12 @@ public struct GenerationStep: Sendable {
         /// The name of the template set that ran, or `nil` for a single module.
         public let templateSet: String?
 
+        /// The distinct warnings of the templates, in the order in which they were first reported.
+        ///
+        /// Each warning is a `SourceDiagnostic`, such as a `let` block that was skipped because
+        /// its value does not conform to the declared type of its variable.
+        public let warnings: [SourceDiagnostic]
+
         /// Creates the description of a generation.
         ///
         /// - Parameters:
@@ -72,15 +78,17 @@ public struct GenerationStep: Sendable {
         ///   - standardOutput: The text written outside any file block.
         ///   - mainTemplate: The name of the template that ran.
         ///   - templateSet: The name of the template set, if one ran.
+        ///   - warnings: The warnings of the templates (default: none).
         public init(
             outputDirectory: URL, files: [URL], standardOutput: String?, mainTemplate: String,
-            templateSet: String?
+            templateSet: String?, warnings: [SourceDiagnostic] = []
         ) {
             self.outputDirectory = outputDirectory
             self.files = files
             self.standardOutput = standardOutput
             self.mainTemplate = mainTemplate
             self.templateSet = templateSet
+            self.warnings = warnings
         }
     }
 
@@ -113,6 +121,13 @@ public struct GenerationStep: Sendable {
     /// How the templates read features that a model does not set.
     public var unsetFeatureReads: UnsetFeatureReads
 
+    /// How a typed `let` in the templates treats a value that does not conform to its declared type.
+    ///
+    /// With `MTLLetTypeMismatches.error`, the default, a mismatch fails the step. With
+    /// `MTLLetTypeMismatches.skip` the `let` block is skipped, as in Acceleo 3, and a warning is
+    /// returned in ``Result/warnings``.
+    public var letTypeMismatches: MTLLetTypeMismatches
+
     /// Creates a generation step.
     ///
     /// - Parameters:
@@ -123,11 +138,14 @@ public struct GenerationStep: Sendable {
     ///   - outputDirectory: The directory that the templates write below.
     ///   - generatorOptions: The options of the generator (default options).
     ///   - unsetFeatureReads: How unset features read (default ``UnsetFeatureReads/defaults``).
+    ///   - letTypeMismatches: How a typed `let` treats a value that does not conform to its type
+    ///     (default `MTLLetTypeMismatches.error`).
     public init(
         templates: Templates, templatePaths: [URL] = [], parameters: [String: any EcoreValue] = [:],
         serviceProviders: [any AQLServiceProvider] = [], outputDirectory: URL,
         generatorOptions: MTLGeneratorOptions = MTLGeneratorOptions(),
-        unsetFeatureReads: UnsetFeatureReads = .defaults
+        unsetFeatureReads: UnsetFeatureReads = .defaults,
+        letTypeMismatches: MTLLetTypeMismatches = .error
     ) {
         self.templates = templates
         self.templatePaths = templatePaths
@@ -136,6 +154,7 @@ public struct GenerationStep: Sendable {
         self.outputDirectory = outputDirectory
         self.generatorOptions = generatorOptions
         self.unsetFeatureReads = unsetFeatureReads
+        self.letTypeMismatches = letTypeMismatches
     }
 
     /// Runs the templates.
@@ -150,7 +169,7 @@ public struct GenerationStep: Sendable {
     ///   - resourceSet: The resource set that receives the data models of a template set
     ///     (default: a new resource set).
     ///   - progress: A receiver of progress reports; reports are dropped by default.
-    /// - Returns: A description of what was written.
+    /// - Returns: A description of what was written, including the warnings of the templates.
     /// - Throws: `MTLParameterError` if a parameter name is not an identifier or is reserved,
     ///   `GenerationError` if a template set cannot be assembled or fails,
     ///   ``ModelPipelineError`` if a module cannot be parsed or has no such template, and
@@ -178,7 +197,8 @@ public struct GenerationStep: Sendable {
             let setModels = models.merging(data.models) { model, _ in model }
             let total = try await TemplateRun.expectedFileCount(
                 of: module, descriptor: set.descriptor, arguments: arguments, services: services,
-                models: setModels, unsetFeatureReads: unsetFeatureReads, prepare: parameterServices.bind(to:))
+                models: setModels, unsetFeatureReads: unsetFeatureReads, letTypeMismatches: letTypeMismatches,
+                prepare: parameterServices.bind(to:))
             return try await generate(
                 module: module, mainTemplate: set.descriptor.mainTemplate, arguments: arguments,
                 models: setModels, services: services, options: options, total: total,
@@ -232,12 +252,12 @@ public struct GenerationStep: Sendable {
         let output = try await TemplateRun.run(
             module: module, mainTemplate: mainTemplate, arguments: arguments, models: models,
             services: services, options: options, outputDirectory: base, total: total,
-            unsetFeatureReads: unsetFeatureReads, keepsStandardOutput: true, progress: progress,
-            prepare: parameters.bind(to:))
+            unsetFeatureReads: unsetFeatureReads, letTypeMismatches: letTypeMismatches,
+            keepsStandardOutput: true, progress: progress, prepare: parameters.bind(to:))
         let count = output.files.count
         progress(GenerationProgressUpdate(message: "Done", completed: count, total: total ?? count))
         return Result(
             outputDirectory: base, files: output.files, standardOutput: output.standardOutput,
-            mainTemplate: mainTemplate, templateSet: templateSet)
+            mainTemplate: mainTemplate, templateSet: templateSet, warnings: output.warnings)
     }
 }

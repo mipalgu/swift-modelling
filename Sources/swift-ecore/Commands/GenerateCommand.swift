@@ -40,6 +40,8 @@ struct GenerateCommand: AsyncParsableCommand {
             Code styles of the template sets (--code-style): \(CodeStyleOptions.bundledStyleList())
 
             \(UnsetFeatureOptions.discussion(reader: "the import transformation and the templates"))
+
+            \(LetTypeMismatchOptions.discussion(reader: "the templates"))
             """
     )
 
@@ -75,6 +77,10 @@ struct GenerateCommand: AsyncParsableCommand {
     /// How the import transformation and the templates read features that a model does not set.
     @OptionGroup(title: "Evaluation")
     var unsetFeatureOptions: UnsetFeatureOptions
+
+    /// How a typed let in the templates treats a value that does not conform to its declared type.
+    @OptionGroup(title: "Evaluation")
+    var letTypeMismatchOptions: LetTypeMismatchOptions
 
     /// Directories whose template files replace the bundled templates.
     @Option(
@@ -132,6 +138,7 @@ struct GenerateCommand: AsyncParsableCommand {
         if useModelDirectory { options.includeSourceRoot = true }
         codeStyle.apply(to: &options)
         unsetFeatureOptions.apply(to: &options)
+        letTypeMismatchOptions.apply(to: &options)
         var importOptions = GenModelImportOptions()
         genModelDefaults.apply(to: &importOptions)
         unsetFeatureOptions.apply(to: &importOptions)
@@ -150,6 +157,7 @@ struct GenerateCommand: AsyncParsableCommand {
             throw error
         }
         bar.finish()
+        GenerationWarningReport.write(result.warnings)
         let noun = result.files.count == 1 ? "file" : "files"
         print("Generated \(result.files.count) \(noun) in: \(result.outputDirectory.path)")
     }

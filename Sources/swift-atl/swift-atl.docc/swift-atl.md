@@ -128,6 +128,7 @@ The command is the ATL entry to the shared generation pipeline. An Ecore model i
 - `--diff` - Write the generated text of existing files beside them as `.<name>.new`
 - `--model-directory` - Write below the model directory of the generator model
 - `--code-style <style>` - The layout of the generated text, one of the styles of the template set (`java`: `eclipse`, the default, or `emf`); rejected for the language `genmodel` and for sets that offer none, such as `swift`, `c` and `cpp`
+- `--let-type-mismatches <error|skip>` - Whether a typed `let` in the templates whose value does not conform to the declared type stops the generation (`error`, the default) or is skipped with a warning on standard error (`skip`, as in Acceleo 3)
 - `--verbose` - One line for every file; without it a progress bar with counts appears on an interactive terminal
 
 **Examples:**

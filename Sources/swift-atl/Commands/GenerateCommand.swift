@@ -48,6 +48,8 @@ struct GenerateCommand: AsyncParsableCommand {
 
             \(UnsetFeatureOptions.discussion(reader: "the import transformation and the templates"))
 
+            \(LetTypeMismatchOptions.discussion(reader: "the templates"))
+
             Bundled languages: \(availableLanguageList()). A directory that holds a template set and \
             is given with --template-path adds its language.
 
@@ -124,6 +126,10 @@ struct GenerateCommand: AsyncParsableCommand {
     /// How the import transformation and the templates read features that a model does not set.
     @OptionGroup(title: "Evaluation")
     var unsetFeatureOptions: UnsetFeatureOptions
+
+    /// How a typed let in the templates treats a value that does not conform to its declared type.
+    @OptionGroup(title: "Evaluation")
+    var letTypeMismatchOptions: LetTypeMismatchOptions
 
     /// Directories whose template files replace the bundled templates.
     @Option(
@@ -274,6 +280,7 @@ struct GenerateCommand: AsyncParsableCommand {
         if useModelDirectory { options.includeSourceRoot = true }
         codeStyle.apply(to: &options)
         unsetFeatureOptions.apply(to: &options)
+        letTypeMismatchOptions.apply(to: &options)
         let directory = URL(fileURLWithPath: output ?? Self.defaultOutputDirectory)
         if verbose {
             print("Generating \(language) code from: \(inputURL.path)")
@@ -283,6 +290,7 @@ struct GenerateCommand: AsyncParsableCommand {
             inputURL: inputURL, language: language, outputDirectory: directory,
             importOptions: try importOptions(), options: options, progress: bar.reporter)
         bar.finish()
+        GenerationWarningReport.write(result.warnings)
         let noun = result.files.count == 1 ? "file" : "files"
         print("Generated \(result.files.count) \(noun) in: \(result.outputDirectory.path)")
     }

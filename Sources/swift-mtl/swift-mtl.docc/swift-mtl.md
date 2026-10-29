@@ -39,6 +39,7 @@ swift-mtl generate --template-set <directory|language> [options]
 - `--force-overwrite` - Replace existing files without merging
 - `--diff` - Write the generated text of existing files beside them as `.<name>.new` and leave the files alone
 - `--code-style <style>` - One of the code styles that the descriptor of a template set declares
+- `--let-type-mismatches <error|skip>` - Whether a typed `let` whose value does not conform to the declared type stops the generation (`error`, the default) or is skipped with a warning on standard error (`skip`, as in Acceleo 3)
 - `-v, --verbose` - Enable verbose output
 
 **Template path.** Imported modules (`[import shared::Common/]`) are searched in the directory of the template and then in the `--template-path` directories, in order. A directory that does not exist is an error.
@@ -60,6 +61,8 @@ same=[parameter('package')/]
 **Metamodels.** `--metamodel` registers an Ecore file so that an instance model can be parsed against it, without passing its `EPackage` to the template. An Ecore file given with `--model` is registered as well, and its `EPackage` is also passed to the main template as an argument.
 
 **Existing files.** A file that exists is merged with the generated text when the module declares a merge, and replaced otherwise. `--force-overwrite` always replaces it. `--diff` keeps it and writes the generated text beside it; `--force-overwrite` wins when both are given.
+
+**Typed let blocks.** A `let` variable may declare a type, as in `[let n : Integer = c.size]...[/let]`. By default a value that does not conform to that type stops the generation with an error that names the variable and both types; `null` conforms to every type. The OMG MOFM2T specification and Acceleo 3 treat a typed `let` as a type test instead. `--let-type-mismatches skip` follows them: the `let` block is skipped, the generation continues, and a warning that names the variable, its declared type and the type of the value is written to standard error, once for each distinct mismatch.
 
 **Examples:**
 

@@ -47,6 +47,9 @@ package enum TemplateRun {
 
         /// The text written outside any file block, if it was kept and there was any.
         package var standardOutput: String?
+
+        /// The distinct warnings of the templates, in the order in which they were first reported.
+        package var warnings: [SourceDiagnostic] = []
     }
 
     /// Loads the data models of a template set and registers their metamodels.
@@ -103,6 +106,7 @@ package enum TemplateRun {
     ///   - services: The services available to the templates.
     ///   - models: The models available to the templates, by alias.
     ///   - unsetFeatureReads: How the templates read features that a model does not set.
+    ///   - letTypeMismatches: How a typed `let` treats a value that does not conform to its type.
     ///   - prepare: Prepares the counting generator, such as by binding global variables.
     /// - Returns: The number of files, or `nil` if the template set has no file count template.
     /// - Throws: ``GenerationError`` if the file count template is missing or fails.
@@ -110,7 +114,8 @@ package enum TemplateRun {
     package static func expectedFileCount(
         of module: MTLModule, descriptor: TemplateSetDescriptor, arguments: [(any EcoreValue)?],
         services: [any AQLServiceProvider], models: [String: Resource],
-        unsetFeatureReads: UnsetFeatureReads, prepare: @MainActor (MTLGenerator) -> Void = { _ in }
+        unsetFeatureReads: UnsetFeatureReads, letTypeMismatches: MTLLetTypeMismatches = .error,
+        prepare: @MainActor (MTLGenerator) -> Void = { _ in }
     ) async throws -> Int? {
         guard let name = descriptor.fileCountTemplate else { return nil }
         guard !module.templates(named: name).isEmpty else {
@@ -120,7 +125,7 @@ package enum TemplateRun {
         let counting = MTLInMemoryStrategy()
         let generator = MTLGenerator(
             module: module, generationStrategy: counting, serviceProviders: services,
-            unsetFeatureReads: unsetFeatureReads)
+            unsetFeatureReads: unsetFeatureReads, letTypeMismatches: letTypeMismatches)
         prepare(generator)
         do {
             try await generator.generate(mainTemplate: name, arguments: arguments, models: models)
@@ -147,18 +152,19 @@ package enum TemplateRun {
     ///   - outputDirectory: The directory that relative file names are resolved against.
     ///   - total: The number of files that will be written, if known.
     ///   - unsetFeatureReads: How the templates read features that a model does not set.
+    ///   - letTypeMismatches: How a typed `let` treats a value that does not conform to its type.
     ///   - keepsStandardOutput: Whether text written outside any file block is kept and returned,
     ///     instead of being discarded.
     ///   - progress: The receiver of progress reports.
     ///   - prepare: Prepares the generator, such as by binding global variables.
-    /// - Returns: The files written and the text written outside any file block.
+    /// - Returns: The files written, the text written outside any file block and the warnings.
     /// - Throws: ``GenerationError/generationFailed(_:)`` if the templates fail.
     @MainActor
     package static func run(
         module: MTLModule, mainTemplate: String, arguments: [(any EcoreValue)?],
         models: [String: Resource], services: [any AQLServiceProvider], options: MTLGeneratorOptions,
         outputDirectory: URL, total: Int?, unsetFeatureReads: UnsetFeatureReads,
-        keepsStandardOutput: Bool = false, progress: @escaping GenerationProgressReporter,
+        letTypeMismatches: MTLLetTypeMismatches = .error, keepsStandardOutput: Bool = false, progress: @escaping GenerationProgressReporter,
         prepare: @MainActor (MTLGenerator) -> Void = { _ in }
     ) async throws -> Output {
         let files = MTLFileSystemStrategy(
@@ -169,13 +175,15 @@ package enum TemplateRun {
             keepsStandardOutput: keepsStandardOutput)
         let generator = MTLGenerator(
             module: module, generationStrategy: strategy, serviceProviders: services,
-            unsetFeatureReads: unsetFeatureReads)
+            unsetFeatureReads: unsetFeatureReads, letTypeMismatches: letTypeMismatches)
         prepare(generator)
         do {
             try await generator.generate(mainTemplate: mainTemplate, arguments: arguments, models: models)
         } catch {
             throw GenerationError.generationFailed(String(describing: error))
         }
-        return Output(files: await strategy.completedFiles, standardOutput: await files.standardOutput)
+        return Output(
+            files: await strategy.completedFiles, standardOutput: await files.standardOutput,
+            warnings: generator.statistics.warnings)
     }
 }

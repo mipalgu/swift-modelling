@@ -162,6 +162,7 @@ Every language has a template set (`c`, `cpp`, `java` and `swift` are bundled) a
 - `--model-directory` - Write below the model directory of the generator model
 - `--code-style <style>` - The layout of the generated text, one of the styles of the template set (`java`: `eclipse`, the default, or `emf`); rejected for sets that offer none, such as `swift`, `c` and `cpp`
 - `--defaults`, `--root-extends-class`, `--operation-reflection`, `--import-organizing` - The generator model defaults of an Ecore model that is imported for a template language, as for `genmodel`
+- `--let-type-mismatches <error|skip>` - Whether a typed `let` in the templates whose value does not conform to the declared type stops the generation (`error`, the default) or is skipped with a warning on standard error (`skip`, as in Acceleo 3)
 - `-v, --verbose` - Show every progress report
 
 Existing files are merged with the generated code: members tagged `@generated` are regenerated, members tagged `@generated NOT` and members without the tag are kept. The tag stands in a comment of its own above the member, `// @generated` in Swift files.

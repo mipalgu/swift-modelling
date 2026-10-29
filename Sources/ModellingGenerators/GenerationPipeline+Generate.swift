@@ -29,7 +29,7 @@ extension GenerationPipeline {
     ///   - outputDirectory: The directory to write below; it is created if necessary.
     ///   - options: The settings of the generation.
     ///   - progress: A receiver of progress reports; reports are dropped by default.
-    /// - Returns: A description of what was written.
+    /// - Returns: A description of what was written, including the warnings of the templates.
     /// - Throws: ``GenerationError`` if the generator model or template set cannot be read, the
     ///   language is unknown, or the templates fail.
     @MainActor
@@ -78,7 +78,8 @@ extension GenerationPipeline {
         }
         let total = try await TemplateRun.expectedFileCount(
             of: module, descriptor: templateSet.descriptor, arguments: [root], services: services,
-            models: models, unsetFeatureReads: options.unsetFeatureReads)
+            models: models, unsetFeatureReads: options.unsetFeatureReads,
+            letTypeMismatches: options.letTypeMismatches)
 
         var generatorOptions = MTLGeneratorOptions(
             forceOverwrite: options.forceOverwrite, redirectionPattern: options.effectiveRedirectionPattern,
@@ -88,15 +89,16 @@ extension GenerationPipeline {
         generatorOptions.layout = layout
 
         progress(GenerationProgressUpdate(message: "Generating \(language) code", total: total))
-        let files = try await TemplateRun.run(
+        let output = try await TemplateRun.run(
             module: module, mainTemplate: templateSet.descriptor.mainTemplate, arguments: [root],
             models: models, services: services, options: generatorOptions, outputDirectory: base,
-            total: total, unsetFeatureReads: options.unsetFeatureReads, progress: progress
-        ).files
+            total: total, unsetFeatureReads: options.unsetFeatureReads,
+            letTypeMismatches: options.letTypeMismatches, progress: progress)
+        let files = output.files
         progress(GenerationProgressUpdate(message: "Done", completed: files.count, total: total ?? files.count))
         return GenerationResult(
             outputDirectory: base, files: files, language: templateSet.descriptor.name,
-            packageCount: genModel.allGenPackages.count)
+            packageCount: genModel.allGenPackages.count, warnings: output.warnings)
     }
 
     // MARK: - Loading
