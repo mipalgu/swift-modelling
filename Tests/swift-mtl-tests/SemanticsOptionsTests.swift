@@ -9,7 +9,7 @@ import Testing
 
 /// Tests for the options of `swift-mtl generate` that choose between the behaviour of this
 /// release and that of version 0.6, for a template file and for a template set.
-@Suite("swift-mtl generate - semantics options")
+@Suite("swift-mtl generate - semantics options", .serialized)
 struct SemanticsOptionsTests {
     /// How the templates are given to the command.
     enum Mode: String, CaseIterable, Sendable {

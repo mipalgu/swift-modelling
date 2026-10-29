@@ -4,7 +4,7 @@ import Testing
 /// Tests for `swift-ecore generate --let-type-mismatches`, which chooses whether a typed `let`
 /// in the templates whose value does not conform to the declared type is an error or a skipped
 /// block.
-@Suite("swift-ecore - typed let mismatches")
+@Suite("swift-ecore - typed let mismatches", .serialized)
 struct LetTypeMismatchOptionTests {
     /// The long name of the option.
     private static let option = "--let-type-mismatches"

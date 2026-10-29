@@ -9,7 +9,7 @@ import Testing
 
 /// Tests for the options of `swift-atl generate` that choose between the behaviour of this
 /// release and that of version 0.6 for the templates.
-@Suite("swift-atl generate - semantics options")
+@Suite("swift-atl generate - semantics options", .serialized)
 struct SemanticsOptionsTests {
     /// An option that is passed to every run, so that typed `let` mismatches are observable
     /// without failing the run.
