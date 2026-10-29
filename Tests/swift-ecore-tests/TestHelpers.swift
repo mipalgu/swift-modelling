@@ -278,12 +278,14 @@ func executeSwiftEcore(
     allArgs.append(contentsOf: arguments)
 
     // Always capture output for simplicity, just return empty if not needed
-    let result = try await Subprocess.run(
-        .path(FilePath(executablePath)),
-        arguments: Arguments(allArgs),
-        output: .string(limit: 16384),
-        error: .string(limit: 16384)
-    )
+    let result = try await withProcessSlot {
+        try await Subprocess.run(
+            .path(FilePath(executablePath)),
+            arguments: Arguments(allArgs),
+            output: .string(limit: 16384),
+            error: .string(limit: 16384)
+        )
+    }
 
     // Then
     return SubprocessResult(
@@ -291,4 +293,72 @@ func executeSwiftEcore(
         stdout: captureOutput ? (result.standardOutput ?? "") : "",
         stderr: captureOutput ? (result.standardError ?? "") : ""
     )
+}
+
+// MARK: - Process Slots
+
+/// Limits how many processes the tests of this target run at the same time.
+///
+/// Swift Testing runs tests concurrently, and on Linux the tests of every target share one
+/// process. Starting a process for every concurrently running test can exhaust the file
+/// descriptors of that process, so a test waits for a free slot before it starts a process.
+actor ProcessSlots {
+    /// The slots shared by the tests of this target.
+    static let shared = ProcessSlots(limit: max(2, ProcessInfo.processInfo.activeProcessorCount))
+
+    /// How many processes may run at the same time.
+    let limit: Int
+
+    /// How many processes are running.
+    private var running = 0
+
+    /// The tests waiting for a slot, in the order in which they asked for one.
+    private var waiting: [CheckedContinuation<Void, Never>] = []
+
+    /// Creates slots for a number of processes.
+    ///
+    /// - Parameter limit: How many processes may run at the same time.
+    init(limit: Int) {
+        self.limit = limit
+    }
+
+    /// Waits until a slot is free and takes it.
+    func acquire() async {
+        guard running >= limit else {
+            running += 1
+            return
+        }
+        await withCheckedContinuation { waiting.append($0) }
+    }
+
+    /// Gives a slot back, handing it to the test that has waited longest, if any.
+    func release() {
+        if waiting.isEmpty {
+            running -= 1
+        } else {
+            waiting.removeFirst().resume()
+        }
+    }
+}
+
+/// Runs work that starts a process once a process slot is free.
+///
+/// - Parameters:
+///   - isolation: The actor the work runs on, by default that of the caller.
+///   - body: The work, which starts the process and waits for it.
+/// - Returns: The result of the work.
+/// - Throws: Any error the work throws.
+func withProcessSlot<T>(
+    isolation: isolated (any Actor)? = #isolation,
+    _ body: () async throws -> T
+) async rethrows -> T {
+    await ProcessSlots.shared.acquire()
+    do {
+        let value = try await body()
+        await ProcessSlots.shared.release()
+        return value
+    } catch {
+        await ProcessSlots.shared.release()
+        throw error
+    }
 }

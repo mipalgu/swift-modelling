@@ -245,13 +245,15 @@ struct JavaTutorialWorkspace: Sendable {
     func shell(_ command: String) async throws -> JavaTutorialRun {
         let tools = try JavaTutorial.toolDirectory().path
         let existing = ProcessInfo.processInfo.environment["PATH"] ?? "/usr/bin:/bin"
-        let result = try await Subprocess.run(
-            .path(FilePath("/bin/sh")),
-            arguments: Arguments(["-c", command]),
-            environment: .inherit.updating(["PATH": "\(tools):\(existing)"]),
-            workingDirectory: FilePath(directory.path),
-            output: .string(limit: 1_048_576),
-            error: .string(limit: 1_048_576))
+        let result = try await withProcessSlot {
+            try await Subprocess.run(
+                .path(FilePath("/bin/sh")),
+                arguments: Arguments(["-c", command]),
+                environment: .inherit.updating(["PATH": "\(tools):\(existing)"]),
+                workingDirectory: FilePath(directory.path),
+                output: .string(limit: 1_048_576),
+                error: .string(limit: 1_048_576))
+        }
         let status: Int32
         if case .exited(let code) = result.terminationStatus { status = Int32(code) } else { status = -1 }
         return JavaTutorialRun(
