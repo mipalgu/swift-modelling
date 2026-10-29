@@ -13,10 +13,11 @@ let pipeline = ModelPipeline(steps: [
     .registerMetamodels([familiesEcore, personsEcore]),
     .load(name: "families", url: familiesModel),
     .transform(
-        TransformationStep(moduleURL: families2Persons),
+        TransformationStep(moduleURL: families2Persons, atlOptions: .standard),
         sources: ["IN": "families"], targets: ["OUT": "persons"]),
     .generate(
-        GenerationStep(templates: .module(reportModule), outputDirectory: reportDirectory),
+        GenerationStep(
+            templates: .module(reportModule), outputDirectory: reportDirectory, mtlOptions: .standard),
         arguments: ["persons"]),
     .save(name: "persons", url: personsJSON),
 ])
@@ -33,9 +34,14 @@ let roots = TemplateSet.defaultBundledRoots + [Bundle.module.url(forResource: "T
 let step = GenerationStep(
     templates: .templateSet("c", locator: TemplateSetLocator(bundledRoots: roots)),
     parameters: ["prefix": "lib"],
-    outputDirectory: URL(fileURLWithPath: "Generated"))
+    outputDirectory: URL(fileURLWithPath: "Generated"),
+    mtlOptions: .standard)
 let result = try await step.run(arguments: [model])
 ```
+
+### Behaviours of the languages
+
+A step takes the behaviours of its language as options: `mtlOptions` for a ``GenerationStep`` and `atlOptions` for a ``TransformationStep``. `.standard` gives the behaviour documented for this release, such as collections that keep their kinds and ATL collection literals with integer ranges, and `.legacy` gives the behaviour of version 0.6. Steps created with the initialisers of version 0.6, which take no options, keep the behaviour of version 0.6; those initialisers are deprecated. The warnings of the templates, such as `let` blocks skipped because of `MTLLetTypeMismatches.skip`, are returned in ``GenerationStep/Result/warnings``.
 
 A descriptor can list directories of modules that the set shares with other sets under `imports`, such as `["../expressions"]`, and its modules then import them as `[import expressions::c/]`.
 

@@ -47,6 +47,7 @@ and the [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec
 - **Reflection**: `refImmediateComposite()`, `refGetValue`, `refSetValue`, `refUnsetValue` and `refInvokeOperation` for container navigation without opposite references
 - **Code Generation**: `swift-atl generate` turns Ecore models into generator models and generated code with the shared pipeline
 - **Queries**: `swift-atl query` evaluates ATL query units, such as one that builds a Graphviz file from a model with `writeTo`, writing only inside an output directory unless told otherwise
+- **Integer Ranges**: Collection literals accept OCL integer ranges such as `Sequence{1..3}`; `--collection-range-syntax eclipse` or `--semantics legacy` rejects them as Eclipse ATL and version 0.6 do (see [Compatibility with 0.6](#compatibility-with-06))
 
 ### MOFM2T Support
 - **MTL Parser**: Parse MTL templates from text files following the OMG MOFM2T v1.0 specification
@@ -57,6 +58,7 @@ and the [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec
 - **CLI Tool**: Generate, parse, and validate MTL templates from the command line, with template search paths, parameters and merge or diff handling of existing files
 - **Unset Features**: Templates read unset features as in the Eclipse Modeling Framework, or as undefined with `swift-mtl generate --unset-features undefined`
 - **Typed Let Blocks**: A value that does not conform to the declared type of a `let` variable is an error, or, with `--let-type-mismatches skip`, skips the block with a warning, as in Acceleo 3
+- **Behaviour Options**: Templates follow the behaviour of this release by default; `--semantics legacy` and one option per behaviour select that of version 0.6 (see [Compatibility with 0.6](#compatibility-with-06))
 - **Standard Compliance**: Implements OMG MOFM2T v1.0 with compatibility for Acceleo-specific extensions
 
 ## Requirements
@@ -442,6 +444,8 @@ swift-atl transform Families2Persons.atl --source families.xmi --target persons.
 
 **Unset features.** `--unset-features defaults|undefined` chooses how the rules read features that a model does not set. With `defaults`, the default, they read as the Eclipse Modeling Framework's `eGet` reports them: an unset attribute as its declared default or the default of its data type (`false`, `0`, `0.0` or the first enumeration literal), an unset many-valued feature as an empty collection, and an unset string or reference as undefined. With `undefined`, every unset feature reads as undefined, so a guard such as `t.done = false` no longer matches a task that leaves `done` unset. `swift-atl generate`, `swift-ecore generate` and `swift-ecore genmodel` accept the option too, for the import transformation and the templates.
 
+**Integer ranges.** Collection literals accept OCL integer ranges, so `Sequence{0, 2..4}` holds `0, 2, 3, 4`. Eclipse ATL rejects them, and so does `--collection-range-syntax eclipse` (or `--semantics legacy`), with a message that names the portable alternatives. Every `swift-atl` command that reads ATL source accepts the option: `parse`, `validate`, `analyze`, `compile`, `test`, `transform`, `query`, and `generate` for a transformation given with `--transformations`.
+
 **Built-in metamodels.** The Ecore metamodel (`http://www.eclipse.org/emf/2002/Ecore`) and the generator metamodel (`http://www.eclipse.org/emf/2002/GenModel`) are built in. A transformation names them with directives, so no metamodel file is needed:
 
 ```text
@@ -576,7 +580,9 @@ swift-mtl generate template.mtl \
 
 **Unset features.** `--unset-features defaults|undefined` chooses how templates read features that a model does not set. With `defaults`, the default, `[c.count/]` writes `0` for an unset integer, as the Eclipse Modeling Framework and Acceleo do; with `undefined` it writes nothing, because every unset feature reads as undefined.
 
-**Typed let blocks.** `--let-type-mismatches error|skip` chooses what happens when a typed `let`, such as `[let n : Integer = c.name]...[/let]`, receives a value that does not conform to the declared type. With `error`, the default, the generation stops with an error that names the variable and both types. With `skip`, the `let` block is skipped and the generation continues, as Acceleo 3 treats a typed `let` as a type test, and a line such as `warning: line 4, column 1: Variable 'n' of type Integer cannot hold a value of type String, so the let block is skipped` is written to standard error; a mismatch that recurs, for instance in a loop, is reported once. `null` conforms to every type. `swift-ecore generate` and `swift-atl generate` accept the option too, for the templates.
+**Typed let blocks.** `--let-type-mismatches error|skip` chooses what happens when a typed `let`, such as `[let n : Integer = c.name]...[/let]`, receives a value that does not conform to the declared type. With `error`, the default, the generation stops with an error that names the variable and both types. With `skip`, the `let` block is skipped and the generation continues, as Acceleo 3 treats a typed `let` as a type test, and a line such as `warning: line 4, column 1: Variable 'n' of type Integer cannot hold a value of type String, so the let block is skipped` is written to standard error; a mismatch that recurs, for instance in a loop, is reported once. `null` conforms to every type. The option has no effect with `--no-check-let-types`, which binds `let` values unchecked, as version 0.6 did. `swift-ecore generate` and `swift-atl generate` accept the option too, for the templates.
+
+**Behaviours.** The templates and their expressions follow the behaviour of this release. `--semantics legacy` selects that of version 0.6, and `--block-line-breaks`, `--collection-parameters`, `--[no-]check-let-types`, `--[no-]cache-containers`, `--collection-arguments`, `--collection-kinds`, `--single-value-collections` and `--container-lookup` select one behaviour each, overriding the preset; see [Compatibility with 0.6](#compatibility-with-06). `swift-ecore generate` and `swift-atl generate` accept the same options, for the templates.
 
 **Existing files.** A file that exists is merged with the generated text when the module declares a merge, and replaced otherwise. `--force-overwrite` always replaces it. `--diff` keeps it and writes the generated text beside it as `.<name>.new`; `--force-overwrite` wins when both are given.
 
@@ -714,6 +720,31 @@ done
 
 **PyEcore compatibility:** JSON output is compatible with PyEcore for cross-language workflows.
 
+## Compatibility with 0.6
+
+The tools behave as described in this README by default. Each behaviour that changed since version 0.6 has an option, and `--semantics legacy` selects the behaviour of version 0.6 for all of them at once. An option given on the command line overrides the preset, whatever the order of the options, so `--semantics legacy --block-line-breaks acceleo` behaves as version 0.6 apart from the line breaks. `--semantics standard` is the default.
+
+| Behaviour | Default | Option | 0.6 behaviour | Commands |
+| :-- | :-- | :-- | :-- | :-- |
+| Line break after a block written on one line, such as `[if (c)][helper()/][/if]` | dropped when the line is empty once the block has run, as in Acceleo 4 (`acceleo`) | `--block-line-breaks acceleo\|kept` | `kept` | templates |
+| Collections passed to collection-typed parameters, such as `Sequence(String)` | any collection whose elements conform, including many-valued features and a single object, with overloads chosen by element types (`conforming`) | `--collection-parameters conforming\|exact` | `exact` | templates |
+| Declared types of `let` variables | checked, and a mismatch handled as `--let-type-mismatches` says | `--check-let-types`, `--no-check-let-types` | `--no-check-let-types` | templates |
+| Container lookups during a run | cached, so models may change during a run only through services that declare that they modify models | `--cache-containers`, `--no-cache-containers` | `--no-cache-containers` | templates |
+| A collection added by `append`, `prepend`, `including` and `insertAt` | added whole, so `Sequence{'a'}->append(Sequence{'b', 'c'})` has two elements (`whole`) | `--collection-arguments whole\|first-element` | `first-element` | templates |
+| Kinds of collections | sequences, ordered sets, sets and bags keep their kinds, and sets do not repeat elements (`distinguished`) | `--collection-kinds distinguished\|sequences` | `sequences` | templates |
+| Arrow calls on a single value, such as `'a'->including('a')` | the value is a set, giving `Set{'a'}` (`set`) | `--single-value-collections set\|sequence` | `sequence` | templates |
+| `eContainer()` and the services that depend on it | the registered resources are asked, so containers of nested metamodel contents are found (`resources`) | `--container-lookup resources\|registered-objects` | `registered-objects` | templates |
+| Integer ranges in ATL collection literals, such as `Sequence{1..3}` | accepted, as in OCL (`ocl`) | `--collection-range-syntax ocl\|eclipse` | `eclipse`: rejected | ATL source |
+
+The options for templates apply to `swift-mtl generate`, `swift-ecore generate` and `swift-atl generate`. The option for ATL source applies to `swift-atl parse`, `validate`, `analyze`, `compile`, `test`, `transform` and `query`, and to `swift-atl generate` for a transformation given with `--transformations`. `--unset-features` and `--let-type-mismatches` have the same defaults in both presets, `defaults` and `error`. No command writes ATL modules as XMI, so the encoding of ranges in ATL XMI has no option here.
+
+The libraries keep the API of version 0.6, and with it the behaviour of version 0.6:
+
+- `GenerationOptions`, `GenerationStep`, `TransformationStep` and `GenModelImportOptions` created with the initialisers of version 0.6 carry `MTLOptions.legacy` or `ATLOptions.legacy`. These initialisers are deprecated in favour of initialisers that take `mtlOptions:` or `atlOptions:`; pass `.legacy` there to keep the behaviour of version 0.6, or `.standard` for the behaviour of this release. The options are held in the new properties `mtlOptions` and `atlOptions`, and `unsetFeatureReads` of `GenerationOptions` and `GenerationStep` is part of `mtlOptions`.
+- The functions of `GenerationPipeline` called without options use the options of version 0.6.
+- `GenerationStep.Result` and `GenerationResult` also report the warnings of the templates, such as `let` blocks skipped with `MTLLetTypeMismatches.skip`.
+- `ModellingCommandLine` offers the option groups `SemanticsOptions`, `MTLSemanticsOptions` and `ATLSemanticsOptions` for other command-line tools.
+
 ## Project Status
 
 ### CLI Tools 🚧
@@ -738,7 +769,7 @@ done
 Besides the tools, the package offers these library products:
 - **ModellingGenerators**: the generator model pipeline and the bundled template sets for Swift, Java, C and C++
 - **ModellingPipeline**: steps for running ATL transformations and MTL generations on models in memory, a locator for template sets in the resource directories of other packages, and a pipeline that loads, transforms, generates from and saves models in sequence
-- **ModellingCommandLine**: the option groups that the tools share, such as `--param`, `--template-path`, `--metamodel` and `--code-style`, and a parser for families of `name=value` options, for command-line tools of other packages
+- **ModellingCommandLine**: the option groups that the tools share, such as `--param`, `--template-path`, `--metamodel`, `--code-style` and `--semantics`, and a parser for families of `name=value` options, for command-line tools of other packages
 
 All types are value types (structs) for thread safety, with ID-based reference resolution for bidirectional relationships.
 Resources provide EMF-compliant object ownership and cross-reference resolution using actor-based concurrency.

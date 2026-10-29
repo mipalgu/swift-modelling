@@ -57,11 +57,14 @@ struct GenModelTransformation {
     ///   - generatorMetamodel: The generator metamodel that the transformation targets.
     ///   - replacement: A transformation file or a directory that holds one, used instead of the
     ///     bundled transformation; `nil` selects the bundled transformation.
+    ///   - atlOptions: The behaviours of the ATL language in which the transformation is written.
     /// - Returns: The parsed transformation.
     /// - Throws: ``GenerationError/transformationUnavailable(_:)`` if the transformation is
     ///   missing or cannot be parsed.
     @MainActor
-    static func load(generatorMetamodel: EPackage, replacement: URL? = nil) async throws
+    static func load(
+        generatorMetamodel: EPackage, replacement: URL? = nil, atlOptions: ATLOptions = .standard
+    ) async throws
         -> GenModelTransformation
     {
         let url: URL
@@ -74,7 +77,7 @@ struct GenModelTransformation {
         }
         let registry = ATLMetamodelRegistry(packages: [EcorePackage.instance, generatorMetamodel])
         do {
-            let module = try await ATLParser().parse(url, metamodelRegistry: registry)
+            let module = try await ATLParser(options: atlOptions).parse(url, metamodelRegistry: registry)
             return GenModelTransformation(module: module)
         } catch {
             throw GenerationError.transformationUnavailable(String(describing: error))

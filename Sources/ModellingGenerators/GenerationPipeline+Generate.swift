@@ -27,7 +27,8 @@ extension GenerationPipeline {
     ///   - genModelURL: The location of the `.genmodel` file.
     ///   - language: The language, which names the template set.
     ///   - outputDirectory: The directory to write below; it is created if necessary.
-    ///   - options: The settings of the generation.
+    ///   - options: The settings of the generation; without them, the templates behave as in
+    ///     version 0.6.
     ///   - progress: A receiver of progress reports; reports are dropped by default.
     /// - Returns: A description of what was written, including the warnings of the templates.
     /// - Throws: ``GenerationError`` if the generator model or template set cannot be read, the
@@ -35,7 +36,7 @@ extension GenerationPipeline {
     @MainActor
     public static func generate(
         genModelURL: URL, language: String, outputDirectory: URL,
-        options: GenerationOptions = GenerationOptions(),
+        options: GenerationOptions = GenerationOptions(mtlOptions: .legacy),
         progress: @escaping GenerationProgressReporter = { _ in }
     ) async throws -> GenerationResult {
         let source = genModelURL.standardizedFileURL
@@ -78,8 +79,7 @@ extension GenerationPipeline {
         }
         let total = try await TemplateRun.expectedFileCount(
             of: module, descriptor: templateSet.descriptor, arguments: [root], services: services,
-            models: models, unsetFeatureReads: options.unsetFeatureReads,
-            letTypeMismatches: options.letTypeMismatches)
+            models: models, mtlOptions: options.mtlOptions)
 
         var generatorOptions = MTLGeneratorOptions(
             forceOverwrite: options.forceOverwrite, redirectionPattern: options.effectiveRedirectionPattern,
@@ -92,8 +92,7 @@ extension GenerationPipeline {
         let output = try await TemplateRun.run(
             module: module, mainTemplate: templateSet.descriptor.mainTemplate, arguments: [root],
             models: models, services: services, options: generatorOptions, outputDirectory: base,
-            total: total, unsetFeatureReads: options.unsetFeatureReads,
-            letTypeMismatches: options.letTypeMismatches, progress: progress)
+            total: total, mtlOptions: options.mtlOptions, progress: progress)
         let files = output.files
         progress(GenerationProgressUpdate(message: "Done", completed: files.count, total: total ?? files.count))
         return GenerationResult(

@@ -65,6 +65,10 @@ struct QueryCommand: AsyncParsableCommand {
                   --source IN:Flow=order.xmi --param offset=10
 
             \(UnsetFeatureOptions.discussion(reader: "the query"))
+
+            \(ATLSemanticsOptions.discussion(reader: "the query"))
+
+            \(SemanticsOptions.discussion())
             """
     )
 
@@ -136,6 +140,19 @@ struct QueryCommand: AsyncParsableCommand {
     @Flag(name: .shortAndLong, help: "Enable debug output with detailed execution tracing")
     var debug: Bool = false
 
+    /// The behaviours of the ATL source.
+    @OptionGroup(title: "Evaluation")
+    var atlSemanticsOptions: ATLSemanticsOptions
+
+    /// The preset of the behaviours, standard or that of version 0.6.
+    @OptionGroup(title: "Evaluation")
+    var semanticsOptions: SemanticsOptions
+
+    /// The behaviours of the ATL source that the command line selects.
+    var atlOptions: ATLOptions {
+        atlSemanticsOptions.atlOptions(preset: semanticsOptions.semantics)
+    }
+
     func run() async throws {
         do {
             let value = try await evaluate()
@@ -157,7 +174,7 @@ struct QueryCommand: AsyncParsableCommand {
     /// - Throws: Parsing, binding, loading and execution errors.
     private func evaluate() async throws -> (any EcoreValue)? {
         let searchPaths = metamodelSearchPaths(for: query, explicit: metamodelPath)
-        let unit = try await ATLParser(enableDebugging: debug).parseContent(
+        let unit = try await ATLParser(options: atlOptions, enableDebugging: debug).parseContent(
             String(contentsOfFile: query, encoding: .utf8),
             filename: URL(fileURLWithPath: query).path,
             searchPaths: searchPaths,

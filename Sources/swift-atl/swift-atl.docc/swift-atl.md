@@ -36,6 +36,8 @@ swift-atl transform <transformation-file> [options]
 - `--verbose` - Enable verbose output
 - `--debug` - Trace the execution
 - `--continue-after-errors` - Continue after metamodel loading errors
+- `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` overrides it
 
 **Module parameters.** A transformation declares a parameter in a header comment, `-- @param name : Type` or `-- @param name : Type = default`, with the types `String`, `Integer`, `Real` and `Boolean`, and reads it as `thisModule.name`. `--param name=value` supplies the value; it is converted to the declared type. A name that the module does not declare, a value of the wrong type, a required parameter without a value, and an argument that is not `name=value` are errors.
 
@@ -85,6 +87,8 @@ A query unit starts with `query Name = expression;` instead of a module header, 
 - `--unset-features <defaults|undefined>` - How the query reads features that a model does not set
 - `--verbose` - Write progress to standard error
 - `--debug` - Trace the execution
+- `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` overrides it
 
 **Input models.** A query has no `from` clause. Its metamodels are those named by its `-- @path` and `-- @nsURI` directives, followed by those given with `--metamodel`, and each is an input model of the same name. Type references such as `Flow!Step` resolve through the metamodel name, `allInstances()` collects the instances of every model of that metamodel, and `allInstancesFrom('IN')` selects the model named `IN`.
 
@@ -129,6 +133,9 @@ The command is the ATL entry to the shared generation pipeline. An Ecore model i
 - `--model-directory` - Write below the model directory of the generator model
 - `--code-style <style>` - The layout of the generated text, one of the styles of the template set (`java`: `eclipse`, the default, or `emf`); rejected for the language `genmodel` and for sets that offer none, such as `swift`, `c` and `cpp`
 - `--let-type-mismatches <error|skip>` - Whether a typed `let` in the templates whose value does not conform to the declared type stops the generation (`error`, the default) or is skipped with a warning on standard error (`skip`, as in Acceleo 3)
+- `--block-line-breaks <acceleo|kept>`, `--collection-parameters <conforming|exact>`, `--check-let-types` / `--no-check-let-types`, `--cache-containers` / `--no-cache-containers`, `--collection-arguments <whole|first-element>`, `--collection-kinds <distinguished|sequences>`, `--single-value-collections <set|sequence>`, `--container-lookup <resources|registered-objects>` - The behaviours of the templates, as for `swift-mtl generate`; the first value is the default, and the second that of version 0.6
+- `--collection-range-syntax <ocl|eclipse>` - Whether a transformation given with `--transformations` may use integer ranges such as `Sequence{1..3}` (`ocl`, the default) or not, as in Eclipse ATL and version 0.6 (`eclipse`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`) for every behaviour option above; a behaviour option that is given overrides it
 - `--verbose` - One line for every file; without it a progress bar with counts appears on an interactive terminal
 
 **Examples:**
@@ -168,6 +175,8 @@ swift-atl parse [<atl-files> ...] [options]
 - `-v, --verbose` - Enable verbose output
 - `--show-structure`, `--show-rules`, `--show-helpers` - Show the module structure, the rule details, or the helper details
 - `--enable-stop-after-errors`, `--disable-stop-after-errors` - Stop after metamodel loading errors (default: disabled)
+- `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` overrides it
 
 **Examples:**
 
@@ -195,6 +204,8 @@ swift-atl validate [<atl-files> ...] [options]
 - `--check-metamodels` - Check metamodel compatibility
 - `--check-rules` - Validate rule completeness
 - `--enable-stop-after-errors`, `--disable-stop-after-errors` - Stop after metamodel loading errors (default: disabled)
+- `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` overrides it
 
 **Examples:**
 
@@ -226,6 +237,8 @@ swift-atl test [<atl-files> ...] [options]
 - `-o, --output <file>` - Write the test results to a file
 - `-v, --verbose` - Enable verbose output
 - `--fail-fast` - Stop on the first test failure
+- `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` overrides it
 
 **Examples:**
 
@@ -250,6 +263,8 @@ swift-atl analyze [<atl-files> ...] [options]
 - `-o, --output <file>` - Write the results to a file
 - `-f, --format <text|json>` - Output format (default: `text`)
 - `-v, --verbose` - Enable verbose output
+- `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` overrides it
 
 **Examples:**
 
@@ -274,6 +289,8 @@ The command parses the transformation and names the compiled module, which defau
 - `-o, --output <file>` - Output file for the compiled transformation
 - `-v, --verbose` - Enable verbose output
 - `--optimise` - Optimise the transformation code
+- `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` overrides it
 
 **Example:**
 

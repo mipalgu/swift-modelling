@@ -39,7 +39,17 @@ swift-mtl generate --template-set <directory|language> [options]
 - `--force-overwrite` - Replace existing files without merging
 - `--diff` - Write the generated text of existing files beside them as `.<name>.new` and leave the files alone
 - `--code-style <style>` - One of the code styles that the descriptor of a template set declares
+- `--unset-features <defaults|undefined>` - Whether unset features read as their defaults (`defaults`, the default, as in the Eclipse Modeling Framework) or as undefined
 - `--let-type-mismatches <error|skip>` - Whether a typed `let` whose value does not conform to the declared type stops the generation (`error`, the default) or is skipped with a warning on standard error (`skip`, as in Acceleo 3)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`) for every option below; an option below that is given overrides it
+- `--block-line-breaks <acceleo|kept>` - Whether the line break after a block written on one line is dropped when the line is empty once the block has run (`acceleo`, the default, as in Acceleo 4) or always written (`kept`, as in version 0.6)
+- `--collection-parameters <conforming|exact>` - Whether any collection whose elements conform, a many-valued feature or a single object conforms to a collection-typed parameter (`conforming`, the default) or collection types are matched as in version 0.6 (`exact`)
+- `--check-let-types`, `--no-check-let-types` - Whether typed `let` blocks check their values (the default) or bind them unchecked, as in version 0.6
+- `--cache-containers`, `--no-cache-containers` - Whether containers are looked up once per run (the default) or every time, as in version 0.6
+- `--collection-arguments <whole|first-element>` - Whether a collection passed to `append`, `prepend`, `including` or `insertAt` is added whole (`whole`, the default) or only its first element (`first-element`, as in version 0.6)
+- `--collection-kinds <distinguished|sequences>` - Whether collections keep their kinds (`distinguished`, the default) or all behave as sequences (`sequences`, as in version 0.6)
+- `--single-value-collections <set|sequence>` - Whether an arrow call on a single value sees a set (`set`, the default) or a sequence (`sequence`, as in version 0.6)
+- `--container-lookup <resources|registered-objects>` - Whether `eContainer()` asks the registered resources (`resources`, the default) or only the registered model objects (`registered-objects`, as in version 0.6)
 - `-v, --verbose` - Enable verbose output
 
 **Template path.** Imported modules (`[import shared::Common/]`) are searched in the directory of the template and then in the `--template-path` directories, in order. A directory that does not exist is an error.
@@ -62,13 +72,18 @@ same=[parameter('package')/]
 
 **Existing files.** A file that exists is merged with the generated text when the module declares a merge, and replaced otherwise. `--force-overwrite` always replaces it. `--diff` keeps it and writes the generated text beside it; `--force-overwrite` wins when both are given.
 
-**Typed let blocks.** A `let` variable may declare a type, as in `[let n : Integer = c.size]...[/let]`. By default a value that does not conform to that type stops the generation with an error that names the variable and both types; `null` conforms to every type. The OMG MOFM2T specification and Acceleo 3 treat a typed `let` as a type test instead. `--let-type-mismatches skip` follows them: the `let` block is skipped, the generation continues, and a warning that names the variable, its declared type and the type of the value is written to standard error, once for each distinct mismatch.
+**Typed let blocks.** A `let` variable may declare a type, as in `[let n : Integer = c.size]...[/let]`. By default a value that does not conform to that type stops the generation with an error that names the variable and both types; `null` conforms to every type. The OMG MOFM2T specification and Acceleo 3 treat a typed `let` as a type test instead. `--let-type-mismatches skip` follows them: the `let` block is skipped, the generation continues, and a warning that names the variable, its declared type and the type of the value is written to standard error, once for each distinct mismatch. With `--no-check-let-types`, values are bound unchecked and the option has no effect.
+
+**Compatibility with 0.6.** The templates follow the behaviour of this release. `--semantics legacy` gives every behaviour that changed since version 0.6 its earlier form: one-line blocks keep their line breaks, collection types are matched exactly, `let` types are not checked, containers are looked up every time, and the expressions add the first element of a collection argument, treat every collection as a sequence, see a single value as a sequence and find containers among the registered objects only. Each option above overrides the preset, whatever the order, so `--semantics legacy --block-line-breaks acceleo` behaves as version 0.6 apart from the line breaks.
 
 **Examples:**
 
 ```bash
 # Basic generation
 swift-mtl generate GenerateSwift.mtl --model mymodel.xmi --output generated/
+
+# Generate as version 0.6 did
+swift-mtl generate GenerateSwift.mtl --model mymodel.xmi --output generated/ --semantics legacy
 
 # Modules from a shared directory, with parameters
 swift-mtl generate GenerateCode.mtl --model input.xmi --output src/ \

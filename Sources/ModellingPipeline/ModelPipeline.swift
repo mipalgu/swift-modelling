@@ -25,7 +25,8 @@ import ModellingGenerators
 /// let pipeline = ModelPipeline(steps: [
 ///     .registerMetamodels([familiesEcore, personsEcore]),
 ///     .load(name: "IN", url: familiesXMI),
-///     .transform(TransformationStep(moduleURL: families2Persons), targets: ["OUT": "persons"]),
+///     .transform(
+///         TransformationStep(moduleURL: families2Persons, atlOptions: .standard), targets: ["OUT": "persons"]),
 ///     .save(name: "persons", url: personsJSON),
 /// ])
 /// let result = try await pipeline.run()

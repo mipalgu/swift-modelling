@@ -8,6 +8,7 @@
 import ATL
 import ArgumentParser
 import Foundation
+import ModellingCommandLine
 
 /// Command for analysing ATL transformation files.
 ///
@@ -22,6 +23,10 @@ struct AnalyzeCommand: AsyncParsableCommand {
             Provides comprehensive analysis of ATL transformation files including
             complexity metrics, rule analysis, helper function analysis, and
             transformation pattern detection.
+
+            \(ATLSemanticsOptions.discussion(reader: "the transformations"))
+
+            \(SemanticsOptions.discussion())
 
             Examples:
                 swift-atl analyze Families2Persons.atl
@@ -44,6 +49,19 @@ struct AnalyzeCommand: AsyncParsableCommand {
 
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose: Bool = false
+
+    /// The behaviours of the ATL source.
+    @OptionGroup(title: "Evaluation")
+    var atlSemanticsOptions: ATLSemanticsOptions
+
+    /// The preset of the behaviours, standard or that of version 0.6.
+    @OptionGroup(title: "Evaluation")
+    var semanticsOptions: SemanticsOptions
+
+    /// The behaviours of the ATL source that the command line selects.
+    var atlOptions: ATLOptions {
+        atlSemanticsOptions.atlOptions(preset: semanticsOptions.semantics)
+    }
 
     func run() async throws {
         guard !atlFiles.isEmpty else {
@@ -104,7 +122,7 @@ struct AnalyzeCommand: AsyncParsableCommand {
         }
 
         let atlSource = try String(contentsOfFile: filePath, encoding: .utf8)
-        let parser = ATLParser()
+        let parser = ATLParser(options: atlOptions)
         let module = try await parser.parseContent(
             atlSource, filename: URL(fileURLWithPath: filePath).lastPathComponent)
 

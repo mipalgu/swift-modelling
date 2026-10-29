@@ -197,9 +197,10 @@ struct GenerationStepTests {
         defer { fixture.remove() }
         let main = try module(Self.mismatching, in: fixture)
         let step = GenerationStep(
-            templates: .module(main), outputDirectory: fixture.directory.appendingPathComponent("generated"))
+            templates: .module(main), outputDirectory: fixture.directory.appendingPathComponent("generated"),
+            mtlOptions: .standard)
 
-        #expect(step.letTypeMismatches == .error)
+        #expect(step.mtlOptions.letTypeMismatches == .error)
         await #expect(throws: GenerationError.self) {
             _ = try await step.run(arguments: [])
         }
@@ -212,7 +213,7 @@ struct GenerationStepTests {
         let main = try module(Self.mismatching, in: fixture)
         let step = GenerationStep(
             templates: .module(main), outputDirectory: fixture.directory.appendingPathComponent("generated"),
-            letTypeMismatches: .skip)
+            mtlOptions: MTLOptions(letTypeMismatches: .skip))
 
         let result = try await step.run(arguments: [])
 
@@ -230,7 +231,7 @@ struct GenerationStepTests {
         let main = try module(Self.mismatching, in: fixture)
         let step = GenerationStep(
             templates: .module(main), outputDirectory: fixture.directory.appendingPathComponent("generated"),
-            letTypeMismatches: .skip)
+            mtlOptions: MTLOptions(letTypeMismatches: .skip))
 
         let result = try await ModelPipeline(steps: [.generate(step)]).run()
 

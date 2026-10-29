@@ -50,6 +50,12 @@ struct GenerateCommand: AsyncParsableCommand {
 
             \(LetTypeMismatchOptions.discussion(reader: "the templates"))
 
+            \(MTLSemanticsOptions.discussion(reader: "the templates"))
+
+            \(ATLSemanticsOptions.discussion(reader: "a transformation given with --transformations"))
+
+            \(SemanticsOptions.discussion())
+
             Bundled languages: \(availableLanguageList()). A directory that holds a template set and \
             is given with --template-path adds its language.
 
@@ -130,6 +136,18 @@ struct GenerateCommand: AsyncParsableCommand {
     /// How a typed let in the templates treats a value that does not conform to its declared type.
     @OptionGroup(title: "Evaluation")
     var letTypeMismatchOptions: LetTypeMismatchOptions
+
+    /// The behaviours of the templates and their expressions.
+    @OptionGroup(title: "Evaluation")
+    var mtlSemanticsOptions: MTLSemanticsOptions
+
+    /// The behaviours of the ATL source of the import transformation.
+    @OptionGroup(title: "Evaluation")
+    var atlSemanticsOptions: ATLSemanticsOptions
+
+    /// The preset of the behaviours, standard or that of version 0.6.
+    @OptionGroup(title: "Evaluation")
+    var semanticsOptions: SemanticsOptions
 
     /// Directories whose template files replace the bundled templates.
     @Option(
@@ -220,7 +238,8 @@ struct GenerateCommand: AsyncParsableCommand {
     /// - Returns: The import options.
     /// - Throws: ``ValidationError`` if the transformation location does not exist.
     func importOptions() throws -> GenModelImportOptions {
-        var options = GenModelImportOptions()
+        var options = GenModelImportOptions(
+            atlOptions: atlSemanticsOptions.atlOptions(preset: semanticsOptions.semantics))
         options.basePackage = basePackage
         prefix.forEach { options.addPrefix($0) }
         options.modelProject = modelProject
@@ -275,10 +294,13 @@ struct GenerateCommand: AsyncParsableCommand {
     private func generateCode(from inputURL: URL, templateURLs: [URL], bar: GenerationProgressBar)
         async throws
     {
+        let preset = semanticsOptions.semantics
         var options = GenerationOptions(
-            templatePaths: templateURLs, forceOverwrite: forceOverwrite, diff: diff)
+            templatePaths: templateURLs, forceOverwrite: forceOverwrite, diff: diff,
+            mtlOptions: preset.mtlOptions)
         if useModelDirectory { options.includeSourceRoot = true }
         codeStyle.apply(to: &options)
+        mtlSemanticsOptions.apply(to: &options, preset: preset)
         unsetFeatureOptions.apply(to: &options)
         letTypeMismatchOptions.apply(to: &options)
         let directory = URL(fileURLWithPath: output ?? Self.defaultOutputDirectory)

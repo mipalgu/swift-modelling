@@ -4,6 +4,7 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import ATL
 import ECore
 import Foundation
 
@@ -21,7 +22,7 @@ import Foundation
 /// ## Example
 ///
 /// ```swift
-/// var options = GenModelImportOptions()
+/// var options = GenModelImportOptions(atlOptions: .standard)
 /// options.basePackage = "org.example"
 /// options.complianceLevel = "17.0"
 /// let result = try await GenerationPipeline.ecoreToGenModel(ecoreURLs: [libraryURL], options: options)
@@ -101,7 +102,19 @@ public struct GenModelImportOptions: Sendable, Equatable {
     /// ``UnsetFeatureReads/undefined`` every unset feature reads as undefined.
     public var unsetFeatureReads: UnsetFeatureReads
 
-    /// Creates options with the importer's defaults.
+    /// The behaviours of the ATL language in which the transformation is written.
+    ///
+    /// The options decide which syntax a transformation that replaces the bundled one, given
+    /// with ``transformation``, may use. Options created with
+    /// ``init(basePackage:prefix:packagePrefixes:modelProject:modelPluginID:modelDirectory:copyright:complianceLevel:reload:output:transformation:defaults:operationReflection:rootExtendsClass:importOrganizing:unsetFeatureReads:atlOptions:)``
+    /// carry the value given there, such as `ATLOptions.standard` for the behaviour documented
+    /// for this release. Options created with the initialiser of version 0.6 carry
+    /// `ATLOptions.legacy`, as that version did.
+    public var atlOptions: ATLOptions
+
+    /// Creates options with the importer's defaults and the ATL behaviour of version 0.6.
+    ///
+    /// The options carry `ATLOptions.legacy`.
     ///
     /// - Parameters:
     ///   - basePackage: The base package of the root packages.
@@ -120,6 +133,10 @@ public struct GenModelImportOptions: Sendable, Equatable {
     ///   - rootExtendsClass: The class that generated root objects extend, overriding the preset.
     ///   - importOrganizing: Whether the generated code organises its imports, overriding the preset.
     ///   - unsetFeatureReads: How the transformation reads features that a source model does not set.
+    @available(
+        *, deprecated,
+        message: "Use init(basePackage:prefix:packagePrefixes:modelProject:modelPluginID:modelDirectory:copyright:complianceLevel:reload:output:transformation:defaults:operationReflection:rootExtendsClass:importOrganizing:unsetFeatureReads:atlOptions:); pass atlOptions: .legacy to keep the behaviour of version 0.6"
+    )
     public init(
         basePackage: String? = nil,
         prefix: String? = nil,
@@ -138,6 +155,57 @@ public struct GenModelImportOptions: Sendable, Equatable {
         importOrganizing: Bool? = nil,
         unsetFeatureReads: UnsetFeatureReads = .defaults
     ) {
+        self.init(
+            basePackage: basePackage, prefix: prefix, packagePrefixes: packagePrefixes,
+            modelProject: modelProject, modelPluginID: modelPluginID, modelDirectory: modelDirectory,
+            copyright: copyright, complianceLevel: complianceLevel, reload: reload, output: output,
+            transformation: transformation, defaults: defaults, operationReflection: operationReflection,
+            rootExtendsClass: rootExtendsClass, importOrganizing: importOrganizing,
+            unsetFeatureReads: unsetFeatureReads, atlOptions: .legacy)
+    }
+
+    /// Creates options with the importer's defaults and the given ATL behaviours.
+    ///
+    /// Pass `ATLOptions.standard` for the behaviour documented for this release, or
+    /// `ATLOptions.legacy` for that of version 0.6.
+    ///
+    /// - Parameters:
+    ///   - basePackage: The base package of the root packages.
+    ///   - prefix: The prefix of the root packages.
+    ///   - packagePrefixes: The prefixes of individual packages, by package name.
+    ///   - modelProject: The name of the model project.
+    ///   - modelPluginID: The plug-in identifier of the model project.
+    ///   - modelDirectory: The source directory of the model project.
+    ///   - copyright: The copyright text.
+    ///   - complianceLevel: The compliance level of the generated code.
+    ///   - reload: The existing generator model whose settings are kept.
+    ///   - output: The generator model file to write.
+    ///   - transformation: A transformation file or directory that replaces the bundled transformation.
+    ///   - defaults: The preset of the settings that differ between headless and interactive use.
+    ///   - operationReflection: Whether generated models include operation reflection, overriding the preset.
+    ///   - rootExtendsClass: The class that generated root objects extend, overriding the preset.
+    ///   - importOrganizing: Whether the generated code organises its imports, overriding the preset.
+    ///   - unsetFeatureReads: How the transformation reads features that a source model does not set.
+    ///   - atlOptions: The behaviours of the ATL language in which the transformation is written.
+    public init(
+        basePackage: String? = nil,
+        prefix: String? = nil,
+        packagePrefixes: [String: String] = [:],
+        modelProject: String? = nil,
+        modelPluginID: String? = nil,
+        modelDirectory: String? = nil,
+        copyright: String? = nil,
+        complianceLevel: String? = nil,
+        reload: URL? = nil,
+        output: URL? = nil,
+        transformation: URL? = nil,
+        defaults: GenModelDefaults? = nil,
+        operationReflection: Bool? = nil,
+        rootExtendsClass: String? = nil,
+        importOrganizing: Bool? = nil,
+        unsetFeatureReads: UnsetFeatureReads = .defaults,
+        atlOptions: ATLOptions
+    ) {
         self.basePackage = basePackage
         self.prefix = prefix
         self.packagePrefixes = packagePrefixes
@@ -154,6 +222,7 @@ public struct GenModelImportOptions: Sendable, Equatable {
         self.rootExtendsClass = rootExtendsClass
         self.importOrganizing = importOrganizing
         self.unsetFeatureReads = unsetFeatureReads
+        self.atlOptions = atlOptions
     }
 
     /// Applies a prefix given as text.

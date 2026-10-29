@@ -105,8 +105,7 @@ package enum TemplateRun {
     ///   - arguments: The arguments of the main template.
     ///   - services: The services available to the templates.
     ///   - models: The models available to the templates, by alias.
-    ///   - unsetFeatureReads: How the templates read features that a model does not set.
-    ///   - letTypeMismatches: How a typed `let` treats a value that does not conform to its type.
+    ///   - mtlOptions: The behaviours of the templates.
     ///   - prepare: Prepares the counting generator, such as by binding global variables.
     /// - Returns: The number of files, or `nil` if the template set has no file count template.
     /// - Throws: ``GenerationError`` if the file count template is missing or fails.
@@ -114,8 +113,7 @@ package enum TemplateRun {
     package static func expectedFileCount(
         of module: MTLModule, descriptor: TemplateSetDescriptor, arguments: [(any EcoreValue)?],
         services: [any AQLServiceProvider], models: [String: Resource],
-        unsetFeatureReads: UnsetFeatureReads, letTypeMismatches: MTLLetTypeMismatches = .error,
-        prepare: @MainActor (MTLGenerator) -> Void = { _ in }
+        mtlOptions: MTLOptions, prepare: @MainActor (MTLGenerator) -> Void = { _ in }
     ) async throws -> Int? {
         guard let name = descriptor.fileCountTemplate else { return nil }
         guard !module.templates(named: name).isEmpty else {
@@ -124,8 +122,7 @@ package enum TemplateRun {
         }
         let counting = MTLInMemoryStrategy()
         let generator = MTLGenerator(
-            module: module, generationStrategy: counting, serviceProviders: services,
-            unsetFeatureReads: unsetFeatureReads, letTypeMismatches: letTypeMismatches)
+            module: module, generationStrategy: counting, options: mtlOptions, serviceProviders: services)
         prepare(generator)
         do {
             try await generator.generate(mainTemplate: name, arguments: arguments, models: models)
@@ -151,8 +148,7 @@ package enum TemplateRun {
     ///   - options: The options of the file system strategy.
     ///   - outputDirectory: The directory that relative file names are resolved against.
     ///   - total: The number of files that will be written, if known.
-    ///   - unsetFeatureReads: How the templates read features that a model does not set.
-    ///   - letTypeMismatches: How a typed `let` treats a value that does not conform to its type.
+    ///   - mtlOptions: The behaviours of the templates.
     ///   - keepsStandardOutput: Whether text written outside any file block is kept and returned,
     ///     instead of being discarded.
     ///   - progress: The receiver of progress reports.
@@ -163,8 +159,8 @@ package enum TemplateRun {
     package static func run(
         module: MTLModule, mainTemplate: String, arguments: [(any EcoreValue)?],
         models: [String: Resource], services: [any AQLServiceProvider], options: MTLGeneratorOptions,
-        outputDirectory: URL, total: Int?, unsetFeatureReads: UnsetFeatureReads,
-        letTypeMismatches: MTLLetTypeMismatches = .error, keepsStandardOutput: Bool = false, progress: @escaping GenerationProgressReporter,
+        outputDirectory: URL, total: Int?, mtlOptions: MTLOptions, keepsStandardOutput: Bool = false,
+        progress: @escaping GenerationProgressReporter,
         prepare: @MainActor (MTLGenerator) -> Void = { _ in }
     ) async throws -> Output {
         let files = MTLFileSystemStrategy(
@@ -174,8 +170,7 @@ package enum TemplateRun {
             wrapping: files, outputDirectory: outputDirectory, total: total, report: progress,
             keepsStandardOutput: keepsStandardOutput)
         let generator = MTLGenerator(
-            module: module, generationStrategy: strategy, serviceProviders: services,
-            unsetFeatureReads: unsetFeatureReads, letTypeMismatches: letTypeMismatches)
+            module: module, generationStrategy: strategy, options: mtlOptions, serviceProviders: services)
         prepare(generator)
         do {
             try await generator.generate(mainTemplate: mainTemplate, arguments: arguments, models: models)

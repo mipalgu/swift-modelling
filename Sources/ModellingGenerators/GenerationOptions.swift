@@ -24,10 +24,16 @@ import MTL
 /// 3. Otherwise a template set that declares a merge keeps the parts that were edited by hand
 ///    and regenerates the rest; without a merge declaration the file is replaced.
 ///
+/// ## Behaviours
+///
+/// ``mtlOptions`` selects the behaviours of the templates and of their expressions:
+/// `MTLOptions.standard` the behaviour documented for this release, and `MTLOptions.legacy`
+/// that of version 0.6, which options created with the initialiser of that version keep.
+///
 /// ## Example
 ///
 /// ```swift
-/// var options = GenerationOptions()
+/// var options = GenerationOptions(mtlOptions: .standard)
 /// options.templatePaths = [URL(fileURLWithPath: "my-templates")]
 /// options.diff = true
 /// ```
@@ -59,22 +65,29 @@ public struct GenerationOptions: Sendable, Equatable {
     /// the default style of the template set.
     public var codeStyle: String?
 
+    /// The behaviours of the template language and its expression language.
+    ///
+    /// Options created with ``init(templatePaths:forceOverwrite:diff:redirectionPattern:includeSourceRoot:lineDelimiter:codeStyle:mtlOptions:)``
+    /// carry the value given there, such as `MTLOptions.standard` for the behaviour documented
+    /// for this release. Options created with the initialiser of version 0.6 carry
+    /// `MTLOptions.legacy`, so that the templates behave as they did in that version.
+    public var mtlOptions: MTLOptions
+
     /// How the templates read structural features that a model does not set.
     ///
     /// With ``UnsetFeatureReads/defaults``, the default, an unset attribute reads as its
     /// declared default or the default of its data type, and an unset many-valued feature as an
     /// empty collection, as in the Eclipse Modeling Framework. With
-    /// ``UnsetFeatureReads/undefined`` every unset feature reads as undefined.
-    public var unsetFeatureReads: UnsetFeatureReads
+    /// ``UnsetFeatureReads/undefined`` every unset feature reads as undefined. The setting is
+    /// part of ``mtlOptions``.
+    public var unsetFeatureReads: UnsetFeatureReads {
+        get { mtlOptions.unsetFeatureReads }
+        set { mtlOptions.unsetFeatureReads = newValue }
+    }
 
-    /// How a typed `let` in the templates treats a value that does not conform to its declared type.
+    /// Creates a set of options whose templates behave as in version 0.6.
     ///
-    /// With `MTLLetTypeMismatches.error`, the default, a mismatch fails the generation. With
-    /// `MTLLetTypeMismatches.skip` the `let` block is skipped, as in Acceleo 3, and a warning is
-    /// returned in ``GenerationResult/warnings``.
-    public var letTypeMismatches: MTLLetTypeMismatches
-
-    /// Creates a set of options.
+    /// The options carry `MTLOptions.legacy` with the given way of reading unset features.
     ///
     /// - Parameters:
     ///   - templatePaths: Directories searched before the bundled template set.
@@ -85,13 +98,51 @@ public struct GenerationOptions: Sendable, Equatable {
     ///   - lineDelimiter: The line delimiter to write.
     ///   - codeStyle: The name of the code style to write.
     ///   - unsetFeatureReads: How the templates read features that a model does not set.
-    ///   - letTypeMismatches: How a typed `let` treats a value that does not conform to its type.
+    @available(
+        *, deprecated,
+        message: "Use init(templatePaths:forceOverwrite:diff:redirectionPattern:includeSourceRoot:lineDelimiter:codeStyle:mtlOptions:); pass mtlOptions: .legacy to keep the behaviour of version 0.6"
+    )
     public init(
         templatePaths: [URL] = [], forceOverwrite: Bool = false, diff: Bool = false,
         redirectionPattern: String? = nil, includeSourceRoot: Bool? = nil,
         lineDelimiter: String? = nil, codeStyle: String? = nil,
-        unsetFeatureReads: UnsetFeatureReads = .defaults,
-        letTypeMismatches: MTLLetTypeMismatches = .error
+        unsetFeatureReads: UnsetFeatureReads = .defaults
+    ) {
+        var mtlOptions = MTLOptions.legacy
+        mtlOptions.unsetFeatureReads = unsetFeatureReads
+        self.init(
+            templatePaths: templatePaths, forceOverwrite: forceOverwrite, diff: diff,
+            redirectionPattern: redirectionPattern, includeSourceRoot: includeSourceRoot,
+            lineDelimiter: lineDelimiter, codeStyle: codeStyle, mtlOptions: mtlOptions)
+    }
+
+    /// Creates a set of options with the given behaviours of the templates.
+    ///
+    /// Pass `MTLOptions.standard` for the behaviour documented for this release, or
+    /// `MTLOptions.legacy` for that of version 0.6.
+    ///
+    /// ```swift
+    /// let options = GenerationOptions(diff: true, mtlOptions: .standard)
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - templatePaths: Directories searched before the bundled template set (default: none).
+    ///   - forceOverwrite: Whether to replace existing files (default: `false`).
+    ///   - diff: Whether to write the generated text of existing files beside them
+    ///     (default: `false`).
+    ///   - redirectionPattern: The name pattern for files written beside existing files
+    ///     (default: none).
+    ///   - includeSourceRoot: Whether the source directory is part of the output location
+    ///     (default: as the template set says).
+    ///   - lineDelimiter: The line delimiter to write (default: as the template set says).
+    ///   - codeStyle: The name of the code style to write (default: the default style of the
+    ///     template set).
+    ///   - mtlOptions: The behaviours of the template language and its expression language,
+    ///     including how unset features read.
+    public init(
+        templatePaths: [URL] = [], forceOverwrite: Bool = false, diff: Bool = false,
+        redirectionPattern: String? = nil, includeSourceRoot: Bool? = nil,
+        lineDelimiter: String? = nil, codeStyle: String? = nil, mtlOptions: MTLOptions
     ) {
         self.templatePaths = templatePaths
         self.forceOverwrite = forceOverwrite
@@ -100,8 +151,7 @@ public struct GenerationOptions: Sendable, Equatable {
         self.includeSourceRoot = includeSourceRoot
         self.lineDelimiter = lineDelimiter
         self.codeStyle = codeStyle
-        self.unsetFeatureReads = unsetFeatureReads
-        self.letTypeMismatches = letTypeMismatches
+        self.mtlOptions = mtlOptions
     }
 
     /// The redirection pattern that applies, if any.

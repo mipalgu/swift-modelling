@@ -4,8 +4,10 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import ATL
 import Foundation
 import GenModel
+import MTL
 
 extension GenerationPipeline {
     /// Generates code from a generator model or an Ecore model.
@@ -21,7 +23,9 @@ extension GenerationPipeline {
     ///   - language: The language, which names the template set.
     ///   - outputDirectory: The directory to write below; it is created if necessary.
     ///   - importOptions: The settings of the import of an Ecore model; ignored for a generator model.
-    ///   - options: The settings of the generation.
+    ///     Without them, a transformation that replaces the bundled one is read as in version 0.6.
+    ///   - options: The settings of the generation; without them, the templates behave as in
+    ///     version 0.6.
     ///   - progress: A closure that receives progress reports.
     /// - Returns: The files that were written.
     /// - Throws: ``GenerationError/unsupportedInput(_:)`` for any other kind of file, and the errors
@@ -29,8 +33,8 @@ extension GenerationPipeline {
     @MainActor
     public static func generate(
         inputURL: URL, language: String, outputDirectory: URL,
-        importOptions: GenModelImportOptions = GenModelImportOptions(),
-        options: GenerationOptions = GenerationOptions(),
+        importOptions: GenModelImportOptions = GenModelImportOptions(atlOptions: .legacy),
+        options: GenerationOptions = GenerationOptions(mtlOptions: .legacy),
         progress: @escaping GenerationProgressReporter = { _ in }
     ) async throws -> GenerationResult {
         let kind = inputURL.pathExtension.lowercased()

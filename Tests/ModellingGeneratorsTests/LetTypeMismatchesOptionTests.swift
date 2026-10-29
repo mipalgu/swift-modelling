@@ -15,16 +15,17 @@ struct LetTypeMismatchesOptionTests {
 
     @Test("generation options treat a mismatch as an error unless told otherwise")
     func generationOptionsDefault() {
-        #expect(GenerationOptions().letTypeMismatches == .error)
-        #expect(GenerationOptions(letTypeMismatches: .skip).letTypeMismatches == .skip)
+        #expect(GenerationOptions(mtlOptions: .standard).mtlOptions.letTypeMismatches == .error)
+        #expect(
+            GenerationOptions(mtlOptions: MTLOptions(letTypeMismatches: .skip)).mtlOptions.letTypeMismatches == .skip)
     }
 
     @Test("options that differ only in how mismatches are treated are not equal")
     func equality() {
-        var skipping = GenerationOptions()
-        skipping.letTypeMismatches = .skip
+        var skipping = GenerationOptions(mtlOptions: .standard)
+        skipping.mtlOptions.letTypeMismatches = .skip
 
-        #expect(skipping != GenerationOptions())
+        #expect(skipping != GenerationOptions(mtlOptions: .standard))
     }
 
     /// Generates Swift from the library Ecore model with the mismatching header module.
@@ -44,7 +45,8 @@ struct LetTypeMismatchesOptionTests {
         let result = try await GenerationPipeline.generate(
             inputURL: project.root.appendingPathComponent("model/library.ecore"), language: "swift",
             outputDirectory: output,
-            options: GenerationOptions(templatePaths: [templates.url], letTypeMismatches: letTypeMismatches))
+            options: GenerationOptions(
+                templatePaths: [templates.url], mtlOptions: MTLOptions(letTypeMismatches: letTypeMismatches)))
         let text = try String(
             contentsOf: output.appendingPathComponent("library/BookCategory.swift"), encoding: .utf8)
         return (result, text)

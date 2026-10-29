@@ -8,6 +8,7 @@ import ATL
 //
 import ArgumentParser
 import Foundation
+import ModellingCommandLine
 
 /// Command for compiling ATL transformation files.
 ///
@@ -22,6 +23,10 @@ struct CompileCommand: AsyncParsableCommand {
             Compiles ATL transformation source files into optimised executable modules.
             The compilation process includes syntax parsing, semantic analysis, type
             checking, and optimisation for efficient transformation execution.
+
+            \(ATLSemanticsOptions.discussion(reader: "the transformation"))
+
+            \(SemanticsOptions.discussion())
 
             Example:
                 swift-atl compile Families2Persons.atl --output families2persons.atlc
@@ -56,6 +61,19 @@ struct CompileCommand: AsyncParsableCommand {
     @Flag(name: .long, help: "Optimise transformation code")
     var optimise: Bool = false
 
+    /// The behaviours of the ATL source.
+    @OptionGroup(title: "Evaluation")
+    var atlSemanticsOptions: ATLSemanticsOptions
+
+    /// The preset of the behaviours, standard or that of version 0.6.
+    @OptionGroup(title: "Evaluation")
+    var semanticsOptions: SemanticsOptions
+
+    /// The behaviours of the ATL source that the command line selects.
+    var atlOptions: ATLOptions {
+        atlSemanticsOptions.atlOptions(preset: semanticsOptions.semantics)
+    }
+
     /// Executes the compile command.
     ///
     /// Compiles the specified ATL file into an executable transformation module
@@ -80,7 +98,7 @@ struct CompileCommand: AsyncParsableCommand {
                 print("Parsing transformation module...")
             }
 
-            let parser = ATLParser()
+            let parser = ATLParser(options: atlOptions)
             let module = try await parser.parseContent(
                 atlSource, filename: URL(fileURLWithPath: atlFile).lastPathComponent)
 

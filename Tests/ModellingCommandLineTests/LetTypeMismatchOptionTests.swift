@@ -45,9 +45,9 @@ struct LetTypeMismatchOptionTests {
     @Test("copies the mode to generation options")
     func appliesToGenerationOptions() throws {
         let options = try LetTypeMismatchOptions.parse(["--\(LetTypeMismatchOptions.optionName)", "skip"])
-        var generation = GenerationOptions()
+        var generation = GenerationOptions(mtlOptions: .standard)
         options.apply(to: &generation)
-        #expect(generation.letTypeMismatches == .skip)
+        #expect(generation.mtlOptions.letTypeMismatches == .skip)
     }
 
     @Test("reports each distinct warning once with its position")

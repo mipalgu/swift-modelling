@@ -20,7 +20,8 @@ extension MTLLetTypeMismatches: @retroactive ExpressibleByArgument {}
 /// value that does not conform to that type is an error that stops the generation. The `skip`
 /// mode follows the OMG MOFM2T specification and Acceleo 3 instead, which treat a typed `let` as
 /// a type test: the `let` block is skipped and the generation continues, and the command writes a
-/// warning to standard error with ``GenerationWarningReport``.
+/// warning to standard error with ``GenerationWarningReport``. The option applies only while `let`
+/// types are checked, as ``MTLSemanticsOptions/checksLetTypes`` selects.
 ///
 /// Commands include the option with `@OptionGroup`, and either pass ``letTypeMismatches`` to the
 /// generator they run or apply it to their generation options with ``apply(to:)``.
@@ -44,7 +45,8 @@ public struct LetTypeMismatchOptions: ParsableArguments, Sendable {
                 the generation with an error. With \(MTLLetTypeMismatches.skip.rawValue), the let \
                 block is skipped and the generation continues, as in Acceleo 3, and a warning that \
                 names the variable and both types is written to standard error. Null conforms to \
-                every type.
+                every type. With --\(MTLSemanticsOptions.inversionPrefix)\(MTLSemanticsOptions.OptionName.checkLetTypes), \
+                values are bound unchecked and the option has no effect.
                 """,
             valueName: LetTypeMismatchOptions.valueList))
     public var letTypeMismatches: MTLLetTypeMismatches = .error
@@ -67,6 +69,6 @@ public struct LetTypeMismatchOptions: ParsableArguments, Sendable {
     ///
     /// - Parameter options: The generation options to update.
     public func apply(to options: inout GenerationOptions) {
-        options.letTypeMismatches = letTypeMismatches
+        options.mtlOptions.letTypeMismatches = letTypeMismatches
     }
 }
