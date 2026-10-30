@@ -7,7 +7,7 @@ Generate Java model code from a generator model.
 The bundled `java` template set generates Java for the Eclipse Modeling Framework runtime. Its output follows the Eclipse code generator, including the `@generated` tags in the documentation comments, so files can be merged with hand-written code. <doc:MatchingEclipse> describes how, and which Eclipse defaults and code styles can be chosen.
 
 ```swift
-var options = GenerationOptions()
+var options = GenerationOptions(mtlOptions: .standard)
 options.templatePaths = [URL(fileURLWithPath: "my-templates")]
 let result = try await GenerationPipeline.generate(
     genModelURL: URL(fileURLWithPath: "model/library.genmodel"),

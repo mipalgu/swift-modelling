@@ -182,6 +182,61 @@ struct GenerationStepTests {
 
         #expect(try fixture.text(of: try #require(result.files.first)) == "Ada,Alan")
     }
+
+    /// A module whose typed let binds a string to an integer variable.
+    private static let mismatching = """
+        [module Main('http://example.com')]
+        [template public main()]
+        [file ('out.txt')]before[let n : Integer = 'text']inside[n/][/let]after[/file]
+        [/template]
+        """
+
+    @Test("treats a let value that does not conform to its type as an error by default")
+    func letTypeMismatchFails() async throws {
+        let fixture = try PipelineFixture.make()
+        defer { fixture.remove() }
+        let main = try module(Self.mismatching, in: fixture)
+        let step = GenerationStep(
+            templates: .module(main), outputDirectory: fixture.directory.appendingPathComponent("generated"),
+            mtlOptions: .standard)
+
+        #expect(step.mtlOptions.letTypeMismatches == .error)
+        await #expect(throws: GenerationError.self) {
+            _ = try await step.run(arguments: [])
+        }
+    }
+
+    @Test("skips a let block whose value does not conform and returns the warning")
+    func letTypeMismatchSkips() async throws {
+        let fixture = try PipelineFixture.make()
+        defer { fixture.remove() }
+        let main = try module(Self.mismatching, in: fixture)
+        let step = GenerationStep(
+            templates: .module(main), outputDirectory: fixture.directory.appendingPathComponent("generated"),
+            mtlOptions: MTLOptions(letTypeMismatches: .skip))
+
+        let result = try await step.run(arguments: [])
+
+        #expect(try fixture.text(of: try #require(result.files.first)) == "beforeafter")
+        #expect(result.warnings.count == 1)
+        #expect(result.warnings.first?.severity == .warning)
+        #expect(result.warnings.first?.code == MTLDiagnosticCode.letTypeMismatch.rawValue)
+        #expect(result.warnings.first?.message.contains("'n'") == true)
+    }
+
+    @Test("a pipeline keeps the warnings of its generation steps")
+    func pipelineKeepsWarnings() async throws {
+        let fixture = try PipelineFixture.make()
+        defer { fixture.remove() }
+        let main = try module(Self.mismatching, in: fixture)
+        let step = GenerationStep(
+            templates: .module(main), outputDirectory: fixture.directory.appendingPathComponent("generated"),
+            mtlOptions: MTLOptions(letTypeMismatches: .skip))
+
+        let result = try await ModelPipeline(steps: [.generate(step)]).run()
+
+        #expect(result.generations.flatMap(\.warnings).count == 1)
+    }
 }
 
 /// Collects progress reports.

@@ -26,7 +26,8 @@ import ModellingGenerators
 /// let step = GenerationStep(
 ///     templates: .templateSet("c", codeStyle: nil),
 ///     parameters: ["prefix": "lib"],
-///     outputDirectory: URL(fileURLWithPath: "Generated"))
+///     outputDirectory: URL(fileURLWithPath: "Generated"),
+///     mtlOptions: .standard)
 /// let result = try await step.run(arguments: [root], models: ["model": resource])
 /// print(result.files)
 /// ```
@@ -64,6 +65,12 @@ public struct GenerationStep: Sendable {
         /// The name of the template set that ran, or `nil` for a single module.
         public let templateSet: String?
 
+        /// The distinct warnings of the templates, in the order in which they were first reported.
+        ///
+        /// Each warning is a `SourceDiagnostic`, such as a `let` block that was skipped because
+        /// its value does not conform to the declared type of its variable.
+        public let warnings: [SourceDiagnostic]
+
         /// Creates the description of a generation.
         ///
         /// - Parameters:
@@ -76,11 +83,31 @@ public struct GenerationStep: Sendable {
             outputDirectory: URL, files: [URL], standardOutput: String?, mainTemplate: String,
             templateSet: String?
         ) {
+            self.init(
+                outputDirectory: outputDirectory, files: files, standardOutput: standardOutput,
+                mainTemplate: mainTemplate, templateSet: templateSet, warnings: [])
+        }
+
+        /// Creates the description of a generation that reported warnings.
+        ///
+        /// - Parameters:
+        ///   - outputDirectory: The directory that relative file names were resolved against.
+        ///   - files: The files that were written.
+        ///   - standardOutput: The text written outside any file block.
+        ///   - mainTemplate: The name of the template that ran.
+        ///   - templateSet: The name of the template set, if one ran.
+        ///   - warnings: The distinct warnings of the templates, in the order in which they were
+        ///     first reported.
+        public init(
+            outputDirectory: URL, files: [URL], standardOutput: String?, mainTemplate: String,
+            templateSet: String?, warnings: [SourceDiagnostic]
+        ) {
             self.outputDirectory = outputDirectory
             self.files = files
             self.standardOutput = standardOutput
             self.mainTemplate = mainTemplate
             self.templateSet = templateSet
+            self.warnings = warnings
         }
     }
 
@@ -110,10 +137,27 @@ public struct GenerationStep: Sendable {
     /// search paths, the paths of ``templatePaths`` are used.
     public var generatorOptions: MTLGeneratorOptions
 
-    /// How the templates read features that a model does not set.
-    public var unsetFeatureReads: UnsetFeatureReads
+    /// The behaviours of the template language and its expression language.
+    ///
+    /// A step created with ``init(templates:templatePaths:parameters:serviceProviders:outputDirectory:generatorOptions:mtlOptions:)``
+    /// carries the value given there, such as `MTLOptions.standard` for the behaviour documented
+    /// for this release. A step created with the initialiser of version 0.6 carries
+    /// `MTLOptions.legacy`, so that its templates behave as they did in that version. Warnings,
+    /// such as those of `let` blocks skipped because of `MTLLetTypeMismatches.skip`, are
+    /// returned in ``Result/warnings``.
+    public var mtlOptions: MTLOptions
 
-    /// Creates a generation step.
+    /// How the templates read features that a model does not set.
+    ///
+    /// The setting is part of ``mtlOptions``.
+    public var unsetFeatureReads: UnsetFeatureReads {
+        get { mtlOptions.unsetFeatureReads }
+        set { mtlOptions.unsetFeatureReads = newValue }
+    }
+
+    /// Creates a generation step whose templates behave as in version 0.6.
+    ///
+    /// The step carries `MTLOptions.legacy` with the given way of reading unset features.
     ///
     /// - Parameters:
     ///   - templates: The templates to run.
@@ -123,11 +167,42 @@ public struct GenerationStep: Sendable {
     ///   - outputDirectory: The directory that the templates write below.
     ///   - generatorOptions: The options of the generator (default options).
     ///   - unsetFeatureReads: How unset features read (default ``UnsetFeatureReads/defaults``).
+    @available(
+        *, deprecated,
+        message: "Use init(templates:templatePaths:parameters:serviceProviders:outputDirectory:generatorOptions:mtlOptions:); pass mtlOptions: .legacy to keep the behaviour of version 0.6"
+    )
     public init(
         templates: Templates, templatePaths: [URL] = [], parameters: [String: any EcoreValue] = [:],
         serviceProviders: [any AQLServiceProvider] = [], outputDirectory: URL,
         generatorOptions: MTLGeneratorOptions = MTLGeneratorOptions(),
         unsetFeatureReads: UnsetFeatureReads = .defaults
+    ) {
+        var mtlOptions = MTLOptions.legacy
+        mtlOptions.unsetFeatureReads = unsetFeatureReads
+        self.init(
+            templates: templates, templatePaths: templatePaths, parameters: parameters,
+            serviceProviders: serviceProviders, outputDirectory: outputDirectory,
+            generatorOptions: generatorOptions, mtlOptions: mtlOptions)
+    }
+
+    /// Creates a generation step with the given behaviours of the templates.
+    ///
+    /// Pass `MTLOptions.standard` for the behaviour documented for this release, or
+    /// `MTLOptions.legacy` for that of version 0.6.
+    ///
+    /// - Parameters:
+    ///   - templates: The templates to run.
+    ///   - templatePaths: Directories with templates (default: none).
+    ///   - parameters: The values of the template parameters by name (default: none).
+    ///   - serviceProviders: Further providers of services (default: none).
+    ///   - outputDirectory: The directory that the templates write below.
+    ///   - generatorOptions: The options of the generator (default options).
+    ///   - mtlOptions: The behaviours of the template language and its expression language,
+    ///     including how unset features read.
+    public init(
+        templates: Templates, templatePaths: [URL] = [], parameters: [String: any EcoreValue] = [:],
+        serviceProviders: [any AQLServiceProvider] = [], outputDirectory: URL,
+        generatorOptions: MTLGeneratorOptions = MTLGeneratorOptions(), mtlOptions: MTLOptions
     ) {
         self.templates = templates
         self.templatePaths = templatePaths
@@ -135,7 +210,7 @@ public struct GenerationStep: Sendable {
         self.serviceProviders = serviceProviders
         self.outputDirectory = outputDirectory
         self.generatorOptions = generatorOptions
-        self.unsetFeatureReads = unsetFeatureReads
+        self.mtlOptions = mtlOptions
     }
 
     /// Runs the templates.
@@ -150,7 +225,7 @@ public struct GenerationStep: Sendable {
     ///   - resourceSet: The resource set that receives the data models of a template set
     ///     (default: a new resource set).
     ///   - progress: A receiver of progress reports; reports are dropped by default.
-    /// - Returns: A description of what was written.
+    /// - Returns: A description of what was written, including the warnings of the templates.
     /// - Throws: `MTLParameterError` if a parameter name is not an identifier or is reserved,
     ///   `GenerationError` if a template set cannot be assembled or fails,
     ///   ``ModelPipelineError`` if a module cannot be parsed or has no such template, and
@@ -178,7 +253,7 @@ public struct GenerationStep: Sendable {
             let setModels = models.merging(data.models) { model, _ in model }
             let total = try await TemplateRun.expectedFileCount(
                 of: module, descriptor: set.descriptor, arguments: arguments, services: services,
-                models: setModels, unsetFeatureReads: unsetFeatureReads, prepare: parameterServices.bind(to:))
+                models: setModels, mtlOptions: mtlOptions, prepare: parameterServices.bind(to:))
             return try await generate(
                 module: module, mainTemplate: set.descriptor.mainTemplate, arguments: arguments,
                 models: setModels, services: services, options: options, total: total,
@@ -232,12 +307,11 @@ public struct GenerationStep: Sendable {
         let output = try await TemplateRun.run(
             module: module, mainTemplate: mainTemplate, arguments: arguments, models: models,
             services: services, options: options, outputDirectory: base, total: total,
-            unsetFeatureReads: unsetFeatureReads, keepsStandardOutput: true, progress: progress,
-            prepare: parameters.bind(to:))
+            mtlOptions: mtlOptions, keepsStandardOutput: true, progress: progress, prepare: parameters.bind(to:))
         let count = output.files.count
         progress(GenerationProgressUpdate(message: "Done", completed: count, total: total ?? count))
         return Result(
             outputDirectory: base, files: output.files, standardOutput: output.standardOutput,
-            mainTemplate: mainTemplate, templateSet: templateSet)
+            mainTemplate: mainTemplate, templateSet: templateSet, warnings: output.warnings)
     }
 }

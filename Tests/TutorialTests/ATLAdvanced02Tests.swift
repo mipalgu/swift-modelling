@@ -68,13 +68,15 @@ struct ATLAdvanced02Tests {
         guard FileManager.default.fileExists(atPath: executable) else {
             throw TestError.executableNotFound(executable)
         }
-        let result = try await Subprocess.run(
-            .path(FilePath(executable)),
-            arguments: Arguments(arguments),
-            workingDirectory: directory.map { FilePath($0.path) },
-            output: .string(limit: 1_048_576),
-            error: .string(limit: 1_048_576)
-        )
+        let result = try await withProcessSlot {
+            try await Subprocess.run(
+                .path(FilePath(executable)),
+                arguments: Arguments(arguments),
+                workingDirectory: directory.map { FilePath($0.path) },
+                output: .string(limit: 1_048_576),
+                error: .string(limit: 1_048_576)
+            )
+        }
         return SubprocessResult(
             terminationStatus: result.terminationStatus,
             stdout: result.standardOutput ?? "",

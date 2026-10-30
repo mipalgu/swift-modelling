@@ -24,7 +24,8 @@ import OrderedCollections
 ///     moduleURL: URL(fileURLWithPath: "Families2Persons.atl"),
 ///     metamodels: [familiesPackage, personsPackage],
 ///     sourceAliases: ["IN": familiesResource],
-///     parameters: ["prefix": "Mr"])
+///     parameters: ["prefix": "Mr"],
+///     atlOptions: .standard)
 /// let targets = try await step.run()
 /// let persons = targets["OUT"]
 /// ```
@@ -63,7 +64,18 @@ public struct TransformationStep: Sendable {
     /// A target without a location gets a URI with the ``transientScheme`` and its alias.
     public var targetURIs: [String: URL]
 
-    /// Creates a transformation step with a registry of metamodels.
+    /// The behaviours of the ATL language in which the module is written.
+    ///
+    /// A step created with an initialiser that takes `atlOptions` carries the value given there,
+    /// such as `ATLOptions.standard` for the behaviour documented for this release, which
+    /// accepts integer ranges such as `Sequence{1..3}`. A step created with an initialiser of
+    /// version 0.6 carries `ATLOptions.legacy`, which rejects them as that version did.
+    public var atlOptions: ATLOptions
+
+    /// Creates a transformation step with a registry of metamodels and the ATL behaviour of
+    /// version 0.6.
+    ///
+    /// The step carries `ATLOptions.legacy`.
     ///
     /// - Parameters:
     ///   - moduleURL: The location of the `.atl` module.
@@ -76,12 +88,47 @@ public struct TransformationStep: Sendable {
     ///     directory of the module).
     ///   - unsetFeatureReads: How unset features read (default ``UnsetFeatureReads/defaults``).
     ///   - targetURIs: The locations of target models by alias (default: transient URIs).
+    @available(
+        *, deprecated,
+        message: "Use init(moduleURL:metamodels:sourceAliases:targetAliases:parameters:nativeHelpers:metamodelSearchPaths:unsetFeatureReads:targetURIs:atlOptions:); pass atlOptions: .legacy to keep the behaviour of version 0.6"
+    )
     public init(
         moduleURL: URL, metamodels: ATLMetamodelRegistry = .empty,
         sourceAliases: [String: Resource] = [:], targetAliases: [String] = [],
         parameters: [String: any EcoreValue] = [:], nativeHelpers: [ATLNativeHelper] = [],
         metamodelSearchPaths: [URL] = [], unsetFeatureReads: UnsetFeatureReads = .defaults,
         targetURIs: [String: URL] = [:]
+    ) {
+        self.init(
+            moduleURL: moduleURL, metamodels: metamodels, sourceAliases: sourceAliases,
+            targetAliases: targetAliases, parameters: parameters, nativeHelpers: nativeHelpers,
+            metamodelSearchPaths: metamodelSearchPaths, unsetFeatureReads: unsetFeatureReads,
+            targetURIs: targetURIs, atlOptions: .legacy)
+    }
+
+    /// Creates a transformation step with a registry of metamodels and the given ATL behaviours.
+    ///
+    /// Pass `ATLOptions.standard` for the behaviour documented for this release, or
+    /// `ATLOptions.legacy` for that of version 0.6.
+    ///
+    /// - Parameters:
+    ///   - moduleURL: The location of the `.atl` module.
+    ///   - metamodels: The metamodels that the module binds to (default: none).
+    ///   - sourceAliases: The source models by alias (default: none).
+    ///   - targetAliases: The aliases of the targets to create (default: all declared targets).
+    ///   - parameters: The values of the module parameters (default: none).
+    ///   - nativeHelpers: Helpers implemented in Swift (default: none).
+    ///   - metamodelSearchPaths: The directories searched for `-- @path` metamodels (default: the
+    ///     directory of the module).
+    ///   - unsetFeatureReads: How unset features read (default ``UnsetFeatureReads/defaults``).
+    ///   - targetURIs: The locations of target models by alias (default: transient URIs).
+    ///   - atlOptions: The behaviours of the ATL language in which the module is written.
+    public init(
+        moduleURL: URL, metamodels: ATLMetamodelRegistry = .empty,
+        sourceAliases: [String: Resource] = [:], targetAliases: [String] = [],
+        parameters: [String: any EcoreValue] = [:], nativeHelpers: [ATLNativeHelper] = [],
+        metamodelSearchPaths: [URL] = [], unsetFeatureReads: UnsetFeatureReads = .defaults,
+        targetURIs: [String: URL] = [:], atlOptions: ATLOptions
     ) {
         self.moduleURL = moduleURL
         self.metamodels = metamodels
@@ -92,11 +139,13 @@ public struct TransformationStep: Sendable {
         self.metamodelSearchPaths = metamodelSearchPaths
         self.unsetFeatureReads = unsetFeatureReads
         self.targetURIs = targetURIs
+        self.atlOptions = atlOptions
     }
 
-    /// Creates a transformation step with metamodel packages.
+    /// Creates a transformation step with metamodel packages and the ATL behaviour of version 0.6.
     ///
-    /// Each package is registered under its namespace URI and its name.
+    /// Each package is registered under its namespace URI and its name. The step carries
+    /// `ATLOptions.legacy`.
     ///
     /// - Parameters:
     ///   - moduleURL: The location of the `.atl` module.
@@ -109,6 +158,10 @@ public struct TransformationStep: Sendable {
     ///     directory of the module).
     ///   - unsetFeatureReads: How unset features read (default ``UnsetFeatureReads/defaults``).
     ///   - targetURIs: The locations of target models by alias (default: transient URIs).
+    @available(
+        *, deprecated,
+        message: "Use init(moduleURL:metamodels:sourceAliases:targetAliases:parameters:nativeHelpers:metamodelSearchPaths:unsetFeatureReads:targetURIs:atlOptions:); pass atlOptions: .legacy to keep the behaviour of version 0.6"
+    )
     public init(
         moduleURL: URL, metamodels: [EPackage], sourceAliases: [String: Resource] = [:],
         targetAliases: [String] = [], parameters: [String: any EcoreValue] = [:],
@@ -119,7 +172,39 @@ public struct TransformationStep: Sendable {
             moduleURL: moduleURL, metamodels: ATLMetamodelRegistry(packages: metamodels),
             sourceAliases: sourceAliases, targetAliases: targetAliases, parameters: parameters,
             nativeHelpers: nativeHelpers, metamodelSearchPaths: metamodelSearchPaths,
-            unsetFeatureReads: unsetFeatureReads, targetURIs: targetURIs)
+            unsetFeatureReads: unsetFeatureReads, targetURIs: targetURIs, atlOptions: .legacy)
+    }
+
+    /// Creates a transformation step with metamodel packages and the given ATL behaviours.
+    ///
+    /// Each package is registered under its namespace URI and its name. Pass
+    /// `ATLOptions.standard` for the behaviour documented for this release, or
+    /// `ATLOptions.legacy` for that of version 0.6.
+    ///
+    /// - Parameters:
+    ///   - moduleURL: The location of the `.atl` module.
+    ///   - metamodels: The metamodel packages that the module binds to.
+    ///   - sourceAliases: The source models by alias (default: none).
+    ///   - targetAliases: The aliases of the targets to create (default: all declared targets).
+    ///   - parameters: The values of the module parameters (default: none).
+    ///   - nativeHelpers: Helpers implemented in Swift (default: none).
+    ///   - metamodelSearchPaths: The directories searched for `-- @path` metamodels (default: the
+    ///     directory of the module).
+    ///   - unsetFeatureReads: How unset features read (default ``UnsetFeatureReads/defaults``).
+    ///   - targetURIs: The locations of target models by alias (default: transient URIs).
+    ///   - atlOptions: The behaviours of the ATL language in which the module is written.
+    public init(
+        moduleURL: URL, metamodels: [EPackage], sourceAliases: [String: Resource] = [:],
+        targetAliases: [String] = [], parameters: [String: any EcoreValue] = [:],
+        nativeHelpers: [ATLNativeHelper] = [], metamodelSearchPaths: [URL] = [],
+        unsetFeatureReads: UnsetFeatureReads = .defaults, targetURIs: [String: URL] = [:],
+        atlOptions: ATLOptions
+    ) {
+        self.init(
+            moduleURL: moduleURL, metamodels: ATLMetamodelRegistry(packages: metamodels),
+            sourceAliases: sourceAliases, targetAliases: targetAliases, parameters: parameters,
+            nativeHelpers: nativeHelpers, metamodelSearchPaths: metamodelSearchPaths,
+            unsetFeatureReads: unsetFeatureReads, targetURIs: targetURIs, atlOptions: atlOptions)
     }
 
     /// Parses the transformation module.
@@ -132,7 +217,7 @@ public struct TransformationStep: Sendable {
         let searchPaths = metamodelSearchPaths.isEmpty ? [moduleURL.deletingLastPathComponent()] : metamodelSearchPaths
         do {
             let source = try String(contentsOf: moduleURL, encoding: .utf8)
-            return try await ATLParser().parseContent(
+            return try await ATLParser(options: atlOptions).parseContent(
                 source, filename: moduleURL.path, searchPaths: searchPaths.map(\.path),
                 continueAfterErrors: false, metamodelRegistry: metamodels)
         } catch {

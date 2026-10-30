@@ -4,6 +4,7 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import ATL
 import ECore
 import EMFBase
 import Foundation
@@ -22,7 +23,7 @@ public typealias GenerationProgress = @Sendable (String) -> Void
 /// ## Example
 ///
 /// ```swift
-/// var options = GenModelImportOptions()
+/// var options = GenModelImportOptions(atlOptions: .standard)
 /// options.basePackage = "org.example"
 /// let result = try await GenerationPipeline.ecoreToGenModel(
 ///     ecoreURLs: [URL(fileURLWithPath: "model/library.ecore")], options: options)
@@ -41,14 +42,15 @@ public enum GenerationPipeline {
     ///
     /// - Parameters:
     ///   - ecoreURLs: The locations of the Ecore models, the first of which names the output.
-    ///   - options: The settings of the import.
+    ///   - options: The settings of the import; without them, a transformation that replaces
+    ///     the bundled one is read as in version 0.6.
     ///   - progress: A receiver of progress messages; messages are dropped by default.
     /// - Returns: A description of the generator model that was written.
     /// - Throws: ``GenerationError`` if a model is missing or unreadable, the transformation
     ///   fails, or the output cannot be written.
     @MainActor
     public static func ecoreToGenModel(
-        ecoreURLs: [URL], options: GenModelImportOptions = GenModelImportOptions(),
+        ecoreURLs: [URL], options: GenModelImportOptions = GenModelImportOptions(atlOptions: .legacy),
         progress: GenerationProgress = { _ in }
     ) async throws -> GenModelResult {
         guard let first = ecoreURLs.first else { throw GenerationError.noSourceModels }
@@ -77,7 +79,8 @@ public enum GenerationPipeline {
 
         progress("Loading the transformation")
         let transformation = try await GenModelTransformation.load(
-            generatorMetamodel: generatorMetamodel, replacement: options.transformation)
+            generatorMetamodel: generatorMetamodel, replacement: options.transformation,
+            atlOptions: options.atlOptions)
 
         var loaded: [(url: URL, resource: Resource, package: EPackage)] = []
         for url in sources {

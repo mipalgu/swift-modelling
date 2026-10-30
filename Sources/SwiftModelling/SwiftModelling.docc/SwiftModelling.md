@@ -34,6 +34,15 @@ Generate Swift model code that compiles against the ECore runtime, from an Ecore
 
 - Swift Generation: what the set writes for classes, enumerations, data types, packages and factories, how names are made safe, and how existing files are merged. Find it in the ModellingGenerators documentation.
 
+### Compatibility with 0.6
+
+The tools follow the behaviour of this release by default. `--semantics legacy` selects the behaviour of version 0.6 for every behaviour that changed, and one option for each behaviour overrides the preset:
+
+- Templates (`swift-mtl generate`, `swift-ecore generate`, `swift-atl generate`): `--block-line-breaks acceleo|kept`, `--collection-parameters conforming|exact`, `--check-let-types` or `--no-check-let-types`, `--cache-containers` or `--no-cache-containers`, `--collection-arguments whole|first-element`, `--collection-kinds distinguished|sequences`, `--single-value-collections set|sequence` and `--container-lookup resources|registered-objects`.
+- ATL source (`swift-atl parse`, `validate`, `analyze`, `compile`, `test`, `transform`, `query`, and `generate` for a transformation given with `--transformations`): `--collection-range-syntax ocl|eclipse`.
+
+The first value of each option is the default, and the second that of version 0.6. The help of each command and the documentation of each tool describe the options.
+
 ## Topics
 
 ### Tutorials

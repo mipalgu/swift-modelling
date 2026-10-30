@@ -48,6 +48,12 @@ struct GenerateCommand: AsyncParsableCommand {
 
             \(UnsetFeatureOptions.discussion(reader: "the templates"))
 
+            \(LetTypeMismatchOptions.discussion(reader: "the templates"))
+
+            \(MTLSemanticsOptions.discussion(reader: "the templates"))
+
+            \(SemanticsOptions.discussion())
+
             Examples:
                 # Basic generation
                 swift-mtl generate template.mtl \\
@@ -94,6 +100,13 @@ struct GenerateCommand: AsyncParsableCommand {
 
                 # Read unset features as undefined instead of their defaults
                 swift-mtl generate template.mtl --model input.xmi --unset-features undefined
+
+                # Skip typed lets of another type with a warning, as Acceleo 3 does
+                swift-mtl generate template.mtl --model input.xmi --let-type-mismatches skip
+
+                # Generate as version 0.6 did, but drop line breaks after one-line blocks
+                swift-mtl generate template.mtl --model input.xmi \\
+                  --semantics legacy --block-line-breaks acceleo
 
                 # Verbose output
                 swift-mtl generate template.mtl \\
@@ -156,6 +169,26 @@ struct GenerateCommand: AsyncParsableCommand {
     /// How the templates read features that a model does not set.
     @OptionGroup(title: "Evaluation")
     var unsetFeatureOptions: UnsetFeatureOptions
+
+    /// How a typed let treats a value that does not conform to its declared type.
+    @OptionGroup(title: "Evaluation")
+    var letTypeMismatchOptions: LetTypeMismatchOptions
+
+    /// The behaviours of the templates and their expressions.
+    @OptionGroup(title: "Evaluation")
+    var mtlSemanticsOptions: MTLSemanticsOptions
+
+    /// The preset of the behaviours, standard or that of version 0.6.
+    @OptionGroup(title: "Evaluation")
+    var semanticsOptions: SemanticsOptions
+
+    /// The behaviours of the templates that the command line selects.
+    var mtlOptions: MTLOptions {
+        var options = mtlSemanticsOptions.mtlOptions(preset: semanticsOptions.semantics)
+        options.unsetFeatureReads = unsetFeatureOptions.unsetFeatures
+        options.letTypeMismatches = letTypeMismatchOptions.letTypeMismatches
+        return options
+    }
 
     /// The code style of the text that a template set generates.
     @OptionGroup(title: "Code style")
@@ -274,8 +307,8 @@ struct GenerateCommand: AsyncParsableCommand {
         let strategy = MTLFileSystemStrategy(
             basePath: output, options: generatorOptions, standardOutput: .capture)
         let generator = MTLGenerator(
-            module: mtlModule, generationStrategy: strategy, serviceProviders: [parameters],
-            unsetFeatureReads: unsetFeatureOptions.unsetFeatures)
+            module: mtlModule, generationStrategy: strategy, options: mtlOptions,
+            serviceProviders: [parameters])
         parameters.bind(to: generator)
 
         do {
@@ -285,8 +318,10 @@ struct GenerateCommand: AsyncParsableCommand {
                 models: inputs.models
             )
         } catch {
+            GenerationWarningReport.write(generator.statistics.warnings)
             throw ValidationError.generationFailed(error.localizedDescription)
         }
+        GenerationWarningReport.write(generator.statistics.warnings)
         try await writeStandardOutput(of: strategy)
 
         // Display results
@@ -323,11 +358,12 @@ struct GenerateCommand: AsyncParsableCommand {
         let step = GenerationStep(
             templates: .templateSet(templateSet, codeStyle: codeStyle.codeStyle), templatePaths: templateURLs,
             parameters: parameters, outputDirectory: URL(fileURLWithPath: output),
-            generatorOptions: generatorOptions, unsetFeatureReads: unsetFeatureOptions.unsetFeatures)
+            generatorOptions: generatorOptions, mtlOptions: mtlOptions)
         let verbose = self.verbose
         let result = try await step.run(
             arguments: inputs.arguments, models: inputs.models, resourceSet: inputs.resourceSet,
             progress: { update in if verbose { print("  \(update.message)") } })
+        GenerationWarningReport.write(result.warnings)
         if let text = result.standardOutput {
             let url = URL(fileURLWithPath: output).appendingPathComponent(MTLStandardOutput.fileName)
             try text.write(to: url, atomically: true, encoding: .utf8)

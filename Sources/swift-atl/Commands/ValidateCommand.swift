@@ -8,6 +8,7 @@ import ATL
 //
 import ArgumentParser
 import Foundation
+import ModellingCommandLine
 
 /// Command for validating ATL transformation files.
 ///
@@ -22,6 +23,10 @@ struct ValidateCommand: AsyncParsableCommand {
             Performs comprehensive validation of ATL transformation files including
             syntax checking, semantic analysis, type checking, and metamodel compatibility.
             Provides detailed validation reports with warnings and errors.
+
+            \(ATLSemanticsOptions.discussion(reader: "the transformations"))
+
+            \(SemanticsOptions.discussion())
 
             Examples:
                 swift-atl validate Families2Persons.atl
@@ -79,6 +84,19 @@ struct ValidateCommand: AsyncParsableCommand {
     /// with all required elements specified.
     @Flag(name: .long, help: "Validate rule completeness")
     var checkRules: Bool = false
+
+    /// The behaviours of the ATL source.
+    @OptionGroup(title: "Evaluation")
+    var atlSemanticsOptions: ATLSemanticsOptions
+
+    /// The preset of the behaviours, standard or that of version 0.6.
+    @OptionGroup(title: "Evaluation")
+    var semanticsOptions: SemanticsOptions
+
+    /// The behaviours of the ATL source that the command line selects.
+    var atlOptions: ATLOptions {
+        atlSemanticsOptions.atlOptions(preset: semanticsOptions.semantics)
+    }
 
     /// Executes the validation command.
     ///
@@ -228,7 +246,7 @@ struct ValidateCommand: AsyncParsableCommand {
                 }
             }
 
-            let parser = ATLParser()
+            let parser = ATLParser(options: atlOptions)
             let module = try await parser.parseContent(
                 atlSource,
                 filename: URL(fileURLWithPath: filePath).lastPathComponent,
