@@ -128,7 +128,7 @@ struct GenModelCommand: AsyncParsableCommand {
     ///
     /// - Returns: The options that the command line describes.
     func importOptions() -> GenModelImportOptions {
-        var options = GenModelImportOptions()
+        var options = GenModelImportOptions(atlOptions: .standard)
         options.basePackage = basePackage
         prefix.forEach { options.addPrefix($0) }
         options.modelProject = modelProject

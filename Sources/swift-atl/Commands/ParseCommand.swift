@@ -9,6 +9,7 @@ import ATL
 import ECore
 import ArgumentParser
 import Foundation
+import ModellingCommandLine
 
 /// Command for parsing ATL transformation files.
 ///
@@ -23,6 +24,10 @@ struct ParseCommand: AsyncParsableCommand {
             Parses ATL transformation source files and displays detailed information
             about their structure. Performs syntax validation and provides comprehensive
             diagnostics about modules, rules, helpers, and expressions.
+
+            \(ATLSemanticsOptions.discussion(reader: "the transformations"))
+
+            \(SemanticsOptions.discussion())
 
             Examples:
                 swift-atl parse Families2Persons.atl --verbose
@@ -57,6 +62,19 @@ struct ParseCommand: AsyncParsableCommand {
 
     @Flag(name: .long, help: "Show helper details")
     var showHelpers: Bool = false
+
+    /// The behaviours of the ATL source.
+    @OptionGroup(title: "Evaluation")
+    var atlSemanticsOptions: ATLSemanticsOptions
+
+    /// The preset of the behaviours, standard or that of version 0.6.
+    @OptionGroup(title: "Evaluation")
+    var semanticsOptions: SemanticsOptions
+
+    /// The behaviours of the ATL source that the command line selects.
+    var atlOptions: ATLOptions {
+        atlSemanticsOptions.atlOptions(preset: semanticsOptions.semantics)
+    }
 
     func run() async throws {
         guard !atlFiles.isEmpty else {
@@ -179,7 +197,7 @@ struct ParseCommand: AsyncParsableCommand {
             }
         }
 
-        let parser = ATLParser()
+        let parser = ATLParser(options: atlOptions)
         let module = try await parser.parseContent(
             atlSource,
             filename: URL(fileURLWithPath: filePath).lastPathComponent,

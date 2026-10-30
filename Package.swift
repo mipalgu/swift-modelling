@@ -90,6 +90,7 @@ let package = Package(
                 .product(name: "ECore", package: "swift-ecore"),
                 .product(name: "EMFBase", package: "swift-ecore"),
                 .product(name: "MTL", package: "swift-mtl"),
+                .product(name: "ATL", package: "swift-atl"),
                 "ModellingGenerators",
             ],
             swiftSettings: [
@@ -174,6 +175,7 @@ let package = Package(
                 .product(name: "ECore", package: "swift-ecore"),
                 .product(name: "EMFBase", package: "swift-ecore"),
                 .product(name: "MTL", package: "swift-mtl"),
+                .product(name: "ATL", package: "swift-atl"),
             ],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency")

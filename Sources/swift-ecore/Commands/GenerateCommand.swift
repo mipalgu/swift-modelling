@@ -40,6 +40,12 @@ struct GenerateCommand: AsyncParsableCommand {
             Code styles of the template sets (--code-style): \(CodeStyleOptions.bundledStyleList())
 
             \(UnsetFeatureOptions.discussion(reader: "the import transformation and the templates"))
+
+            \(LetTypeMismatchOptions.discussion(reader: "the templates"))
+
+            \(MTLSemanticsOptions.discussion(reader: "the templates"))
+
+            \(SemanticsOptions.discussion())
             """
     )
 
@@ -75,6 +81,18 @@ struct GenerateCommand: AsyncParsableCommand {
     /// How the import transformation and the templates read features that a model does not set.
     @OptionGroup(title: "Evaluation")
     var unsetFeatureOptions: UnsetFeatureOptions
+
+    /// How a typed let in the templates treats a value that does not conform to its declared type.
+    @OptionGroup(title: "Evaluation")
+    var letTypeMismatchOptions: LetTypeMismatchOptions
+
+    /// The behaviours of the templates and their expressions.
+    @OptionGroup(title: "Evaluation")
+    var mtlSemanticsOptions: MTLSemanticsOptions
+
+    /// The preset of the behaviours, standard or that of version 0.6.
+    @OptionGroup(title: "Evaluation")
+    var semanticsOptions: SemanticsOptions
 
     /// Directories whose template files replace the bundled templates.
     @Option(
@@ -127,12 +145,16 @@ struct GenerateCommand: AsyncParsableCommand {
 
     /// Generates code from a generator model or an Ecore model with a template set.
     private func generateFromTemplates(input: URL, templateURLs: [URL]) async throws {
+        let preset = semanticsOptions.semantics
         var options = GenerationOptions(
-            templatePaths: templateURLs, forceOverwrite: forceOverwrite, diff: diff)
+            templatePaths: templateURLs, forceOverwrite: forceOverwrite, diff: diff,
+            mtlOptions: preset.mtlOptions)
         if useModelDirectory { options.includeSourceRoot = true }
         codeStyle.apply(to: &options)
+        mtlSemanticsOptions.apply(to: &options, preset: preset)
         unsetFeatureOptions.apply(to: &options)
-        var importOptions = GenModelImportOptions()
+        letTypeMismatchOptions.apply(to: &options)
+        var importOptions = GenModelImportOptions(atlOptions: preset.atlOptions)
         genModelDefaults.apply(to: &importOptions)
         unsetFeatureOptions.apply(to: &importOptions)
         let bar = GenerationProgressBar(verbose: verbose)
@@ -150,6 +172,7 @@ struct GenerateCommand: AsyncParsableCommand {
             throw error
         }
         bar.finish()
+        GenerationWarningReport.write(result.warnings)
         let noun = result.files.count == 1 ? "file" : "files"
         print("Generated \(result.files.count) \(noun) in: \(result.outputDirectory.path)")
     }

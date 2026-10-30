@@ -8,6 +8,7 @@ import ATL
 //
 import ArgumentParser
 import Foundation
+import ModellingCommandLine
 
 /// Command for testing ATL transformation files.
 ///
@@ -22,6 +23,10 @@ struct TestCommand: AsyncParsableCommand {
             Runs comprehensive tests on ATL transformation files including parsing tests,
             validation tests, and transformation execution tests. Can test individual files
             or entire directories of ATL transformations.
+
+            \(ATLSemanticsOptions.discussion(reader: "the transformations"))
+
+            \(SemanticsOptions.discussion())
 
             Examples:
                 swift-atl test Families2Persons.atl
@@ -71,6 +76,19 @@ struct TestCommand: AsyncParsableCommand {
     /// failure is encountered.
     @Flag(name: .long, help: "Stop on first test failure")
     var failFast: Bool = false
+
+    /// The behaviours of the ATL source.
+    @OptionGroup(title: "Evaluation")
+    var atlSemanticsOptions: ATLSemanticsOptions
+
+    /// The preset of the behaviours, standard or that of version 0.6.
+    @OptionGroup(title: "Evaluation")
+    var semanticsOptions: SemanticsOptions
+
+    /// The behaviours of the ATL source that the command line selects.
+    var atlOptions: ATLOptions {
+        atlSemanticsOptions.atlOptions(preset: semanticsOptions.semantics)
+    }
 
     /// Executes the test command.
     ///
@@ -237,7 +255,7 @@ struct TestCommand: AsyncParsableCommand {
 
         // Test 1: Parse the ATL file
         let atlSource = try String(contentsOfFile: filePath, encoding: .utf8)
-        let parser = ATLParser()
+        let parser = ATLParser(options: atlOptions)
         let module = try await parser.parseContent(
             atlSource, filename: URL(fileURLWithPath: filePath).lastPathComponent)
 

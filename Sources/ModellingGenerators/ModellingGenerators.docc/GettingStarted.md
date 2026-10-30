@@ -77,7 +77,7 @@ The command line tools are thin layers over ``GenerationPipeline``:
 let model = URL(fileURLWithPath: "library/model/library.ecore")
 
 // Ecore to generator model
-let importing = GenModelImportOptions(basePackage: "org.example", defaults: .wizard)
+let importing = GenModelImportOptions(basePackage: "org.example", defaults: .wizard, atlOptions: .standard)
 let created = try await GenerationPipeline.ecoreToGenModel(ecoreURLs: [model], options: importing)
 
 // Generator model, or Ecore model, to Java
@@ -85,9 +85,12 @@ let bar = GenerationProgressBar(verbose: false)
 let result = try await GenerationPipeline.generate(
     inputURL: created.url, language: "java",
     outputDirectory: URL(fileURLWithPath: "src-gen"),
+    options: GenerationOptions(mtlOptions: .standard),
     progress: bar.reporter)
 bar.finish()
 print("\(result.files.count) files")
 ```
+
+``GenerationOptions/mtlOptions`` selects the behaviours of the templates, and ``GenModelImportOptions/atlOptions`` those of a transformation that replaces the bundled one: `.standard` for the behaviour documented for this release, `.legacy` for that of version 0.6. Options created with the initialisers of version 0.6, and the functions of ``GenerationPipeline`` called without options, keep the behaviour of version 0.6.
 
 ``TemplateSet/availableLanguages(templatePaths:)`` lists the languages that can be generated.

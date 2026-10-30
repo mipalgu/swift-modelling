@@ -222,12 +222,14 @@ struct WorkflowTutorialTests {
                 // Try to compile the Swift file using async Subprocess
                 do {
                     let swiftPath = try findSwiftExecutable()
-                    _ = try await Subprocess.run(
-                        .path(FilePath(swiftPath)),
-                        arguments: Arguments(["-frontend", "-typecheck", tempTestFile.path]),
-                        output: .string(limit: .max),
-                        error: .string(limit: .max)
-                    )
+                    _ = try await withProcessSlot {
+                        try await Subprocess.run(
+                            .path(FilePath(swiftPath)),
+                            arguments: Arguments(["-frontend", "-typecheck", tempTestFile.path]),
+                            output: .string(limit: .max),
+                            error: .string(limit: .max)
+                        )
+                    }
 
                     // Note: Compilation test disabled because test file references generated types
                     // that are not available in isolation. The test file syntax is valid but

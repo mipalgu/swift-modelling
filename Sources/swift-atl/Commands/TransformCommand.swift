@@ -75,6 +75,10 @@ struct TransformCommand: AsyncParsableCommand {
             \(ReferenceStyleOptions.discussion(written: "target models of metamodels that are not built in"))
 
             \(UnsetFeatureOptions.discussion(reader: "the rules of the transformation"))
+
+            \(ATLSemanticsOptions.discussion(reader: "the transformation"))
+
+            \(SemanticsOptions.discussion())
             """
     )
 
@@ -176,6 +180,19 @@ struct TransformCommand: AsyncParsableCommand {
     @Flag(name: .long, help: "Continue after metamodel loading errors (useful for testing)")
     var continueAfterErrors: Bool = false
 
+    /// The behaviours of the ATL source.
+    @OptionGroup(title: "Evaluation")
+    var atlSemanticsOptions: ATLSemanticsOptions
+
+    /// The preset of the behaviours, standard or that of version 0.6.
+    @OptionGroup(title: "Evaluation")
+    var semanticsOptions: SemanticsOptions
+
+    /// The behaviours of the ATL source that the command line selects.
+    var atlOptions: ATLOptions {
+        atlSemanticsOptions.atlOptions(preset: semanticsOptions.semantics)
+    }
+
     func run() async throws {
         if verbose {
             print("Starting ATL transformation: \(transformation)")
@@ -206,7 +223,7 @@ struct TransformCommand: AsyncParsableCommand {
             }
 
             let atlSource = try String(contentsOfFile: transformation, encoding: .utf8)
-            let parser = ATLParser(enableDebugging: debug)
+            let parser = ATLParser(options: atlOptions, enableDebugging: debug)
             let module = try await parser.parseContent(
                 atlSource,
                 filename: URL(fileURLWithPath: transformation).path,
