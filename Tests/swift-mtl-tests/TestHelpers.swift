@@ -195,13 +195,18 @@ func cleanupTemporaryDirectory(_ url: URL) {
 ///   - command: The command to execute (e.g., "generate", "parse", "validate").
 ///   - arguments: Additional arguments for the command.
 ///   - captureOutput: Whether to capture stdout and stderr (default: true).
+///   - workingDirectory: The directory to run the tool in (default: the current directory).
+///   - environment: The environment variables to set, or to remove where the value is `nil`
+///     (default: none); see ``childEnvironment(_:)``.
 /// - Returns: The subprocess execution result.
 /// - Throws: Errors from subprocess execution or executable path resolution.
 @MainActor
 func executeSwiftMTL(
     command: String,
     arguments: [String] = [],
-    captureOutput: Bool = true
+    captureOutput: Bool = true,
+    workingDirectory: URL? = nil,
+    environment: [String: String?] = [:]
 ) async throws -> SubprocessResult {
     // Given
     let executablePath = try swiftMTLExecutablePath()
@@ -215,6 +220,8 @@ func executeSwiftMTL(
         try await Subprocess.run(
             .path(FilePath(executablePath)),
             arguments: Arguments(allArgs),
+            environment: childEnvironment(environment),
+            workingDirectory: workingDirectory.map { FilePath($0.path) },
             output: .string(limit: 16384),
             error: .string(limit: 16384)
         )
@@ -226,6 +233,26 @@ func executeSwiftMTL(
         stdout: captureOutput ? (result.standardOutput ?? "") : "",
         stderr: captureOutput ? (result.standardError ?? "") : ""
     )
+}
+
+// MARK: - Child Environment
+
+/// The environment variable that chooses the semantics of the tools.
+let semanticsVariable = "SWIFT_MODELLING_SEMANTICS"
+
+/// The environment of a child process.
+///
+/// The child inherits the environment of the tests without ``semanticsVariable``, so that the
+/// tests do not depend on the environment of the developer, and with the given updates.
+///
+/// - Parameter updates: The variables to set, or to remove where the value is `nil`.
+/// - Returns: The environment of the child.
+func childEnvironment(_ updates: [String: String?]) -> Environment {
+    var values: [Environment.Key: String?] = [Environment.Key(stringLiteral: semanticsVariable): nil]
+    for (key, value) in updates {
+        values[Environment.Key(stringLiteral: key)] = value
+    }
+    return .inherit.updating(values)
 }
 
 // MARK: - Process Slots

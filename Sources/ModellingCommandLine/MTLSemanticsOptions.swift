@@ -40,9 +40,12 @@ extension AQLContainerLookup: @retroactive ExpressibleByArgument {}
 /// by ``UnsetFeatureOptions`` and ``LetTypeMismatchOptions``, whose defaults do not depend on
 /// the preset.
 ///
-/// Commands include the options with `@OptionGroup`, and either pass ``mtlOptions(preset:)`` to
-/// the generator they run or apply the options to their generation options with
-/// ``apply(to:preset:)``.
+/// An option that is not given on the command line but is set in the configuration file takes
+/// the value of the file, which overrides the preset (see ``SemanticsSettings``).
+///
+/// Commands include the options with `@OptionGroup`, and either pass
+/// ``mtlOptions(settings:)`` to the generator they run or apply the options to their
+/// generation options with ``apply(to:settings:)``.
 public struct MTLSemanticsOptions: ParsableArguments, Sendable {
     /// The long names of the options.
     public enum OptionName {
@@ -201,11 +204,23 @@ public struct MTLSemanticsOptions: ParsableArguments, Sendable {
     /// - Parameter preset: The preset whose behaviours apply where no option was given.
     /// - Returns: The options of the preset, with each option given on the command line in place.
     public func aqlOptions(preset: SemanticsPreset) -> AQLOptions {
-        var options = preset.mtlOptions.aql
-        if let collectionArguments { options.collectionArguments = collectionArguments }
-        if let collectionKinds { options.collectionKinds = collectionKinds }
-        if let singleValueCollections { options.singleValueCollections = singleValueCollections }
-        if let containerLookup { options.containerLookup = containerLookup }
+        aqlOptions(settings: SemanticsSettings(preset: preset))
+    }
+
+    /// The behaviours of the expression language that the options and the settings of a run select.
+    ///
+    /// Each behaviour is the option given on the command line, else the option in the
+    /// configuration file of the settings, else that of their preset.
+    ///
+    /// - Parameter settings: The preset and configuration file of the run.
+    /// - Returns: The options of the expression language.
+    public func aqlOptions(settings: SemanticsSettings) -> AQLOptions {
+        let file = settings.configuration
+        var options = settings.preset.mtlOptions.aql
+        if let value = collectionArguments ?? file.collectionArguments { options.collectionArguments = value }
+        if let value = collectionKinds ?? file.collectionKinds { options.collectionKinds = value }
+        if let value = singleValueCollections ?? file.singleValueCollections { options.singleValueCollections = value }
+        if let value = containerLookup ?? file.containerLookup { options.containerLookup = value }
         return options
     }
 
@@ -215,12 +230,26 @@ public struct MTLSemanticsOptions: ParsableArguments, Sendable {
     /// - Returns: The options of the preset, with each option given on the command line in place.
     ///   Unset features and typed `let` mismatches keep the values of the preset.
     public func mtlOptions(preset: SemanticsPreset) -> MTLOptions {
-        var options = preset.mtlOptions
-        options.aql = aqlOptions(preset: preset)
-        if let blockLineBreaks { options.blockLineBreaks = blockLineBreaks }
-        if let collectionParameters { options.collectionParameters = collectionParameters }
-        if let checksLetTypes { options.checksLetTypes = checksLetTypes }
-        if let cachesContainers { options.cachesContainers = cachesContainers }
+        mtlOptions(settings: SemanticsSettings(preset: preset))
+    }
+
+    /// The behaviours of the template language that the options and the settings of a run select.
+    ///
+    /// Each behaviour is the option given on the command line, else the option in the
+    /// configuration file of the settings, else that of their preset.
+    ///
+    /// - Parameter settings: The preset and configuration file of the run.
+    /// - Returns: The options of the template language. Unset features and typed `let`
+    ///   mismatches keep the values of the preset; ``UnsetFeatureOptions`` and
+    ///   ``LetTypeMismatchOptions`` choose them.
+    public func mtlOptions(settings: SemanticsSettings) -> MTLOptions {
+        let file = settings.configuration
+        var options = settings.preset.mtlOptions
+        options.aql = aqlOptions(settings: settings)
+        if let value = blockLineBreaks ?? file.blockLineBreaks { options.blockLineBreaks = value }
+        if let value = collectionParameters ?? file.collectionParameters { options.collectionParameters = value }
+        if let value = checksLetTypes ?? file.checksLetTypes { options.checksLetTypes = value }
+        if let value = cachesContainers ?? file.cachesContainers { options.cachesContainers = value }
         return options
     }
 
@@ -234,7 +263,20 @@ public struct MTLSemanticsOptions: ParsableArguments, Sendable {
     ///   - options: The generation options to update.
     ///   - preset: The preset whose behaviours apply where no option was given.
     public func apply(to options: inout GenerationOptions, preset: SemanticsPreset) {
-        var selected = mtlOptions(preset: preset)
+        apply(to: &options, settings: SemanticsSettings(preset: preset))
+    }
+
+    /// Copies the behaviours that the options and the settings of a run select to generation options.
+    ///
+    /// How unset features read and how typed `let` mismatches are treated stay as the
+    /// generation options have them, so the order in which option groups are applied does not
+    /// matter.
+    ///
+    /// - Parameters:
+    ///   - options: The generation options to update.
+    ///   - settings: The preset and configuration file of the run.
+    public func apply(to options: inout GenerationOptions, settings: SemanticsSettings) {
+        var selected = mtlOptions(settings: settings)
         selected.unsetFeatureReads = options.mtlOptions.unsetFeatureReads
         selected.letTypeMismatches = options.mtlOptions.letTypeMismatches
         options.mtlOptions = selected

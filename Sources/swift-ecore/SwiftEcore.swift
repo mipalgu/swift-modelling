@@ -14,7 +14,7 @@ import ArgumentParser
 @main
 struct SwiftEcoreCommand: AsyncParsableCommand {
     /// The version that `--version` and the info command report.
-    static let versionNumber = "0.6.3"
+    static let versionNumber = "0.6.4"
 
     static let configuration = CommandConfiguration(
         commandName: "swift-ecore",

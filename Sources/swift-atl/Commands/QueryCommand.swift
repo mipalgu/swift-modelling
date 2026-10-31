@@ -148,14 +148,10 @@ struct QueryCommand: AsyncParsableCommand {
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
 
-    /// The behaviours of the ATL source that the command line selects.
-    var atlOptions: ATLOptions {
-        atlSemanticsOptions.atlOptions(preset: semanticsOptions.semantics)
-    }
-
     func run() async throws {
+        let settings = try semanticsOptions.settings()
         do {
-            let value = try await evaluate()
+            let value = try await evaluate(settings: settings)
             if printResult {
                 let text = await MainActor.run {
                     (value as? String) ?? ATLValueText.render(value)
@@ -170,10 +166,12 @@ struct QueryCommand: AsyncParsableCommand {
 
     /// Parses the query, binds its input models and evaluates it.
     ///
+    /// - Parameter settings: The preset, configuration file and container scope of the run.
     /// - Returns: The value of the query.
     /// - Throws: Parsing, binding, loading and execution errors.
-    private func evaluate() async throws -> (any EcoreValue)? {
+    private func evaluate(settings: SemanticsSettings) async throws -> (any EcoreValue)? {
         let searchPaths = metamodelSearchPaths(for: query, explicit: metamodelPath)
+        let atlOptions = atlSemanticsOptions.atlOptions(settings: settings)
         let unit = try await ATLParser(options: atlOptions, enableDebugging: debug).parseContent(
             String(contentsOfFile: query, encoding: .utf8),
             filename: URL(fileURLWithPath: query).path,
@@ -204,8 +202,8 @@ struct QueryCommand: AsyncParsableCommand {
         report("Query \(bound.name) over \(models.map { "\($0.key) : \($0.value)" }.joined(separator: ", "))")
 
         let sources = try await loadModelsFromMapping(
-            files, metamodels: bound.sourceMetamodels, explicitFormat: inputFormat,
-            verbose: false, debug: debug)
+            files, metamodels: bound.sourceMetamodels, containerLookupScope: settings.containerLookupScope,
+            explicitFormat: inputFormat, verbose: false, debug: debug)
         let fileOutput = fileOutputPolicy()
         if let directory = fileOutput.baseDirectory {
             var isDirectory: ObjCBool = false
@@ -218,7 +216,7 @@ struct QueryCommand: AsyncParsableCommand {
         }
         report("Writing files relative to \(fileOutput.baseDirectory?.path ?? "")")
 
-        let unsetFeatureReads = unsetFeatureOptions.unsetFeatures
+        let unsetFeatureReads = unsetFeatureOptions.unsetFeatures(settings: settings)
         let virtualMachine = await MainActor.run {
             ATLVirtualMachine(
                 module: bound, unsetFeatureReads: unsetFeatureReads, fileOutput: fileOutput)
