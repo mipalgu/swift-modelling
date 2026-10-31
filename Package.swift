@@ -39,9 +39,9 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.6.2"),
         .package(url: "https://github.com/swiftlang/swift-subprocess", .upToNextMinor(from: "0.5.0")),
-        .package(url: "https://github.com/mipalgu/swift-ecore", exact: "0.6.2"),
-        .package(url: "https://github.com/mipalgu/swift-atl", exact: "0.6.3"),
-        .package(url: "https://github.com/mipalgu/swift-mtl", exact: "0.6.2"),
+        .package(url: "https://github.com/mipalgu/swift-ecore", exact: "0.6.4"),
+        .package(url: "https://github.com/mipalgu/swift-atl", exact: "0.6.4"),
+        .package(url: "https://github.com/mipalgu/swift-mtl", exact: "0.6.4"),
         .package(url: "https://github.com/mipalgu/swift-docc-static", branch: "main"),
         .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.4.0"),
     ],
