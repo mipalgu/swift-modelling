@@ -85,9 +85,14 @@ struct TestCommand: AsyncParsableCommand {
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
 
-    /// The behaviours of the ATL source that the command line selects.
-    var atlOptions: ATLOptions {
-        atlSemanticsOptions.atlOptions(preset: semanticsOptions.semantics)
+    /// The behaviours of the ATL source that the command line, the environment and the
+    /// configuration file select.
+    ///
+    /// - Returns: The options of the ATL language.
+    /// - Throws: An error that names the configuration file or the environment variable if
+    ///   either is not valid.
+    func atlOptions() throws -> ATLOptions {
+        atlSemanticsOptions.atlOptions(settings: try semanticsOptions.settings())
     }
 
     /// Executes the test command.
@@ -97,6 +102,7 @@ struct TestCommand: AsyncParsableCommand {
     ///
     /// - Throws: `ValidationError` if no files are specified, or `ExitCode` if tests fail
     func run() async throws {
+        let atlOptions = try atlOptions()
         var filesToTest: [String] = atlFiles
 
         // If directory specified, find all ATL files
@@ -136,7 +142,7 @@ struct TestCommand: AsyncParsableCommand {
                 print("Testing: \(atlFile)")
             }
 
-            let result = await runTest(for: atlFile)
+            let result = await runTest(for: atlFile, atlOptions: atlOptions)
             testResults.append(result)
 
             if result.passed {
@@ -184,12 +190,12 @@ struct TestCommand: AsyncParsableCommand {
         }
     }
 
-    private func runTest(for filePath: String) async -> TestResult {
+    private func runTest(for filePath: String, atlOptions: ATLOptions) async -> TestResult {
         let startTime = Date()
 
         return await withTaskGroup(of: TestResult.self) { group in
             group.addTask {
-                await self.executeTestWithTimeout(filePath: filePath, startTime: startTime)
+                await self.executeTestWithTimeout(filePath: filePath, startTime: startTime, atlOptions: atlOptions)
             }
             return await group.next()
                 ?? TestResult(
@@ -201,10 +207,12 @@ struct TestCommand: AsyncParsableCommand {
         }
     }
 
-    private func executeTestWithTimeout(filePath: String, startTime: Date) async -> TestResult {
+    private func executeTestWithTimeout(filePath: String, startTime: Date, atlOptions: ATLOptions) async
+        -> TestResult
+    {
         do {
             let testTask = Task {
-                try await executeTest(filePath: filePath, startTime: startTime)
+                try await executeTest(filePath: filePath, startTime: startTime, atlOptions: atlOptions)
             }
 
             let timeoutTask = Task {
@@ -243,7 +251,9 @@ struct TestCommand: AsyncParsableCommand {
         }
     }
 
-    private func executeTest(filePath: String, startTime: Date) async throws -> TestResult {
+    private func executeTest(filePath: String, startTime: Date, atlOptions: ATLOptions) async throws
+        -> TestResult
+    {
         guard FileManager.default.fileExists(atPath: filePath) else {
             return TestResult(
                 filename: filePath,

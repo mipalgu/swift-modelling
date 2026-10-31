@@ -188,12 +188,9 @@ struct TransformCommand: AsyncParsableCommand {
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
 
-    /// The behaviours of the ATL source that the command line selects.
-    var atlOptions: ATLOptions {
-        atlSemanticsOptions.atlOptions(preset: semanticsOptions.semantics)
-    }
-
     func run() async throws {
+        let settings = try semanticsOptions.settings()
+        let atlOptions = atlSemanticsOptions.atlOptions(settings: settings)
         if verbose {
             print("Starting ATL transformation: \(transformation)")
             print("Source model files: \(source)")
@@ -275,6 +272,7 @@ struct TransformCommand: AsyncParsableCommand {
             let sourceModels = try await loadModelsFromMapping(
                 sourceMapping,
                 metamodels: module.sourceMetamodels,
+                containerLookupScope: settings.containerLookupScope,
                 explicitFormat: inputFormat,
                 verbose: verbose,
                 debug: debug
@@ -298,7 +296,7 @@ struct TransformCommand: AsyncParsableCommand {
             )
 
             // Target resources carry their metamodels, so they are written in their namespaces
-            let targetResourceSet = ResourceSet()
+            let targetResourceSet = settings.makeResourceSet()
             await MetamodelRegistration.register(module.targetMetamodels.values, into: targetResourceSet)
             var targetModels: OrderedDictionary<String, Resource> = [:]
             for (alias, path) in targetMapping {
@@ -318,7 +316,7 @@ struct TransformCommand: AsyncParsableCommand {
                 print("\n=== Executing Transformation ===")
             }
 
-            let unsetFeatureReads = unsetFeatureOptions.unsetFeatures
+            let unsetFeatureReads = unsetFeatureOptions.unsetFeatures(settings: settings)
             let virtualMachine = await MainActor.run {
                 ATLVirtualMachine(module: module, unsetFeatureReads: unsetFeatureReads)
             }

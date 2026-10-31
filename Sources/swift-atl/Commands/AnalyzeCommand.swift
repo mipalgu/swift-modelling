@@ -58,15 +58,21 @@ struct AnalyzeCommand: AsyncParsableCommand {
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
 
-    /// The behaviours of the ATL source that the command line selects.
-    var atlOptions: ATLOptions {
-        atlSemanticsOptions.atlOptions(preset: semanticsOptions.semantics)
+    /// The behaviours of the ATL source that the command line, the environment and the
+    /// configuration file select.
+    ///
+    /// - Returns: The options of the ATL language.
+    /// - Throws: An error that names the configuration file or the environment variable if
+    ///   either is not valid.
+    func atlOptions() throws -> ATLOptions {
+        atlSemanticsOptions.atlOptions(settings: try semanticsOptions.settings())
     }
 
     func run() async throws {
         guard !atlFiles.isEmpty else {
             throw ValidationError("No ATL files specified")
         }
+        let atlOptions = try atlOptions()
 
         let metricsToCompute = parseMetrics(metrics)
 
@@ -83,7 +89,7 @@ struct AnalyzeCommand: AsyncParsableCommand {
                 print("Analyzing: \(atlFile)")
             }
 
-            let result = try await analyzeATLFile(atlFile, metrics: metricsToCompute)
+            let result = try await analyzeATLFile(atlFile, metrics: metricsToCompute, atlOptions: atlOptions)
             analysisResults.append(result)
 
             if !verbose && output == nil {
@@ -112,7 +118,7 @@ struct AnalyzeCommand: AsyncParsableCommand {
         }
     }
 
-    private func analyzeATLFile(_ filePath: String, metrics: [String]) async throws
+    private func analyzeATLFile(_ filePath: String, metrics: [String], atlOptions: ATLOptions) async throws
         -> AnalysisResult
     {
         let startTime = Date()

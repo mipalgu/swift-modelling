@@ -69,9 +69,14 @@ struct CompileCommand: AsyncParsableCommand {
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
 
-    /// The behaviours of the ATL source that the command line selects.
-    var atlOptions: ATLOptions {
-        atlSemanticsOptions.atlOptions(preset: semanticsOptions.semantics)
+    /// The behaviours of the ATL source that the command line, the environment and the
+    /// configuration file select.
+    ///
+    /// - Returns: The options of the ATL language.
+    /// - Throws: An error that names the configuration file or the environment variable if
+    ///   either is not valid.
+    func atlOptions() throws -> ATLOptions {
+        atlSemanticsOptions.atlOptions(settings: try semanticsOptions.settings())
     }
 
     /// Executes the compile command.
@@ -81,6 +86,7 @@ struct CompileCommand: AsyncParsableCommand {
     ///
     /// - Throws: Errors if the file cannot be read, parsed, or compiled
     func run() async throws {
+        let atlOptions = try atlOptions()
         if verbose {
             print("Compiling ATL transformation: \(atlFile)")
             print("Optimisation: \(optimise ? "enabled" : "disabled")")

@@ -165,6 +165,8 @@ Every language has a template set (`c`, `cpp`, `java` and `swift` are bundled) a
 - `--let-type-mismatches <error|skip>` - Whether a typed `let` in the templates whose value does not conform to the declared type stops the generation (`error`, the default) or is skipped with a warning on standard error (`skip`, as in Acceleo 3)
 - `--block-line-breaks <acceleo|kept>`, `--collection-parameters <conforming|exact>`, `--check-let-types` / `--no-check-let-types`, `--cache-containers` / `--no-cache-containers`, `--collection-arguments <whole|first-element>`, `--collection-kinds <distinguished|sequences>`, `--single-value-collections <set|sequence>`, `--container-lookup <resources|registered-objects>` - The behaviours of the templates, as for `swift-mtl generate`; the first value is the default, and the second that of version 0.6
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`) for every behaviour option above; a behaviour option that is given overrides it
+- `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
+- `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
 - `-v, --verbose` - Show every progress report
 
 Existing files are merged with the generated code: members tagged `@generated` are regenerated, members tagged `@generated NOT` and members without the tag are kept. The tag stands in a comment of its own above the member, `// @generated` in Swift files.
@@ -230,6 +232,19 @@ swift-ecore query company.xmi --query "find Company"
 
 # Show the root objects as a tree
 swift-ecore query model.json -q tree
+```
+
+## Environment and Configuration File
+
+Without `--semantics`, the `SWIFT_MODELLING_SEMANTICS` environment variable (`standard` or `legacy`) chooses the preset, and then the `semantics` key of a configuration file. The configuration file is the first `.swift-modelling.json` in the current directory or one of its parents, up to the directory that holds `.git`; `--config` names another file and `--no-config` reads none. Its keys are the names of the behaviour options without their leading `--`, with the spellings of the command line as JSON strings, or JSON booleans for `check-let-types` and `cache-containers`; a key that does not apply to a command is ignored. A behaviour option given on the command line overrides the file, an option in the file overrides the preset, `--semantics` overrides the environment variable, and the environment variable overrides `semantics` in the file. `--let-type-mismatches` and `--unset-features` do not depend on the preset: the command line overrides the file, which overrides their defaults. An invalid value of the variable, or an unknown key or an invalid value in the file, stops the command with an error that names it.
+
+```json
+{
+  "semantics": "legacy",
+  "block-line-breaks": "acceleo",
+  "check-let-types": true,
+  "container-scope": "any-resource"
+}
 ```
 
 ## Common Workflows

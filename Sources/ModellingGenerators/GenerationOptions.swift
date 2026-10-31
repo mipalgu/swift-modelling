@@ -85,6 +85,15 @@ public struct GenerationOptions: Sendable, Equatable {
         set { mtlOptions.unsetFeatureReads = newValue }
     }
 
+    /// The objects whose containers a model answers for during the generation, if configured.
+    ///
+    /// The generation pipelines create the resource set into which they load the generator
+    /// model, its Ecore models and the data models of the template set with this scope as its
+    /// default, so that `eContainer()` and the services that depend on it answer in this scope.
+    /// With `nil`, the default, the resource set configures no scope and its resources keep the
+    /// behaviour of a resource set without one.
+    public var containerLookupScope: ContainerLookupScope? = nil
+
     /// Creates a set of options whose templates behave as in version 0.6.
     ///
     /// The options carry `MTLOptions.legacy` with the given way of reading unset features.
