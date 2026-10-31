@@ -93,9 +93,14 @@ struct ValidateCommand: AsyncParsableCommand {
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
 
-    /// The behaviours of the ATL source that the command line selects.
-    var atlOptions: ATLOptions {
-        atlSemanticsOptions.atlOptions(preset: semanticsOptions.semantics)
+    /// The behaviours of the ATL source that the command line, the environment and the
+    /// configuration file select.
+    ///
+    /// - Returns: The options of the ATL language.
+    /// - Throws: An error that names the configuration file or the environment variable if
+    ///   either is not valid.
+    func atlOptions() throws -> ATLOptions {
+        atlSemanticsOptions.atlOptions(settings: try semanticsOptions.settings())
     }
 
     /// Executes the validation command.
@@ -108,6 +113,7 @@ struct ValidateCommand: AsyncParsableCommand {
         guard !atlFiles.isEmpty else {
             throw ValidationError("No ATL files specified")
         }
+        let atlOptions = try atlOptions()
 
         if verbose {
             print("Validating \(atlFiles.count) ATL file(s)")
@@ -125,7 +131,7 @@ struct ValidateCommand: AsyncParsableCommand {
                 print("Validating: \(atlFile)")
             }
 
-            let result = try await validateATLFile(atlFile)
+            let result = try await validateATLFile(atlFile, atlOptions: atlOptions)
             validationResults.append(result)
             totalErrors += result.errors.count
             totalWarnings += result.warnings.count
@@ -173,10 +179,12 @@ struct ValidateCommand: AsyncParsableCommand {
     /// Performs comprehensive validation of the specified ATL transformation file,
     /// including syntax checking, semantic analysis, and optional metamodel verification.
     ///
-    /// - Parameter filePath: Path to the ATL file to validate
+    /// - Parameters:
+    ///   - filePath: Path to the ATL file to validate
+    ///   - atlOptions: The behaviours of the ATL source
     /// - Returns: A `ValidationResult` containing validation errors and warnings
     /// - Throws: Errors if the file cannot be read or parsed
-    private func validateATLFile(_ filePath: String) async throws -> ValidationResult {
+    private func validateATLFile(_ filePath: String, atlOptions: ATLOptions) async throws -> ValidationResult {
         let startTime = Date()
         var errors: [ValidationIssue] = []
         var warnings: [ValidationIssue] = []

@@ -112,6 +112,13 @@ public struct GenModelImportOptions: Sendable, Equatable {
     /// `ATLOptions.legacy`, as that version did.
     public var atlOptions: ATLOptions
 
+    /// The objects whose containers a model answers for during the transformation, if configured.
+    ///
+    /// The import creates the resource set into which it loads the Ecore models and writes the
+    /// generator model with this scope as its default. With `nil`, the default, the resource set
+    /// configures no scope and its resources keep the behaviour of a resource set without one.
+    public var containerLookupScope: ContainerLookupScope? = nil
+
     /// Creates options with the importer's defaults and the ATL behaviour of version 0.6.
     ///
     /// The options carry `ATLOptions.legacy`.

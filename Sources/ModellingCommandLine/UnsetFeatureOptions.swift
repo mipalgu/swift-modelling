@@ -22,9 +22,14 @@ extension UnsetFeatureReads: @retroactive ExpressibleByArgument {}
 /// many-valued feature as an empty collection, and an unset string attribute or reference as
 /// undefined. The non-standard `undefined` mode reads every unset feature as undefined instead.
 ///
-/// Commands include the option with `@OptionGroup`, and either pass ``unsetFeatures`` to the
-/// engine they run or apply it to their generation and import options with ``apply(to:)-(GenerationOptions)``
-/// and ``apply(to:)-(GenModelImportOptions)``.
+/// A command that reads a configuration file (see ``SemanticsOptions``) takes the mode from the
+/// file unless it is given on the command line. The preset does not change the mode.
+///
+/// Commands include the option with `@OptionGroup`, and either pass ``unsetFeatures(settings:)``,
+/// or ``unsetFeatures`` if they read no configuration file, to the engine they run, or apply it
+/// to their generation and import options with ``apply(to:settings:)-(GenerationOptions,_)`` and
+/// ``apply(to:settings:)-(GenModelImportOptions,_)``, or ``apply(to:)-(GenerationOptions)`` and
+/// ``apply(to:)-(GenModelImportOptions)``.
 public struct UnsetFeatureOptions: ParsableArguments, Sendable {
     /// The long name of the option.
     public static let optionName = "unset-features"
@@ -47,10 +52,36 @@ public struct UnsetFeatureOptions: ParsableArguments, Sendable {
                 reads as undefined.
                 """,
             valueName: UnsetFeatureOptions.valueList))
-    public var unsetFeatures: UnsetFeatureReads = .defaults
+    public var explicitUnsetFeatures: UnsetFeatureReads?
 
-    /// Creates the option with unset features reading as their defaults.
+    /// The mode that applies when neither the command line nor the configuration file
+    /// chooses one, `UnsetFeatureReads.defaults`.
+    public static let defaultMode = UnsetFeatureReads.defaults
+
+    /// The mode given on the command line, or ``defaultMode`` if none is.
+    ///
+    /// The mode that applies to a run of a command that reads a configuration file also
+    /// depends on that file; ``unsetFeatures(settings:)`` resolves it. Setting this property
+    /// gives the mode as if on the command line.
+    public var unsetFeatures: UnsetFeatureReads {
+        get { explicitUnsetFeatures ?? Self.defaultMode }
+        set { explicitUnsetFeatures = newValue }
+    }
+
+    /// Creates the option with nothing given, which reads unset features as their defaults
+    /// unless the configuration file says otherwise.
     public init() {}
+
+    /// The mode that applies to a run.
+    ///
+    /// The mode does not depend on the preset: it is the mode given on the command line, else
+    /// the `unset-features` of the configuration file, else ``defaultMode``.
+    ///
+    /// - Parameter settings: The settings of the run, whose configuration file is consulted.
+    /// - Returns: How unset features read.
+    public func unsetFeatures(settings: SemanticsSettings) -> UnsetFeatureReads {
+        explicitUnsetFeatures ?? settings.configuration.unsetFeatures ?? Self.defaultMode
+    }
 
     /// A paragraph that describes the option in the discussion of a command.
     ///
@@ -77,5 +108,23 @@ public struct UnsetFeatureOptions: ParsableArguments, Sendable {
     /// - Parameter options: The import options to update.
     public func apply(to options: inout GenModelImportOptions) {
         options.unsetFeatureReads = unsetFeatures
+    }
+
+    /// Copies the mode that applies to a run to generation options.
+    ///
+    /// - Parameters:
+    ///   - options: The generation options to update.
+    ///   - settings: The settings of the run, whose configuration file is consulted.
+    public func apply(to options: inout GenerationOptions, settings: SemanticsSettings) {
+        options.unsetFeatureReads = unsetFeatures(settings: settings)
+    }
+
+    /// Copies the mode that applies to a run to the options of an Ecore model import.
+    ///
+    /// - Parameters:
+    ///   - options: The import options to update.
+    ///   - settings: The settings of the run, whose configuration file is consulted.
+    public func apply(to options: inout GenModelImportOptions, settings: SemanticsSettings) {
+        options.unsetFeatureReads = unsetFeatures(settings: settings)
     }
 }

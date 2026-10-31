@@ -138,25 +138,33 @@ struct GenerateCommand: AsyncParsableCommand {
             throw ArgumentParser.ValidationError(
                 "The generator model defaults only apply to an Ecore model generated with a template language")
         }
-        try await generateFromTemplates(input: inputURL, templateURLs: templateURLs)
+        try await generateFromTemplates(
+            input: inputURL, templateURLs: templateURLs, settings: try semanticsOptions.settings())
     }
 
     // MARK: - Template sets
 
     /// Generates code from a generator model or an Ecore model with a template set.
-    private func generateFromTemplates(input: URL, templateURLs: [URL]) async throws {
-        let preset = semanticsOptions.semantics
+    ///
+    /// - Parameters:
+    ///   - input: The generator model or Ecore model.
+    ///   - templateURLs: The directories whose template files replace the bundled templates.
+    ///   - settings: The preset, configuration file and container scope of the run.
+    private func generateFromTemplates(input: URL, templateURLs: [URL], settings: SemanticsSettings) async throws {
+        let preset = settings.preset
         var options = GenerationOptions(
             templatePaths: templateURLs, forceOverwrite: forceOverwrite, diff: diff,
             mtlOptions: preset.mtlOptions)
         if useModelDirectory { options.includeSourceRoot = true }
         codeStyle.apply(to: &options)
-        mtlSemanticsOptions.apply(to: &options, preset: preset)
-        unsetFeatureOptions.apply(to: &options)
-        letTypeMismatchOptions.apply(to: &options)
+        mtlSemanticsOptions.apply(to: &options, settings: settings)
+        unsetFeatureOptions.apply(to: &options, settings: settings)
+        letTypeMismatchOptions.apply(to: &options, settings: settings)
+        settings.apply(to: &options)
         var importOptions = GenModelImportOptions(atlOptions: preset.atlOptions)
         genModelDefaults.apply(to: &importOptions)
-        unsetFeatureOptions.apply(to: &importOptions)
+        unsetFeatureOptions.apply(to: &importOptions, settings: settings)
+        settings.apply(to: &importOptions)
         let bar = GenerationProgressBar(verbose: verbose)
         if verbose {
             print("Generating \(language) code from: \(input.path)")

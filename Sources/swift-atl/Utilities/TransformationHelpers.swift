@@ -25,6 +25,8 @@ import OrderedCollections
 /// - Parameters:
 ///   - path: The file path to load from.
 ///   - resourceSet: The resource set with the registered metamodels, if any.
+///   - containerLookupScope: The container lookup scope of the resource set created when
+///     none is given, or `nil` for none.
 ///   - explicitFormat: Optional explicit format string override (e.g., "xmi", "json").
 ///   - verbose: Whether to print verbose output.
 ///   - debug: Whether to enable debug mode for parsers.
@@ -33,6 +35,7 @@ import OrderedCollections
 func loadModel(
     from path: String,
     resourceSet: ResourceSet? = nil,
+    containerLookupScope: ContainerLookupScope? = nil,
     explicitFormat: String? = nil,
     verbose: Bool,
     debug: Bool = false
@@ -55,7 +58,8 @@ func loadModel(
 
     let options = ModelIO.LoadOptions(requiresMetamodel: false, enableDebugging: debug)
     let resource = try await ModelIO.load(
-        url: url, format: format, resourceSet: resourceSet ?? ResourceSet(), options: options
+        url: url, format: format,
+        resourceSet: resourceSet ?? ResourceSet(defaultContainerLookupScope: containerLookupScope), options: options
     ).resource
 
     if verbose {
@@ -76,6 +80,9 @@ func loadModel(
 ///
 /// - Parameters:
 ///   - mapping: Ordered dictionary mapping aliases to file paths
+///   - metamodels: The metamodels to register in a resource set shared by the models, if any
+///   - containerLookupScope: The container lookup scope of the resource sets that receive the
+///     models, or `nil` for none
 ///   - explicitFormat: Optional explicit format override for all models
 ///   - verbose: Whether to print verbose output during loading
 /// - Returns: Ordered dictionary mapping aliases to loaded resources
@@ -83,6 +90,7 @@ func loadModel(
 func loadModelsFromMapping(
     _ mapping: OrderedDictionary<String, String>,
     metamodels: OrderedDictionary<String, EPackage>? = nil,
+    containerLookupScope: ContainerLookupScope? = nil,
     explicitFormat: String? = nil,
     verbose: Bool,
     debug: Bool = false
@@ -91,7 +99,7 @@ func loadModelsFromMapping(
     // Create a ResourceSet if we have metamodels to register
     var resourceSet: ResourceSet? = nil
     if let metamodels = metamodels {
-        let set = ResourceSet()
+        let set = ResourceSet(defaultContainerLookupScope: containerLookupScope)
         await MetamodelRegistration.register(metamodels.values, into: set)
         resourceSet = set
     }
@@ -106,6 +114,7 @@ func loadModelsFromMapping(
         let resource = try await loadModel(
             from: path,
             resourceSet: resourceSet,
+            containerLookupScope: containerLookupScope,
             explicitFormat: explicitFormat,
             verbose: verbose,
             debug: debug

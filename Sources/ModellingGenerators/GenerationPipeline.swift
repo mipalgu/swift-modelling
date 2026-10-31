@@ -60,7 +60,7 @@ public enum GenerationPipeline {
         let sources = ecoreURLs.map(FileLocations.canonical)
         let output = FileLocations.canonical(options.output ?? defaultOutput(for: first))
 
-        let resourceSet = ResourceSet()
+        let resourceSet = ResourceSet(defaultContainerLookupScope: options.containerLookupScope)
         let generatorMetamodel: EPackage
         do {
             generatorMetamodel = try await GenModelPackage.load()

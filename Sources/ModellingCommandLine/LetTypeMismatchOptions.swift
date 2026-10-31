@@ -23,8 +23,12 @@ extension MTLLetTypeMismatches: @retroactive ExpressibleByArgument {}
 /// warning to standard error with ``GenerationWarningReport``. The option applies only while `let`
 /// types are checked, as ``MTLSemanticsOptions/checksLetTypes`` selects.
 ///
-/// Commands include the option with `@OptionGroup`, and either pass ``letTypeMismatches`` to the
-/// generator they run or apply it to their generation options with ``apply(to:)``.
+/// The configuration file may choose the mode too; an option given on the command line
+/// overrides it. The preset of ``SemanticsOptions`` does not change the mode.
+///
+/// Commands include the option with `@OptionGroup`, and either pass
+/// ``letTypeMismatches(settings:)`` to the generator they run or apply it to their generation
+/// options with ``apply(to:settings:)``.
 public struct LetTypeMismatchOptions: ParsableArguments, Sendable {
     /// The long name of the option.
     public static let optionName = "let-type-mismatches"
@@ -49,10 +53,36 @@ public struct LetTypeMismatchOptions: ParsableArguments, Sendable {
                 values are bound unchecked and the option has no effect.
                 """,
             valueName: LetTypeMismatchOptions.valueList))
-    public var letTypeMismatches: MTLLetTypeMismatches = .error
+    public var explicitLetTypeMismatches: MTLLetTypeMismatches?
 
-    /// Creates the option with mismatches treated as errors.
+    /// The mode that applies when neither the command line nor the configuration file
+    /// chooses one, `MTLLetTypeMismatches.error`.
+    public static let defaultMode = MTLLetTypeMismatches.error
+
+    /// The mode given on the command line, or ``defaultMode`` if none is.
+    ///
+    /// The mode that applies to a run also depends on the configuration file;
+    /// ``letTypeMismatches(settings:)`` resolves it. Setting this property gives the mode as if
+    /// on the command line.
+    public var letTypeMismatches: MTLLetTypeMismatches {
+        get { explicitLetTypeMismatches ?? Self.defaultMode }
+        set { explicitLetTypeMismatches = newValue }
+    }
+
+    /// Creates the option with nothing given, which treats mismatches as errors unless the
+    /// configuration file says otherwise.
     public init() {}
+
+    /// The mode that applies to a run.
+    ///
+    /// The mode does not depend on the preset: it is the mode given on the command line, else
+    /// the `let-type-mismatches` of the configuration file, else ``defaultMode``.
+    ///
+    /// - Parameter settings: The settings of the run, whose configuration file is consulted.
+    /// - Returns: How a typed `let` treats a value that does not conform to its declared type.
+    public func letTypeMismatches(settings: SemanticsSettings) -> MTLLetTypeMismatches {
+        explicitLetTypeMismatches ?? settings.configuration.letTypeMismatches ?? Self.defaultMode
+    }
 
     /// A paragraph that describes the option in the discussion of a command.
     ///
@@ -70,5 +100,14 @@ public struct LetTypeMismatchOptions: ParsableArguments, Sendable {
     /// - Parameter options: The generation options to update.
     public func apply(to options: inout GenerationOptions) {
         options.mtlOptions.letTypeMismatches = letTypeMismatches
+    }
+
+    /// Copies the mode that applies to a run to generation options.
+    ///
+    /// - Parameters:
+    ///   - options: The generation options to update.
+    ///   - settings: The settings of the run, whose configuration file is consulted.
+    public func apply(to options: inout GenerationOptions, settings: SemanticsSettings) {
+        options.mtlOptions.letTypeMismatches = letTypeMismatches(settings: settings)
     }
 }

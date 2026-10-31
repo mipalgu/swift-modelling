@@ -195,6 +195,7 @@ struct GenerateCommand: AsyncParsableCommand {
     ///   a failed generation.
     @MainActor
     func run() async throws {
+        let settings = try semanticsOptions.settings()
         let inputURL = URL(fileURLWithPath: inputModel)
         let templateURLs = templatePaths.map { URL(fileURLWithPath: $0) }
         let available = Self.languages(templatePaths: templateURLs)
@@ -220,9 +221,9 @@ struct GenerateCommand: AsyncParsableCommand {
         defer { bar.finish() }
         do {
             if language == TemplateSetConstants.genModelLanguage {
-                try await createGenModel(from: inputURL, bar: bar)
+                try await createGenModel(from: inputURL, settings: settings, bar: bar)
             } else {
-                try await generateCode(from: inputURL, templateURLs: templateURLs, bar: bar)
+                try await generateCode(from: inputURL, templateURLs: templateURLs, settings: settings, bar: bar)
             }
         } catch let error as ValidationError {
             throw error
@@ -233,13 +234,13 @@ struct GenerateCommand: AsyncParsableCommand {
         }
     }
 
-    /// The options that the command line gives the import of an Ecore model.
+    /// The options that the command line and the settings of a run give the import of an Ecore model.
     ///
+    /// - Parameter settings: The preset, configuration file and container scope of the run.
     /// - Returns: The import options.
     /// - Throws: ``ValidationError`` if the transformation location does not exist.
-    func importOptions() throws -> GenModelImportOptions {
-        var options = GenModelImportOptions(
-            atlOptions: atlSemanticsOptions.atlOptions(preset: semanticsOptions.semantics))
+    func importOptions(settings: SemanticsSettings) throws -> GenModelImportOptions {
+        var options = GenModelImportOptions(atlOptions: atlSemanticsOptions.atlOptions(settings: settings))
         options.basePackage = basePackage
         prefix.forEach { options.addPrefix($0) }
         options.modelProject = modelProject
@@ -247,7 +248,8 @@ struct GenerateCommand: AsyncParsableCommand {
         options.copyright = copyright
         options.complianceLevel = jdkLevel
         genModelDefaults.apply(to: &options)
-        unsetFeatureOptions.apply(to: &options)
+        unsetFeatureOptions.apply(to: &options, settings: settings)
+        settings.apply(to: &options)
         if let transformations {
             guard FileManager.default.fileExists(atPath: transformations) else {
                 throw ValidationError("The transformation '\(transformations)' does not exist")
@@ -258,12 +260,19 @@ struct GenerateCommand: AsyncParsableCommand {
     }
 
     /// Creates a generator model from an Ecore model.
-    private func createGenModel(from inputURL: URL, bar: GenerationProgressBar) async throws {
+    ///
+    /// - Parameters:
+    ///   - inputURL: The Ecore model.
+    ///   - settings: The preset, configuration file and container scope of the run.
+    ///   - bar: The progress bar that reports the import.
+    private func createGenModel(from inputURL: URL, settings: SemanticsSettings, bar: GenerationProgressBar)
+        async throws
+    {
         guard inputURL.pathExtension.lowercased() == TemplateSetConstants.metamodelFileExtension else {
             throw ValidationError(
                 "The language \(language) needs an Ecore model, but '\(inputModel)' is not one")
         }
-        var options = try importOptions()
+        var options = try importOptions(settings: settings)
         options.output = output.map(genModelOutput(for:))
         let reporter = bar.reporter
         let result = try await GenerationPipeline.ecoreToGenModel(
@@ -291,18 +300,24 @@ struct GenerateCommand: AsyncParsableCommand {
     }
 
     /// Generates source files with a template set.
-    private func generateCode(from inputURL: URL, templateURLs: [URL], bar: GenerationProgressBar)
-        async throws
-    {
-        let preset = semanticsOptions.semantics
+    ///
+    /// - Parameters:
+    ///   - inputURL: The generator model or Ecore model.
+    ///   - templateURLs: The directories whose template files replace the bundled templates.
+    ///   - settings: The preset, configuration file and container scope of the run.
+    ///   - bar: The progress bar that reports the generation.
+    private func generateCode(
+        from inputURL: URL, templateURLs: [URL], settings: SemanticsSettings, bar: GenerationProgressBar
+    ) async throws {
         var options = GenerationOptions(
             templatePaths: templateURLs, forceOverwrite: forceOverwrite, diff: diff,
-            mtlOptions: preset.mtlOptions)
+            mtlOptions: settings.preset.mtlOptions)
         if useModelDirectory { options.includeSourceRoot = true }
         codeStyle.apply(to: &options)
-        mtlSemanticsOptions.apply(to: &options, preset: preset)
-        unsetFeatureOptions.apply(to: &options)
-        letTypeMismatchOptions.apply(to: &options)
+        mtlSemanticsOptions.apply(to: &options, settings: settings)
+        unsetFeatureOptions.apply(to: &options, settings: settings)
+        letTypeMismatchOptions.apply(to: &options, settings: settings)
+        settings.apply(to: &options)
         let directory = URL(fileURLWithPath: output ?? Self.defaultOutputDirectory)
         if verbose {
             print("Generating \(language) code from: \(inputURL.path)")
@@ -310,7 +325,7 @@ struct GenerateCommand: AsyncParsableCommand {
         }
         let result = try await GenerationPipeline.generate(
             inputURL: inputURL, language: language, outputDirectory: directory,
-            importOptions: try importOptions(), options: options, progress: bar.reporter)
+            importOptions: try importOptions(settings: settings), options: options, progress: bar.reporter)
         bar.finish()
         GenerationWarningReport.write(result.warnings)
         let noun = result.files.count == 1 ? "file" : "files"

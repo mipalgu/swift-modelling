@@ -182,11 +182,14 @@ struct GenerateCommand: AsyncParsableCommand {
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
 
-    /// The behaviours of the templates that the command line selects.
-    var mtlOptions: MTLOptions {
-        var options = mtlSemanticsOptions.mtlOptions(preset: semanticsOptions.semantics)
-        options.unsetFeatureReads = unsetFeatureOptions.unsetFeatures
-        options.letTypeMismatches = letTypeMismatchOptions.letTypeMismatches
+    /// The behaviours of the templates that the command line and the settings of a run select.
+    ///
+    /// - Parameter settings: The preset, configuration file and container scope of the run.
+    /// - Returns: The options of the templates.
+    func mtlOptions(settings: SemanticsSettings) -> MTLOptions {
+        var options = mtlSemanticsOptions.mtlOptions(settings: settings)
+        options.unsetFeatureReads = unsetFeatureOptions.unsetFeatures(settings: settings)
+        options.letTypeMismatches = letTypeMismatchOptions.letTypeMismatches(settings: settings)
         return options
     }
 
@@ -225,18 +228,32 @@ struct GenerateCommand: AsyncParsableCommand {
 
     @MainActor
     func run() async throws {
+        let settings = try semanticsOptions.settings()
         if let templateSet {
-            try await generate(templateSet: templateSet)
+            try await generate(templateSet: templateSet, settings: settings)
         } else if let templateFile {
-            try await generate(templateFile: templateFile)
+            try await generate(templateFile: templateFile, settings: settings)
         }
+    }
+
+    /// Prints the settings of a run that do not appear on the command line.
+    ///
+    /// - Parameter settings: The preset, configuration file and container scope of the run.
+    private func printSettings(_ settings: SemanticsSettings) {
+        if let file = settings.configuration.url {
+            print("Configuration File: \(file.path)")
+        }
+        print("Semantics: \(settings.preset.rawValue)")
+        print("Container Scope: \(settings.containerLookupScope.rawValue)")
     }
 
     /// Generates text with a single template file.
     ///
-    /// - Parameter templateFile: The path of the template file.
+    /// - Parameters:
+    ///   - templateFile: The path of the template file.
+    ///   - settings: The preset, configuration file and container scope of the run.
     @MainActor
-    private func generate(templateFile: String) async throws {
+    private func generate(templateFile: String, settings: SemanticsSettings) async throws {
         // Print configuration if verbose
         if verbose {
             print("MTL Template: \(templateFile)")
@@ -246,6 +263,7 @@ struct GenerateCommand: AsyncParsableCommand {
             if let template = template {
                 print("Main Template: \(template)")
             }
+            printSettings(settings)
         }
 
         // Parse MTL template
@@ -275,7 +293,7 @@ struct GenerateCommand: AsyncParsableCommand {
             print("  Macros: \(mtlModule.macros.count)")
         }
 
-        let inputs = try await loadModels()
+        let inputs = try await loadModels(settings: settings)
 
         // Determine main template
         let mainTemplateName: String
@@ -307,7 +325,7 @@ struct GenerateCommand: AsyncParsableCommand {
         let strategy = MTLFileSystemStrategy(
             basePath: output, options: generatorOptions, standardOutput: .capture)
         let generator = MTLGenerator(
-            module: mtlModule, generationStrategy: strategy, options: mtlOptions,
+            module: mtlModule, generationStrategy: strategy, options: mtlOptions(settings: settings),
             serviceProviders: [parameters])
         parameters.bind(to: generator)
 
@@ -338,18 +356,21 @@ struct GenerateCommand: AsyncParsableCommand {
 
     /// Generates text with a template set.
     ///
-    /// - Parameter templateSet: The directory of the template set, or the language of a bundled set.
+    /// - Parameters:
+    ///   - templateSet: The directory of the template set, or the language of a bundled set.
+    ///   - settings: The preset, configuration file and container scope of the run.
     @MainActor
-    private func generate(templateSet: String) async throws {
+    private func generate(templateSet: String, settings: SemanticsSettings) async throws {
         if verbose {
             print("Template Set: \(templateSet)")
             print("Metamodels: \(metamodel.joined(separator: ", "))")
             print("Input Models: \(model.joined(separator: ", "))")
             print("Output Directory: \(output)")
+            printSettings(settings)
         }
         let templateURLs = try templatePathOptions.directories()
         let parameters = try parameterOptions.values
-        let inputs = try await loadModels()
+        let inputs = try await loadModels(settings: settings)
         try createOutputDirectory()
 
         if verbose {
@@ -358,7 +379,7 @@ struct GenerateCommand: AsyncParsableCommand {
         let step = GenerationStep(
             templates: .templateSet(templateSet, codeStyle: codeStyle.codeStyle), templatePaths: templateURLs,
             parameters: parameters, outputDirectory: URL(fileURLWithPath: output),
-            generatorOptions: generatorOptions, mtlOptions: mtlOptions)
+            generatorOptions: generatorOptions, mtlOptions: mtlOptions(settings: settings))
         let verbose = self.verbose
         let result = try await step.run(
             arguments: inputs.arguments, models: inputs.models, resourceSet: inputs.resourceSet,
@@ -405,21 +426,23 @@ struct GenerateCommand: AsyncParsableCommand {
         var arguments: [(any EcoreValue)?] = []
 
         /// The resource set with the registered metamodels.
-        var resourceSet = ResourceSet()
+        var resourceSet: ResourceSet
     }
 
     /// Registers the metamodels and loads the models given on the command line.
     ///
     /// An Ecore file given with `--model` is registered as a metamodel and its package is passed
     /// to the template. Every other model is read as JSON if its extension is `json`, and as XMI
-    /// otherwise; a JSON model is read without the registered metamodels.
+    /// otherwise; a JSON model is read without the registered metamodels. Every resource set
+    /// that receives a model has the container lookup scope of the settings as its default.
     ///
+    /// - Parameter settings: The settings of the run, whose container lookup scope applies.
     /// - Returns: The models, the arguments of the main template and the resource set.
     /// - Throws: ``ValidationError/fileNotFound(_:)`` if a model does not exist, and the errors of
     ///   the parsers.
     @MainActor
-    private func loadModels() async throws -> Inputs {
-        var inputs = Inputs()
+    private func loadModels(settings: SemanticsSettings) async throws -> Inputs {
+        var inputs = Inputs(resourceSet: settings.makeResourceSet())
         var rootObjectsByModel: [Int: [any EcoreValue]] = [:]
         let resourceSet = inputs.resourceSet
         if !metamodel.isEmpty || !model.isEmpty {
@@ -461,7 +484,7 @@ struct GenerateCommand: AsyncParsableCommand {
                 let options = ModelIO.LoadOptions(requiresMetamodel: false, enableDebugging: verbose)
                 let resource = try await ModelIO.load(
                     url: modelURL, format: format,
-                    resourceSet: format == .json ? ResourceSet() : resourceSet, options: options
+                    resourceSet: format == .json ? settings.makeResourceSet() : resourceSet, options: options
                 ).resource
 
                 // Use filename without extension as model name

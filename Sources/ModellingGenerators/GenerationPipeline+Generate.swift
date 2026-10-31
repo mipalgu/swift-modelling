@@ -49,7 +49,7 @@ extension GenerationPipeline {
         let layout = try templateSet.descriptor.layoutConfiguration(forStyle: options.codeStyle)
 
         progress(GenerationProgressUpdate(message: "Loading \(source.lastPathComponent)"))
-        let resourceSet = ResourceSet()
+        let resourceSet = ResourceSet(defaultContainerLookupScope: options.containerLookupScope)
         let document = try await loadGenModel(source, into: resourceSet)
         guard let root = await document.resource.getRootObjects().first as? DynamicEObject else {
             throw GenerationError.genModelUnreadable(source.path, "the document is empty")
