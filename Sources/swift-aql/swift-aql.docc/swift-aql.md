@@ -1,0 +1,155 @@
+# swift-aql
+
+Evaluate AQL queries against models from the command line.
+
+## Overview
+
+The `swift-aql` command-line tool evaluates Acceleo Query Language
+(AQL) expressions against models in XMI or JSON format, or against
+Ecore metamodels, and prints their values. It uses the same
+expression engine as the templates of `swift-mtl`, so a query that
+you try out on the command line behaves exactly as it does in a
+template.
+
+The tool is built on the swift-aql package
+(https://github.com/mipalgu/swift-aql), a pure Swift implementation
+of the query language used by Eclipse Acceleo and Sirius
+([Eclipse Acceleo](https://eclipse.dev/acceleo/)).
+
+## Commands
+
+### evaluate
+
+Evaluate an expression against the models given with `--model`.
+
+```bash
+swift-aql evaluate --model <file> --expression <expression> [options]
+swift-aql evaluate --model <file> --expression-file <file.aql> [options]
+```
+
+**Options:**
+
+- `--model <file>` - A model to evaluate the expression against (repeatable). Without a model, the expression is evaluated on its own.
+- `-e, --expression <expression>` - The expression to evaluate
+- `-f, --expression-file <file.aql>` - A file that holds the expression to evaluate; give either this or `--expression`
+
+### query
+
+Evaluate a query against the model given as an argument.
+
+```bash
+swift-aql query <file> <expression> [options]
+swift-aql query <file> --query <expression> [options]
+swift-aql query <file> --query-file <file.aql> [options]
+```
+
+**Options:**
+
+- `-q, --query <expression>` - The query to evaluate, instead of the argument after the model
+- `-f, --query-file <file.aql>` - A file that holds the query to evaluate
+
+### Options of both commands
+
+- `--context <id-or-name>` - The object to bind to `self` (see below)
+- `-m, --metamodel <file.ecore>` - An Ecore metamodel of the models (repeatable); without it, the metamodels beside the models are found automatically
+- `--unset-features <defaults|undefined>` - Whether unset features read as their defaults (`defaults`, the default, as in the Eclipse Modeling Framework) or as undefined
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`) for every behaviour option below; an option that is given overrides it
+- `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models that it holds in containment references
+- `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--collection-arguments <whole|first-element>`, `--collection-kinds <distinguished|sequences>`, `--single-value-collections <set|sequence>`, `--container-lookup <resources|registered-objects>` - The behaviours of expressions, with the same meaning and defaults as for `swift-mtl`
+
+## Variables
+
+Before an expression is evaluated, the tool binds these variables:
+
+- `self` is the context object: the object that `--context` selects, or else the first root object of the first model. Without a model, `self` is `null`.
+- Every root object of the models is bound to the name of its class with a lower-case first letter, so the root object of class `Company` is `company`, and that of class `University` is `university`. When several root objects have classes of the same name, the variable holds the first of them. A variable never replaces `self`.
+
+All models are visible to services that search whole models, such as
+`allInstances()`, `eContainer()` and `eInverse()`.
+
+## Selecting the Context Object
+
+`--context` looks up its value in three ways, in this order:
+
+1. as an identifier that a model declares with `xmi:id`, such as `company1`;
+2. if it starts with a slash, as a fragment path such as `//@departments.0/@employees.1` (the first root object) or `/1/@items.0` (the second root object);
+3. as the label of an object, which is the value of its `name` attribute, or else of its first string attribute, such as `Alice Smith`.
+
+A value that matches no object, or a label that several objects share,
+is reported as an error.
+
+## Metamodels
+
+A model refers to its metamodels by their namespace URIs. Without
+`--metamodel`, the tool registers each Ecore file in the directory of
+a model whose namespace URI the model uses, so that the attributes of
+the model have the types that the metamodel declares: a `budget` of
+type `EDouble` is the real number `500000.0`, not a string. If several
+Ecore files beside a model declare the same namespace URI, the tool
+asks you to choose one with `--metamodel`. With `--metamodel`, only
+the metamodels given are registered.
+
+An Ecore file can itself be given as the model, so that its package
+can be queried, as in `self.eClassifiers.name`.
+
+## Output
+
+The tool prints the value of the expression on one line:
+
+| Value | Printed as |
+| --- | --- |
+| null | `null` |
+| String | in double quotes, with `"`, `\` and control characters escaped: `"Acme Corp"` |
+| Integer | its digits: `1995` |
+| Real | with a fraction or an exponent, at full precision: `500000.0`, `41666.666666666664` |
+| Boolean | `true` or `false` |
+| Model object | its class and its label: `Employee(Alice Smith)`, or its class alone if it has no label |
+| Collection | its elements in square brackets, whatever its kind: `["Engineering", "Marketing"]` |
+| Type | its qualified name: `company::Employee` |
+
+The label of an object is the value of its `name` attribute (ignoring
+case) if its class has one, else of its first single-valued string
+attribute, else of its first single-valued attribute, as in the
+editors of the Eclipse Modeling Framework.
+
+A command exits with status 0 when the expression has been evaluated.
+A missing file, an invalid expression, an unknown variable or a failed
+operation is reported on standard error, and the command exits with a
+non-zero status, so scripts can rely on `set -e`.
+
+## Examples
+
+```bash
+# Navigate from the root object, bound to the name of its class
+swift-aql evaluate --model company-data.xmi \
+    --expression "company.departments->first().budget"
+
+# Filter and collect
+swift-aql evaluate --model company-data.xmi \
+    --expression "company.departments.employees->select(e | e.age < 30).name"
+
+# Query from an object selected by its identifier
+swift-aql query company-model.xmi --query "self.employees" --context company1
+
+# Read a query from a file and use it in a script
+count=$(swift-aql query company-model.xmi --query-file queries/count.aql)
+
+# Name the metamodel explicitly
+swift-aql evaluate --model data/company.xmi --metamodel metamodels/Company.ecore \
+    --expression "company.name"
+
+# Query a metamodel
+swift-aql evaluate --model Company.ecore --expression "self.eClassifiers.name"
+```
+
+## Topics
+
+### Essentials
+
+- <doc:GettingStarted>
+
+## See Also
+
+- [Eclipse Acceleo](https://eclipse.dev/acceleo/)
+- [OMG OCL (Object Constraint Language)](https://www.omg.org/spec/OCL/)

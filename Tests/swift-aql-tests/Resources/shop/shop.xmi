@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:shop="http://www.example.org/shop">
+  <shop:Shop xmi:id="corner" name="Corner Shop" founded="2001">
+    <items xmi:id="tea" stock="12" title="Green &quot;Sencha&quot; Tea" price="4.5" size="SMALL" available="true"/>
+    <items stock="3" title="Teapot" price="25.0" size="LARGE" available="false"/>
+    <orders xmi:id="first-order" quantity="2" item="/0/@items.0"/>
+    <markers/>
+  </shop:Shop>
+  <shop:Shop name="Kiosk" founded="2015"/>
+</xmi:XMI>
