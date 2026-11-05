@@ -83,7 +83,7 @@
 
                 @Code(name: "Terminal", file: step-06-inspect-command.sh)
 
-                The inspect command shows detailed information about your metamodel, including all classes, attributes, and their types.
+                The inspect command shows detailed information about your metamodel: its package with namespace URI and prefix, and every class with its attributes, their types and their multiplicities. `[0..1]` means that a value is optional and single. Without `--detail full`, inspect shows a summary that lists the classes by name.
             }
         }
     }

@@ -1,1 +1,1 @@
-self.employees->select(e | e.status = EmploymentStatus::FULL_TIME)
+self.employees->select(e | e.status = company::EmploymentStatus::FULL_TIME)

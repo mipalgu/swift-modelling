@@ -1,7 +1,7 @@
 @Tutorial(time: 40) {
     @Intro(title: "Querying Models with AQL") {
 
-        Learn how to query and navigate models using AQL (ATLAS Query Language), including element selection, collection operations, and complex queries.
+        Learn how to query and navigate models using AQL (Acceleo Query Language), including element selection, collection operations, and complex queries.
 
         In this tutorial, you'll explore AQL's powerful query capabilities to extract information from models, filter collections, and navigate relationships programmatically.
 
@@ -10,9 +10,9 @@
 
     @Section(title: "Introduction to AQL") {
         @ContentAndMedia {
-            AQL (ATLAS Query Language) is a powerful query language for model-driven engineering. It lets you navigate models, select elements, and compute derived values without writing imperative code.
+            AQL (Acceleo Query Language) is a powerful query language for model-driven engineering. It lets you navigate models, select elements, and compute derived values without writing imperative code.
 
-            Use AQL for model validation, reporting, metrics collection, and transformation—any task that needs to extract or compute information from your models.
+            Use AQL for model validation, reporting, metrics collection, and transformation: any task that needs to extract or compute information from your models.
 
             @Image(source: "ecore-metamodeling.svg", alt: "AQL Query Language")
         }
@@ -39,7 +39,7 @@
 
                 @Code(name: "Terminal", file: step-32-execute-query.sh)
 
-                The `query` command evaluates AQL expressions against a model and displays results. Use `--context` to specify which element the query evaluates on.
+                The `query` command evaluates AQL expressions against a model and displays results. Use `--context` to specify which element the query evaluates on, by its `xmi:id` (here `company1`) or its name, and `--query-file` to read a query from a file. The metamodel `Company.ecore` beside the model is found through its namespace URI, so the attributes have their declared types. Strings print in double quotes and objects as their class followed by their name.
             }
         }
     }
@@ -57,7 +57,7 @@
 
                 @Code(name: "queries/fulltime-employees.aql", file: step-33-fulltime-employees.aql)
 
-                The `select()` operation filters the employees collection, keeping only elements where the lambda expression evaluates to true.
+                The `select()` operation filters the employees collection, keeping only elements where the lambda expression evaluates to true. An enumeration literal is written with its package and enumeration, as in `company::EmploymentStatus::FULL_TIME`.
             }
 
             @Step {
@@ -73,7 +73,7 @@
 
                 @Code(name: "queries/count-by-status.aql", file: step-35-count-by-status.aql)
 
-                You can combine multiple queries to compute statistics. This example uses `select()` to filter and `size()` to count.
+                You can combine multiple queries to compute statistics. This example uses `select()` to filter, `size()` to count, and `let` to name the counts before it reports them in one line.
             }
         }
     }
@@ -91,7 +91,7 @@
 
                 @Code(name: "queries/engineering-managers.aql", file: step-36-engineering-managers.aql)
 
-                This query combines type filtering (`oclIsKindOf()`) with attribute filtering to find specific managers.
+                This query combines type filtering (`oclIsKindOf()` with the qualified class `company::Manager`) with attribute filtering to find specific managers.
             }
 
             @Step {
@@ -99,7 +99,7 @@
 
                 @Code(name: "queries/employee-companies.aql", file: step-37-employee-companies.aql)
 
-                Starting from an employee, navigate back to their employer using the opposite reference. AQL makes bidirectional navigation natural.
+                Starting from an employee, navigate back to their employer using the opposite reference. Evaluate it with an employee as the context, for example `--context emp1`. AQL makes bidirectional navigation natural.
             }
 
             @Step {
@@ -136,7 +136,7 @@
                 Querying and navigating models to extract information
 
                 @Justification {
-                    Correct! AQL (ATLAS Query Language) is designed for querying models, navigating relationships, and computing derived values. It's declarative and read-only, focused on extracting information rather than modifying models.
+                    Correct! AQL (Acceleo Query Language) is designed for querying models, navigating relationships, and computing derived values. It's declarative and read-only, focused on extracting information rather than modifying models.
                 }
             }
 
@@ -192,7 +192,7 @@
                 The current context element being queried
 
                 @Justification {
-                    Correct! In AQL, `self` is a special variable that refers to the context element—the object on which the query is being evaluated. When querying a Company, `self` is that Company instance.
+                    Correct! In AQL, `self` is a special variable that refers to the context element: the object on which the query is being evaluated. When querying a Company, `self` is that Company instance.
                 }
             }
 
@@ -200,7 +200,7 @@
                 A reserved keyword with no meaning
 
                 @Justification {
-                    Incorrect. `self` has specific meaning—it's the primary way to reference the context element in AQL expressions.
+                    Incorrect. `self` has specific meaning: it's the primary way to reference the context element in AQL expressions.
                 }
             }
         }
@@ -240,7 +240,7 @@
                 They do the same thing with different names
 
                 @Justification {
-                    Incorrect. They serve different purposes—`collect()` transforms elements whilst `select()` filters them.
+                    Incorrect. They serve different purposes: `collect()` transforms elements whilst `select()` filters them.
                 }
             }
 
@@ -256,7 +256,7 @@
                 `collect()` is for numbers, `select()` is for strings
 
                 @Justification {
-                    Incorrect. Both operations work on any collection types. The difference is functional—filtering versus transformation.
+                    Incorrect. Both operations work on any collection types. The difference is functional: filtering versus transformation.
                 }
             }
         }

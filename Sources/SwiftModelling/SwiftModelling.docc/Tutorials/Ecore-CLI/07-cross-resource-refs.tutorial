@@ -24,7 +24,7 @@
             }
 
             @Step {
-                Understand the `href` syntax used in XMI for cross-resource references: `href="targetFile.xmi#//TargetElementID"` where the part before `#` is the target resource URI and the part after is the fragment identifier.
+                Understand the `href` syntax used in XMI for cross-resource references: `href="targetFile.xmi#fragment"`, where the part before `#` is the URI of the target resource, relative to the referring file, and the part after it is the fragment that names the object within that resource. A fragment that does not start with `/` names an object by its identifier, the value of its `xmi:id` or of its ID attribute, so `#it` names the object whose `xmi:id` is `it`. An identifier stays valid when objects are added or reordered. A fragment that starts with `/` names an object by its position instead: `/0` names the first root object of a file with several roots, and a path such as `//@employees.1` names the second object of the `employees` containment of a single root.
             }
         }
     }
@@ -40,7 +40,7 @@
 
                 @Code(name: "SharedDeps.xmi", file: ecore-07-step-02-shared.xmi)
 
-                This file contains common departments (e.g., "HR", "IT") that other projects might refer to. It acts as a shared library.
+                This file contains common departments ("IT", "HR" and "Finance") as its three root objects, so that other projects can refer to them. Each department carries an `xmi:id` (`it`, `hr` and `finance`) by which other files name it. It acts as a shared library.
             }
 
             @Step {
@@ -48,7 +48,7 @@
 
                 @Code(name: "ProjectA.xmi", file: ecore-07-step-03-project.xmi)
 
-                This file defines a specific project. It refers to the "IT" department defined in `SharedDeps.xmi`. Note the `href` pointing to the other file.
+                This file defines a specific project. It refers to the "IT" department defined in `SharedDeps.xmi`. Note the `href`, which names the IT department of the other file by its identifier, `it`.
             }
         }
     }
@@ -64,7 +64,7 @@
 
                 @Code(name: "Terminal", file: ecore-07-step-04-validate.sh)
 
-                Run the validation command on `ProjectA.xmi`. The tool will follow the reference to `SharedDeps.xmi` to ensure the target element exists and matches the type.
+                Run the validation command on `ProjectA.xmi` with its metamodel. The tool follows the reference to `SharedDeps.xmi` to ensure that the target element exists and is a `Department`. A reference to a file or an object that does not exist is reported as an error.
             }
 
             @Step {
@@ -72,7 +72,7 @@
 
                 @Code(name: "Terminal", file: ecore-07-step-05-inspect.sh)
 
-                Use the query command to verify that the reference is correctly resolved. You can navigate from ProjectA to the properties of the shared IT department.
+                Use the query command to verify that the reference is correctly resolved. The `find` query lists every `Department` of the project file with its features, and shows the referenced department by its name together with the file and fragment it was loaded from.
             }
         }
     }

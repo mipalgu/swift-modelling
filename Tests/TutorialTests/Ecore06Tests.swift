@@ -112,7 +112,7 @@ struct Ecore06Tests {
         #expect(content.contains("let partTime"))
         #expect(content.contains("let contractors"))
         #expect(content.contains("->size()"))
-        #expect(content.contains("Tuple"))
+        #expect(content.contains("fullTime.toString()"))
     }
 
     // MARK: - Section 3: Navigation and Complex Queries
@@ -127,7 +127,7 @@ struct Ecore06Tests {
         let content = try String(contentsOf: queryPath, encoding: .utf8)
 
         // Verify query uses type checking and attribute filtering
-        #expect(content.contains("oclIsKindOf(Manager)"))
+        #expect(content.contains("oclIsKindOf(company::Manager)"))
         #expect(content.contains("e.department"))
         #expect(content.contains("Engineering"))
     }
@@ -159,7 +159,7 @@ struct Ecore06Tests {
         #expect(content.contains("let fullTime"))
         #expect(content.contains("let percentage"))
         #expect(content.contains("if total > 0"))
-        #expect(content.contains("Tuple"))
+        #expect(content.contains("percentage.toString()"))
     }
 
     @Test("Step 10: Validate with queries command exists")
@@ -222,7 +222,7 @@ struct Ecore06Tests {
         // Step 4: Complex query with let bindings
         let step4 = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-35-count-by-status.aql"), encoding: .utf8)
         #expect(step4.contains("let"))
-        #expect(step4.contains("Tuple"))
+        #expect(step4.contains("toString()"))
     }
 
     @Test("Collection operations validation")
@@ -288,7 +288,7 @@ struct Ecore06Tests {
         let statsQuery = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-38-company-stats.aql"), encoding: .utf8)
 
         // Verify type checking
-        #expect(typeCheckQuery.contains("oclIsKindOf(Manager)"))
+        #expect(typeCheckQuery.contains("oclIsKindOf(company::Manager)"))
 
         // Verify conditional logic
         #expect(statsQuery.contains("if"))

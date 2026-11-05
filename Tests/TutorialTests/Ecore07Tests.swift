@@ -40,8 +40,7 @@ struct Ecore07Tests {
         #expect(FileManager.default.fileExists(atPath: sharedPath.path))
 
         let content = try String(contentsOf: sharedPath, encoding: .utf8)
-        #expect(content.contains("name=\"Shared Services\""))
-        #expect(content.contains("name=\"IT\""))
+        #expect(content.contains("<org:Department xmi:id=\"it\" name=\"IT\"/>"))
         #expect(content.contains("name=\"HR\""))
     }
 
@@ -55,6 +54,6 @@ struct Ecore07Tests {
         #expect(content.contains("name=\"Project Alpha\""))
 
         // Check for the href to the external file
-        #expect(content.contains("href=\"SharedDeps.xmi#//@relatedDepartments.0\""))
+        #expect(content.contains("href=\"SharedDeps.xmi#it\""))
     }
 }

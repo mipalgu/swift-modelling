@@ -1,1 +1,4 @@
-swift run swift-ecore validate ProjectA.xmi
+swift-ecore validate ProjectA.xmi --metamodel Organisation.ecore
+
+# Output:
+# Validation completed successfully

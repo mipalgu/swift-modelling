@@ -4,9 +4,9 @@
     xmlns:company="http://www.example.org/company">
 
   <company:Company xmi:id="company1" name="Tech Innovations Ltd">
-    <employees xmi:id="person1" name="Alice Johnson" email="alice@techinnovations.com"/>
-    <employees xmi:id="person2" name="Bob Smith" email="bob@techinnovations.com"/>
-    <employees xmi:id="person3" name="Carol Williams" email="carol@techinnovations.com"/>
+    <employees xmi:id="person1" name="Alice Johnson" email="alice@example.com"/>
+    <employees xmi:id="person2" name="Bob Smith" email="bob@example.com"/>
+    <employees xmi:id="person3" name="Carol Williams" email="carol@example.com"/>
   </company:Company>
 
 </xmi:XMI>
