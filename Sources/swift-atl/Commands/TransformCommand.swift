@@ -57,12 +57,50 @@ struct TransformCommand: AsyncParsableCommand {
                   --target persons.xmi \\
                   --target organisations.xmi
 
+                # Metamodel files instead of -- @path directives
+                swift-atl transform Families2Persons.atl \\
+                  --source families.xmi --source-metamodel Families.ecore \\
+                  --target persons.xmi --target-metamodel Persons.ecore
+
+                # Refine a model in place, with one metamodel for source and target
+                swift-atl transform Cleanup.atl --refining \\
+                  --source customers.xmi --target cleaned.xmi --metamodel Customer.ecore
+
+                # Check a transformation against its metamodels without running it
+                swift-atl transform Families2Persons.atl --validate-only \\
+                  --source-metamodel Families.ecore --target-metamodel Persons.ecore
+
                 # Module parameters declared with -- @param in the transformation
                 swift-atl transform Ecore2GenModel.atl \\
                   --source IN=library.ecore \\
                   --target OUT=library.genmodel \\
                   --param basePackage=org.example \\
                   --param prefix=Library
+
+            Metamodel files given with --source-metamodel, --target-metamodel or --metamodel \
+            take the place of the -- @path and -- @nsURI directives of their metamodels. Give them \
+            by position, in the order of the module header, or as name=file.ecore with the \
+            metamodel name of the header. --metamodel binds any metamodel of the module, such as \
+            one that source and target models share.
+
+            A -- @path directive that starts with / names a file in an Eclipse workspace, as \
+            /Project/Families.ecore. It is looked up in each metamodel search directory, first \
+            with the directory as the workspace (Project/Families.ecore) and then with the \
+            directory as the project directory itself (Families.ecore). Without --metamodel-path \
+            or ECOREPATH, the directory of the transformation, its parent and the current \
+            directory are searched.
+
+            A module declared with refining instead of from, or run with --refining, refines its \
+            source model: each target model starts as a copy of the source model, rules change \
+            the elements they match, and elements that no rule matches are kept unchanged. A \
+            rule whose to section starts with drop deletes the element it matches, together \
+            with what it contains, after all other rules have run, and references to the \
+            deleted elements are removed; drop is an error outside refining mode.
+
+            --validate-only parses the transformation, binds its metamodels, checks the model \
+            element types and bound features of its rules and helpers against them, and loads \
+            the source models that are given, without running the transformation or writing \
+            targets.
 
             The Ecore and generator model metamodels are built in: a transformation can name them \
             with -- @nsURI directives, without a metamodel file. Targets that are instances of a \
@@ -155,6 +193,10 @@ struct TransformCommand: AsyncParsableCommand {
     @Option(name: .long, help: "Metamodel search path (can be specified multiple times)")
     var metamodelPath: [String] = []
 
+    /// The metamodel files that take the place of the directives of the transformation.
+    @OptionGroup(title: "Metamodels")
+    var metamodelFiles: TransformMetamodelOptions
+
     /// Values for the parameters that the transformation declares with `-- @param`.
     ///
     /// Each value is given as `name=value` and converted to the declared type of the parameter.
@@ -180,6 +222,22 @@ struct TransformCommand: AsyncParsableCommand {
     @Flag(name: .long, help: "Continue after metamodel loading errors (useful for testing)")
     var continueAfterErrors: Bool = false
 
+    /// Whether the transformation refines its source model, as if declared with `refining`.
+    @Flag(
+        name: .long,
+        help: "Refine the source model: start each target as a copy of the source model and keep what no rule matches")
+    var refining: Bool = false
+
+    /// Whether the transformation is only checked, without running it or writing targets.
+    @Flag(
+        name: .long,
+        help: "Check the transformation against its metamodels and load the source models, without running it")
+    var validateOnly: Bool = false
+
+    /// Whether nothing is printed when the command succeeds.
+    @Flag(name: .shortAndLong, help: "Print nothing on success")
+    var quiet: Bool = false
+
     /// The behaviours of the ATL source.
     @OptionGroup(title: "Evaluation")
     var atlSemanticsOptions: ATLSemanticsOptions
@@ -187,6 +245,15 @@ struct TransformCommand: AsyncParsableCommand {
     /// The preset of the behaviours, standard or that of version 0.6.
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
+
+    /// Checks that the command line does not ask for both quiet and verbose output.
+    ///
+    /// - Throws: A validation error if `--quiet` is given with `--verbose` or `--debug`.
+    func validate() throws {
+        if quiet && (verbose || debug) {
+            throw ArgumentParser.ValidationError("--quiet cannot be combined with --verbose or --debug")
+        }
+    }
 
     func run() async throws {
         let settings = try semanticsOptions.settings()
@@ -221,12 +288,17 @@ struct TransformCommand: AsyncParsableCommand {
 
             let atlSource = try String(contentsOfFile: transformation, encoding: .utf8)
             let parser = ATLParser(options: atlOptions, enableDebugging: debug)
-            let module = try await parser.parseContent(
+            let parsed = try await parser.parseContent(
                 atlSource,
                 filename: URL(fileURLWithPath: transformation).path,
                 searchPaths: searchPaths,
-                continueAfterErrors: continueAfterErrors,
+                continueAfterErrors: continueAfterErrors || metamodelFiles.isGiven,
                 metamodelRegistry: try await builtInMetamodelRegistry())
+            var module = try await metamodelFiles.bind(
+                parsed, requiresAll: metamodelFiles.isGiven && !continueAfterErrors, verbose: verbose)
+            if refining && !module.isRefining {
+                module = module.refining()
+            }
             guard !module.isQuery else {
                 throw ValidationError(
                     "'\(transformation)' is a query unit; run it with 'swift-atl \(QueryCommand.configuration.commandName ?? "")'"
@@ -236,6 +308,9 @@ struct TransformCommand: AsyncParsableCommand {
 
             if verbose {
                 print("Transformation module loaded: \(module.name)")
+                if module.isRefining {
+                    print("  - Running in refining mode")
+                }
                 print("  - Source metamodels: \(module.sourceMetamodels.keys.joined(separator: ", "))")
                 print("  - Target metamodels: \(module.targetMetamodels.keys.joined(separator: ", "))")
                 print("  - Matched rules: \(module.matchedRules.count)")
@@ -251,6 +326,11 @@ struct TransformCommand: AsyncParsableCommand {
                 if verbose {
                     print("\nNote: --sources and --targets flags are deprecated. Use --source and --target instead.")
                 }
+            }
+
+            if validateOnly {
+                try await checkOnly(module, sourceFiles: sourceFiles, targetFiles: targetFiles, settings: settings)
+                return
             }
 
             // Step 2: Map and load source models
@@ -359,14 +439,59 @@ struct TransformCommand: AsyncParsableCommand {
             let stats = await MainActor.run { virtualMachine.getStatistics() }
             if verbose {
                 print(stats.summary())
-            } else {
+            } else if !quiet {
                 let duration = String(format: "%.3f", stats.executionTime * 1000)
                 print("Transformation completed successfully in \(duration)ms")
             }
 
         } catch {
-            print("Transformation failed: \(error.localizedDescription)")
+            print("\(validateOnly ? "Validation" : "Transformation") failed: \(error.localizedDescription)")
             throw ExitCode.failure
         }
+    }
+
+    /// Checks a transformation and its models without running it.
+    ///
+    /// The module is checked with ``TransformationCheck/problems(of:)``. The source models that
+    /// are given are mapped to the source models of the module and loaded with its metamodels,
+    /// and the target models that are given are mapped to its target models; no file is written.
+    ///
+    /// - Parameters:
+    ///   - module: The module, with its metamodels bound.
+    ///   - sourceFiles: The source model files from the command line, possibly none.
+    ///   - targetFiles: The target model files from the command line, possibly none.
+    ///   - settings: The settings of the run, whose container lookup scope applies.
+    /// - Throws: ``TransformationError/invalidTransformation(_:)`` for problems of the module,
+    ///   and the errors of mapping and loading the models.
+    private func checkOnly(
+        _ module: ATLModule, sourceFiles: [String], targetFiles: [String], settings: SemanticsSettings
+    ) async throws {
+        let problems = TransformationCheck.problems(of: module)
+        guard problems.isEmpty else { throw TransformationError.invalidTransformation(problems) }
+        var loadedModels = 0
+        if !sourceFiles.isEmpty {
+            let mapping = try mapFilesToAliases(
+                filePaths: sourceFiles, aliases: Array(module.sourceMetamodels.keys), modelType: "source",
+                verbose: verbose)
+            loadedModels = try await loadModelsFromMapping(
+                mapping, metamodels: module.sourceMetamodels, containerLookupScope: settings.containerLookupScope,
+                explicitFormat: inputFormat, verbose: verbose, debug: debug
+            ).count
+        }
+        if !targetFiles.isEmpty {
+            _ = try mapFilesToAliases(
+                filePaths: targetFiles, aliases: Array(module.targetMetamodels.keys), modelType: "target",
+                verbose: verbose)
+        }
+        guard !quiet else { return }
+        let metamodels = TransformationCheck.metamodelsByName(of: module).sorted { $0.key < $1.key }
+            .map { "\($0.key) (\($0.value.nsURI))" }
+        print("Transformation '\(module.name)' is valid")
+        print("  Metamodels: \(metamodels.joined(separator: ", "))")
+        print("  Rules: \(module.matchedRules.count) matched, \(module.calledRules.count) called; helpers: \(module.helpers.count)")
+        if module.isRefining {
+            print("  Refining mode")
+        }
+        print("  Source models loaded: \(loadedModels)")
     }
 }
