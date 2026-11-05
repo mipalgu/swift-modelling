@@ -72,6 +72,9 @@ struct TutorialReplayReport: Sendable {
     /// The failures of the steps of the tutorial, in step order.
     let failures: [TutorialStepFailure]
 
+    /// Why the series of the tutorial was not replayed, if it was not.
+    var notReplayedReason: String? = nil
+
     /// The failures of the earlier tutorials of the series, as `tutorial: script` summaries.
     ///
     /// The files of a series build on each other, so a failure in an earlier tutorial may explain
@@ -91,6 +94,11 @@ struct TutorialReplayReport: Sendable {
 /// tutorial waits for the replay of the tutorial before it in its series, so replaying a single
 /// tutorial also replays the earlier tutorials of its series. A working directory is removed once
 /// the last tutorial of its series has passed every step, and kept for inspection otherwise.
+///
+/// Before the first tutorial of a series is replayed, the coordinator checks that every installed
+/// command that the scripts of the series run is on the search path. If one is missing, no
+/// tutorial of the series is replayed, and the report of each says which commands are missing and
+/// which tutorials need them, rather than showing the failures that would follow.
 actor TutorialReplayCoordinator {
     /// The coordinator shared by the tests of this target.
     static let shared = TutorialReplayCoordinator()
@@ -100,6 +108,9 @@ actor TutorialReplayCoordinator {
 
     /// The working directories of the series, by series.
     private var directories: [String: URL] = [:]
+
+    /// Why each series checked so far cannot be replayed, or `nil` if it can, by series.
+    private var missingCommands: [String: String?] = [:]
 
     /// The directory that holds the working directories of this test run.
     private let runDirectory = FileManager.default.temporaryDirectory
@@ -117,6 +128,17 @@ actor TutorialReplayCoordinator {
     func report(
         for tutorial: TutorialDocument, in catalogue: TutorialCatalogue, environment: TutorialReplayEnvironment
     ) async throws -> TutorialReplayReport {
+        if missingCommands[tutorial.series] == nil {
+            missingCommands[tutorial.series] = .some(
+                environment.missingCommandsMessage(
+                    series: tutorial.series, required: catalogue.requiredCommands(ofSeries: tutorial.series)))
+        }
+        if let reason = missingCommands[tutorial.series] ?? nil {
+            return TutorialReplayReport(
+                tutorial: tutorial, directory: runDirectory,
+                terminalSteps: tutorial.codes.filter { $0.kind == .terminal }.count, passedSteps: 0,
+                failures: [], notReplayedReason: reason, earlierFailures: [])
+        }
         let series = catalogue.seriesPrefix(endingWith: tutorial)
         let isLast = catalogue.tutorials.last { $0.series == tutorial.series }?.identifier == tutorial.identifier
         let directory = try directory(for: tutorial.series)

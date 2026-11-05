@@ -27,6 +27,10 @@ struct TutorialReplayTests {
         let environment = try TutorialReplayEnvironment.shared.get()
         let report = try await TutorialReplayCoordinator.shared.report(
             for: replayCase.tutorial, in: catalogue, environment: environment)
+        if let reason = report.notReplayedReason {
+            Issue.record("\(report.tutorial.identifier): \(reason)")
+            return
+        }
         for failure in report.failures {
             Issue.record(Comment(rawValue: TutorialReplayMessage.describe(failure, in: report)))
         }

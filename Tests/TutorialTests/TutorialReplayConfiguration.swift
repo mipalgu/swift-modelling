@@ -144,6 +144,82 @@ enum TutorialReplayConfiguration {
     /// The placeholder that replaces a universally unique identifier.
     static let uuidPlaceholder = "<uuid>"
 
+    // MARK: - Commands that the scripts need
+
+    /// The builtins of bash, which a script needs no installed command for.
+    static let shellBuiltins: Set<String> = [
+        ".", ":", "[", "alias", "bg", "bind", "break", "builtin", "caller", "cd", "command", "compgen",
+        "complete", "compopt", "continue", "declare", "dirs", "disown", "echo", "enable", "eval", "exec",
+        "exit", "export", "false", "fc", "fg", "getopts", "hash", "help", "history", "jobs", "kill", "let",
+        "local", "logout", "mapfile", "popd", "printf", "pushd", "pwd", "read", "readarray", "readonly",
+        "return", "set", "shift", "shopt", "source", "suspend", "test", "times", "trap", "true", "type",
+        "typeset", "ulimit", "umask", "unalias", "unset", "wait",
+    ]
+
+    /// The reserved words of bash, which are not commands.
+    static let shellReservedWords: Set<String> = [
+        "!", "{", "}", "[[", "]]", "case", "do", "done", "elif", "else", "esac", "fi", "for", "function", "if",
+        "in", "select", "then", "time", "until", "while",
+    ]
+
+    /// The commands that run the command given as their first operand, such as `xargs grep`.
+    static let commandWrappers: Set<String> = [
+        "command", "env", "exec", "nice", "nohup", "stdbuf", "sudo", "time", "timeout", "xargs",
+    ]
+
+    /// The options of ``commandWrappers`` that take a value, so that the value is not taken for the command.
+    static let commandWrapperOptionsWithValue: Set<String> = [
+        "-I", "-L", "-P", "-d", "-n", "-s", "-E", "-u", "-k",
+    ]
+
+    /// The number of operands of a wrapper that precede the command, such as the duration of `timeout`.
+    static let commandWrapperLeadingOperands: [String: Int] = ["timeout": 1]
+
+    /// The options of `command` that only look a command up instead of running it.
+    static let commandLookupOptions: Set<String> = ["-v", "-V"]
+
+    /// The command whose options run another command, and those options.
+    static let findCommand = "find"
+
+    /// The options of ``findCommand`` that run the command after them.
+    static let findExecutionOptions: Set<String> = ["-exec", "-execdir", "-ok", "-okdir"]
+
+    /// The commands that POSIX specifies, or that the core, find, diff, grep, sed and awk utilities of
+    /// every common Linux distribution and of macOS provide, so that even a minimal image has them.
+    static let baselineCommands: Set<String> = [
+        "awk", "basename", "cat", "chmod", "cksum", "cmp", "comm", "cp", "cut", "date", "dd", "df", "diff",
+        "dirname", "du", "env", "expr", "find", "fold", "grep", "head", "id", "join", "ln", "ls", "mkdir",
+        "mktemp", "mv", "nl", "od", "paste", "rm", "rmdir", "sed", "sleep", "sort", "split", "stat", "tail",
+        "tee", "touch", "tr", "tty", "uname", "uniq", "wc", "xargs", "yes", "realpath", "readlink", "seq",
+        "timeout", "nohup", "nice", "tar", "gzip",
+    ]
+
+    /// The commands whose name, options or output differ between macOS and Linux, with how they differ.
+    static let platformDependentCommands: [String: String] = [
+        "shasum": "part of Perl on macOS; Linux images often have only sha256sum",
+        "sha256sum": "standard on Linux; missing from older macOS releases, which have shasum -a 256",
+        "md5": "macOS only; Linux has md5sum",
+        "md5sum": "Linux; macOS has md5",
+        "sed": "sed -i needs a suffix argument on macOS (sed -i '') but not on Linux",
+        "stat": "options differ: stat -f on macOS, stat -c on Linux",
+        "date": "date -d on Linux, date -v or -j on macOS",
+        "readlink": "readlink -f is missing from older macOS releases",
+        "base64": "decoding is -d on Linux, -D on older macOS releases",
+        "open": "macOS only; Linux uses xdg-open",
+        "xargs": "xargs -r is a GNU extension",
+        "find": "-printf and -regextype are GNU extensions",
+        "grep": "grep -P is a GNU extension",
+        "tar": "GNU and BSD tar differ in options such as --wildcards",
+    ]
+
+    /// What provides a command that a minimal image may lack, for the messages about missing commands.
+    static let commandProviders: [String: String] = [
+        "dot": "Graphviz", "javac": "a Java development kit", "java": "a Java runtime", "jar": "a Java development kit",
+        "curl": "curl", "wget": "wget", "jq": "jq", "shasum": "Perl", "swift": "a Swift toolchain",
+        "swiftc": "a Swift toolchain", "python3": "Python 3", "xmllint": "libxml2", "git": "Git",
+        "zip": "zip", "unzip": "unzip", "bc": "bc", "make": "make", "tree": "tree",
+    ]
+
     // MARK: - Failures in an output
 
     /// The comment line that marks a script as demonstrating an expected error.
