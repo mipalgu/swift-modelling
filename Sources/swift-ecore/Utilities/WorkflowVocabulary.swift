@@ -4,6 +4,7 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import ModellingCommandLine
 
 // MARK: - Comparison
 
@@ -68,6 +69,25 @@ enum ComparisonVocabulary {
 
     /// The confirmation printed after the report has been written to a file.
     static let writtenConfirmation = "Comparison written: "
+
+    /// The warning that two models in different formats were read without a metamodel.
+    ///
+    /// Without a metamodel, each reader names the classes of the objects it reads in its own
+    /// way: an XMI reader after the elements, which name features rather than classes, and a
+    /// JSON reader after the `eClass` entries. Objects are matched by class, so the same
+    /// objects may then be reported as removed and added.
+    ///
+    /// - Parameters:
+    ///   - original: The file name and format of the original model, such as `a.xmi (XMI)`.
+    ///   - revised: The file name and format of the revised model.
+    /// - Returns: The warning, starting with ``ConversionWarningReport/warningPrefix``.
+    static func untypedFormatsWarning(original: String, revised: String) -> String {
+        ConversionWarningReport.warningPrefix
+            + "\(original) and \(revised) were read without a metamodel, so each format names the "
+            + "classes of their objects in its own way and the same objects may be reported as "
+            + "removed and added; give the metamodel of the models with --\(MetamodelOptions.optionName) "
+            + "<\(MetamodelOptions.valueName)> to compare them by their classes"
+    }
 
     /// The names of the element counts of a metamodel comparison summary, in the order shown.
     enum ElementCount: String, CaseIterable, Sendable {

@@ -464,6 +464,38 @@ struct CompareModelTests {
         #expect(result.stdout == "Comparing models: enterprise.xmi -> enterprise.json\nNo differences\n")
     }
 
+    @Test("warns that models in two formats read without a metamodel name their classes differently")
+    @MainActor
+    func crossFormatWithoutMetamodel() async throws {
+        let xmi = try loadTestResource(named: "enterprise.xmi", subdirectory: "xmi").path
+        let json = try loadTestResource(named: "enterprise.json", subdirectory: "json").path
+
+        let result = try await compare([xmi, json])
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+        #expect(
+            result.stderr
+                == "warning: enterprise.xmi (XMI) and enterprise.json (JSON) were read without a metamodel, "
+                + "so each format names the classes of their objects in its own way and the same objects may be "
+                + "reported as removed and added; give the metamodel of the models with --metamodel "
+                + "<file.ecore> to compare them by their classes\n")
+        #expect(!result.stdout.contains("warning"))
+    }
+
+    @Test("does not warn about models in one format or read with a metamodel")
+    @MainActor
+    func noCrossFormatWarning() async throws {
+        let xmi = try loadTestResource(named: "enterprise.xmi", subdirectory: "xmi").path
+        let json = try loadTestResource(named: "enterprise.json", subdirectory: "json").path
+        let metamodel = try loadTestResource(named: "enterprise.ecore", subdirectory: "ecore").path
+
+        let sameFormat = try await compare([xmi, xmi])
+        let typed = try await compare([xmi, json, "-m", metamodel])
+
+        #expect(sameFormat.stderr.isEmpty, "\(sameFormat.stderr)")
+        #expect(typed.stderr.isEmpty, "\(typed.stderr)")
+    }
+
     @Test("writes the differences and class counts as JSON")
     @MainActor
     func json() async throws {

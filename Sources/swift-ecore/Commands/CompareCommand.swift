@@ -33,7 +33,9 @@ struct CompareCommand: AsyncParsableCommand {
             class and identity: the value of the identifying attribute of their class, else \
             the value that names them, else their location. Added and removed objects are \
             reported, and for matched objects every changed attribute value and \
-            non-containment reference.
+            non-containment reference. Without a metamodel, an XMI model and a JSON model name \
+            the classes of their objects differently, so a warning suggests \
+            --\(MetamodelOptions.optionName) when two such models are compared.
 
             Each difference is a line that starts with + (added), - (removed) or ~ (changed). \
             --\(ComparisonVocabulary.summaryOption) shows counts instead: for models the \
@@ -146,6 +148,9 @@ struct CompareCommand: AsyncParsableCommand {
             }
             return report
         }
+        if let warning = Self.untypedFormatsWarning(original, revised) {
+            FileHandle.standardError.write(Data((warning + "\n").utf8))
+        }
         let comparer = ModelComparer(
             original: await ModelCatalogue.build(for: original), revised: await ModelCatalogue.build(for: revised),
             filter: filter)
@@ -161,6 +166,23 @@ struct CompareCommand: AsyncParsableCommand {
                 revised: comparer.revised.entries.count)
         }
         return report
+    }
+
+    /// The warning for two models in different formats whose classes no metamodel defines.
+    ///
+    /// - Parameters:
+    ///   - original: The original model.
+    ///   - revised: The revised model.
+    /// - Returns: ``ComparisonVocabulary/untypedFormatsWarning(original:revised:)`` if the models
+    ///   are in different formats, were read without a metamodel, and either of them has a class
+    ///   that its reader made up; otherwise `nil`.
+    static func untypedFormatsWarning(_ original: ModelDocument, _ revised: ModelDocument) -> String? {
+        guard original.format != revised.format, !original.hasMetamodel, !revised.hasMetamodel,
+            original.hasUntypedClasses || revised.hasUntypedClasses
+        else { return nil }
+        return ComparisonVocabulary.untypedFormatsWarning(
+            original: "\(original.fileName) (\(original.formatName))",
+            revised: "\(revised.fileName) (\(revised.formatName))")
     }
 
     /// Checks that two documents are of the same kind.

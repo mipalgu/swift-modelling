@@ -45,6 +45,14 @@ struct ModelDocument: Sendable {
     /// Whether the model was read with at least one registered metamodel.
     var hasMetamodel: Bool { !metamodels.isEmpty }
 
+    /// Whether the reader made up a class that no metamodel defines for an object of the model.
+    var hasUntypedClasses: Bool {
+        diagnostics.warnings.contains { warning in
+            if case .untypedClass = warning.kind { return true }
+            return false
+        }
+    }
+
     /// The name of the file without its directory.
     var fileName: String { url.lastPathComponent }
 
