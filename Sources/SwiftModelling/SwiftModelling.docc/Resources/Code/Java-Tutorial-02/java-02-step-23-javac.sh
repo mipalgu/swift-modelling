@@ -1,2 +1,2 @@
 mkdir -p classes
-javac -cp "$EMF_RUNTIME_CLASSPATH" -d classes $(find src -name '*.java')
+javac -cp "$(cat emf-runtime.classpath)" -d classes $(find src -name '*.java')

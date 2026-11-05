@@ -1,37 +1,18 @@
-# Validate the invalid bank instance against OCL constraints
-swift-ecore validate \
-  --metamodel bank-account.ecore \
-  --model invalid-instance.xmi
+# Validate the invalid bank instance against its metamodel and OCL constraints
+# Expected error: the instance violates nine invariants, so validation fails
+swift-ecore validate invalid-instance.xmi --metamodel bank-account.ecore \
+  || echo "swift-ecore exited with status $?"
 
 # Output:
-# Validating model against metamodel constraints...
-#
-# Checking constraint: uniqueAccountNumbers ... FAILED
-#   Violation: Duplicate account number '1234567890' found
-#
-# Checking constraint: uniqueCustomerIds ... FAILED
-#   Violation: Duplicate customer ID 'CUST001' found
-#
-# Checking constraint: validEmail (Customer: Tommy Young) ... FAILED
-#   Violation: Email 'invalid-email' does not contain '@'
-#
-# Checking constraint: adultCustomer (Customer: Tommy Young) ... FAILED
-#   Violation: Customer age 16 is less than required minimum 18
-#
-# Checking constraint: positiveBalance (Account: 12345) ... FAILED
-#   Violation: Balance -500.00 is negative
-#
-# Checking constraint: validAccountNumber (Account: 12345) ... FAILED
-#   Violation: Account number '12345' has 5 digits, expected 10
-#
-# Checking constraint: sufficientMinimumBalance (Account: 9999888877) ... FAILED
-#   Violation: Savings balance 50.00 is below minimum 100.00
-#
-# Checking constraint: positiveAmount (Transaction: TXN001) ... FAILED
-#   Violation: Transaction amount -100.00 is negative
-#
-# Checking constraint: validDescription (Transaction: TXN002) ... FAILED
-#   Violation: Transaction description is empty
-#
-# Validation complete: 9 constraint violations found.
-# Model is INVALID.
+# Checking constraint: uniqueAccountNumbers (Bank 'Problem Bank', /) ... violated
+# Checking constraint: uniqueCustomerIds (Bank 'Problem Bank', /) ... violated
+# Checking constraint: validEmail (Customer 'Tommy Young', //@customers.0) ... violated
+# Checking constraint: adultCustomer (Customer 'Tommy Young', //@customers.0) ... violated
+# Checking constraint: positiveBalance (Account '12345', //@accounts.0) ... violated
+# Checking constraint: validAccountNumber (Account '12345', //@accounts.0) ... violated
+# Checking constraint: positiveAmount (Transaction 'TXN001', //@accounts.0/@transactions.0) ... violated
+# Checking constraint: validDescription (Transaction 'TXN002', //@accounts.0/@transactions.1) ... violated
+# Checking constraint: sufficientMinimumBalance (Account '1234567890', //@accounts.2) ... violated
+# OCL invariants: 14 of 23 check(s) satisfied
+# Error: Validation failed: 9 error(s), 0 warning(s)
+# swift-ecore exited with status 1

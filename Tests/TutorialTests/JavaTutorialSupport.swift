@@ -137,6 +137,9 @@ enum JavaTutorial {
         return directory.appendingPathComponent(match)
     }
 
+    /// The file in which tutorial Java-02 keeps the class path of the EMF runtime.
+    static let runtimeClassPathFile = "emf-runtime.classpath"
+
     /// The text of the code file of one step.
     ///
     /// - Parameters:

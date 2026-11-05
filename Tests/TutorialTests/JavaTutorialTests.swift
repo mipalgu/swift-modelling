@@ -159,7 +159,7 @@ struct JavaTutorial01Tests {
         #expect(validated.output.contains(try JavaTutorial.text(1, 3).trimmingCharacters(in: .newlines)))
 
         let queried = try await workspace.require(1, 4)
-        #expect(queried.output.contains("Total objects: 1"))
+        #expect(queried.output.contains("Root objects: 1 (EPackage "))
         #expect(queried.output.contains("EPackage: 1"))
 
         let counted = try await workspace.require(1, 5)
@@ -364,6 +364,7 @@ struct JavaTutorial02Tests {
         let workspace = try await prepare(subject)
         defer { workspace.remove() }
         try await workspace.require(2, 1)
+        try workspace.write(try #require(runtimeClassPath), to: JavaTutorial.runtimeClassPathFile)
 
         let compiled = try await workspace.require(2, 23)
 
@@ -376,12 +377,12 @@ struct JavaTutorial02Tests {
     @Test("Step 22: fetching the runtime uses the script of the repository")
     func fetchRuntimeSnippet() throws {
         let snippet = try JavaTutorial.text(2, 22)
-        #expect(snippet.contains("EMF_RUNTIME_CLASSPATH"))
-        #expect(snippet.contains("Scripts/fetch-emf-runtime.sh"))
-        #expect(
-            FileManager.default.isExecutableFile(
-                atPath: JavaTutorialSubject.repositoryRoot
-                    .appendingPathComponent("Scripts/fetch-emf-runtime.sh").path))
+        let repositoryScript = JavaTutorialSubject.repositoryRoot.appendingPathComponent("Scripts/fetch-emf-runtime.sh")
+        let savedScript = JavaTutorial.codeDirectory(2).appendingPathComponent("java-02-fetch-emf-runtime.sh")
+        #expect(snippet.contains("fetch-emf-runtime.sh > \(JavaTutorial.runtimeClassPathFile)"))
+        #expect(try JavaTutorial.text(2, 23).contains("$(cat \(JavaTutorial.runtimeClassPathFile))"))
+        #expect(FileManager.default.isExecutableFile(atPath: repositoryScript.path))
+        #expect(try String(contentsOf: savedScript, encoding: .utf8) == String(contentsOf: repositoryScript, encoding: .utf8))
     }
 }
 
