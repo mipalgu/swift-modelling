@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- January export of the legacy order system. -->
+<legacy:Store xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:legacy="http://www.example.org/legacy/orders/1.0"
+    name="Harbourside Electronics">
+  <products code="LAPTOP-001" name="ProBook 15" desc="15-inch professional laptop"
+      price="1299.99" category="Computers" stockQty="45" reorderLevel="10"
+      warehouseLocation="A-12-3"/>
+  <products code="LAPTOP-002" name="UltraBook Air" desc="Lightweight laptop"
+      price="999.99" category="Computers" stockQty="30" reorderLevel="8"
+      warehouseLocation="A-12-4"/>
+  <products code="PHONE-001" name="SmartPhone X" desc="Dual-SIM smartphone"
+      price="899.0" category="Mobile" stockQty="120" reorderLevel="25"
+      warehouseLocation="B-05-1"/>
+  <products code="CABLE-001" name="USB-C Cable" desc="2 m charging cable"
+      price="19.99" category="Accessories" stockQty="500" reorderLevel="100"
+      warehouseLocation="C-01-1"/>
+  <products code="CASE-001" name="Laptop Sleeve 15" desc="Sleeve for 15-inch laptops"
+      price="49.99" category="Accessories" stockQty="80" reorderLevel="20"
+      warehouseLocation="C-02-1"/>
+
+  <orders orderId="ORD-2024-001" orderDate="2024-01-15" status="SHIPPED"
+      customerName="John Smith" customerEmail="john.smith@example.com"
+      customerPhone="+61 2 5550 1234"
+      shippingAddress="12 Harbour St, Sydney NSW 2000, Australia"
+      billingAddress="12 Harbour St, Sydney NSW 2000, Australia"
+      totalAmount="1389.96" taxAmount="139.0" paymentMethod="CREDIT_CARD"
+      cardLastFour="4242" lastModified="2024-01-16">
+    <items productCode="LAPTOP-001" productName="ProBook 15" qty="1"
+        unitPrice="1299.99" lineTotal="1299.99"/>
+    <items productCode="CABLE-001" productName="USB-C Cable" qty="2"
+        unitPrice="19.99" lineTotal="39.98"/>
+    <items productCode="CASE-001" productName="Laptop Sleeve 15" qty="1"
+        unitPrice="49.99" lineTotal="49.99"/>
+  </orders>
+
+  <orders orderId="ORD-2024-002" orderDate="2024-01-16" status="PENDING"
+      customerName="Sarah Johnson" customerEmail="s.johnson@example.org"
+      customerPhone="+61 3 7010 4321"
+      shippingAddress="4 Business Park Rd, Melbourne VIC 3000, Australia"
+      billingAddress="PO Box 789, Melbourne VIC 3001, Australia"
+      totalAmount="1897.95" taxAmount="189.8" paymentMethod="INVOICE"
+      notes="Deliver to loading dock" lastModified="2024-01-16">
+    <items productCode="PHONE-001" productName="SmartPhone X" qty="2"
+        unitPrice="899.0" lineTotal="1798.0"/>
+    <items productCode="CABLE-001" productName="USB-C Cable" qty="5"
+        unitPrice="19.99" lineTotal="99.95"/>
+  </orders>
+
+  <orders orderId="ORD-2024-003" orderDate="2024-01-17" status="DELIVERED"
+      customerName="Tech Solutions Pty Ltd" customerEmail="orders@techsolutions.example.com"
+      customerPhone="+61 7 5550 9876"
+      shippingAddress="789 Tech Dr, Brisbane QLD 4000, Australia"
+      billingAddress="789 Tech Dr, Brisbane QLD 4000, Australia"
+      totalAmount="10999.4" taxAmount="1099.94" paymentMethod="BANK_TRANSFER"
+      lastModified="2024-01-20">
+    <items productCode="LAPTOP-002" productName="UltraBook Air" qty="10"
+        unitPrice="999.99" lineTotal="9999.9"/>
+    <items productCode="CABLE-001" productName="USB-C Cable" qty="50"
+        unitPrice="19.99" lineTotal="999.5"/>
+  </orders>
+
+  <!-- Typed in by hand: lower-case status, payment method and product code,
+       and a total that was never updated after an item changed. -->
+  <orders orderId="ORD-2024-004" orderDate="2024-01-18" status="pending"
+      customerName="Jane Doe" customerEmail="jane.doe@example.net"
+      customerPhone="0491 570 156"
+      shippingAddress="5/22 George St, Perth WA 6000"
+      billingAddress="5/22 George St, Perth WA 6000"
+      totalAmount="949.98" taxAmount="95.0" paymentMethod="paypal"
+      lastModified="2024-01-18">
+    <items productCode="PHONE-001" productName="SmartPhone X" qty="1"
+        unitPrice="899.0" lineTotal="899.0"/>
+    <items productCode="cable-001" productName="USB-C Cable" qty="3"
+        unitPrice="19.99" lineTotal="59.97"/>
+  </orders>
+
+  <!-- A repeat customer, with the details typed again in another case. -->
+  <orders orderId="ORD-2024-005" orderDate="2024-01-29" status="Shipped"
+      customerName="John Smith" customerEmail="John.Smith@Example.com"
+      customerPhone="+61 2 5550 1234"
+      shippingAddress="12 Harbour St, Sydney NSW 2000, Australia"
+      billingAddress="12 Harbour St, Sydney NSW 2000, Australia"
+      totalAmount="99.98" taxAmount="10.0" paymentMethod="Credit_Card"
+      cardLastFour="4242" lastModified="2024-01-30">
+    <items productCode="CASE-001" productName="Laptop Sleeve 15" qty="2"
+        unitPrice="49.99" lineTotal="99.98"/>
+  </orders>
+</legacy:Store>

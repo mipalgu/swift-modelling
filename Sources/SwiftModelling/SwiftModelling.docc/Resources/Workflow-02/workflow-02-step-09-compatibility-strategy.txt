@@ -1,0 +1,35 @@
+# Compatibility strategy
+
+## Two versions side by side
+
+- The legacy metamodel keeps its namespace URI
+  `http://www.example.org/legacy/orders/1.0`; the improved metamodel uses
+  `http://www.example.org/orders/2.0`. Every model file states which
+  version it uses, and the tools load it with the matching metamodel.
+- The legacy exports in `legacy/` are never changed. Cleaning and
+  migration write new files (`cleaned/`, `migrated/`), so the migration
+  can be repeated for every new legacy export until all tools have moved
+  to version 2.0.
+
+## Tools that still read version 1.0
+
+- `Orders2LegacyOrders.atl` writes a migrated model back in the legacy
+  format. Tools that have not been updated read these exports instead of
+  the old files.
+- The backward exports are checked against the cleaned legacy data with
+  `swift-ecore compare`: they may differ only in stored totals that were
+  wrong, in addresses without a country, which now name the default
+  country, and in the dropped `lastModified` attribute.
+
+## Tools that move to version 2.0
+
+- Code that uses the model classes is regenerated from `Orders.ecore`.
+- Reports are rewritten against the new structure (customers, product
+  references, computed totals) and regenerated from the migrated models.
+
+## Rollback
+
+- Before the release, the legacy exports and `LegacyOrders.ecore` are
+  copied to a backup directory together with a SHA-256 checksum list.
+- A rollback verifies the checksums and restores the backup, so the
+  tools can go back to version 1.0 unchanged.

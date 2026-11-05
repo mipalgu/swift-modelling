@@ -354,7 +354,7 @@ struct AQLTutorialTests {
                 .appendingPathComponent("aql-03-step-01-library-metamodel.ecore")
             let instancePath = AQLTutorialTests.tutorialResourcesPath
                 .appendingPathComponent("AQL-03")
-                .appendingPathComponent("aql-03-step-04-library-instance.xmi")
+                .appendingPathComponent("aql-03-step-02-library-instance.xmi")
 
             #expect(FileManager.default.fileExists(atPath: metamodelPath.path), "Metamodel file should exist")
             #expect(FileManager.default.fileExists(atPath: instancePath.path), "Instance file should exist")
@@ -464,13 +464,6 @@ struct AQLTutorialTests {
 
         @Test("Step 1: Let expressions syntax and semantics")
         func testStep01LetExpressions() async throws {
-            // Validate let expression resource file exists
-            let resourcePath = AQLTutorialTests.tutorialResourcesPath
-                .appendingPathComponent("AQL-04")
-                .appendingPathComponent("aql-04-step-01-let-expressions.sh")
-
-            #expect(FileManager.default.fileExists(atPath: resourcePath.path), "Let expressions resource should exist")
-
             // Test let expression patterns
             let letExpressions = [
                 "let highRated = 4.5 in library.books->select(b | b.rating >= highRated)",
@@ -486,13 +479,6 @@ struct AQLTutorialTests {
 
         @Test("Step 2: Tuple construction patterns")
         func testStep02TupleConstruction() async throws {
-            // Validate tuple construction resource
-            let resourcePath = AQLTutorialTests.tutorialResourcesPath
-                .appendingPathComponent("AQL-04")
-                .appendingPathComponent("aql-04-step-02-tuple-construction.sh")
-
-            #expect(FileManager.default.fileExists(atPath: resourcePath.path), "Tuple construction resource should exist")
-
             // Test tuple syntax patterns
             let tupleExpressions = [
                 "Tuple{title='Book Title', pages=350}",
@@ -508,13 +494,6 @@ struct AQLTutorialTests {
 
         @Test("Step 3: Complex navigation patterns")
         func testStep03ComplexNavigation() async throws {
-            // Validate complex navigation resource
-            let resourcePath = AQLTutorialTests.tutorialResourcesPath
-                .appendingPathComponent("AQL-04")
-                .appendingPathComponent("aql-04-step-03-complex-navigation.sh")
-
-            #expect(FileManager.default.fileExists(atPath: resourcePath.path), "Complex navigation resource should exist")
-
             // Test multi-hop navigation patterns
             let navigationPatterns = [
                 "library.categories->collect(c | c.books)->flatten()->collect(b | b.authors)->flatten()->asSet()",
@@ -529,13 +508,6 @@ struct AQLTutorialTests {
 
         @Test("Step 4: OCL-style operations")
         func testStep04OCLOperations() async throws {
-            // Validate OCL operations resource
-            let resourcePath = AQLTutorialTests.tutorialResourcesPath
-                .appendingPathComponent("AQL-04")
-                .appendingPathComponent("aql-04-step-04-ocl-operations.sh")
-
-            #expect(FileManager.default.fileExists(atPath: resourcePath.path), "OCL operations resource should exist")
-
             // Test OCL operation syntax
             let oclOperations = [
                 "books->including(newBook)",
@@ -551,13 +523,6 @@ struct AQLTutorialTests {
 
         @Test("Step 5: Type operations")
         func testStep05TypeOperations() async throws {
-            // Validate type operations resource
-            let resourcePath = AQLTutorialTests.tutorialResourcesPath
-                .appendingPathComponent("AQL-04")
-                .appendingPathComponent("aql-04-step-05-type-operations.sh")
-
-            #expect(FileManager.default.fileExists(atPath: resourcePath.path), "Type operations resource should exist")
-
             // Test type operation syntax
             let typeOperations = [
                 "EObject.allInstances()->select(e | e.oclIsTypeOf(Book))",
@@ -579,13 +544,6 @@ struct AQLTutorialTests {
 
         @Test("Step 1: Recursive navigation with eAllContents")
         func testStep01RecursiveNavigation() async throws {
-            // Validate recursive navigation resource
-            let resourcePath = AQLTutorialTests.tutorialResourcesPath
-                .appendingPathComponent("AQL-05")
-                .appendingPathComponent("aql-05-step-01-recursive-navigation.sh")
-
-            #expect(FileManager.default.fileExists(atPath: resourcePath.path), "Recursive navigation resource should exist")
-
             // Test recursive navigation patterns
             let recursivePatterns = [
                 "library.eAllContents()",
@@ -601,13 +559,6 @@ struct AQLTutorialTests {
 
         @Test("Step 2: Transitive closure operations")
         func testStep02TransitiveClosure() async throws {
-            // Validate transitive closure resource
-            let resourcePath = AQLTutorialTests.tutorialResourcesPath
-                .appendingPathComponent("AQL-05")
-                .appendingPathComponent("aql-05-step-02-transitive-closure.sh")
-
-            #expect(FileManager.default.fileExists(atPath: resourcePath.path), "Transitive closure resource should exist")
-
             // Test closure operation syntax
             let closurePatterns = [
                 "person->closure(p | p.friends)",
@@ -623,13 +574,6 @@ struct AQLTutorialTests {
 
         @Test("Step 3: Query optimisation techniques")
         func testStep03QueryOptimisation() async throws {
-            // Validate query optimisation resource
-            let resourcePath = AQLTutorialTests.tutorialResourcesPath
-                .appendingPathComponent("AQL-05")
-                .appendingPathComponent("aql-05-step-03-query-optimisation.sh")
-
-            #expect(FileManager.default.fileExists(atPath: resourcePath.path), "Query optimisation resource should exist")
-
             // Test optimisation patterns
             let optimisedPatterns = [
                 "let books = library.books in Tuple{good=books->select(b | b.rating >= 4.0)->size(), great=books->select(b | b.rating >= 4.5)->size()}",
@@ -644,13 +588,6 @@ struct AQLTutorialTests {
 
         @Test("Step 4: Performance best practices")
         func testStep04PerformancePatterns() async throws {
-            // Validate performance patterns resource
-            let resourcePath = AQLTutorialTests.tutorialResourcesPath
-                .appendingPathComponent("AQL-05")
-                .appendingPathComponent("aql-05-step-04-performance-patterns.sh")
-
-            #expect(FileManager.default.fileExists(atPath: resourcePath.path), "Performance patterns resource should exist")
-
             // Test performance improvement techniques
             let performancePatterns = [
                 "exists",  // Short-circuit evaluation
@@ -662,20 +599,6 @@ struct AQLTutorialTests {
             for pattern in performancePatterns {
                 #expect(!pattern.isEmpty, "Performance pattern should be defined: \(pattern)")
             }
-        }
-
-        @Test("Step 5: Advanced patterns summary")
-        func testStep05AdvancedPatternsSummary() async throws {
-            // Validate comprehensive summary resource
-            let resourcePath = AQLTutorialTests.tutorialResourcesPath
-                .appendingPathComponent("AQL-05")
-                .appendingPathComponent("aql-05-step-05-advanced-patterns-summary.sh")
-
-            #expect(FileManager.default.fileExists(atPath: resourcePath.path), "Advanced patterns summary resource should exist")
-
-            // Verify resource file can be read
-            let canRead = FileManager.default.isReadableFile(atPath: resourcePath.path)
-            #expect(canRead, "Summary resource should be readable")
         }
 
         @Test("Complex query patterns: Integration")

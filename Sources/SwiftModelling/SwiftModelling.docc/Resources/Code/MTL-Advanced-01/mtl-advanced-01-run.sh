@@ -6,11 +6,8 @@ swift-mtl generate \
   --output ./generated/
 
 # Output:
-# Generating Swift code from UML model...
-# Created: generated/Identifiable.swift
-# Created: generated/TaskRepository.swift
-# Created: generated/Priority.swift
-# Created: generated/Status.swift
-# Created: generated/Task.swift
-# Created: generated/Project.swift
-# Generation complete: 6 files created
+# ✓ Generation complete
+
+# generated/ now holds one Swift file for each class, protocol and
+# enumeration of the model: Identifiable.swift, Priority.swift,
+# Project.swift, Status.swift, Task.swift and TaskRepository.swift.

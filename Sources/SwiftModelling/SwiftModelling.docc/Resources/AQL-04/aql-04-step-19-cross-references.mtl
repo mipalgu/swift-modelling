@@ -196,9 +196,9 @@ Entity relationship targets:
 [for (entity : Entity | app.entities)]
 [for (rel : Relationship | entity.relationships)]
 [if (app.entities->includes(rel.targetEntity))]
-[OK] [entity.name/].[rel.name/] -> [rel.targetEntity.name/]
+['[OK]'/] [entity.name/].[rel.name/] -> [rel.targetEntity.name/]
 [else]
-[ERROR] [entity.name/].[rel.name/] -> invalid target
+['[ERROR]'/] [entity.name/].[rel.name/] -> invalid target
 [/if]
 [/for]
 [/for]
@@ -207,9 +207,9 @@ Page link targets:
 [for (page : Page | app.pages)]
 [for (linked : Page | page.linkedPages)]
 [if (app.pages->includes(linked))]
-[OK] [page.name/] -> [linked.name/]
+['[OK]'/] [page.name/] -> [linked.name/]
 [else]
-[ERROR] [page.name/] -> invalid page reference
+['[ERROR]'/] [page.name/] -> invalid page reference
 [/if]
 [/for]
 [/for]

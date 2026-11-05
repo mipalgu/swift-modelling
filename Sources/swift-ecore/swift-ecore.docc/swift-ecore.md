@@ -6,9 +6,12 @@ Work with Ecore metamodels and model instances.
 
 The `swift-ecore` command-line tool provides comprehensive
 utilities for working with Ecore metamodels and model instances
-in both XMI and JSON formats. It supports format conversion, model
-validation, queries of models, and the creation of generator models
-and source code from Ecore models.
+in both XMI and JSON formats. It supports format conversion, the
+validation of models against their metamodels and OCL invariants,
+the inspection, comparison, measurement and querying of models and
+metamodels, the creation
+of new models, and the creation of generator models and source code
+from Ecore models.
 
 The tool is built on the swift-ecore package
 (https://github.com/mipalgu/swift-ecore), which provides a pure
@@ -19,22 +22,27 @@ Swift implementation of the Eclipse Modeling Framework
 
 ### convert
 
-Convert models between XMI and JSON formats.
+Convert models between XMI and JSON, and metamodels between Ecore and JSON.
 
 ```bash
 swift-ecore convert <input-file> <output-file> [options]
+swift-ecore convert <input-file> --output <output-file> [options]
 ```
 
 **Options:**
 
-- `--input-format <xmi|json>` - Input format (inferred from the extension if not specified)
-- `--output-format <xmi|json>` - Output format (inferred from the extension if not specified)
+- `-o, --output <file>` - The output file, instead of the second argument
+- `--validate` - Check the model or metamodel as `validate` does, and write nothing if it has an
+  error
+- `--input-format <xmi|json|ecore>` - Input format (inferred from the extension if not specified)
+- `--output-format <xmi|json|ecore>` - Output format (inferred from the extension if not specified)
 - `-m, --metamodel <file.ecore>` - An Ecore metamodel of the model (can be given several times)
 - `--reference-style <encoded|plain>` - How an XMI output spells references into itself
   (default `encoded`)
 - `--force` - Overwrite the output file if it exists
 - `-v, --verbose` - Show progress
 
+JSON is written indented, with the keys of every object in alphabetical order.
 With a metamodel, the model is read with the classes and data types the metamodel defines,
 and JSON is written with package-qualified classes (`"eClass": "<nsURI>#//<Class>"`) and
 non-containment references as `{"$ref": "<fragment>"}` entries. Without one, the classes are
@@ -45,6 +53,21 @@ that cannot be written as a fragment, is reported once on standard error as a li
 with `warning:`. Without `--metamodel`, the warnings are followed by a `hint:` line suggesting
 it. Warnings do not change the exit status, and the completion message stays on standard
 output.
+
+A metamodel (`.ecore`) is written as a JSON metamodel, in which every object names its Ecore
+metaclass in `eClass`, contained elements are nested, and references are `{"$ref": ...}` objects
+with the name-based fragments of Ecore (`//Book/author`). A JSON file whose roots are Ecore
+packages is read as a metamodel, whatever its name, and can be written as `.ecore`. Enumerations,
+opposites, supertypes, annotations and every other construct of the metamodel are kept. A
+metamodel cannot be written as an XMI model, nor a model as `.ecore`: the command fails with an
+error that names the formats that suit the input, and writes nothing.
+
+References to other metamodel files keep their file names. A `shop.json` converted from a
+`shop.ecore` whose classes extend classes of `base.ecore` still refers to `base.ecore#//Named`,
+and `shop.ecore` converted back from it does too; `swift-ecore` reads such references in either
+format, so the converted file works as long as the file it refers to stays beside it. To convert
+a set of metamodels that refer to each other, convert every file into the same directory, then
+replace the extension in the references of the converted files, as in the last example below.
 
 With `--reference-style encoded`, the default, an XMI output keeps its usual layout, and a
 reference to an object of the same document keeps the leading `#` of its fragment
@@ -67,24 +90,93 @@ swift-ecore convert data.txt result.xmi --input-format json --output-format xmi
 
 # Write XMI whose same-document references match the files Eclipse writes
 swift-ecore convert model.json model.xmi --metamodel MyMetamodel.ecore --reference-style plain
+
+# Convert a metamodel to JSON and back
+swift-ecore convert shop.ecore shop.json
+swift-ecore convert shop.json shop-copy.ecore
+
+# Convert a set of metamodels, then make shop.json refer to base.json instead of base.ecore
+swift-ecore convert base.ecore base.json
+swift-ecore convert shop.ecore shop.json
+sed -i.bak 's/base\.ecore#/base.json#/g' shop.json
 ```
 
 ### validate
 
-Validate that a model can be read, optionally against its metamodel.
+Validate a metamodel, or a model against its metamodels.
 
 ```bash
-swift-ecore validate <model-file> [options]
+swift-ecore validate <file>... [options]
 ```
 
 **Options:**
 
 - `-m, --metamodel <file.ecore>` - An Ecore metamodel of the model (can be given several times)
-- `-v, --verbose` - Show the root objects that were read
+- `--check-abstract-classes` - For a metamodel, list every abstract class and interface with the
+  concrete classes that extend it, and warn about one that none extends; for a model, confirm
+  that no object is an instance of one
+- `--strict` - Fail on warnings as well as on errors
+- `--require-explicit-values` - Report every required single-valued feature that the model
+  leaves unset, even when it reads as a default; unlike the Eclipse Modeling Framework, and
+  unrelated to `--strict`
+- `--strict-aql` - Evaluate the OCL invariants as strictly as Eclipse AQL: a union of a sequence with
+  a set, or a single value passed to `concat`, `sub` or `union`, is a type error instead of being
+  accepted; unrelated to `--strict`. `validate` reads no configuration file, so only this flag
+  turns it on
+- `--format <text|json>` - The format of the report (default `text`)
+- `--report <file>` - Write the report to a file instead of standard output
+- `-v, --verbose` - Show the root objects that were read, and every satisfied OCL invariant
 
-With a metamodel, the model is read with the classes and data types the metamodel defines. A
-JSON model is rejected if a value cannot be read by the data type of its attribute, or if a
-class is not defined by any of the metamodels.
+A metamodel (`.ecore`) is checked against the constraints of Ecore, such as well-formed names,
+consistent bounds and opposites, and acyclic inheritance. A model is checked for references into
+other documents that name no object. With a metamodel, a model is also checked against it: every
+class and feature must be defined by the metamodel, values must fit the types and bounds of their
+features, references must lead to objects of the right class, no object may be an instance of an
+abstract class or an interface, and every OCL invariant of the metamodel must hold. A JSON model is
+rejected if a value cannot be read by the data type of its attribute, or if a class is not defined
+by any of the metamodels.
+
+Multiplicities are checked as the Eclipse Modeling Framework checks them. Each element of a
+many-valued feature counts as one value, and so does a single value that a many-valued feature
+holds without a list. A required single-valued feature that the model leaves unset is accepted
+when it reads as a default: the first literal of an enumeration, `false`, zero, or the default
+value of the feature. It is an error when the feature has no default, such as a string or a
+reference, or when it is unsettable, which distinguishes being unset from holding its default.
+Only the values that a model sets are checked against the types of their features.
+
+`--require-explicit-values` is stricter than the Eclipse Modeling Framework: every required
+single-valued feature that the model leaves unset is an error, whatever its type. This suits
+models written by hand or migrated from another format, where an omitted value is more likely a
+mistake than a deliberate default. Models that the Eclipse Modeling Framework saves leave out
+values that equal the default of a feature, so they may fail this check although Eclipse accepts
+them.
+
+```bash
+# Report the status of an order that the model leaves unset, although it reads as the first literal
+swift-ecore validate orders.xmi -m Orders.ecore --require-explicit-values
+```
+
+Every problem is printed as a line starting with `error:`, `warning:` or `information:`, with the
+element and its location in the model, such as `//@employees.0`. A violated OCL invariant is
+printed as a line starting with `Checking constraint:`, followed by the number of satisfied
+checks. The command prints `Validation completed successfully` and exits with status 0 if there
+is no error (and, with `--strict`, no warning); otherwise it fails with status 1 and a summary on
+standard error.
+
+Several files are validated one after the other with the same metamodels and options. The
+findings of each file follow a line `Validating: <file>` and precede a line with its result, such
+as `second.xmi: valid` or `third.xmi: invalid (2 error(s), 0 warning(s))`; a file that cannot be
+read counts as invalid, with the reason as its error. A final line such as
+`Validated 3 files: 2 valid, 1 invalid` counts the results, and the command fails with status 1 if
+any file is invalid, naming the invalid files on standard error. With `--format json`, the report
+is an array with one report per file.
+
+OCL invariants are declared as in the Eclipse Modeling Framework: the `constraints` detail of the
+annotation with the source `http://www.eclipse.org/emf/2002/Ecore` names them, and the details of
+the annotation with the source `http://www.eclipse.org/emf/2002/Ecore/OCL` give their expressions.
+Expressions use the OCL that AQL shares, including implicit iterators such as
+`self.accounts->isUnique(number)` and `String::indexOf`. Write an enumeration literal with its
+package, as in `Bank::AccountType::SAVINGS`.
 
 **Examples:**
 
@@ -92,8 +184,177 @@ class is not defined by any of the metamodels.
 # Check that a model can be read
 swift-ecore validate model.xmi
 
-# Validate a JSON model against its metamodel
+# Validate a model against its metamodel and its OCL invariants
 swift-ecore validate model.json --metamodel MyMetamodel.ecore
+
+# Check the abstract classes of a metamodel, failing on warnings
+swift-ecore validate MyMetamodel.ecore --check-abstract-classes --strict
+
+# Keep a JSON report for a build server
+swift-ecore validate model.xmi --metamodel MyMetamodel.ecore --format json --report report.json
+
+# Validate every model of a directory against the same metamodel
+swift-ecore validate models/*.xmi --metamodel MyMetamodel.ecore
+```
+
+### inspect
+
+Show the structure of a metamodel or a model.
+
+```bash
+swift-ecore inspect <file> [options]
+```
+
+**Options:**
+
+- `--detail <summary|full>` - How much to show (default `summary`)
+- `--show-supertypes` - Show all supertypes, subclasses and inherited features of every class, and
+  the class hierarchy
+- `--show-references` - Show the references of every class and the reference graph; for a model,
+  every reference between its objects
+- `--show-attributes` - Show the attributes of every class, also in a summary
+- `--format <text|json>` - The format of the report (default `text`)
+- `-o, --output <file>` - Write the report to a file instead of standard output
+- `-m, --metamodel <file.ecore>` - An Ecore metamodel of the model (can be given several times)
+- `-v, --verbose` - Show progress
+
+A metamodel is shown package by package. The summary lists the classes (with their supertypes and
+whether they are abstract or interfaces), enumerations and data types; in full detail, every class
+lists its attributes and references with their types, multiplicities, default values, containment
+and opposites, its operations and its OCL invariants, and every enumeration its literals. A model is
+shown with the number of objects of each class; in full detail, every object is shown with its
+values and its location, nested as the objects contain each other.
+
+**Examples:**
+
+```bash
+# Every class with its features, the inheritance and the references
+swift-ecore inspect Company.ecore --detail full --show-supertypes --show-references
+
+# Every object of a model
+swift-ecore inspect company.json --metamodel Company.ecore --detail full
+
+# The structure of a metamodel as JSON
+swift-ecore inspect Company.ecore --detail full --format json --output structure.json
+```
+
+### compare
+
+Compare two metamodels or two models and report their differences.
+
+```bash
+swift-ecore compare <original> <revised> [options]
+```
+
+**Options:**
+
+- `-m, --metamodel <file.ecore>` - An Ecore metamodel of both models (can be given several times)
+- `--summary` - Show the numbers of objects of each class, or of metamodel elements, in both files
+  instead of every difference
+- `--ignore <name>` - Leave out a feature, metamodel element or property of that name, or one
+  feature of one class as `Class.feature` (can be given several times)
+- `--format <text|json>` - The format of the report (default `text`)
+- `-o, --output <file>` - Write the report to a file and print only its summary line
+- `--exit-code` - Exit with status 1 if the files differ
+- `-v, --verbose` - Show the files and how many objects were matched
+
+Both files must be metamodels, or both models. Two metamodels are compared package by package:
+packages, classifiers, features, operations and enumeration literals are matched by name, and a
+metamodel with a single root package is compared with the single root package of the other even if
+it was renamed. Added and removed elements are reported, as are changes of namespace URIs and
+prefixes, of the kind of a classifier or feature, of abstract and interface flags, supertypes,
+feature types, multiplicities, containment, opposites, the `id`, `derived`, `transient` and
+`read-only` flags, default values, literal values, operation signatures and data type instance
+classes.
+
+Two models are compared object by object. Objects are matched by class and identity: the value of
+the identifying attribute of their class, else the value that names them (such as `name`), else
+their location; a weaker identity never matches two objects that both have a stronger one. Added
+and removed objects are reported with their location, and for matched objects every changed
+attribute value and non-containment reference, with referenced objects described by their labels.
+Every given metamodel is registered for both models, so a legacy model and its migrated
+counterpart can be compared with the metamodels of both. Without a metamodel, an XMI model and a
+JSON model name the classes of their objects differently, so the same objects may be reported as
+removed and added; a warning on standard error then suggests giving the metamodel with
+`--metamodel`.
+
+Each difference is a line that starts with `+` (added), `-` (removed) or `~` (changed), such as
+`~ attribute Order.status type: EString -> Status` or
+`~ object Order 'A-1' (//@orders.0) status: "PAID" -> "SHIPPED"`, and a summary line such as
+`6 differences: 1 added, 1 removed, 4 changed` or `No differences` ends the report. The command
+exits with status 0 whether or not the files differ, unless `--exit-code` is given.
+
+**Examples:**
+
+```bash
+# What changed between two versions of a metamodel
+swift-ecore compare legacy.ecore improved.ecore
+
+# Whether a migration kept every object: the objects of each class in both models
+swift-ecore compare legacy.xmi migrated.xmi --metamodel legacy.ecore --metamodel improved.ecore --summary
+
+# Fail a build if a regenerated model differs from the expected one
+swift-ecore compare expected.xmi actual.xmi --metamodel schema.ecore --ignore modified --exit-code
+```
+
+### statistics
+
+Measure the size and shape of a metamodel or a model.
+
+```bash
+swift-ecore statistics <file> [options]
+```
+
+**Options:**
+
+- `-m, --metamodel <file.ecore>` - An Ecore metamodel of the model (can be given several times)
+- `--format <text|json>` - The format of the report (default `text`)
+- `-o, --output <file>` - Write the report to a file instead of standard output
+- `-v, --verbose` - Show progress
+
+A metamodel is measured by the numbers of its packages, classes (abstract ones and interfaces
+counted separately), enumerations and literals, data types, attributes, references (containment
+references, and bidirectional pairs counted once), operations and OCL invariants, its deepest
+inheritance, the largest number of direct subclasses of a class, and the average and largest
+number of features per class, declared and with the inherited ones. The classes are then listed by
+their number of features, the most first.
+
+A model is measured by the numbers of its objects, root objects and instantiated classes, the
+objects of each class, its deepest containment, and the numbers of attribute values, containment
+links and cross-references, including those into other documents and those that cannot be
+resolved. With a metamodel, the concrete classes that have no objects are listed too.
+
+**Examples:**
+
+```bash
+# The measurements of a metamodel
+swift-ecore statistics Company.ecore
+
+# The measurements of a model as JSON
+swift-ecore statistics company.xmi --metamodel Company.ecore --format json --output statistics.json
+```
+
+### create
+
+Create a model with one root object of a class of a metamodel.
+
+```bash
+swift-ecore create --metamodel <file.ecore> --root-class <class> --output <file> [options]
+```
+
+**Options:**
+
+- `-m, --metamodel <file.ecore>` - The metamodel that defines the class (can be given several times)
+- `--root-class <class>` - The class of the root object; it must not be abstract or an interface
+- `-o, --output <file>` - The model file to write
+- `--output-format <xmi|json>` - The output format (inferred from the extension if not specified)
+- `--force` - Overwrite the output file if it exists
+- `-v, --verbose` - Show progress
+
+**Example:**
+
+```bash
+swift-ecore create --metamodel Company.ecore --root-class Company --output company.xmi
 ```
 
 ### genmodel
@@ -163,7 +424,8 @@ Every language has a template set (`c`, `cpp`, `java` and `swift` are bundled) a
 - `--code-style <style>` - The layout of the generated text, one of the styles of the template set (`java`: `eclipse`, the default, or `emf`); rejected for sets that offer none, such as `swift`, `c` and `cpp`
 - `--defaults`, `--root-extends-class`, `--operation-reflection`, `--import-organizing` - The generator model defaults of an Ecore model that is imported for a template language, as for `genmodel`
 - `--let-type-mismatches <error|skip>` - Whether a typed `let` in the templates whose value does not conform to the declared type stops the generation (`error`, the default) or is skipped with a warning on standard error (`skip`, as in Acceleo 3)
-- `--block-line-breaks <acceleo|kept>`, `--collection-parameters <conforming|exact>`, `--check-let-types` / `--no-check-let-types`, `--cache-containers` / `--no-cache-containers`, `--collection-arguments <whole|first-element>`, `--collection-kinds <distinguished|sequences>`, `--single-value-collections <set|sequence>`, `--container-lookup <resources|registered-objects>` - The behaviours of the templates, as for `swift-mtl generate`; the first value is the default, and the second that of version 0.6
+- `--block-line-breaks <acceleo|kept>`, `--collection-parameters <conforming|exact>`, `--check-let-types` / `--no-check-let-types`, `--cache-containers` / `--no-cache-containers`, `--collection-arguments <whole|first-element>`, `--collection-kinds <distinguished|sequences>`, `--single-value-collections <set|sequence>`, `--container-lookup <resources|registered-objects>`, `--sequence-union <concatenation|distinct>`, `--null-addition <empty-text|null>`, `--text-form <joined|bracketed>` - The behaviours of the templates, as for `swift-mtl generate`; the first value is the default, and the second that of version 0.6
+- `--strict-aql` / `--no-strict-aql` - Whether the expressions of the templates reject what Eclipse AQL rejects, as for `swift-mtl generate`; neither preset sets it
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`) for every behaviour option above; a behaviour option that is given overrides it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
@@ -197,46 +459,63 @@ The command takes no options. `swift-ecore --version` prints the version alone.
 
 ### query
 
-Query the root objects of a model.
+Query the whole of a model or a metamodel.
 
 ```bash
-swift-ecore query <model> [options]
+swift-ecore query <file> [options]
 ```
 
-The model is an XMI (`.xmi`), JSON (`.json`) or Ecore (`.ecore`) file, chosen by its extension.
-Its classes are inferred from the document, and each query looks at the root objects of the model.
+The file is an XMI (`.xmi`), JSON (`.json`) or Ecore (`.ecore`) file, chosen by its extension.
+Every query looks at the whole document: every object of a model, however deeply it is contained,
+and every element of a metamodel.
 
 **Options:**
 
 - `-q, --query <query>` - The query to run (default: `info`)
+- `-m, --metamodel <file.ecore>` - An Ecore metamodel of the model (can be given several times);
+  without one, the classes of a model are inferred from the document
 - `-v, --verbose` - Show the file and the query before the result
 
 **Queries:**
 
-- `info` - The number of root objects, and the number of root objects of each class
-- `count` - The number of root objects
-- `list-classes` - The classes of the root objects
-- `find <class>` - The root objects of a class, with up to three of their features each
-- `tree` - The root objects as a list of tree branches
+- `info` - The number of root objects and of all objects, and the number of objects of each class;
+  for a metamodel, its packages with the numbers of their classifiers, and its elements by kind
+- `count` - The number of objects
+- `list-classes` (or `classes`) - For a model, the class of every object with its number of
+  instances and its supertypes; for a metamodel, every class it defines with its supertypes and
+  whether it is abstract or an interface
+- `hierarchy` - The inheritance hierarchy of the classes of a metamodel, or of the metamodels of a
+  model
+- `find <class>` - The objects of a class or of one of its subclasses, with their attribute values
+  and references; for a metamodel, the elements of a metaclass such as `EClass`
+- `tree` - The containment tree, with the class, name and location of every object, or every
+  package, classifier, feature and literal of a metamodel
 
-Queries and class names are matched without regard to case.
+Query names and class names are matched without regard to case. Objects are named by the value of
+a feature such as `name`, and located by a fragment in the syntax of the Eclipse Modeling Framework,
+such as `//@employees.0` (the first object of the `employees` of the single root object) or
+`/1/@classifiers.0` (in the second root object). A reference into another document is resolved and
+shown with that document.
 
 **Examples:**
 
 ```bash
-# Count the root objects of each class
+# Count the objects of each class
 swift-ecore query model.xmi
 
-# List the root objects that are companies
-swift-ecore query company.xmi --query "find Company"
+# List every class of a metamodel with its supertypes
+swift-ecore query Company.ecore --query classes
 
-# Show the root objects as a tree
+# List the employees, including managers if Manager extends Employee
+swift-ecore query company.xmi --metamodel Company.ecore --query "find Employee"
+
+# Show the containment tree
 swift-ecore query model.json -q tree
 ```
 
 ## Environment and Configuration File
 
-Without `--semantics`, the `SWIFT_MODELLING_SEMANTICS` environment variable (`standard` or `legacy`) chooses the preset, and then the `semantics` key of a configuration file. The configuration file is the first `.swift-modelling.json` in the current directory or one of its parents, up to the directory that holds `.git`; `--config` names another file and `--no-config` reads none. Its keys are the names of the behaviour options without their leading `--`, with the spellings of the command line as JSON strings, or JSON booleans for `check-let-types` and `cache-containers`; a key that does not apply to a command is ignored. A behaviour option given on the command line overrides the file, an option in the file overrides the preset, `--semantics` overrides the environment variable, and the environment variable overrides `semantics` in the file. `--let-type-mismatches` and `--unset-features` do not depend on the preset: the command line overrides the file, which overrides their defaults. An invalid value of the variable, or an unknown key or an invalid value in the file, stops the command with an error that names it.
+Without `--semantics`, the `SWIFT_MODELLING_SEMANTICS` environment variable (`standard` or `legacy`) chooses the preset, and then the `semantics` key of a configuration file. The configuration file is the first `.swift-modelling.json` in the current directory or one of its parents, up to the directory that holds `.git`; `--config` names another file and `--no-config` reads none. Its keys are the names of the behaviour options without their leading `--`, with the spellings of the command line as JSON strings, or JSON booleans for `check-let-types`, `cache-containers` and `strict-aql`; a key that does not apply to a command is ignored. A behaviour option given on the command line overrides the file, an option in the file overrides the preset, `--semantics` overrides the environment variable, and the environment variable overrides `semantics` in the file. `--let-type-mismatches` and `--unset-features` do not depend on the preset: the command line overrides the file, which overrides their defaults. An invalid value of the variable, or an unknown key or an invalid value in the file, stops the command with an error that names it.
 
 ```json
 {
@@ -262,6 +541,15 @@ swift-ecore convert legacy-model.xmi modern-model.json --metamodel schema.ecore
 ```bash
 # Validate against the metamodel, with details of what was read
 swift-ecore validate production-model.xmi --metamodel schema.ecore --verbose
+```
+
+### Checking a Migration
+
+```bash
+# What changed in the metamodel, and whether the migrated model kept every object
+swift-ecore compare legacy.ecore improved.ecore
+swift-ecore validate migrated.xmi --metamodel improved.ecore
+swift-ecore compare legacy.xmi migrated.xmi --metamodel legacy.ecore --metamodel improved.ecore --summary
 ```
 
 ## Topics

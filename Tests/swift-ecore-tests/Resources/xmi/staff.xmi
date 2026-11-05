@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<staff:Office xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:staff="http://example.org/staff" city="Brisbane">
+  <staff xsi:type="staff:Employee" name="Ada" grade="SENIOR" employeeId="E1"/>
+  <staff xsi:type="staff:Manager" name="Grace" grade="SENIOR" employeeId="M1" reports="//@staff.0"/>
+</staff:Office>

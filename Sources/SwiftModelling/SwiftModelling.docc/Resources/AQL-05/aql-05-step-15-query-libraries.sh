@@ -4,85 +4,61 @@
 # Transitive closure of project dependencies
 swift-aql evaluate --model enterprise-data.xmi \
   --expression "organisation.projects
-    ->collect(p | Tuple{
-        project = p.name,
-        directDependencies = p.dependencies->collect(d | d.name),
-        allDependencies = p->closure(proj | proj.dependencies)
-            ->excluding(p)
-            ->collect(d | d.name)})"
+    ->collect(p | p->closure(proj | proj.dependencies)
+        ->excluding(p)
+        ->collect(d | p.name + ' depends on ' + d.name
+            + if p.dependencies->includes(d) then '' else ' (indirectly)' endif))"
 
-# Output: [{project: "Analytics Dashboard",
-#           directDependencies: ["Customer Portal", "Infrastructure Modernisation"],
-#           allDependencies: ["Customer Portal", "Infrastructure Modernisation"]}]
+# Output: ["Infrastructure Modernisation depends on Customer Portal", "Analytics Dashboard depends on Customer Portal", "Analytics Dashboard depends on Infrastructure Modernisation"]
 
-# Transitive closure of supervision (all managers in chain)
+# Transitive closure of supervision (all managers in the chain)
 swift-aql evaluate --model enterprise-data.xmi \
-  --expression "organisation.departments.employees->flatten()
+  --expression "organisation.departments.employees
     ->select(e | e.supervisor <> null)
-    ->collect(e | Tuple{
-        employee = e.name,
-        allSupervisors = e->closure(emp |
-            if emp.supervisor <> null
-            then Sequence{emp.supervisor}
-            else Sequence{} endif)
-            ->excluding(e)
-            ->collect(s | s.name)})"
+    ->collect(e | e->closure(emp | emp.supervisor)
+        ->excluding(e)
+        ->collect(s | e.name + ' reports up to ' + s.name))"
 
-# Output: [{employee: "Michael Brown", allSupervisors: ["James Wong", "Sarah Mitchell"]}, ...]
+# Output: ["James Wong reports up to Sarah Mitchell", "Emily Chen reports up to James Wong", "Emily Chen reports up to Sarah Mitchell", ..., "Jack Robinson reports up to William Anderson"]
 
 # Transitive closure of department containment
 swift-aql evaluate --model enterprise-data.xmi \
   --expression "organisation.departments
-    ->collect(d | Tuple{
-        department = d.name,
-        allSubDepartments = d->closure(dept | dept.subDepartments)
-            ->excluding(d)
-            ->collect(sd | sd.name)})"
+    ->collect(d | d->closure(dept | dept.subDepartments)
+        ->excluding(d)
+        ->collect(sd | d.name + ' contains ' + sd.name))"
 
-# Output: [{department: "Engineering", allSubDepartments: ["Platform Team", "Mobile Team"]}, ...]
+# Output: ["Engineering contains Platform Team", "Engineering contains Mobile Team"]
 
-# Find all reachable projects from a department
+# Find all projects that rely on the projects a department leads
 swift-aql evaluate --model enterprise-data.xmi \
   --expression "let startDept = organisation.departments->select(d | d.code = 'ENG')->first()
     in let directProjects = organisation.projects
         ->select(p | p.leadDepartment = startDept
             or startDept.subDepartments->includes(p.leadDepartment))
-    in let dependentProjects = directProjects
-        ->collect(p | p->closure(proj |
-            organisation.projects->select(other | other.dependencies->includes(proj))))
-        ->flatten()
-        ->asSet()
-    in Tuple{
-        directProjects = directProjects->collect(p | p.name),
-        allRelatedProjects = dependentProjects->collect(p | p.name)}"
+    in directProjects
+        ->collect(p | p->closure(proj | organisation.projects
+                ->select(other | other.dependencies->includes(proj)))
+            ->collect(other | p.name + ' is needed by ' + other.name))"
 
-# Output: {directProjects: ["Customer Portal", "Infrastructure Modernisation", "Mobile App Redesign"],
-#          allRelatedProjects: [...]}
+# Output: ["Customer Portal is needed by Infrastructure Modernisation", "Customer Portal is needed by Analytics Dashboard", "Infrastructure Modernisation is needed by Analytics Dashboard"]
 
 # Transitive mentorship relationships
 swift-aql evaluate --model enterprise-data.xmi \
-  --expression "organisation.departments.employees->flatten()
+  --expression "organisation.departments.employees
     ->select(e | e.mentors->notEmpty())
-    ->collect(e | Tuple{
-        mentee = e.name,
-        directMentors = e.mentors->collect(m | m.name),
-        allMentors = e->closure(emp | emp.mentors)
-            ->excluding(e)
-            ->asSet()
-            ->collect(m | m.name)})"
+    ->collect(e | e->closure(emp | emp.mentors)
+        ->excluding(e)
+        ->collect(m | e.name + ' learns from ' + m.name
+            + if e.mentors->includes(m) then '' else ' (indirectly)' endif))"
 
-# Output: [{mentee: "Tom Nguyen", directMentors: ["Anna Kowalski"],
-#           allMentors: ["Anna Kowalski"]}]
+# Output: ["James Wong learns from Sarah Mitchell", "Michael Brown learns from James Wong", "Michael Brown learns from Emily Chen", "Michael Brown learns from Sarah Mitchell (indirectly)", ..., "Jack Robinson learns from Emma Wilson"]
 
-# Closure with depth tracking (simulated)
+# Closure with depth tracking: count each department's ancestors
 swift-aql evaluate --model enterprise-data.xmi \
-  --expression "let root = organisation.departments->select(d | d.code = 'ENG')->first()
-    in Sequence{
-        Tuple{level = 0, departments = Sequence{root.name}},
-        Tuple{level = 1, departments = root.subDepartments->collect(d | d.name)},
-        Tuple{level = 2, departments = root.subDepartments.subDepartments
-            ->flatten()->collect(d | d.name)}}"
+  --expression "organisation.eAllContents(enterprise::Department)
+    ->collect(d | 'level '
+        + d->closure(dept | dept.parentDepartment)->size().toString()
+        + ': ' + d.name)"
 
-# Output: [{level: 0, departments: ["Engineering"]},
-#          {level: 1, departments: ["Platform Team", "Mobile Team"]},
-#          {level: 2, departments: []}]
+# Output: ["level 0: Engineering", "level 1: Platform Team", "level 1: Mobile Team", "level 0: Product", "level 0: Design", "level 0: Operations"]

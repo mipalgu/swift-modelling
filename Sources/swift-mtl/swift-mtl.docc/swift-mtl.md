@@ -24,6 +24,7 @@ Execute an MTL template to generate text from models.
 
 ```bash
 swift-mtl generate <template-file> [options]
+swift-mtl generate --template <template-file> [options]
 swift-mtl generate --template-set <directory|language> [options]
 ```
 
@@ -32,12 +33,13 @@ swift-mtl generate --template-set <directory|language> [options]
 - `--model <path>` - Input model (XMI, JSON or Ecore); repeat for several models. The root object of each model is passed to the main template in command line order. An Ecore file is also registered as a metamodel and its package is passed as an argument.
 - `--metamodel <path>` - Ecore metamodel to register without passing it to the template (repeatable)
 - `-o, --output <path>` - Output directory for generated files (default: the current directory)
-- `-t, --template <name>` - Main template to run (default: the template marked `@main`, otherwise the first)
+- `-t, --template <name|file.mtl>` - Main template to run (default: the template marked `@main`, otherwise the first); a value that ends in `.mtl` names the template file instead, when no template file argument is given
 - `--template-set <directory|language>` - Template set to run instead of a template file: a directory with a `templateset.json` descriptor, or the language of a bundled set
 - `--template-path <directory>` - Directory searched for imported modules after the directory of the template (repeatable); with a template set, its files replace the files of the set with the same relative path
 - `--param <name=value>` - Parameter for the templates (repeatable)
 - `--force-overwrite` - Replace existing files without merging
 - `--diff` - Write the generated text of existing files beside them as `.<name>.new` and leave the files alone
+- `--print-standard-output` - Print the text that the templates write outside `[file]` blocks on standard output instead of saving it as `stdout` in the output directory
 - `--code-style <style>` - One of the code styles that the descriptor of a template set declares
 - `--unset-features <defaults|undefined>` - Whether unset features read as their defaults (`defaults`, the default, as in the Eclipse Modeling Framework) or as undefined
 - `--let-type-mismatches <error|skip>` - Whether a typed `let` whose value does not conform to the declared type stops the generation (`error`, the default) or is skipped with a warning on standard error (`skip`, as in Acceleo 3)
@@ -52,7 +54,12 @@ swift-mtl generate --template-set <directory|language> [options]
 - `--collection-kinds <distinguished|sequences>` - Whether collections keep their kinds (`distinguished`, the default) or all behave as sequences (`sequences`, as in version 0.6)
 - `--single-value-collections <set|sequence>` - Whether an arrow call on a single value sees a set (`set`, the default) or a sequence (`sequence`, as in version 0.6)
 - `--container-lookup <resources|registered-objects>` - Whether `eContainer()` asks the registered resources (`resources`, the default) or only the registered model objects (`registered-objects`, as in version 0.6)
+- `--sequence-union <concatenation|distinct>` - Whether the `union` of a sequence or a bag keeps repeated elements (`concatenation`, the default, as in Eclipse AQL) or leaves them out (`distinct`, as in version 0.6)
+- `--null-addition <empty-text|null>` - Whether `+` treats a null operand as empty text, so `null + 'x'` is `'x'` (`empty-text`, the default, as in Eclipse AQL), or gives null (`null`, as in version 0.6)
+- `--text-form <joined|bracketed>` - Whether the text of a collection joins the texts of its elements, `'ab'` (`joined`, the default, as in Eclipse AQL), or brackets them, `'[a, b]'` (`bracketed`, as in version 0.6)
+- `--strict-aql`, `--no-strict-aql` - Make the expressions of the templates reject what Eclipse AQL rejects, such as a union of a sequence with a set or a single value passed to `concat`, `sub` or `union`, or accept it (the default); neither preset sets it, and without either flag the `strict-aql` key of the configuration file chooses
 - `-v, --verbose` - Enable verbose output
+- `--debug` - Print the traces of the template and model parsers, for diagnosing the parsers; `--verbose` reports progress without them
 
 **Template path.** Imported modules (`[import shared::Common/]`) are searched in the directory of the template and then in the `--template-path` directories, in order. A directory that does not exist is an error.
 
@@ -74,11 +81,13 @@ same=[parameter('package')/]
 
 **Existing files.** A file that exists is merged with the generated text when the module declares a merge, and replaced otherwise. `--force-overwrite` always replaces it. `--diff` keeps it and writes the generated text beside it; `--force-overwrite` wins when both are given.
 
+**Text outside file blocks.** Text that the templates write outside their `[file]` blocks is saved as `stdout` in the output directory. Nothing is saved when that text is only white space, such as the line breaks between file blocks, and a `stdout` file that a `[file]` block of the same run wrote is kept. `--print-standard-output` prints the text on standard output instead, before the completion message, and saves no `stdout` file.
+
 **Typed let blocks.** A `let` variable may declare a type, as in `[let n : Integer = c.size]...[/let]`. By default a value that does not conform to that type stops the generation with an error that names the variable and both types; `null` conforms to every type. The OMG MOFM2T specification and Acceleo 3 treat a typed `let` as a type test instead. `--let-type-mismatches skip` follows them: the `let` block is skipped, the generation continues, and a warning that names the variable, its declared type and the type of the value is written to standard error, once for each distinct mismatch. With `--no-check-let-types`, values are bound unchecked and the option has no effect.
 
 **Compatibility with 0.6.** The templates follow the behaviour of this release. `--semantics legacy` gives every behaviour that changed since version 0.6 its earlier form: one-line blocks keep their line breaks, collection types are matched exactly, `let` types are not checked, containers are looked up every time, and the expressions add the first element of a collection argument, treat every collection as a sequence, see a single value as a sequence and find containers among the registered objects only. Each option above overrides the preset, whatever the order, so `--semantics legacy --block-line-breaks acceleo` behaves as version 0.6 apart from the line breaks.
 
-**Environment and configuration file.** Without `--semantics`, the `SWIFT_MODELLING_SEMANTICS` environment variable (`standard` or `legacy`) chooses the preset, and then the `semantics` key of a configuration file. The configuration file is the first `.swift-modelling.json` in the current directory or one of its parents, up to the directory that holds `.git`; `--config` names another file and `--no-config` reads none. Its keys are the names of the behaviour options without their leading `--`, with the spellings of the command line as JSON strings, or JSON booleans for `check-let-types` and `cache-containers`; a key that does not apply to a command is ignored. A behaviour option given on the command line overrides the file, an option in the file overrides the preset, `--semantics` overrides the environment variable, and the environment variable overrides `semantics` in the file. `--let-type-mismatches` and `--unset-features` do not depend on the preset: the command line overrides the file, which overrides their defaults. An invalid value of the variable, or an unknown key or an invalid value in the file, stops the command with an error that names it. For example, this file gives the behaviour of version 0.6 apart from the line breaks and the containers:
+**Environment and configuration file.** Without `--semantics`, the `SWIFT_MODELLING_SEMANTICS` environment variable (`standard` or `legacy`) chooses the preset, and then the `semantics` key of a configuration file. The configuration file is the first `.swift-modelling.json` in the current directory or one of its parents, up to the directory that holds `.git`; `--config` names another file and `--no-config` reads none. Its keys are the names of the behaviour options without their leading `--`, with the spellings of the command line as JSON strings, or JSON booleans for `check-let-types`, `cache-containers` and `strict-aql`; a key that does not apply to a command is ignored. A behaviour option given on the command line overrides the file, an option in the file overrides the preset, `--semantics` overrides the environment variable, and the environment variable overrides `semantics` in the file. `--let-type-mismatches` and `--unset-features` do not depend on the preset: the command line overrides the file, which overrides their defaults. An invalid value of the variable, or an unknown key or an invalid value in the file, stops the command with an error that names it. For example, this file gives the behaviour of version 0.6 apart from the line breaks and the containers:
 
 ```json
 {
@@ -124,6 +133,7 @@ swift-mtl validate <templates>... [options]
 **Options:**
 
 - `-v, --verbose` - Enable verbose output
+- `--debug` - Print the trace of the template parser, for diagnosing the parser; `--verbose` reports progress without it
 
 The command prints one result per template and a summary, and exits with code 0 only if every template is valid.
 
@@ -156,6 +166,7 @@ swift-mtl parse <templates>... [options]
 - `-d, --detailed` - Show detailed information about templates
 - `--json` - Output as JSON
 - `-v, --verbose` - Enable verbose output
+- `--debug` - Print the trace of the template parser, for diagnosing the parser; `--verbose` reports progress without it
 
 **Examples:**
 

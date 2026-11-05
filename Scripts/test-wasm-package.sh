@@ -1,10 +1,13 @@
 #!/bin/sh
 # Check an extracted WASI archive without granting access to build paths.
 # Usage: Scripts/test-wasm-package.sh <wasmkit-path> <package-directory> <version>
+# The tools are those named in Scripts/tools.txt, one per line.
 set -eu
 
 runtime=$1
 version=$3
+scripts=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+tools=$(cat "$scripts/tools.txt")
 cd "$2"
 temporary=$(mktemp -d ./smoke.XXXXXX)
 trap 'rm -rf "$temporary"' EXIT HUP INT TERM
@@ -24,7 +27,7 @@ EOF
 run() {
     "$runtime" run --stack-size 67108864 --env TMPDIR=. --dir . "$@"
 }
-for tool in swift-ecore swift-atl swift-mtl; do
+for tool in $tools; do
     test "$(run "$tool.wasm" --version)" = "$version"
 done
 run swift-ecore.wasm genmodel "$temporary/demo.ecore" --output "$temporary/demo.genmodel"

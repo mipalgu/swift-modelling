@@ -118,7 +118,7 @@
             @Step {
                 Examine the output directory.
 
-                @Code(name: "expected-output.xmi", file: expected-output.xmi)
+                @Code(name: "expected-directory.xmi", file: expected-directory.xmi)
 
                 Every employee became an entry that names its team, department and company, and the headcount of an entry is the size of its team. The threaded version produces the same entries.
             }

@@ -1,45 +1,43 @@
 # Nested iteration patterns
 # Iterate over multiple collections simultaneously
 
-# Nested select for complex filtering
+# Nested select for complex filtering: senior staff per department
 swift-aql evaluate --model enterprise-data.xmi \
   --expression "organisation.departments
     ->select(d | d.employees->exists(e | e.yearsOfService >= 10))
-    ->collect(d | Tuple{department = d.name,
-                        seniors = d.employees
-                            ->select(e | e.yearsOfService >= 10)
-                            ->collect(e | e.name)})"
+    ->collect(d | d.employees
+        ->select(e | e.yearsOfService >= 10)
+        ->collect(e | d.name + ': ' + e.name))"
 
-# Output: [{department: "Engineering", seniors: ["Sarah Mitchell"]},
-#          {department: "Product", seniors: ["Jessica Moore"]}, ...]
+# Output: ["Engineering: Sarah Mitchell", "Product: Jessica Moore", "Design: Olivia Martinez", "Operations: William Anderson"]
 
-# Nested iteration with forAll
+# Nested iteration with forAll: departments where everyone earns at least 100k
 swift-aql evaluate --model enterprise-data.xmi \
   --expression "organisation.departments
     ->select(d | d.employees->forAll(e | e.salary >= 100000))
     ->collect(d | d.name)"
 
-# Output: ["Engineering", "Product", "Design"] (all have employees earning >= 100k)
+# Output: ["Engineering"]
 
 # Double iteration for relationship analysis
 swift-aql evaluate --model enterprise-data.xmi \
-  --expression "organisation.departments.employees->flatten()
+  --expression "organisation.departments.employees
     ->select(e | e.supervisor <> null)
-    ->collect(e | Tuple{employee = e.name,
-                        supervisor = e.supervisor.name,
-                        sameDepartment = e.eContainer() = e.supervisor.eContainer()})"
+    ->collect(e | e.name + ' reports to ' + e.supervisor.name
+        + ', same department: '
+        + (e.eContainer() = e.supervisor.eContainer()).toString())"
 
-# Output: [{employee: "James Wong", supervisor: "Sarah Mitchell", sameDepartment: true}, ...]
+# Output: ["James Wong reports to Sarah Mitchell, same department: true", ..., "Jack Robinson reports to Emma Wilson, same department: true"]
 
-# Nested iteration over projects and employees
+# Nested iteration over projects and the departments of their team members
 swift-aql evaluate --model enterprise-data.xmi \
   --expression "organisation.projects
-    ->collect(p | Tuple{project = p.name,
-                        departments = p.teamMembers
-                            ->collect(e | e.eContainer().name)
-                            ->asSet()})"
+    ->collect(p | p.teamMembers
+        ->collect(e | e.eContainer().name)
+        ->asSet()
+        ->collect(d | p.name + ': ' + d))"
 
-# Output: [{project: "Customer Portal", departments: ["Engineering", "Product", "Design", ...]}, ...]
+# Output: ["Customer Portal: Engineering", "Customer Portal: Mobile Team", "Customer Portal: Product", "Customer Portal: Design", ..., "Analytics Dashboard: Product"]
 
 # Nested exists with multiple levels
 swift-aql evaluate --model enterprise-data.xmi \
@@ -48,4 +46,4 @@ swift-aql evaluate --model enterprise-data.xmi \
         sd.employees->exists(e | e.yearsOfService >= 8)))
     ->collect(d | d.name)"
 
-# Output: ["Engineering"] (has sub-departments with experienced employees)
+# Output: ["Engineering"]

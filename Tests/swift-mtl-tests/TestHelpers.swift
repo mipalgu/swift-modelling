@@ -222,8 +222,8 @@ func executeSwiftMTL(
             arguments: Arguments(allArgs),
             environment: childEnvironment(environment),
             workingDirectory: workingDirectory.map { FilePath($0.path) },
-            output: .string(limit: 16384),
-            error: .string(limit: 16384)
+            output: .string(limit: subprocessOutputLimit),
+            error: .string(limit: subprocessOutputLimit)
         )
     }
 
@@ -234,6 +234,11 @@ func executeSwiftMTL(
         stderr: captureOutput ? (result.standardError ?? "") : ""
     )
 }
+
+/// The most bytes of standard output or standard error that a test keeps from a tool.
+///
+/// The help of a command with many options is longer than 16 KiB.
+let subprocessOutputLimit = 1 << 20
 
 // MARK: - Child Environment
 

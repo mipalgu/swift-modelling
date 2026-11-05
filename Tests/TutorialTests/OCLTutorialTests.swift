@@ -262,9 +262,9 @@ struct OCLTutorialTests {
         let content = try String(contentsOf: instancePath, encoding: .utf8)
 
         // All emails contain @
-        #expect(content.contains("email=\"john.smith@email.com\""))
-        #expect(content.contains("email=\"jane.doe@company.org\""))
-        #expect(content.contains("email=\"bob.wilson@university.edu\""))
+        #expect(content.contains("email=\"john.smith@example.com\""))
+        #expect(content.contains("email=\"jane.doe@example.org\""))
+        #expect(content.contains("email=\"bob.wilson@example.edu\""))
 
         // All ages >= 18
         #expect(content.contains("age=\"35\""))

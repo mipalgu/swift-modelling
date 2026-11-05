@@ -34,6 +34,9 @@ struct ValidateCommand: AsyncParsableCommand {
 
                 # Verbose validation
                 swift-mtl validate template.mtl --verbose
+
+                # Trace the template parser
+                swift-mtl validate template.mtl --debug
             """
     )
 
@@ -43,13 +46,16 @@ struct ValidateCommand: AsyncParsableCommand {
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose: Bool = false
 
+    /// Whether the template parser traces its work.
+    @OptionGroup var debugOptions: DebugOptions
+
     @MainActor
     func run() async throws {
         var allValid = true
         var validCount = 0
         var errorCount = 0
 
-        let parser = MTLParser(enableDebugging: verbose)
+        let parser = MTLParser(enableDebugging: debugOptions.debug)
 
         if verbose {
             print("Validating \(templates.count) template(s)...\n")

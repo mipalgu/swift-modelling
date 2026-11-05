@@ -83,7 +83,7 @@
 
                 @Code(name: "Terminal", file: step-16-inspect-references.sh)
 
-                The `--show-references` flag displays all references, their types, cardinalities, and opposites, helping you verify your relationship structure.
+                The `--show-references` flag displays all references, their types, cardinalities, and opposites, helping you verify your relationship structure. `employees` is marked `containment`, and its opposite `employer` is marked `container`: it always leads to the company that contains the person. The reference graph at the end lists every reference of the metamodel from its class to its type.
             }
         }
     }

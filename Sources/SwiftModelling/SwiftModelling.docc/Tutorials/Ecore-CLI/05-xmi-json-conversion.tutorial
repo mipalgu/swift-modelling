@@ -12,7 +12,7 @@
         @ContentAndMedia {
             swift-ecore supports two serialisation formats: XMI (XML Metadata Interchange) and JSON. XMI is the standard EMF format with rich metadata, whilst JSON provides a lightweight, modern alternative.
 
-            Choose XMI for interoperability with Eclipse EMF tools, or JSON for web applications and modern workflows. Both formats preserve complete model structure and can be converted losslessly.
+            Choose XMI for interoperability with Eclipse EMF tools, or JSON for web applications and modern workflows. Both formats preserve the complete model structure, every object with its attribute values and references, so you can convert between them without losing content.
         }
 
         @Steps {
@@ -29,7 +29,7 @@
 
                 @Code(name: "Terminal", file: step-24-convert-to-json.sh)
 
-                The `convert` command transforms XMI to JSON whilst preserving all model data, including type information and cross-references.
+                The `convert` command transforms XMI to JSON whilst preserving all model data, including type information and cross-references. With `--metamodel`, every class is written with the namespace of its metamodel, so the JSON can be read back with its types; without it, swift-ecore warns that the classes are only known by name.
             }
 
             @Step {
@@ -37,7 +37,7 @@
 
                 @Code(name: "company-model.json", file: step-25-company-model.json)
 
-                The JSON format uses `$type` for metamodel types and `$id` for identifiers. It's more concise than XMI and easier to work with in modern tools.
+                Each object names its class in `eClass`: the namespace URI of the metamodel, then `#//` and the class name. Contained objects are nested, a reference to another object is written as `{"$ref": "<fragment>"}`, and the keys of every object are sorted alphabetically. The `xmi:id` values of the XMI file are not kept, since JSON locates objects by their position. The format is more concise than XMI and easier to work with in modern tools.
             }
         }
     }
@@ -55,7 +55,7 @@
 
                 @Code(name: "Terminal", file: step-26-convert-to-xmi.sh)
 
-                Converting from JSON to XMI produces standard EMF-compatible XMI that can be opened in Eclipse or other EMF tools.
+                Converting from JSON to XMI produces standard EMF-compatible XMI that can be opened in Eclipse or other EMF tools. The metamodel gives the classes their namespace again.
             }
 
             @Step {
@@ -63,7 +63,7 @@
 
                 @Code(name: "Terminal", file: step-27-compare-roundtrip.sh)
 
-                The `diff` command should show minimal or no differences. Format-specific details like whitespace or attribute order may vary, but semantic content remains identical.
+                A textual diff of the two XMI files would show differences that do not matter, such as the layout, the order of attributes and the `xmi:id` values. Converting the round-trip result to JSON again writes every object with its keys in alphabetical order, so `diff` compares the content: it prints nothing, and `echo` confirms that the round trip kept every object and value.
             }
         }
     }
@@ -81,7 +81,7 @@
 
                 @Code(name: "Terminal", file: step-28-validate-json.sh)
 
-                The `validate` command works with both formats, checking type conformance, cardinality constraints, and reference integrity.
+                The `validate` command works with both formats, checking that every class and feature is defined by the metamodel, type conformance, cardinality constraints, and reference integrity.
             }
 
             @Step {
@@ -89,7 +89,7 @@
 
                 @Code(name: "Terminal", file: step-29-inspect-json.sh)
 
-                All swift-ecore commands accept both JSON and XMI inputs interchangeably, providing a unified experience regardless of format.
+                All swift-ecore commands accept both JSON and XMI inputs interchangeably, providing a unified experience regardless of format. `--detail full` shows every object with its values, nested as the objects contain each other, together with its location such as `//@employees.0`.
             }
 
             @Step {
@@ -97,7 +97,7 @@
 
                 @Code(name: "Terminal", file: step-30-batch-convert.sh)
 
-                Batch convert multiple models using shell scripting. This example converts all XMI files in a directory to JSON.
+                Batch convert multiple models using shell scripting. This example converts all XMI files in a directory to JSON. `convert` refuses to replace an existing file, so that it never overwrites your work by accident; `--force` allows it, here for the JSON file you already wrote.
             }
         }
     }

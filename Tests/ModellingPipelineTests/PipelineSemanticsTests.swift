@@ -52,6 +52,17 @@ struct PipelineSemanticsTests {
         }
         """
 
+    /// A transformation whose rule divides two Integers.
+    static let division = """
+        module Division;
+        create OUT : Contacts from IN : People;
+
+        rule Person2Contact {
+            from p : People!Person
+            to c : Contacts!Contact ( fullName <- p.name + (7 / 2).toString() )
+        }
+        """
+
     /// The behaviours of this release, with typed `let` mismatches skipped.
     static var standardSkipping: MTLOptions {
         var options = MTLOptions.standard
@@ -197,6 +208,44 @@ struct PipelineSemanticsTests {
             let names = await book.getAllObjects().compactMap { ($0 as? DynamicEObject)?.eGet("fullName") as? String }
             #expect(names.sorted() == ["Ada3", "Alan3"])
         }
+    }
+
+    /// Runs the division transformation with a step and returns the full names it wrote.
+    ///
+    /// - Parameter step: Creates the step from the module, the metamodels and the source model.
+    /// - Returns: The sorted full names of the contacts.
+    private func divide(
+        _ step: (URL, [EPackage], Resource) -> TransformationStep
+    ) async throws -> [String] {
+        let fixture = try PipelineFixture.make()
+        defer { fixture.remove() }
+        let (packages, source) = try await load(fixture)
+        let module = fixture.directory.appendingPathComponent("Division.atl")
+        try fixture.write(Self.division, to: module)
+        let targets = try await step(module, packages, source).run()
+        let book = try #require(targets["OUT"])
+        let names = await book.getAllObjects().compactMap { ($0 as? DynamicEObject)?.eGet("fullName") as? String }
+        return names.sorted()
+    }
+
+    @Test("a transformation step with the standard options divides two Integers into a Real")
+    func standardTransformationDividesIntoReal() async throws {
+        let names = try await divide {
+            TransformationStep(moduleURL: $0, metamodels: $1, sourceAliases: ["IN": $2], atlOptions: .standard)
+        }
+        #expect(names == ["Ada3.5", "Alan3.5"])
+    }
+
+    @Test("a transformation step of version 0.6 truncates the quotient of two Integers")
+    func legacyTransformationTruncates() async throws {
+        let legacy = try await divide {
+            TransformationStep(moduleURL: $0, metamodels: $1, sourceAliases: ["IN": $2], atlOptions: .legacy)
+        }
+        let original = try await divide {
+            TransformationStep(moduleURL: $0, metamodels: $1, sourceAliases: ["IN": $2])
+        }
+        #expect(legacy == ["Ada3", "Alan3"])
+        #expect(original == ["Ada3", "Alan3"])
     }
 
     // MARK: - Pipelines

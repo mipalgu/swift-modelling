@@ -17,16 +17,16 @@ swift-aql evaluate --model company-data.xmi \
 swift-aql evaluate --model company-data.xmi \
   --expression "company.departments.employees->select(e | e.supervisor <> null).supervisor.name"
 
-# Output: Names of all supervisors (with duplicates)
+# Output: ["Alice Smith", "Bob Chen", "Bob Chen", "Emma Davis", "Frank Miller", "Henry Brown"]
 
-# Navigate and aggregate
+# Navigate and aggregate (total of all department budgets)
 swift-aql evaluate --model company-data.xmi \
   --expression "company.departments.budget->sum()"
 
-# Output: 1000000.0 (total of all department budgets)
+# Output: 1000000.0
 
-# Navigate to specific element
+# Navigate to a specific element (the third department)
 swift-aql evaluate --model company-data.xmi \
-  --expression "company.departments->at(2).employees->first().name"
+  --expression "company.departments->at(3).employees->first().name"
 
 # Output: "Henry Brown"

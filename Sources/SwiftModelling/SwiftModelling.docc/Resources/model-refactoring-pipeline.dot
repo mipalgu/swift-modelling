@@ -1,35 +1,43 @@
 digraph ModelRefactoringPipeline {
     bgcolor="white"
+    fontname="Arial"
     rankdir=LR
     node [shape=box, style=rounded, fontname="Arial", fontsize=12]
     edge [fontname="Arial", fontsize=10]
-    
+
     subgraph cluster_input {
-        label="Input"
+        label="Version 1.0"
         style=rounded
         bgcolor="#f8f4e8"
-        legacy [label="Legacy\nModel" shape=box3d]
+        legacy [label="Legacy exports\nlegacy/*.xmi" shape=box3d]
+        legacyMM [label="LegacyOrders.ecore" shape=note]
     }
-    
-    subgraph cluster_refactor {
-        label="Refactoring Steps"
+
+    subgraph cluster_pipeline {
+        label="Refactoring pipeline"
         style=rounded
         bgcolor="#e8f4f8"
-        
-        analyse [label="1. Analyse" shape=ellipse]
-        plan [label="2. Plan" shape=ellipse]
-        transform [label="3. Transform" shape=ellipse]
-        validate [label="4. Validate" shape=ellipse]
+
+        clean [label="Clean\nCleanLegacyOrders.atl\n(refining)" shape=ellipse]
+        migrate [label="Migrate\nLegacyOrders2Orders.atl" shape=ellipse]
+        validate [label="Validate\nOCL invariants,\nobject counts" shape=ellipse]
+        qa [label="Quality assurance\nAQL checks,\nJSON round trip" shape=ellipse]
     }
-    
+
     subgraph cluster_output {
-        label="Output"
+        label="Version 2.0"
         style=rounded
         bgcolor="#e8f8f5"
-        improved [label="Improved\nModel" shape=box3d]
+        improvedMM [label="Orders.ecore" shape=note]
+        release [label="Release\nmodels + SHA256SUMS" shape=box3d]
     }
-    
-    legacy -> analyse -> plan -> transform -> validate -> improved
-    
-    legendTitle [label="Model Refactoring Pipeline" shape=plaintext fontname="Arial Bold" fontsize=14]
+
+    backup [label="Backup with\nchecksums (rollback)" shape=cylinder]
+    compat [label="Legacy-format exports\nOrders2LegacyOrders.atl" shape=box3d]
+
+    legacy -> clean -> migrate -> validate -> qa -> release
+    legacyMM -> clean [style=dashed]
+    improvedMM -> validate [style=dashed]
+    legacy -> backup [style=dashed label="before release"]
+    qa -> compat [style=dashed label="tools on 1.0"]
 }

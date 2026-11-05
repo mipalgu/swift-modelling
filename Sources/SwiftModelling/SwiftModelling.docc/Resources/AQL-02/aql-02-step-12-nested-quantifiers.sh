@@ -6,7 +6,7 @@ swift-aql evaluate --model university-data.xmi \
     d.professors->exists(p |
       p.teaches->exists(c | c.prerequisites->notEmpty())))"
 
-# Output: Departments with professors teaching advanced courses
+# Output: [Department(Computer Science), Department(Mathematics), Department(Physics)]
 
 # Check if all departments have at least one experienced professor
 swift-aql evaluate --model university-data.xmi \
@@ -21,4 +21,4 @@ swift-aql evaluate --model university-data.xmi \
     s.enrolledIn->notEmpty() and
     s.enrolledIn->forAll(c | c.credits = 4))"
 
-# Output: Students enrolled only in 4-credit courses
+# Output: [Student(Beth Smith), Student(Edward White), Student(Hannah Moore), Student(Ian Clark)]

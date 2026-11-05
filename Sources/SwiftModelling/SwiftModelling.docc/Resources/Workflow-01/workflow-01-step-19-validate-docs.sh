@@ -1,73 +1,39 @@
-#!/bin/bash
-echo "=== Validating Generated Documentation ==="
-echo ""
-echo "Step 1: Check Markdown file exists"
-echo "  test -f generated/docs/SalesReportDocumentation.md"
-echo "  Expected: ✓ File exists"
-echo ""
-echo "Step 2: Validate Markdown syntax"
-echo "  markdownlint generated/docs/SalesReportDocumentation.md"
-echo "  Expected: No syntax errors"
-echo ""
-echo "Step 3: Verify required sections"
-echo "  Required sections:"
-echo "    ✓ Executive Summary"
-echo "    ✓ Category Performance"
-echo "    ✓ Customer Analytics"
-echo "    ✓ Product Performance"
-echo "    ✓ Insights & Recommendations"
-echo "    ✓ Methodology"
-echo ""
-echo "  grep -q '## Executive Summary' generated/docs/SalesReportDocumentation.md"
-echo "  grep -q '## Category Performance' generated/docs/SalesReportDocumentation.md"
-echo "  grep -q '## Customer Analytics' generated/docs/SalesReportDocumentation.md"
-echo "  grep -q '## Product Performance' generated/docs/SalesReportDocumentation.md"
-echo "  grep -q '## Insights & Recommendations' generated/docs/SalesReportDocumentation.md"
-echo "  grep -q '## Methodology' generated/docs/SalesReportDocumentation.md"
-echo ""
-echo "Step 4: Verify data completeness"
-echo "  Check all categories documented:"
-echo "    grep -c 'Electronics' generated/docs/SalesReportDocumentation.md"
-echo "    grep -c 'Computers' generated/docs/SalesReportDocumentation.md"
-echo "    grep -c 'Accessories' generated/docs/SalesReportDocumentation.md"
-echo "  Expected: Each appears at least once"
-echo ""
-echo "  Check all customers documented:"
-echo "    grep -c 'Alice Johnson' generated/docs/SalesReportDocumentation.md"
-echo "    grep -c 'Bob Smith' generated/docs/SalesReportDocumentation.md"
-echo "    grep -c 'Carol Davis' generated/docs/SalesReportDocumentation.md"
-echo "  Expected: 7 customers total"
-echo ""
-echo "  Check all products documented:"
-echo "    wc -l < <(grep -o 'P[0-9][0-9][0-9]' generated/docs/SalesReportDocumentation.md | sort -u)"
-echo "  Expected: 10 unique product IDs"
-echo ""
-echo "Step 5: Verify calculations"
-echo "  Total Revenue appears correctly:"
-echo "    grep -o '\$15[,0-9.]*' generated/docs/SalesReportDocumentation.md | head -1"
-echo "  Expected: \$15,847.00 or \$15847.00"
-echo ""
-echo "  Average Order Value calculated:"
-echo "    grep -o 'Average Order Value.*\$[0-9.]*' generated/docs/SalesReportDocumentation.md"
-echo "  Expected: ~\$1,584.70"
-echo ""
-echo "Step 6: Render documentation preview"
-echo "  # Using pandoc to convert to HTML for preview"
-echo "  pandoc generated/docs/SalesReportDocumentation.md \\"
-echo "    -f markdown \\"
-echo "    -t html \\"
-echo "    -s \\"
-echo "    -o generated/docs/SalesReportDocumentation.html \\"
-echo "    --metadata title='Sales Report' \\"
-echo "    --css=report-style.css"
-echo ""
-echo "  open generated/docs/SalesReportDocumentation.html"
-echo ""
-echo "Step 7: Check for template placeholders"
-echo "  Ensure no unresolved MTL placeholders:"
-echo "    grep -E '\\[.*\\]' generated/docs/SalesReportDocumentation.md | grep -v '\\[.*\\](.*)'"
-echo "  Expected: Only markdown links, no template artefacts"
-echo ""
-echo "✅ Documentation validates successfully"
-echo "✅ All required sections present with complete data"
-echo "✅ Ready for stakeholder review"
+doc=generated/docs/sales-report.md
+
+# Every section of the documentation is present.
+for section in "Key Figures" "Categories" "Customers" "Products" "Out of Stock"; do
+    grep -q "^## $section\$" "$doc"
+    echo "Section found: $section"
+done
+
+# Output:
+# Section found: Key Figures
+# Section found: Categories
+# Section found: Customers
+# Section found: Products
+# Section found: Out of Stock
+
+# Each table has one row for each metric of the report model: count the rows
+# that end in a number, and compare them with what AQL counts in the model.
+rows() {
+    sed -n "/^## $1\$/,/^## /p" "$doc" | grep -c ' [0-9][0-9.]* |$'
+}
+test "$(rows Categories)" = "$(swift-aql query sales-report.xmi 'self.categoryMetrics->size()')"
+test "$(rows Customers)" = "$(swift-aql query sales-report.xmi 'self.customerMetrics->size()')"
+test "$(rows Products)" = "$(swift-aql query sales-report.xmi 'self.productMetrics->size()')"
+echo "Table rows: $(rows Categories) categories, $(rows Customers) customers, $(rows Products) products"
+
+# Output:
+# Table rows: 4 categories, 5 customers, 10 products
+
+# The key figures are those of the model, and no template expression was
+# left unexpanded.
+revenue=$(swift-aql query sales-report.xmi "self.totalRevenue")
+grep "| Total revenue | $revenue |" "$doc"
+if grep -n '\[' "$doc"; then
+    echo "Unexpanded template text in $doc"
+    exit 1
+fi
+
+# Output:
+# | Total revenue | 6815.0 |

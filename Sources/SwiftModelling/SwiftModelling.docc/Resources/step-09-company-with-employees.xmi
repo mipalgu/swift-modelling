@@ -5,8 +5,8 @@
 
   <company:Company xmi:id="company1" name="Tech Innovations Ltd"/>
 
-  <company:Person xmi:id="person1" name="Alice Johnson" email="alice@techinnovations.com"/>
-  <company:Person xmi:id="person2" name="Bob Smith" email="bob@techinnovations.com"/>
-  <company:Person xmi:id="person3" name="Carol Williams" email="carol@techinnovations.com"/>
+  <company:Person xmi:id="person1" name="Alice Johnson" email="alice@example.com"/>
+  <company:Person xmi:id="person2" name="Bob Smith" email="bob@example.com"/>
+  <company:Person xmi:id="person3" name="Carol Williams" email="carol@example.com"/>
 
 </xmi:XMI>

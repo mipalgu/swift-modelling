@@ -70,13 +70,21 @@ types it defines, and written with package-qualified classes and
 typed references. `--force` overwrites an existing output file, and
 `--input-format` and `--output-format` override the file extensions.
 
-### Querying Models
+### Querying and Inspecting Models
 
-Show the classes and root objects of a model:
+Count the objects of each class, list the companies, or show how the
+objects contain each other:
 
 ```bash
-swift-ecore query company.xmi
+swift-ecore query company.xmi --metamodel Company.ecore
 swift-ecore query company.xmi --query "find Company"
+swift-ecore query company.xmi --query tree
+```
+
+Show every class of a metamodel with its features and inheritance:
+
+```bash
+swift-ecore inspect Company.ecore --detail full --show-supertypes
 ```
 
 ## Common Operations

@@ -338,6 +338,39 @@ swift-atl compile MyTransformation.atl --optimise
 Use `swift-atl transform` with the `.atl` source file to run a
 transformation.
 
+### Metamodel Binding
+
+Each metamodel of the module header is bound to a package, in order
+of precedence, by a metamodel file on the command line
+(`--source-metamodel`, `--target-metamodel` or `--metamodel`), an
+`-- @nsURI` directive for a built-in metamodel, an `-- @path`
+directive, and finally a built-in metamodel of the same name. A
+relative `-- @path` is resolved against the directory of the
+transformation and then against each metamodel search directory. A
+workspace path such as `/Project/Model.ecore` is looked up in each
+search directory, first as `Project/Model.ecore` and then as
+`Model.ecore`, with the search directory as the project directory.
+
+### Refining Mode
+
+In refining mode, declared as `create OUT : MM refining IN : MM;` or
+selected with `--refining`, each target model starts as a copy of
+the source model in the same position of the header. A rule changes
+the copy of the element it matches: the first target pattern element
+whose type is that of the source pattern element is that copy, and
+only its bound features change. Other target pattern elements are
+created as usual, and elements that no rule matches are kept
+unchanged. Rules read the unchanged source model.
+
+A rule whose `to` section starts with `drop` deletes the element it
+matches once every other rule has run, together with the elements
+it contains at that point; an element that another rule has moved
+to a new container is kept. References from the remaining elements
+to the deleted ones are removed, single-valued ones by unsetting
+them. Target patterns after `drop` create new elements. `drop` is an
+error outside refining mode, in lazy and called rules, and in rules
+with several source pattern elements or in a rule hierarchy.
+
 ## Execution Output
 
 ### Normal Output
@@ -396,6 +429,20 @@ swift-atl validate MyTransformation.atl \
 `--check-metamodels` checks metamodel compatibility, and `--strict`
 enables strict validation. Add `--check-rules` to validate rule
 completeness.
+
+### Checking a Transformation Against Its Metamodels
+
+`swift-atl transform --validate-only` binds the metamodels as a run
+would, reports model element types that a metamodel does not define
+and bindings of features that a target class does not have, and
+loads the source models that are given, without running the
+transformation or writing targets:
+
+```bash
+swift-atl transform MyTransformation.atl --validate-only \
+    --metamodel-path metamodels/ \
+    --source input.xmi
+```
 
 **Always validate** before running transformations on production
 data.

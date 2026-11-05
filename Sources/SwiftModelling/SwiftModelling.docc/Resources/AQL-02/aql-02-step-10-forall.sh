@@ -1,9 +1,9 @@
 # Universal quantification with forAll
-# Check if all students have passing grades
+# Check if all students have passing grades (Ian has 58.0)
 swift-aql evaluate --model university-data.xmi \
   --expression "university.students->forAll(s | s.grade >= 60)"
 
-# Output: false (Ian has 58.0)
+# Output: false
 
 # Check if all courses have at least 3 credits
 swift-aql evaluate --model university-data.xmi \

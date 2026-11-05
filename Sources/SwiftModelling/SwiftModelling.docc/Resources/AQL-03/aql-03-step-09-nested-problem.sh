@@ -23,7 +23,7 @@ swift-aql evaluate --model library-data.xmi \
 swift-aql evaluate --model library-data.xmi \
   --expression "library.books->select(b | b.pages > 300)->size()"
 
-# Output: 5
+# Output: 6
 
 # Count British authors
 swift-aql evaluate --model library-data.xmi \
@@ -31,12 +31,12 @@ swift-aql evaluate --model library-data.xmi \
 
 # Output: 7
 
-# Count books per category using collect
+# Count books per category using collect (books filed directly under a top-level category)
 swift-aql evaluate --model library-data.xmi \
   --expression "library.categories->collect(c |
     c.name + ': ' + library.books->select(b | b.category = c)->size().toString())"
 
-# Output: ['Fiction: 4', 'Non-Fiction: 0', 'Technical: 0']
+# Output: ["Fiction: 4", "Non-Fiction: 0", "Technical: 0"]
 
 # Count members with active borrowings
 swift-aql evaluate --model library-data.xmi \
@@ -48,4 +48,4 @@ swift-aql evaluate --model library-data.xmi \
 swift-aql evaluate --model library-data.xmi \
   --expression "library.members->collect(m | m.borrowed)->flatten()->size()"
 
-# Output: 9
+# Output: 10

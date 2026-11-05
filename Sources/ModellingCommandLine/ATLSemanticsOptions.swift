@@ -11,6 +11,9 @@ import ModellingGenerators
 /// Parses a command-line value into the syntax of collection ranges.
 extension ATLCollectionRangeSyntax: @retroactive ExpressibleByArgument {}
 
+/// Parses a command-line value into what `/` yields for two Integers.
+extension ATLIntegerDivision: @retroactive ExpressibleByArgument {}
+
 /// The command line options that choose the behaviours of ATL source.
 ///
 /// Each option selects one behaviour of `ATLOptions`. An option that is not given takes the
@@ -29,6 +32,9 @@ public struct ATLSemanticsOptions: ParsableArguments, Sendable {
     public enum OptionName {
         /// The option that chooses `ATLOptions.collectionRangeSyntax`.
         public static let collectionRangeSyntax = "collection-range-syntax"
+
+        /// The option that chooses `ATLOptions.integerDivision`.
+        public static let integerDivision = "integer-division"
     }
 
     /// Whether collection literals accept integer ranges.
@@ -45,6 +51,20 @@ public struct ATLSemanticsOptions: ParsableArguments, Sendable {
                 """,
             valueName: MTLSemanticsOptions.valueList(ATLCollectionRangeSyntax.self)))
     public var collectionRangeSyntax: ATLCollectionRangeSyntax?
+
+    /// What the `/` operator yields for two Integer operands.
+    @Option(
+        name: .customLong(OptionName.integerDivision),
+        help: ArgumentHelp(
+            "What / gives for two Integers: \(ATLIntegerDivision.real.rawValue) (the default) or "
+                + "\(ATLIntegerDivision.truncating.rawValue), as in version 0.6",
+            discussion: """
+                With \(ATLIntegerDivision.real.rawValue), 7 / 2 is 3.5, as in OCL and Eclipse ATL. \
+                With \(ATLIntegerDivision.truncating.rawValue), the quotient of two Integers is \
+                truncated to an Integer, so 7 / 2 is 3. The div operator always truncates.
+                """,
+            valueName: MTLSemanticsOptions.valueList(ATLIntegerDivision.self)))
+    public var integerDivision: ATLIntegerDivision?
 
     /// Creates the options with nothing set, which leaves every behaviour to the preset.
     public init() {}
@@ -68,6 +88,9 @@ public struct ATLSemanticsOptions: ParsableArguments, Sendable {
         var options = settings.preset.atlOptions
         if let value = collectionRangeSyntax ?? settings.configuration.collectionRangeSyntax {
             options.collectionRangeSyntax = value
+        }
+        if let value = integerDivision ?? settings.configuration.integerDivision {
+            options.integerDivision = value
         }
         return options
     }
@@ -100,6 +123,10 @@ public struct ATLSemanticsOptions: ParsableArguments, Sendable {
             + "such as Sequence{1..3}: \(ATLCollectionRangeSyntax.ocl.rawValue), the default, "
             + "accepts them, and \(ATLCollectionRangeSyntax.eclipse.rawValue), as in version 0.6 "
             + "and with --\(SemanticsOptions.optionName) \(SemanticsPreset.legacy.rawValue), "
-            + "rejects them."
+            + "rejects them. --\(OptionName.integerDivision) chooses what / gives for two "
+            + "Integers when \(reader) runs: \(ATLIntegerDivision.real.rawValue), the default, "
+            + "gives a Real, so 7 / 2 is 3.5, and \(ATLIntegerDivision.truncating.rawValue), as in "
+            + "version 0.6 and with --\(SemanticsOptions.optionName) "
+            + "\(SemanticsPreset.legacy.rawValue), truncates the quotient to an Integer."
     }
 }

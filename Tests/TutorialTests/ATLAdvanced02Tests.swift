@@ -38,7 +38,7 @@ struct ATLAdvanced02Tests {
         "organisation2directory.atl",
         "organisation2directory-threaded.atl",
         "sample-company.xmi",
-        "expected-output.xmi",
+        "expected-directory.xmi",
         "atl-advanced-02-run.sh",
         "organisation2dot.atl",
         "atl-advanced-02-query.sh",
@@ -160,7 +160,7 @@ struct ATLAdvanced02Tests {
     @MainActor
     func testCLIValidateExpectedOutput() async throws {
         let result = try await executeSwiftEcore(
-            command: "validate", arguments: [Self.resource("expected-output.xmi").path])
+            command: "validate", arguments: [Self.resource("expected-directory.xmi").path])
         #expect(result.succeeded, "Expected output should validate successfully: \(result.stderr)")
     }
 
@@ -249,7 +249,7 @@ struct ATLAdvanced02Tests {
 
     @Test("Content: Expected output has one entry per employee")
     func testExpectedOutputEntries() throws {
-        let content = try Self.text(of: "expected-output.xmi")
+        let content = try Self.text(of: "expected-directory.xmi")
         #expect(content.contains("name=\"Harbour Logistics\""))
         let entries = Self.entries(in: content)
         #expect(entries.count == 5)
@@ -292,7 +292,7 @@ struct ATLAdvanced02Tests {
 
         let actual = try String(
             contentsOf: workspace.appendingPathComponent("output-directory.xmi"), encoding: .utf8)
-        let expected = try Self.text(of: "expected-output.xmi")
+        let expected = try Self.text(of: "expected-directory.xmi")
         #expect(actual.contains("name=\"Harbour Logistics\""))
         #expect(Self.entries(in: actual) == Self.entries(in: expected))
     }
@@ -322,7 +322,7 @@ struct ATLAdvanced02Tests {
 
         let actual = try String(
             contentsOf: workspace.appendingPathComponent("output-directory.xmi"), encoding: .utf8)
-        let expected = try Self.text(of: "expected-output.xmi")
+        let expected = try Self.text(of: "expected-directory.xmi")
         #expect(Self.entries(in: actual) == Self.entries(in: expected))
     }
 

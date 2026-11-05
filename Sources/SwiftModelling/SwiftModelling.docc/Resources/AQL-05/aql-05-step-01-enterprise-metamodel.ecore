@@ -24,7 +24,7 @@
     <eStructuralFeatures xsi:type="ecore:EReference" name="employees" upperBound="-1"
         eType="#//Employee" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="subDepartments" upperBound="-1"
-        eType="#//Department" containment="true"/>
+        eType="#//Department" containment="true" eOpposite="#//Department/parentDepartment"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="parentDepartment" eType="#//Department"
         eOpposite="#//Department/subDepartments"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="manager" eType="#//Employee"/>
@@ -41,7 +41,8 @@
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="role" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="skills" upperBound="-1"
         eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="supervisor" eType="#//Employee"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="supervisor" eType="#//Employee"
+        eOpposite="#//Employee/directReports"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="directReports" upperBound="-1"
         eType="#//Employee" eOpposite="#//Employee/supervisor"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="assignedProjects" upperBound="-1"

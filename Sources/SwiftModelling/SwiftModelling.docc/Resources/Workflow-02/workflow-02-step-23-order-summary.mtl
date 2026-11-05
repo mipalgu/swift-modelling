@@ -1,0 +1,23 @@
+[comment encoding = UTF-8 /]
+[comment Order summary report, rewritten for the Orders 2.0 metamodel:
+  customers are objects, items refer to products, and totals are
+  computed from the items instead of read from a stored attribute. /]
+[module OrderSummary('http://www.example.org/orders/2.0')]
+
+[template public summary(store : Store)]
+[comment @main/]
+[file (store.name.replaceAll(' ', '-').toLower() + '-summary.md', false, 'UTF-8')]
+# Orders of [store.name/]
+
+| Order | Date | Customer | Status | Items | Total |
+|-------|------|----------|--------|-------|-------|
+[for (order : Order | store.orders)]
+| [order.orderId/] | [order.orderDate/] | [order.customer.name/] | [order.status/] | [order.items->size()/] | [orderTotal(order)/] |
+[/for]
+
+Customers: [store.customers->size()/], orders: [store.orders->size()/]
+[/file]
+[/template]
+
+[query public orderTotal(order : Order) : Real =
+    order.items->collect(i | i.quantity * i.unitPrice)->sum() /]

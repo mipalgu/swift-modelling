@@ -22,7 +22,7 @@
 
                 @Code(name: "Library.ecore", file: aql-03-step-01-library-metamodel.ecore)
 
-                This metamodel represents a library system with Books, Authors, Categories, and Loans. It provides rich data relationships perfect for demonstrating collection operations.
+                This metamodel represents a library system with Books, Authors, Categories, Members, and Loans. It provides rich data relationships perfect for demonstrating collection operations.
             }
 
             @Step {
@@ -30,7 +30,7 @@
 
                 @Code(name: "library-data.xmi", file: aql-03-step-02-library-instance.xmi)
 
-                This model contains multiple books by various authors, different categories, and loan records. The nested structure demonstrates collection operations across related objects.
+                This model contains books by various authors, categories with subcategories, and members with their borrowed and favourite books. The nested structure demonstrates collection operations across related objects.
             }
 
             @Step {
@@ -42,163 +42,163 @@
             }
 
             @Step {
-                Access nested collections through navigation.
+                Extract values with collect.
 
                 @Code(name: "Terminal", file: aql-03-step-04-nested-access.sh)
 
-                Navigate through model relationships to access collections at different levels. Understanding navigation is crucial for effective collection processing.
+                Use `collect` to extract or compute a value from each element. Navigating a property of a collection, as in `library.authors.name`, is shorthand for collecting it.
             }
         }
     }
 
-    @Section(title: "Collect Operations") {
+    @Section(title: "Nested Collections, Sums and Extremes") {
         @ContentAndMedia {
-            The `collect` operation is AQL's most powerful transformation tool. It applies an expression to each element in a collection and returns a new collection with the results.
+            The `collect` operation applies an expression to each element in a collection and returns a new collection with the results. When the expression returns a collection, `collect` adds its elements to the result, so collecting related objects yields one flat collection.
 
-            Think of `collect` as a mapping operation—it transforms each element according to a rule you specify, creating a new collection with the transformed values.
+            Numeric collections reduce to a single value with `sum()`, `min()` and `max()`.
         }
 
         @Steps {
             @Step {
-                Extract simple properties with collect.
+                Collect related objects.
 
                 @Code(name: "Terminal", file: aql-03-step-05-simple-collect.sh)
 
-                Use `collect` to extract property values from each element in a collection. This creates a new collection containing just the values you're interested in.
+                When the expression of `collect` returns a collection, such as the authors of a book, the elements of that collection are added to the result, so the result is one flat collection rather than a collection of collections.
             }
 
             @Step {
-                Transform elements with expressions.
+                Flatten nested collections.
 
                 @Code(name: "Terminal", file: aql-03-step-06-expression-collect.sh)
 
-                Apply complex expressions within `collect` operations. Combine property access with calculations, string operations, and conditional logic.
+                The `flatten` operation merges collections nested inside a collection into one collection. A collection that `collect` returns is already flat, so `flatten` leaves it unchanged. Use `asSet()` to remove repeated elements.
             }
 
-            @Step {
-                Navigate through references in collect.
-
-                @Code(name: "Terminal", file: aql-03-step-07-navigation-collect.sh)
-
-                Use `collect` to navigate through references and extract properties from related objects. This enables cross-object data extraction.
-            }
-
-            @Step {
-                Chain collect operations.
-
-                @Code(name: "Terminal", file: aql-03-step-08-chained-collect.sh)
-
-                Chain multiple `collect` operations to perform multi-step transformations. Each operation works on the result of the previous one.
-            }
-        }
-    }
-
-    @Section(title: "Flatten and Nested Collections") {
-        @ContentAndMedia {
-            When working with nested collections (collections that contain other collections), you often need to flatten the structure into a single collection. The `flatten` operation merges nested collections into one flat collection.
-
-            This is essential when navigation produces collections of collections, and you need to work with all elements at once.
-        }
-
-        @Steps {
-            @Step {
-                Understand when flattening is needed.
-
-                @Code(name: "Terminal", file: aql-03-step-09-nested-problem.sh)
-
-                When you collect collections, you get nested structures. Identify situations where you need to flatten these into a single collection for further processing.
-            }
-
-            @Step {
-                Use flatten to merge collections.
-
-                @Code(name: "Terminal", file: aql-03-step-10-flatten-basic.sh)
-
-                The `flatten` operation takes a collection of collections and returns a single collection containing all elements from the nested collections.
-            }
-
-            @Step {
-                Combine collect and flatten.
-
-                @Code(name: "Terminal", file: aql-03-step-11-collect-flatten.sh)
-
-                A common pattern is to collect related objects (creating nested collections) then flatten the result. This extracts all related elements across multiple parent objects.
-            }
-
-            @Step {
-                Work with deeply nested structures.
-
-                @Code(name: "Terminal", file: aql-03-step-12-deep-nesting.sh)
-
-                Handle complex model structures with multiple levels of nesting. Use multiple flatten operations or careful navigation to access deeply nested data.
-            }
-        }
-    }
-
-    @Section(title: "Aggregation and Statistical Operations") {
-        @ContentAndMedia {
-            AQL provides aggregation operations for computing summary statistics and aggregate values from collections. These operations reduce collections to single values.
-
-            Common aggregations include sum, maximum, minimum, and average calculations. These are essential for reporting and analysis queries.
-        }
-
-        @Steps {
             @Step {
                 Calculate sums and totals.
 
-                @Code(name: "Terminal", file: aql-03-step-13-sum-operations.sh)
+                @Code(name: "Terminal", file: aql-03-step-07-navigation-collect.sh)
 
-                Use `sum()` to calculate totals from numeric collections. This is useful for computing aggregate statistics across model elements.
+                Use `sum()` to total a numeric collection, optionally after filtering it with `select` or computing a value per element with `collect`.
             }
 
             @Step {
-                Find maximum and minimum values.
+                Find minimum and maximum values.
+
+                @Code(name: "Terminal", file: aql-03-step-08-chained-collect.sh)
+
+                Use `min()` and `max()` to find the extreme values of a numeric collection, such as the shortest book or the earliest publication year.
+            }
+        }
+    }
+
+    @Section(title: "Counting, Averages and Grouping") {
+        @ContentAndMedia {
+            Counting and averaging combine filtering with `size()` and `sum()`. Dividing one integer by another truncates the result, so averages of integer values multiply the sum by `1.0` first.
+
+            AQL has no grouping operation, but `let` bindings and `select` produce one collection per group, which you can count, total and report together.
+        }
+
+        @Steps {
+            @Step {
+                Count elements.
+
+                @Code(name: "Terminal", file: aql-03-step-09-nested-problem.sh)
+
+                Combine `select` or `reject` with `size()` to count the elements that meet a condition, and count the elements of nested collections after collecting them.
+            }
+
+            @Step {
+                Calculate averages.
+
+                @Code(name: "Terminal", file: aql-03-step-10-flatten-basic.sh)
+
+                Divide a sum by the size of its collection to compute an average. Multiply an integer sum by `1.0` so that the division keeps its fraction.
+            }
+
+            @Step {
+                Group elements by a criterion.
+
+                @Code(name: "Terminal", file: aql-03-step-11-collect-flatten.sh)
+
+                Bind one filtered collection per group with `let`, then report the size of each group. Numbers are converted with `toString()` before they are joined to text.
+            }
+
+            @Step {
+                Aggregate per group.
+
+                @Code(name: "Terminal", file: aql-03-step-12-deep-nesting.sh)
+
+                Collect over the categories and select the books of each one, including those of its subcategories, to count and total them per group. `sep('[', ', ', ']')` writes a list of names between brackets with commas between them; joined to text without it, the names of a collection would run together, as in Eclipse AQL.
+            }
+        }
+    }
+
+    @Section(title: "Iteration, Sets and Sorting") {
+        @ContentAndMedia {
+            Collection operations chain into pipelines that filter, transform, combine and order model data for reports and code generation.
+
+            Set operations such as `union`, `intersection` and `difference` combine collections, and `sortedBy` orders a collection by a computed key.
+        }
+
+        @Steps {
+            @Step {
+                Process each element.
+
+                @Code(name: "Terminal", file: aql-03-step-13-sum-operations.sh)
+
+                Use `collect` to build a line of text for each element, combining several properties, counts, conditional text and, with `sep`, the names of a collection.
+            }
+
+            @Step {
+                Chain operations into pipelines.
 
                 @Code(name: "Terminal", file: aql-03-step-14-minmax-operations.sh)
 
-                Use `max()` and `min()` to find extreme values in collections. These operations work with any comparable values, including numbers, strings, and dates.
+                Each operation of a pipeline works on the result of the previous one: filter with `select`, transform with `collect`, order with `sortedBy`, and reduce with `sum()`.
             }
 
             @Step {
-                Count elements with specific properties.
+                Combine collections with set operations.
 
                 @Code(name: "Terminal", file: aql-03-step-15-counting.sh)
 
-                Combine filtering with size calculation to count elements that meet specific criteria. This pattern is essential for statistical analysis.
+                Use `asSet()` to remove repeated elements, and `union`, `intersection` and `difference` to combine collections. `includesAll` tests whether one collection contains every element of another.
             }
 
             @Step {
-                Create complex aggregations.
+                Sort collections.
 
                 @Code(name: "Terminal", file: aql-03-step-16-complex-aggregation.sh)
 
-                Build sophisticated aggregation queries that combine multiple operations, filtering, and transformation to produce comprehensive statistics.
+                Use `sortedBy` to order a collection by a key such as a title, a price or a count. Negate a numeric key to sort in descending order.
             }
         }
     }
 
     @Section(title: "Iteration and Advanced Patterns") {
         @ContentAndMedia {
-            Advanced collection operations include iteration patterns, grouping operations, and complex data transformation pipelines.
+            Advanced collection operations select single elements, test membership, and combine everything into complex data transformation pipelines.
 
             These patterns combine multiple AQL operations to solve complex model analysis problems and prepare data for code generation or reporting.
         }
 
         @Steps {
             @Step {
-                Use iteration for complex processing.
+                Select single elements.
 
                 @Code(name: "Terminal", file: aql-03-step-17-iteration.sh)
 
-                Apply iterative processing patterns when simple collect operations aren't sufficient. Use nested operations to handle complex data relationships.
+                Use `any` to get an element that satisfies a condition (the first one of an ordered collection), and `one` to check that exactly one element satisfies it.
             }
 
             @Step {
-                Group elements by properties.
+                Test membership.
 
                 @Code(name: "Terminal", file: aql-03-step-18-grouping.sh)
 
-                While AQL doesn't have built-in grouping, you can achieve grouping effects by filtering collections based on common property values.
+                Use `includes` and `excludes` to test whether a collection contains an element, and `includesAll` and `excludesAll` to test several elements at once.
             }
 
             @Step {

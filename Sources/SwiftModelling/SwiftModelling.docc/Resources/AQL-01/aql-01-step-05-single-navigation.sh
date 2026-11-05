@@ -7,20 +7,20 @@ swift-aql evaluate --model company-data.xmi \
 
 # Output: "Alice Smith"
 
-# Navigate to supervisor
+# Navigate to supervisor (positions in AQL start at 1, so at(3) is the third employee)
 swift-aql evaluate --model company-data.xmi \
-  --expression "company.departments->first().employees->at(2).supervisor.name"
+  --expression "company.departments->first().employees->at(3).supervisor.name"
 
 # Output: "Bob Chen"
 
 # Navigate through multiple single references
 swift-aql evaluate --model company-data.xmi \
-  --expression "company.departments->first().employees->at(3).supervisor.supervisor.name"
+  --expression "company.departments->first().employees->at(4).supervisor.supervisor.name"
 
 # Output: "Alice Smith"
 
-# Check if reference is null
+# Check if reference is null (the director has no supervisor)
 swift-aql evaluate --model company-data.xmi \
   --expression "company.departments->first().manager.supervisor.oclIsUndefined()"
 
-# Output: true (the director has no supervisor)
+# Output: true

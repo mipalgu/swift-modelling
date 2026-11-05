@@ -11,7 +11,7 @@ swift-aql evaluate --model library-data.xmi \
 swift-aql evaluate --model library-data.xmi \
   --expression "library.books->collect(b | b.price)->sum()"
 
-# Output: 328.84
+# Output: 328.87
 
 # Calculate total copies in the library
 swift-aql evaluate --model library-data.xmi \
@@ -23,17 +23,17 @@ swift-aql evaluate --model library-data.xmi \
 swift-aql evaluate --model library-data.xmi \
   --expression "library.books->collect(b | b.price * b.copies)->sum()"
 
-# Output: 1681.60 (approximately)
+# Output: 1262.33
 
 # Sum pages of available books only
 swift-aql evaluate --model library-data.xmi \
   --expression "library.books->select(b | b.available)->collect(b | b.pages)->sum()"
 
-# Output: 3957
+# Output: 3977
 
-# Sum with filtered collection - total value of fiction books
+# Sum with filtered collection - total value of fiction books (fiction includes its subcategories)
 swift-aql evaluate --model library-data.xmi \
   --expression "library.books->select(b | b.category.code = 'FIC' or b.category.parent.code = 'FIC')
     ->collect(b | b.price)->sum()"
 
-# Output: Total price of all fiction books
+# Output: 152.9

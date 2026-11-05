@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shop:Shop xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:shop="http://example.org/shop/2.0" name="Corner Shop">
+  <customers name="Ada" email="ada@example.org"/>
+  <customers name="Grace" email="grace@example.org"/>
+  <orders number="A-1" status="PAID" total="12.5" customer="//@customers.0">
+    <items product="//@products.0" quantity="2" price="5.0"/>
+    <items product="//@products.1" quantity="1" price="2.5"/>
+  </orders>
+  <orders number="A-2" status="PENDING" total="3.0"/>
+  <products name="Tea"/>
+  <products name="Milk"/>
+</shop:Shop>

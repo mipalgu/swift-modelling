@@ -43,7 +43,8 @@ enum Level: Int, CaseIterable, Sendable {
 
 /// A behaviour whose value can come from every level.
 enum Behaviour: CaseIterable, Sendable {
-    case blockLineBreaks, checksLetTypes, collectionArguments, collectionRangeSyntax, containerScope
+    case blockLineBreaks, checksLetTypes, collectionArguments, collectionRangeSyntax, integerDivision, containerScope
+    case sequenceUnion, nullAddition, textForm
 
     /// The command-line arguments that select the standard or the legacy value.
     func flag(legacy: Bool) -> [String] {
@@ -56,6 +57,14 @@ enum Behaviour: CaseIterable, Sendable {
             return ["--\(MTLSemanticsOptions.OptionName.collectionArguments)", legacy ? "first-element" : "whole"]
         case .collectionRangeSyntax:
             return ["--\(ATLSemanticsOptions.OptionName.collectionRangeSyntax)", legacy ? "eclipse" : "ocl"]
+        case .integerDivision:
+            return ["--\(ATLSemanticsOptions.OptionName.integerDivision)", legacy ? "truncating" : "real"]
+        case .sequenceUnion:
+            return ["--\(MTLSemanticsOptions.OptionName.sequenceUnion)", legacy ? "distinct" : "concatenation"]
+        case .nullAddition:
+            return ["--\(MTLSemanticsOptions.OptionName.nullAddition)", legacy ? "null" : "empty-text"]
+        case .textForm:
+            return ["--\(MTLSemanticsOptions.OptionName.textForm)", legacy ? "bracketed" : "joined"]
         case .containerScope:
             return ["--\(SemanticsOptions.OptionName.containerScope)", legacy ? "this-resource" : "any-resource"]
         }
@@ -68,6 +77,10 @@ enum Behaviour: CaseIterable, Sendable {
         case .checksLetTypes: configuration.checksLetTypes = !legacy
         case .collectionArguments: configuration.collectionArguments = legacy ? .firstElement : .whole
         case .collectionRangeSyntax: configuration.collectionRangeSyntax = legacy ? .eclipse : .ocl
+        case .integerDivision: configuration.integerDivision = legacy ? .truncating : .real
+        case .sequenceUnion: configuration.sequenceUnion = legacy ? .distinct : .concatenation
+        case .nullAddition: configuration.nullAddition = legacy ? .null : .emptyText
+        case .textForm: configuration.textForm = legacy ? .bracketed : .joined
         case .containerScope: configuration.containerLookupScope = legacy ? .thisResource : .anyResource
         }
     }
@@ -82,6 +95,10 @@ enum Behaviour: CaseIterable, Sendable {
             #expect(command.mtl.mtlOptions(settings: settings).aql == aql)
             return aql.collectionArguments == .firstElement
         case .collectionRangeSyntax: return command.atl.atlOptions(settings: settings).collectionRangeSyntax == .eclipse
+        case .integerDivision: return command.atl.atlOptions(settings: settings).integerDivision == .truncating
+        case .sequenceUnion: return command.mtl.aqlOptions(settings: settings).sequenceUnion == .distinct
+        case .nullAddition: return command.mtl.aqlOptions(settings: settings).nullAddition == .null
+        case .textForm: return command.mtl.aqlOptions(settings: settings).textForm == .bracketed
         case .containerScope: return settings.containerLookupScope == .thisResource
         }
     }

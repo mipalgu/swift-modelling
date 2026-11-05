@@ -65,7 +65,7 @@
 
                 @Code(name: "Terminal", file: step-20-inspect-hierarchy.sh)
 
-                The `--show-supertypes` flag displays the inheritance relationships, showing which classes extend others and what members they inherit.
+                The `--show-supertypes` flag displays the inheritance relationships, showing which classes extend others and what members they inherit. Person lists its subclasses, Employee and Manager list the features they inherit from Person, and the inheritance hierarchy at the end shows every class below its supertype.
             }
         }
     }
@@ -99,7 +99,7 @@
 
                 @Code(name: "Terminal", file: step-23-validate-abstract.sh)
 
-                The validation confirms that abstract classes have at least one concrete subclass and verifies the inheritance structure is sound.
+                The validation confirms that abstract classes have at least one concrete subclass and verifies the inheritance structure is sound. An abstract class that no concrete class extends is reported as a warning, since no object could ever be an instance of it. Validating a model with `--metamodel` reports any object whose class is abstract as an error.
             }
         }
     }

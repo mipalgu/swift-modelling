@@ -1,220 +1,268 @@
-@Tutorial(time: 75) {
+@Tutorial(time: 90) {
     @Intro(title: "Model Refactoring Pipeline") {
-        Learn how to refactor existing models and metamodels using a systematic pipeline approach.
+        Learn how to refactor a legacy metamodel and migrate its existing data with a repeatable pipeline of command-line tools.
 
-        In this tutorial, you'll take a legacy metamodel, identify refactoring opportunities, apply systematic transformations, migrate existing instances, and validate the results. This demonstrates how MDE tools support model evolution and maintenance.
+        In this tutorial, you'll measure a legacy order metamodel and its data, find its structural and data-quality problems, design an improved metamodel with OCL invariants, migrate the legacy data with ATL transformations, check the results, and assemble a verified release with a rollback plan.
 
-        @Image(source: "model-refactoring-pipeline.svg", alt: "Model Refactoring Pipeline")
+        @Image(source: "model-refactoring-pipeline.svg", alt: "The refactoring pipeline: legacy exports are cleaned by a refining transformation, migrated to the improved metamodel, validated against its invariants, checked by quality assurance and assembled into a verified release.")
     }
 
     @Section(title: "Analysing Legacy Models") {
         @ContentAndMedia {
-            Refactoring starts with understanding the current model structure and identifying improvement opportunities. We'll analyse a legacy customer management system that has grown organically over time.
+            Refactoring starts with understanding the current model. You'll analyse the order system of a small electronics store: a metamodel that has grown over the years and the monthly order exports written with it.
 
-            Systematic analysis reveals structural issues, naming inconsistencies, and missing relationships that need to be addressed through refactoring.
+            Size metrics show where the structure is overloaded, and queries over the data show the quality problems that the old structure allows. Together they decide what the refactoring must change. All files of this tutorial live in a `refactoring` directory.
 
-            @Image(source: "legacy-model-analysis.svg", alt: "Legacy Model Analysis")
+            @Image(source: "legacy-model-analysis.svg", alt: "Legacy model analysis: the metamodel and the data are validated, measured with statistics and inspect, and queried with AQL; the findings feed the refactoring plan.")
         }
 
         @Steps {
             @Step {
                 Examine the legacy metamodel.
 
-                @Code(name: "LegacyCustomer.ecore", file: workflow-02-step-01-legacy-metamodel.ecore)
+                @Code(name: "refactoring/LegacyOrders.ecore", file: workflow-02-step-01-legacy-metamodel.ecore)
 
-                This legacy metamodel shows common problems: inconsistent naming, unclear relationships, missing abstractions, and structural issues accumulated over time.
+                One `Order` class holds the order, the customer's details, two addresses as text, the payment and stored totals. Statuses and payment methods are free text, and items name their products by a code string.
             }
 
             @Step {
-                Create sample legacy instances.
+                Add the January export of the legacy system.
 
-                @Code(name: "legacy-data.xmi", file: workflow-02-step-02-legacy-instances.xmi)
+                @Code(name: "refactoring/legacy/orders-2024-01.xmi", file: workflow-02-step-02-legacy-instances.xmi)
 
-                These instances represent existing data in the legacy format. They demonstrate the complexity and inconsistencies that refactoring aims to resolve.
+                Five orders show the problems that the structure allows: the same status in different cases, a repeat customer typed in again with a different spelling, a product code in lower case and a stored total that no longer matches its items.
             }
 
             @Step {
-                Analyse structural issues with AQL.
+                Measure the metamodel and the data.
 
-                @Code(name: "Terminal", file: workflow-02-step-03-analyse-issues.sh)
+                @Code(name: "Terminal", file: workflow-02-step-03-measure-legacy.sh)
 
-                Use AQL queries to identify structural problems, data quality issues, and opportunities for improvement in the legacy model.
+                `swift-ecore statistics` counts the classes and features of the metamodel and ranks the classes by size: `Order` has 15 features, 14 of them attributes. `inspect --show-attributes` shows what they are. For a model, the statistics count the objects per class.
             }
 
             @Step {
-                Document refactoring goals.
+                Find data-quality problems with AQL.
 
-                @Code(name: "refactoring-plan.md", file: workflow-02-step-04-refactoring-plan.txt)
+                @Code(name: "Terminal", file: workflow-02-step-04-find-data-issues.sh)
 
-                Create a systematic plan that identifies specific refactoring goals, success criteria, and validation approaches to ensure the refactoring improves model quality.
+                Each query checks one suspicion from the metamodel: inconsistent status spellings, customers stored more than once, product codes without a product, and stored totals that disagree with their items.
+            }
+
+            @Step {
+                Write down the findings and the refactoring goals.
+
+                @Code(name: "refactoring/refactoring-plan.md", file: workflow-02-step-05-refactoring-plan.txt)
+
+                The plan turns each finding into a goal and states measurable success criteria, which the later steps check one by one.
             }
         }
     }
 
     @Section(title: "Designing the Target Model") {
         @ContentAndMedia {
-            Based on the analysis, design an improved metamodel that addresses identified issues while maintaining compatibility with existing data and processes.
+            The improved metamodel addresses each finding of the analysis: customers, addresses, payments and stock levels become classes of their own, free text becomes enumerations, and items refer to products.
 
-            The target model should follow best practices for naming, structure, and relationships while solving the specific problems identified in the legacy system.
+            Rules that the legacy data broke become OCL invariants of the metamodel, so that every migrated model can be checked automatically.
         }
 
         @Steps {
             @Step {
-                Design the improved metamodel structure.
+                Design the improved metamodel.
 
-                @Code(name: "ImprovedCustomer.ecore", file: workflow-02-step-05-improved-metamodel.ecore)
+                @Code(name: "refactoring/Orders.ecore", file: workflow-02-step-06-improved-metamodel.ecore)
 
-                This metamodel addresses the legacy issues: consistent naming conventions, clear abstractions, proper inheritance hierarchies, and well-defined relationships.
+                The new namespace URI marks version 2.0. Totals are no longer stored; they are computed from the items. The invariants require unique order numbers, customer e-mail addresses and product codes, e-mail addresses in lower case with an `@`, and positive prices and quantities. Multiplicities state the simpler rules: every order has a status, a customer, a shipping address, a payment with a method, and at least one item (`items` is `1..*`).
             }
 
             @Step {
-                Validate the target design.
+                Validate the design and compare it with the legacy metamodel.
 
-                @Code(name: "Terminal", file: workflow-02-step-06-validate-target.sh)
+                @Code(name: "Terminal", file: workflow-02-step-07-validate-and-compare.sh)
 
-                Ensure the improved metamodel is well-formed and addresses the identified issues without introducing new problems.
+                The largest class now has 9 features instead of 15. `swift-ecore compare` lists the classes, features and enumerations that were added, removed or changed between the two versions; a renamed feature such as `desc` appears as one removed and one added feature. This list is the basis of the mapping.
             }
 
             @Step {
-                Create mapping documentation.
+                Document how legacy concepts map to the improved ones.
 
-                @Code(name: "legacy-to-improved-mapping.md", file: workflow-02-step-07-mapping-docs.txt)
+                @Code(name: "refactoring/legacy-to-improved-mapping.md", file: workflow-02-step-08-mapping.txt)
 
-                Document how legacy concepts map to improved concepts. This guides transformation development and helps stakeholders understand the changes.
+                The mapping names the transformation rule for every legacy feature and says which features are deliberately not migrated, such as stored totals and `lastModified`.
             }
 
             @Step {
-                Design backwards compatibility strategy.
+                Plan the compatibility strategy.
 
-                @Code(name: "compatibility-strategy.md", file: workflow-02-step-08-compatibility-strategy.txt)
+                @Code(name: "refactoring/compatibility-strategy.md", file: workflow-02-step-09-compatibility-strategy.txt)
 
-                Plan how to maintain compatibility with existing tools and processes during the refactoring transition period.
+                Both versions coexist during the transition: the legacy exports stay unchanged, tools that still read version 1.0 get exports written back in the legacy format, and a checked backup allows a rollback.
             }
         }
     }
 
     @Section(title: "Creating Migration Transformations") {
         @ContentAndMedia {
-            ATL transformations automate the migration from legacy to improved model structures. These transformations must handle data preservation, relationship updates, and structural changes.
+            ATL transformations migrate the legacy data to the improved structure. A refining transformation first cleans the data in place, then the migration restructures it, and the invariants of the improved metamodel check the result.
 
-            Migration transformations are critical for maintaining data integrity during refactoring while enabling systematic application of improvements across all instances.
+            A backward transformation writes migrated models in the legacy format again. Comparing its output with the cleaned data shows exactly what the migration changed.
         }
 
         @Steps {
             @Step {
-                Create the core migration transformation.
+                Create the migration transformation.
 
-                @Code(name: "MigrateLegacyToImproved.atl", file: workflow-02-step-09-migration-transformation.atl)
+                @Code(name: "refactoring/LegacyOrders2Orders.atl", file: workflow-02-step-10-migration-transformation.atl)
 
-                This transformation handles the systematic conversion of legacy structures to improved formats, preserving data while applying structural improvements.
+                A unique lazy rule creates one `Customer` per e-mail address from the customer's first order. Helpers split address text into its parts and turn status and payment text into enumeration literals, and items are linked to the product with their code.
             }
 
             @Step {
-                Add data quality improvements.
+                Add a data-quality transformation that runs before the migration.
 
-                @Code(name: "DataQualityImprovements.atl", file: workflow-02-step-10-quality-improvements.atl)
+                @Code(name: "refactoring/CleanLegacyOrders.atl", file: workflow-02-step-11-data-quality-refining.atl)
 
-                Enhance the migration with data quality improvements: standardising formats, filling missing values, and resolving inconsistencies.
+                The module is declared with `refining`: its output starts as a copy of the legacy export, and its rules only normalise the case and surrounding spaces of statuses, payment methods, e-mail addresses and product codes.
             }
 
             @Step {
-                Create validation transformations.
-
-                @Code(name: "ValidationTransforms.atl", file: workflow-02-step-11-validation-transforms.atl)
-
-                Build transformations that validate migration results by checking data integrity, relationship consistency, and business rule compliance.
-            }
-
-            @Step {
-                Test transformations with sample data.
+                Test the transformations with the January export.
 
                 @Code(name: "Terminal", file: workflow-02-step-12-test-transformations.sh)
 
-                Execute transformations with the legacy sample data to verify they produce correct results and handle edge cases appropriately.
+                The migrated model passes validation, including every invariant. `compare --summary` counts the objects per class in both files: orders, items and products keep their numbers, and four customers replace the copied customer details.
+            }
+
+            @Step {
+                See why the cleaning step is needed.
+
+                @Code(name: "Terminal", file: workflow-02-step-13-validation-catches-raw-data.sh)
+
+                Migrating the raw export creates the repeat customer twice, once with a mixed-case e-mail address, and leaves the item with code `cable-001` without a product. Two orders spell their status and payment method in lower or mixed case, so they match no literal and the required `status` and `method` stay unset. As in the Eclipse Modeling Framework, an unset enumeration reads as its first literal and passes a lower bound of 1 by default; `--require-explicit-values` asks every required feature for a value of its own, which suits migrated data. Validation rejects the model, so such problems cannot slip through unnoticed.
+            }
+
+            @Step {
+                Create the backward transformation for tools that still read version 1.0.
+
+                @Code(name: "refactoring/Orders2LegacyOrders.atl", file: workflow-02-step-14-backward-transformation.atl)
+
+                It copies the customer, address and payment details into each order again and computes the stored totals from the items, rounded to cents.
+            }
+
+            @Step {
+                Check what the migration changed.
+
+                @Code(name: "Terminal", file: workflow-02-step-15-check-compatibility.sh)
+
+                Writing the migrated model back and comparing it with the cleaned export leaves four differences, all in ORD-2024-004: its stored total and tax were wrong in the legacy data and are now computed from the items, and its addresses gain the country that the migration fills in. Every other value survived the migration.
             }
         }
     }
 
     @Section(title: "Batch Instance Migration") {
         @ContentAndMedia {
-            Apply migration transformations to all legacy instances systematically. This requires careful orchestration to handle large datasets while maintaining data integrity.
+            With tested transformations, every legacy export can be migrated in one run. Scripts make the migration repeatable: they process each file, skip files that are already done, and check every result.
 
-            Batch migration processes must be robust, resumable, and provide comprehensive logging to track migration progress and identify any issues.
+            Reports and a checksum manifest record what the migration produced.
         }
 
         @Steps {
             @Step {
-                Create migration orchestration scripts.
+                Collect further legacy exports.
 
-                @Code(name: "migrate-all-instances.sh", file: workflow-02-step-13-migration-scripts.sh)
+                @Code(name: "Terminal", file: workflow-02-step-16-collect-legacy-exports.sh)
 
-                These scripts orchestrate the migration of multiple instance files, providing progress tracking, error handling, and result validation.
+                The February and March exports have their own problems: a status with a trailing space, payment methods in mixed case, and a repeat customer whose e-mail address starts with capitals. `swift-ecore validate` checks all three files at once.
             }
 
             @Step {
-                Set up validation pipelines.
+                Create the migration script.
 
-                @Code(name: "validate-migration.sh", file: workflow-02-step-14-validation-pipeline.sh)
+                @Code(name: "refactoring/migrate-all-instances.sh", file: workflow-02-step-17-migrate-all-instances.sh)
 
-                Create automated validation that checks migration results for completeness, correctness, and data integrity across all migrated instances.
+                For each legacy export, the script runs the cleaning and the migration transformation. A file that already has a migrated model is skipped, so an interrupted run can simply be started again; deleting a migrated model makes the next run migrate that export again.
             }
 
             @Step {
-                Execute batch migration.
+                Create the validation script.
 
-                @Code(name: "Terminal", file: workflow-02-step-15-run-batch-migration.sh)
+                @Code(name: "refactoring/validate-migration.sh", file: workflow-02-step-18-validate-migration.sh)
 
-                Run the complete batch migration process, converting all legacy instances to the improved format while tracking progress and validating results.
+                The script validates all migrated models in one call, then compares the numbers of orders, items, products and customers of each model with its cleaned export, and fails if any count differs.
             }
 
             @Step {
-                Generate migration reports.
+                Run the batch migration.
 
-                @Code(name: "Terminal", file: workflow-02-step-16-generate-reports.sh)
+                @Code(name: "Terminal", file: workflow-02-step-19-run-batch-migration.sh)
 
-                Create comprehensive reports that document migration results, statistics, and any issues encountered during the process.
+                All three exports are migrated and every check passes. Running the migration again skips every file, because nothing has changed.
+            }
+
+            @Step {
+                Generate the migration reports.
+
+                @Code(name: "Terminal", file: workflow-02-step-20-generate-reports.sh)
+
+                For each model, `swift-ecore statistics` and `swift-ecore compare --summary` write JSON reports, and `shasum` records a checksum manifest of the migrated files that can be verified at any time.
             }
         }
     }
 
     @Section(title: "Quality Assurance and Rollout") {
         @ContentAndMedia {
-            Validate the refactored models thoroughly before deploying them to production. Quality assurance ensures that refactoring improves the system without introducing regressions.
+            Before the migrated models replace the legacy ones, a quality-assurance script checks them once more, from strict validation to a round trip through another format. The tools that depend on the models are updated, and a backup with checksums makes the change reversible.
 
-            A systematic rollout plan manages the transition from legacy to improved models while minimising disruption to existing processes and users.
+            The result is a release directory whose contents a consumer can verify independently.
         }
 
         @Steps {
             @Step {
-                Perform comprehensive quality validation.
+                Create the quality-assurance script.
 
-                @Code(name: "comprehensive-qa.sh", file: workflow-02-step-17-comprehensive-qa.sh)
+                @Code(name: "refactoring/comprehensive-qa.sh", file: workflow-02-step-21-comprehensive-qa.sh)
 
-                Execute extensive quality assurance tests that validate model structure, data integrity, business rules, and system integration.
+                Each check computes its result: strict validation, AQL assertions that every item has a product and that statuses and item amounts are unchanged, and an XMI to JSON to XMI round trip that `swift-ecore compare --exit-code` must find identical.
             }
 
             @Step {
-                Create rollback procedures.
+                Run the quality assurance.
 
-                @Code(name: "rollback-procedures.sh", file: workflow-02-step-18-rollback-procedures.sh)
+                @Code(name: "Terminal", file: workflow-02-step-22-run-qa.sh)
 
-                Develop reliable rollback procedures that can quickly restore legacy models if issues are discovered after deployment.
+                Every check passes for all three models. A failing check would be reported with its expected and actual value, and the script would exit with an error.
             }
 
             @Step {
-                Update dependent tools and processes.
+                Rewrite the order report for the improved metamodel.
 
-                @Code(name: "update-toolchain.sh", file: workflow-02-step-19-update-toolchain.sh)
+                @Code(name: "refactoring/OrderSummary.mtl", file: workflow-02-step-23-order-summary.mtl)
 
-                Systematically update all tools, scripts, and processes that depend on the model structure to work with the improved metamodel.
+                Tools that read the models must follow the new structure: the report takes customer names from `Customer` objects and computes order totals from the items instead of reading a stored total.
             }
 
             @Step {
-                Deploy and monitor the refactored models.
+                Create the script that updates the dependent tools.
 
-                @Code(name: "Terminal", file: workflow-02-step-20-deploy-and-monitor.sh)
+                @Code(name: "refactoring/update-toolchain.sh", file: workflow-02-step-24-update-toolchain.sh)
 
-                Deploy the refactored models to production with comprehensive monitoring to ensure they perform correctly and meet quality expectations.
+                It regenerates the Swift model classes from `Orders.ecore`, the order summaries from the migrated models, and legacy-format exports for the tools that still read version 1.0.
+            }
+
+            @Step {
+                Create the backup and rollback procedures.
+
+                @Code(name: "refactoring/rollback-procedures.sh", file: workflow-02-step-25-rollback-procedures.sh)
+
+                The backup copies the legacy models and their metamodel together with a SHA-256 checksum list. A restore verifies the checksums first, so a damaged backup is never restored, and then validates the restored models.
+            }
+
+            @Step {
+                Assemble, verify and release the refactored models.
+
+                @Code(name: "Terminal", file: workflow-02-step-26-release.sh)
+
+                The release holds the improved metamodel, the migrated models and their checksums, and is verified as a consumer would verify it. A rehearsed restore proves that the rollback brings back the legacy models byte for byte.
             }
         }
     }
@@ -224,10 +272,10 @@
             What should be the first step in model refactoring?
 
             @Choice(isCorrect: true) {
-                Analyse the legacy model to identify issues and opportunities
+                Analyse the legacy model and its data to identify problems
 
                 @Justification(reaction: "Correct!") {
-                    Systematic analysis of existing models identifies specific problems and improvement opportunities, providing a foundation for targeted refactoring efforts.
+                    Metrics of the metamodel and queries over the data show where the structure is overloaded and which quality problems it allows, which gives the refactoring concrete goals.
                 }
             }
 
@@ -235,7 +283,7 @@
                 Start creating the improved metamodel immediately
 
                 @Justification(reaction: "Too hasty!") {
-                    Without analysing the legacy model first, you might miss important issues or create improvements that don't address the real problems.
+                    Without analysing the legacy model and data first, you might miss problems such as repeated customer details or wrong stored totals.
                 }
             }
 
@@ -243,7 +291,35 @@
                 Begin migrating instances to a new format
 
                 @Justification(reaction: "No target to migrate to!") {
-                    You need to analyse the legacy model and design the target model before you can create migration transformations.
+                    You need to analyse the legacy model and design the target model before you can write migration transformations.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Why does the pipeline run a refining transformation before the migration?
+
+            @Choice(isCorrect: false) {
+                Because ATL cannot change the case of strings during a migration
+
+                @Justification(reaction: "Not quite.") {
+                    The migration could normalise strings as well. Keeping the clean-up in its own step makes each transformation simpler and lets you check the cleaned data separately.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                It normalises the legacy data, so that the migration can rely on consistent statuses, e-mail addresses and product codes
+
+                @Justification(reaction: "Exactly!") {
+                    Without cleaning, a repeat customer becomes two customers and an item loses its product, as the validation of the raw migration shows.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                It converts the legacy model to the improved metamodel
+
+                @Justification(reaction: "That is the migration's job!") {
+                    A refining transformation keeps the metamodel of its input. It only changes the values its rules assign.
                 }
             }
         }
@@ -260,10 +336,10 @@
             }
 
             @Choice(isCorrect: true) {
-                It minimises disruption to existing tools and processes
+                It minimises disruption to tools and processes that still use the old format
 
                 @Justification(reaction: "Exactly!") {
-                    Backwards compatibility strategies allow refactoring to proceed while maintaining system stability and minimising the impact on existing workflows.
+                    A backward transformation and a checked backup let the tools move to the new version one at a time, and allow a rollback if something goes wrong.
                 }
             }
 
@@ -277,57 +353,29 @@
         }
 
         @MultipleChoice {
-            What role do ATL transformations play in model refactoring?
-
-            @Choice(isCorrect: true) {
-                They automate the migration from legacy to improved model structures
-
-                @Justification(reaction: "Perfect!") {
-                    ATL transformations provide systematic, repeatable migration that preserves data integrity while applying structural improvements across all instances.
-                }
-            }
-
-            @Choice(isCorrect: false) {
-                They replace the need for manual analysis
-
-                @Justification(reaction: "Analysis is still needed!") {
-                    Transformations implement migration logic, but human analysis is essential for understanding problems and designing appropriate solutions.
-                }
-            }
-
-            @Choice(isCorrect: false) {
-                They only work for simple structural changes
-
-                @Justification(reaction: "They handle complex changes too!") {
-                    ATL transformations can handle sophisticated refactoring including structural changes, data quality improvements, and relationship modifications.
-                }
-            }
-        }
-
-        @MultipleChoice {
             How should you validate model refactoring results?
 
             @Choice(isCorrect: false) {
                 Only check that the new metamodel is well-formed
 
                 @Justification(reaction: "Much more validation needed!") {
-                    Comprehensive validation must check metamodel quality, instance migration correctness, data integrity, and system integration.
+                    A well-formed metamodel says nothing about whether the data survived the migration.
                 }
             }
 
             @Choice(isCorrect: true) {
-                Use multiple validation approaches: structural, data integrity, and functional testing
+                Combine several checks: validation with invariants, object counts, value comparisons and round trips
 
                 @Justification(reaction: "Comprehensive approach!") {
-                    Effective validation combines metamodel validation, instance checking, data integrity tests, and functional verification to ensure refactoring success.
+                    Each check catches different problems: invariants catch broken rules, counts catch lost objects, comparisons catch changed values, and round trips catch serialisation problems.
                 }
             }
 
             @Choice(isCorrect: false) {
-                Rely on automated tools exclusively
+                Rely on a manual review of a few migrated files
 
-                @Justification(reaction: "Human oversight is important!") {
-                    While automated validation is essential, human review and testing provide additional assurance that refactoring meets business requirements.
+                @Justification(reaction: "Not repeatable!") {
+                    A manual review is useful, but automated checks run on every file and every time the migration is repeated.
                 }
             }
         }

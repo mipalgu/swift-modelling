@@ -21,7 +21,7 @@
             }
 
             @Step {
-                The command reports how many files it wrote. On an interactive terminal a progress bar shows the work while it runs, and `--verbose` names every file.
+                The command reports how many files it wrote, and below which directory (shown here with `...` for the path of your working directory). On an interactive terminal a progress bar shows the work while it runs, and `--verbose` names every file.
 
                 @Code(name: "Output", file: java-02-step-02-generate-output.txt)
             }
@@ -206,16 +206,24 @@
 
     @Section(title: "Compiling the Result") {
         @ContentAndMedia {
-            Generated code is only useful if it compiles. The code needs the EMF runtime libraries, and the repository of Swift Modelling has a script that fetches them.
+            Generated code is only useful if it compiles. The code needs the EMF runtime libraries, and a short script fetches them from Maven Central.
         }
 
         @Steps {
             @Step {
-                From a checkout of the swift-modelling repository, fetch the runtime jars and keep their class path.
+                Save the script that fetches the runtime jars as `fetch-emf-runtime.sh` in your working directory.
+
+                @Code(name: "fetch-emf-runtime.sh", file: java-02-fetch-emf-runtime.sh)
+
+                The script downloads the jars for the EMF common and ecore libraries, the XMI support, the OSGi framework and the Eclipse core runtime from Maven Central into a directory below the temporary directory, unless they are already there, and prints the class path that names them. Progress messages go to the error stream. It needs `curl`; set `EMF_COMMON_VERSION`, `EMF_ECORE_VERSION` or the other variables it mentions to choose versions other than the latest releases.
+            }
+
+            @Step {
+                Fetch the runtime jars and keep their class path in a file.
 
                 @Code(name: "Terminal", file: java-02-step-22-fetch-runtime.sh)
 
-                The script downloads the jars for the EMF common and ecore libraries, the XMI support, the OSGi framework and the Eclipse core runtime from Maven Central into a directory below the temporary directory, unless they are already there, and prints the class path that names them. Progress messages go to the error stream.
+                `emf-runtime.classpath` now holds the class path, so that the next command can use it in a new shell too. If a download fails, the script stops with an error message and a non-zero exit status, and the file is incomplete; run the command again once the network is available.
             }
 
             @Step {

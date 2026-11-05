@@ -1,68 +1,31 @@
-#!/bin/bash
-echo "=== Compiling Generated Swift Code ==="
-echo ""
-echo "Step 1: Create Swift Package"
-echo "  mkdir -p SalesReportPackage"
-echo "  cd SalesReportPackage"
-echo "  swift package init --type library --name SalesReport"
-echo ""
-echo "Step 2: Copy generated API"
-echo "  cp ../generated/swift/SalesReportAPI.swift Sources/SalesReport/"
-echo ""
-echo "Step 3: Update Package.swift"
-echo "  Add Foundation dependency (already included by default)"
-echo ""
-echo "Package.swift:"
-echo "  // swift-tools-version: 5.9"
-echo "  import PackageDescription"
-echo ""
-echo "  let package = Package("
-echo "      name: \"SalesReport\","
-echo "      platforms: ["
-echo "          .macOS(.v13)"
-echo "      ],"
-echo "      products: ["
-echo "          .library("
-echo "              name: \"SalesReport\","
-echo "              targets: [\"SalesReport\"]),"
-echo "      ],"
-echo "      targets: ["
-echo "          .target("
-echo "              name: \"SalesReport\","
-echo "              dependencies: []),"
-echo "          .testTarget("
-echo "              name: \"SalesReportTests\","
-echo "              dependencies: [\"SalesReport\"]),"
-echo "      ]"
-echo "  )"
-echo ""
-echo "Step 4: Build package"
-echo "  swift build"
-echo "  Expected output:"
-echo "    Building for debugging..."
-echo "    [4/4] Linking SalesReport"
-echo "    Build complete!"
-echo ""
-echo "Step 5: Verify compilation"
-echo "  swift build --show-bin-path"
-echo "  ls -lh \$(swift build --show-bin-path)/../arm64-apple-macosx/debug/libSalesReport.dylib"
-echo ""
-echo "Example Swift Usage:"
-echo "  import SalesReport"
-echo ""
-echo "  let report = SalesReportAPI("
-echo "      reportId: \"REPORT-2024-01-15T10:30:00Z\","
-echo "      generatedDate: \"2024-01-15\","
-echo "      totalRevenue: 15847.00,"
-echo "      totalOrders: 10,"
-echo "      categoryMetrics: [/* ... */],"
-echo "      customerMetrics: [/* ... */],"
-echo "      productMetrics: [/* ... */]"
-echo "  )"
-echo ""
-echo "  print(report.generateSummary())"
-echo "  print(\"Top category: \\(report.topCategory?.categoryName ?? \"N/A\")\")"
-echo ""
-echo "✅ Generated code compiles without errors"
-echo "✅ Demonstrates model → working Swift library pipeline"
-echo "✅ Ready for integration into iOS/macOS applications"
+# Make a Swift package from the generated API. The generated JSON data go
+# into the test target as a resource, so that tests can compare both.
+mkdir -p SalesReport/Sources/SalesReport SalesReport/Tests/SalesReportTests
+cp generated/swift/SalesReportAPI.swift SalesReport/Sources/SalesReport/
+cp generated/json/sales-report.json SalesReport/Tests/SalesReportTests/
+
+cat > SalesReport/Package.swift <<'SWIFT'
+// swift-tools-version:6.0
+import PackageDescription
+
+let package = Package(
+    name: "SalesReport",
+    products: [
+        .library(name: "SalesReport", targets: ["SalesReport"])
+    ],
+    targets: [
+        .target(name: "SalesReport"),
+        .testTarget(
+            name: "SalesReportTests",
+            dependencies: ["SalesReport"],
+            resources: [.copy("sales-report.json")]
+        ),
+    ]
+)
+SWIFT
+
+# Compile the generated code.
+swift build --package-path SalesReport
+
+# Output:
+# Build complete!

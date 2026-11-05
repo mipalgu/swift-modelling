@@ -1,0 +1,152 @@
+-- Migrates a cleaned legacy order export (LegacyOrders 1.0)
+-- to the improved order metamodel (Orders 2.0).
+module LegacyOrders2Orders;
+create OUT: Orders from IN: Legacy;
+
+-- The earliest order of a customer, identified by e-mail address.
+-- It stands for the customer, so that each customer is created once.
+helper context Legacy!Order def: firstOrderOfCustomer: Legacy!Order =
+    Legacy!Order.allInstances()
+        ->select(o | o.customerEmail = self.customerEmail)
+        ->sortedBy(o | o.orderId)
+        ->first();
+
+-- The catalogue product that an item names by its product code.
+helper context Legacy!OrderItem def: catalogueProduct: Legacy!Product =
+    Legacy!Product.allInstances()->any(p | p.code = self.productCode);
+
+-- The order status as a literal of OrderStatus (undefined if unknown).
+helper context Legacy!Order def: newStatus: Orders!OrderStatus =
+    if self.status = 'PENDING' then #PENDING
+    else if self.status = 'PROCESSING' then #PROCESSING
+    else if self.status = 'SHIPPED' then #SHIPPED
+    else if self.status = 'DELIVERED' then #DELIVERED
+    else if self.status = 'CANCELLED' then #CANCELLED
+    else OclUndefined
+    endif endif endif endif endif;
+
+-- The payment method as a literal of PaymentMethod (undefined if unknown).
+helper context Legacy!Order def: newPaymentMethod: Orders!PaymentMethod =
+    if self.paymentMethod = 'CREDIT_CARD' then #CREDIT_CARD
+    else if self.paymentMethod = 'BANK_TRANSFER' then #BANK_TRANSFER
+    else if self.paymentMethod = 'INVOICE' then #INVOICE
+    else if self.paymentMethod = 'PAYPAL' then #PAYPAL
+    else OclUndefined
+    endif endif endif endif;
+
+-- Address strings have the form "street, suburb STATE postcode[, country]".
+helper def: addressParts(text: String): Sequence(String) = text.split(', ');
+
+helper def: localityWords(text: String): Sequence(String) =
+    thisModule.addressParts(text)->at(2).split(' ');
+
+helper def: street(text: String): String =
+    thisModule.addressParts(text)->first();
+
+helper def: suburb(text: String): String =
+    let words: Sequence(String) = thisModule.localityWords(text) in
+    words->subSequence(1, words->size() - 2)
+        ->iterate(w; name: String = '' |
+            if name = '' then w else name + ' ' + w endif);
+
+helper def: state(text: String): String =
+    let words: Sequence(String) = thisModule.localityWords(text) in
+    words->at(words->size() - 1);
+
+helper def: postcode(text: String): String =
+    thisModule.localityWords(text)->last();
+
+helper def: country(text: String): String =
+    let parts: Sequence(String) = thisModule.addressParts(text) in
+    if parts->size() > 2 then parts->at(3) else 'Australia' endif;
+
+rule Store2Store {
+    from
+        s: Legacy!Store
+    to
+        t: Orders!Store (
+            name <- s.name,
+            customers <- s.orders
+                ->select(o | o.firstOrderOfCustomer = o)
+                ->collect(o | thisModule.Customer(o)),
+            products <- s.products,
+            orders <- s.orders
+        )
+}
+
+-- One customer per e-mail address, from the details of the first order.
+unique lazy rule Customer {
+    from
+        o: Legacy!Order
+    to
+        c: Orders!Customer (
+            name <- o.customerName,
+            email <- o.customerEmail,
+            phone <- o.customerPhone
+        )
+}
+
+rule Product2Product {
+    from
+        p: Legacy!Product
+    to
+        t: Orders!Product (
+            code <- p.code,
+            name <- p.name,
+            description <- p.desc,
+            price <- p.price,
+            category <- p.category,
+            stock <- stock
+        ),
+        stock: Orders!StockLevel (
+            onHand <- p.stockQty,
+            reorderLevel <- p.reorderLevel,
+            location <- p.warehouseLocation
+        )
+}
+
+rule Order2Order {
+    from
+        o: Legacy!Order
+    to
+        t: Orders!Order (
+            orderId <- o.orderId,
+            orderDate <- o.orderDate,
+            status <- o.newStatus,
+            notes <- o.notes,
+            customer <- thisModule.Customer(o.firstOrderOfCustomer),
+            shippingAddress <- shipping,
+            billingAddress <- billing,
+            payment <- payment,
+            items <- o.items
+        ),
+        shipping: Orders!Address (
+            street <- thisModule.street(o.shippingAddress),
+            suburb <- thisModule.suburb(o.shippingAddress),
+            state <- thisModule.state(o.shippingAddress),
+            postcode <- thisModule.postcode(o.shippingAddress),
+            country <- thisModule.country(o.shippingAddress)
+        ),
+        billing: Orders!Address (
+            street <- thisModule.street(o.billingAddress),
+            suburb <- thisModule.suburb(o.billingAddress),
+            state <- thisModule.state(o.billingAddress),
+            postcode <- thisModule.postcode(o.billingAddress),
+            country <- thisModule.country(o.billingAddress)
+        ),
+        payment: Orders!Payment (
+            method <- o.newPaymentMethod,
+            cardLastFour <- o.cardLastFour
+        )
+}
+
+rule OrderItem2OrderItem {
+    from
+        i: Legacy!OrderItem
+    to
+        t: Orders!OrderItem (
+            product <- i.catalogueProduct,
+            quantity <- i.qty,
+            unitPrice <- i.unitPrice
+        )
+}

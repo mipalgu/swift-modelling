@@ -86,7 +86,7 @@
 
                 @Code(name: "Terminal", file: step-11-query-model.sh)
 
-                The query command lets you inspect the contents of your model, listing all instances organised by class type.
+                The query command lets you inspect the contents of your model. `list-classes` (or `classes`) lists the class of every object with how many instances it has; it counts every object of the model, including objects nested inside others. `--query tree` shows the objects as a containment tree, and `--query "find Person"` lists the persons with their attribute values.
             }
         }
     }

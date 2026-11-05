@@ -35,6 +35,10 @@ let package = Package(
             name: "swift-mtl",
             targets: ["swift-mtl"]
         ),
+        .executable(
+            name: "swift-aql",
+            targets: ["swift-aql"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.6.2"),
@@ -42,6 +46,7 @@ let package = Package(
         .package(url: "https://github.com/mipalgu/swift-ecore", branch: "main"),
         .package(url: "https://github.com/mipalgu/swift-atl", branch: "main"),
         .package(url: "https://github.com/mipalgu/swift-mtl", branch: "main"),
+        .package(url: "https://github.com/mipalgu/swift-aql", branch: "main"),
         .package(url: "https://github.com/mipalgu/swift-docc-static", branch: "main"),
         .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.4.0"),
     ],
@@ -138,6 +143,19 @@ let package = Package(
                 .enableUpcomingFeature("StrictConcurrency")
             ]
         ),
+        .executableTarget(
+            name: "swift-aql",
+            dependencies: [
+                .product(name: "AQL", package: "swift-aql"),
+                .product(name: "ECore", package: "swift-ecore"),
+                .product(name: "EMFBase", package: "swift-ecore"),
+                "ModellingCommandLine",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency")
+            ]
+        ),
         .testTarget(
             name: "ModellingGeneratorsTests",
             dependencies: [
@@ -221,6 +239,23 @@ let package = Package(
             ]
         ),
         .testTarget(
+            name: "swift-aql-tests",
+            dependencies: [
+                .product(name: "Subprocess", package: "swift-subprocess"),
+                .product(name: "AQL", package: "swift-aql"),
+                .product(name: "ECore", package: "swift-ecore"),
+                .product(name: "EMFBase", package: "swift-ecore"),
+                "ModellingCommandLine",
+                "swift-aql",
+            ],
+            resources: [
+                .copy("Resources")
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency")
+            ]
+        ),
+        .testTarget(
             name: "TutorialTests",
             dependencies: [
                 "SwiftModelling",
@@ -230,6 +265,7 @@ let package = Package(
                 .product(name: "MTL", package: "swift-mtl"),
                 "swift-ecore",
                 "swift-atl",
+                "swift-aql",
             ],
             resources: [
                 .copy("Resources")

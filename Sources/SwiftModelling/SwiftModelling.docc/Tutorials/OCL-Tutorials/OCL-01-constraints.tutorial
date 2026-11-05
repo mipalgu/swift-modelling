@@ -64,7 +64,7 @@
 
                 @Code(name: "bank-account.ecore", file: bank-account.ecore)
 
-                The `adultCustomer` constraint requires customers to be at least 18 years old. The `sufficientMinimumBalance` constraint ensures savings accounts maintain their minimum balance.
+                The `adultCustomer` constraint requires customers to be at least 18 years old. The `sufficientMinimumBalance` constraint ensures savings accounts maintain their minimum balance. It names the enumeration literal with its package, `Bank::AccountType::SAVINGS`, as OCL allows.
             }
 
             @Step {
@@ -84,7 +84,7 @@
 
         @Steps {
             @Step {
-                Review a valid bank model instance that passes all constraints including unique identifiers, valid emails, adult customers, and proper balances.
+                Review a valid bank model instance that passes all constraints including unique identifiers, valid emails, adult customers, and proper balances. The bank contains its customers and its accounts, and each account names its owner with a reference such as `owner="//@customers.0"`, the first customer of the bank.
 
                 @Code(name: "valid-instance.xmi", file: valid-instance.xmi)
             }
@@ -107,7 +107,7 @@
 
     @Section(title: "Running Validation") {
         @ContentAndMedia {
-            Use swift-ecore to validate models against their metamodel constraints. The validator reports which constraints are violated and where.
+            Use `swift-ecore validate` with `--metamodel` to validate a model against its metamodel. Besides the structure (classes, features, types and multiplicities), the validator evaluates every OCL invariant of the metamodel for every object of the model whose class or superclass declares it, and reports which constraints are violated and where.
         }
 
         @Steps {
@@ -116,7 +116,7 @@
 
                 @Code(name: "Terminal", file: ocl-01-validate-valid.sh)
 
-                The validator confirms the model satisfies all constraints.
+                The validator confirms the model satisfies all constraints: 32 checks, one for each invariant and each object it applies to. `--format json` writes the whole report, including every check, as JSON.
             }
 
             @Step {
@@ -124,7 +124,7 @@
 
                 @Code(name: "Terminal", file: ocl-01-validate-invalid.sh)
 
-                The validator reports each constraint violation with the affected element and constraint name.
+                The validator reports each constraint violation with the constraint name, the affected element and its location in the model, then fails with exit status 1, which the `echo` shows. A script can therefore stop at an invalid model.
             }
         }
     }

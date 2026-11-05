@@ -33,15 +33,28 @@ swift-atl transform <transformation-file> [options]
 - `--input-format <xmi|json>` - Format of the source models (default: from the file extension)
 - `--output-format <xmi|json>` - Format of the target models (default: from the file extension)
 - `--metamodel-path <directory>` - Directory searched for metamodels named by `-- @path` directives (repeatable)
+- `--source-metamodel <[name=]file.ecore>` - Metamodel file for a source metamodel, matched to the metamodels after `from` (or `refining`) by order or by name (repeatable)
+- `--target-metamodel <[name=]file.ecore>` - Metamodel file for a target metamodel, matched to the metamodels after `create` in the same way (repeatable)
+- `--metamodel <[name=]file.ecore>` - Metamodel file for any metamodel of the module, such as one that source and target share; by position it follows the source metamodels and then the target metamodels, each name once (repeatable)
+- `--refining` - Refine the source model, as a module declared with `refining` does
+- `--validate-only` - Check the transformation against its metamodels and load the source models, without running it or writing targets
+- `--quiet`, `-q` - Print nothing on success; cannot be combined with `--verbose` or `--debug`
 - `--verbose` - Enable verbose output
 - `--debug` - Trace the execution
 - `--continue-after-errors` - Continue after metamodel loading errors
 - `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
-- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` overrides it
+- `--integer-division <real|truncating>` - Whether `/` divides two Integers into a Real, so `7 / 2` is `3.5`, as in OCL and Eclipse ATL (`real`, the default), or truncates the quotient to an Integer as version 0.6 did (`truncating`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` and `--integer-division` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
 
 **Module parameters.** A transformation declares a parameter in a header comment, `-- @param name : Type` or `-- @param name : Type = default`, with the types `String`, `Integer`, `Real` and `Boolean`, and reads it as `thisModule.name`. `--param name=value` supplies the value; it is converted to the declared type. A name that the module does not declare, a value of the wrong type, a required parameter without a value, and an argument that is not `name=value` are errors.
+
+**Metamodel files and directives.** A metamodel file given on the command line takes the place of the `-- @path` and `-- @nsURI` directives of its metamodel; a metamodel that two options bind to different files, a name that the module header does not declare, and a positional list whose length differs from the declared metamodels are errors. A metamodel that neither a file nor a directive binds is an error unless `--continue-after-errors` is given. A `-- @path` that starts with `/` names a file in an Eclipse workspace, such as `/Families2Persons/Families.ecore`: it is looked up in each metamodel search directory as `Families2Persons/Families.ecore` and then as `Families.ecore`, with the search directory as the project directory. Without `--metamodel-path` or the `ECOREPATH` environment variable, the search directories are the directory of the transformation, its parent and the current directory.
+
+**Refining mode.** A module declared as `create OUT : MM refining IN : MM;`, or run with `--refining`, starts each target model as a copy of the source model in the same position of the header. A rule changes the copy of the element it matches, through the first target pattern element of the type of its source pattern element; elements that no rule matches are kept. A rule whose `to` section starts with `drop`, alone or before target patterns of new elements, deletes the element it matches, with the elements it contains, once every other rule has run; references from the remaining elements to the deleted ones are removed. `drop` outside refining mode is an error, which `--validate-only` reports as well.
+
+**Validation only.** `--validate-only` reports a metamodel without classifiers, a model element type that its metamodel does not define, a binding of a feature that the class of its target element does not have, in the rules and helper contexts of the module, and a rule that uses `drop` outside refining mode. It then maps and loads the source models and maps the target models that are given. Expressions are not type-checked.
 
 **Built-in metamodels.** The Ecore metamodel (`http://www.eclipse.org/emf/2002/Ecore`) and the generator metamodel (`http://www.eclipse.org/emf/2002/GenModel`) are built in, so directives such as `-- @nsURI Ecore=http://www.eclipse.org/emf/2002/Ecore` need no metamodel file. A target that is an instance of a built-in metamodel is written in the layout of the Eclipse Modeling Framework, with references to other models as `uri#fragment` attribute values; other targets keep the usual layout.
 
@@ -58,6 +71,20 @@ swift-atl transform MyTransformation.atl \
     --source IN=input.xmi \
     --target OUT=output.xmi \
     --metamodel-path metamodels/
+
+# Metamodel files instead of -- @path directives
+swift-atl transform Families2Persons.atl \
+    --source sample-Families.xmi --source-metamodel Families.ecore \
+    --target output-Persons.xmi --target-metamodel Persons.ecore
+
+# Refine a model with one metamodel for source and target
+swift-atl transform Cleanup.atl --refining \
+    --source customers.xmi --target cleaned.xmi \
+    --metamodel Customer.ecore
+
+# Check a transformation without running it
+swift-atl transform Families2Persons.atl --validate-only \
+    --source-metamodel Families.ecore --target-metamodel Persons.ecore
 
 # Parameters for a transformation that declares them with -- @param
 swift-atl transform Library2Report.atl \
@@ -90,7 +117,8 @@ A query unit starts with `query Name = expression;` instead of a module header, 
 - `--verbose` - Write progress to standard error
 - `--debug` - Trace the execution
 - `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
-- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` overrides it
+- `--integer-division <real|truncating>` - Whether `/` divides two Integers into a Real, so `7 / 2` is `3.5`, as in OCL and Eclipse ATL (`real`, the default), or truncates the quotient to an Integer as version 0.6 did (`truncating`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` and `--integer-division` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
 
@@ -137,8 +165,10 @@ The command is the ATL entry to the shared generation pipeline. An Ecore model i
 - `--model-directory` - Write below the model directory of the generator model
 - `--code-style <style>` - The layout of the generated text, one of the styles of the template set (`java`: `eclipse`, the default, or `emf`); rejected for the language `genmodel` and for sets that offer none, such as `swift`, `c` and `cpp`
 - `--let-type-mismatches <error|skip>` - Whether a typed `let` in the templates whose value does not conform to the declared type stops the generation (`error`, the default) or is skipped with a warning on standard error (`skip`, as in Acceleo 3)
-- `--block-line-breaks <acceleo|kept>`, `--collection-parameters <conforming|exact>`, `--check-let-types` / `--no-check-let-types`, `--cache-containers` / `--no-cache-containers`, `--collection-arguments <whole|first-element>`, `--collection-kinds <distinguished|sequences>`, `--single-value-collections <set|sequence>`, `--container-lookup <resources|registered-objects>` - The behaviours of the templates, as for `swift-mtl generate`; the first value is the default, and the second that of version 0.6
+- `--block-line-breaks <acceleo|kept>`, `--collection-parameters <conforming|exact>`, `--check-let-types` / `--no-check-let-types`, `--cache-containers` / `--no-cache-containers`, `--collection-arguments <whole|first-element>`, `--collection-kinds <distinguished|sequences>`, `--single-value-collections <set|sequence>`, `--container-lookup <resources|registered-objects>`, `--sequence-union <concatenation|distinct>`, `--null-addition <empty-text|null>`, `--text-form <joined|bracketed>` - The behaviours of the templates, as for `swift-mtl generate`; the first value is the default, and the second that of version 0.6
+- `--strict-aql` / `--no-strict-aql` - Whether the expressions of the templates reject what Eclipse AQL rejects, as for `swift-mtl generate`; neither preset sets it
 - `--collection-range-syntax <ocl|eclipse>` - Whether a transformation given with `--transformations` may use integer ranges such as `Sequence{1..3}` (`ocl`, the default) or not, as in Eclipse ATL and version 0.6 (`eclipse`)
+- `--integer-division <real|truncating>` - Whether `/` in a transformation given with `--transformations` divides two Integers into a Real, as in OCL and Eclipse ATL (`real`, the default), or truncates the quotient as version 0.6 did (`truncating`)
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`) for every behaviour option above; a behaviour option that is given overrides it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
@@ -182,7 +212,8 @@ swift-atl parse [<atl-files> ...] [options]
 - `--show-structure`, `--show-rules`, `--show-helpers` - Show the module structure, the rule details, or the helper details
 - `--enable-stop-after-errors`, `--disable-stop-after-errors` - Stop after metamodel loading errors (default: disabled)
 - `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
-- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` overrides it
+- `--integer-division <real|truncating>` - Whether `/` divides two Integers into a Real, so `7 / 2` is `3.5`, as in OCL and Eclipse ATL (`real`, the default), or truncates the quotient to an Integer as version 0.6 did (`truncating`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` and `--integer-division` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
 
@@ -213,7 +244,8 @@ swift-atl validate [<atl-files> ...] [options]
 - `--check-rules` - Validate rule completeness
 - `--enable-stop-after-errors`, `--disable-stop-after-errors` - Stop after metamodel loading errors (default: disabled)
 - `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
-- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` overrides it
+- `--integer-division <real|truncating>` - Whether `/` divides two Integers into a Real, so `7 / 2` is `3.5`, as in OCL and Eclipse ATL (`real`, the default), or truncates the quotient to an Integer as version 0.6 did (`truncating`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` and `--integer-division` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
 
@@ -248,7 +280,8 @@ swift-atl test [<atl-files> ...] [options]
 - `-v, --verbose` - Enable verbose output
 - `--fail-fast` - Stop on the first test failure
 - `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
-- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` overrides it
+- `--integer-division <real|truncating>` - Whether `/` divides two Integers into a Real, so `7 / 2` is `3.5`, as in OCL and Eclipse ATL (`real`, the default), or truncates the quotient to an Integer as version 0.6 did (`truncating`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` and `--integer-division` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
 
@@ -276,7 +309,8 @@ swift-atl analyze [<atl-files> ...] [options]
 - `-f, --format <text|json>` - Output format (default: `text`)
 - `-v, --verbose` - Enable verbose output
 - `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
-- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` overrides it
+- `--integer-division <real|truncating>` - Whether `/` divides two Integers into a Real, so `7 / 2` is `3.5`, as in OCL and Eclipse ATL (`real`, the default), or truncates the quotient to an Integer as version 0.6 did (`truncating`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` and `--integer-division` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
 
@@ -304,7 +338,8 @@ The command parses the transformation and names the compiled module, which defau
 - `-v, --verbose` - Enable verbose output
 - `--optimise` - Optimise the transformation code
 - `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
-- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` overrides it
+- `--integer-division <real|truncating>` - Whether `/` divides two Integers into a Real, so `7 / 2` is `3.5`, as in OCL and Eclipse ATL (`real`, the default), or truncates the quotient to an Integer as version 0.6 did (`truncating`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` and `--integer-division` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
 
@@ -316,7 +351,7 @@ swift-atl compile Families2Persons.atl --output families2persons.atlc
 
 ## Environment and Configuration File
 
-Without `--semantics`, the `SWIFT_MODELLING_SEMANTICS` environment variable (`standard` or `legacy`) chooses the preset, and then the `semantics` key of a configuration file. The configuration file is the first `.swift-modelling.json` in the current directory or one of its parents, up to the directory that holds `.git`; `--config` names another file and `--no-config` reads none. Its keys are the names of the behaviour options without their leading `--`, with the spellings of the command line as JSON strings, or JSON booleans for `check-let-types` and `cache-containers`; a key that does not apply to a command is ignored. A behaviour option given on the command line overrides the file, an option in the file overrides the preset, `--semantics` overrides the environment variable, and the environment variable overrides `semantics` in the file. `--let-type-mismatches` and `--unset-features` do not depend on the preset: the command line overrides the file, which overrides their defaults. An invalid value of the variable, or an unknown key or an invalid value in the file, stops the command with an error that names it.
+Without `--semantics`, the `SWIFT_MODELLING_SEMANTICS` environment variable (`standard` or `legacy`) chooses the preset, and then the `semantics` key of a configuration file. The configuration file is the first `.swift-modelling.json` in the current directory or one of its parents, up to the directory that holds `.git`; `--config` names another file and `--no-config` reads none. Its keys are the names of the behaviour options without their leading `--`, with the spellings of the command line as JSON strings, or JSON booleans for `check-let-types`, `cache-containers` and `strict-aql`; a key that does not apply to a command is ignored. A behaviour option given on the command line overrides the file, an option in the file overrides the preset, `--semantics` overrides the environment variable, and the environment variable overrides `semantics` in the file. `--let-type-mismatches` and `--unset-features` do not depend on the preset: the command line overrides the file, which overrides their defaults. An invalid value of the variable, or an unknown key or an invalid value in the file, stops the command with an error that names it.
 
 ```json
 {

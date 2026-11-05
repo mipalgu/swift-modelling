@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ent:Company xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:ent="http://example.org/enterprise" name="Acme">
+  <departments name="Research">
+    <teams name="Compilers">
+      <members name="Ada"/>
+      <members name="Grace" mentor="//@departments.0/@teams.0/@members.0"/>
+    </teams>
+    <teams name="Databases">
+      <members name="Edgar"/>
+    </teams>
+  </departments>
+  <departments name="Sales"/>
+</ent:Company>

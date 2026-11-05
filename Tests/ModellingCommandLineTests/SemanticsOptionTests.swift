@@ -121,6 +121,53 @@ struct SemanticsOptionTests {
         #expect(options.mtlOptions(preset: preset).aql.containerLookup == mode)
     }
 
+    @Test("parses each sequence union", arguments: AQLSequenceUnion.allCases, SemanticsPreset.allCases)
+    func sequenceUnion(mode: AQLSequenceUnion, preset: SemanticsPreset) throws {
+        let options = try MTLSemanticsOptions.parse(["--sequence-union", mode.rawValue])
+        #expect(options.mtlOptions(preset: preset).aql.sequenceUnion == mode)
+    }
+
+    @Test("parses each null addition", arguments: AQLNullAddition.allCases, SemanticsPreset.allCases)
+    func nullAddition(mode: AQLNullAddition, preset: SemanticsPreset) throws {
+        let options = try MTLSemanticsOptions.parse(["--null-addition", mode.rawValue])
+        #expect(options.mtlOptions(preset: preset).aql.nullAddition == mode)
+    }
+
+    @Test("parses each text form", arguments: AQLTextForm.allCases, SemanticsPreset.allCases)
+    func textForm(mode: AQLTextForm, preset: SemanticsPreset) throws {
+        let options = try MTLSemanticsOptions.parse(["--text-form", mode.rawValue])
+        #expect(options.mtlOptions(preset: preset).aql.textForm == mode)
+    }
+
+    @Test("takes the union, null addition and text form of each preset unless given")
+    func newBehavioursFollowPreset() throws {
+        let options = try MTLSemanticsOptions.parse([])
+        let standard = options.aqlOptions(preset: .standard)
+        let legacy = options.aqlOptions(preset: .legacy)
+        #expect(standard.sequenceUnion == .concatenation)
+        #expect(standard.nullAddition == .emptyText)
+        #expect(standard.textForm == .joined)
+        #expect(legacy.sequenceUnion == .distinct)
+        #expect(legacy.nullAddition == .null)
+        #expect(legacy.textForm == .bracketed)
+        #expect(MTLSemanticsOptions.OptionName.sequenceUnion == "sequence-union")
+        #expect(MTLSemanticsOptions.OptionName.nullAddition == "null-addition")
+        #expect(MTLSemanticsOptions.OptionName.textForm == "text-form")
+        let discussion = MTLSemanticsOptions.discussion(reader: "the templates")
+        for name in ["--sequence-union", "--null-addition", "--text-form"] {
+            #expect(discussion.contains(name), "\(name)")
+        }
+    }
+
+    @Test("rejects values that are not union, null addition or text form modes", arguments: [
+        "--sequence-union", "--null-addition", "--text-form",
+    ])
+    func rejectsUnknownNewValues(option: String) {
+        #expect(throws: (any Error).self) {
+            try MTLSemanticsOptions.parse([option, "sometimes"])
+        }
+    }
+
     @Test("changes only the behaviour that an option names")
     func overridesOneBehaviour() throws {
         let options = try MTLSemanticsOptions.parse(["--block-line-breaks", "acceleo"])
@@ -198,6 +245,45 @@ struct SemanticsOptionTests {
         }
     }
 
+    @Test("parses each integer division", arguments: ATLIntegerDivision.allCases, SemanticsPreset.allCases)
+    func integerDivision(division: ATLIntegerDivision, preset: SemanticsPreset) throws {
+        let options = try ATLSemanticsOptions.parse(["--integer-division", division.rawValue])
+        #expect(options.atlOptions(preset: preset).integerDivision == division)
+    }
+
+    @Test("takes the integer division of each preset unless given")
+    func integerDivisionFollowsPreset() throws {
+        let options = try ATLSemanticsOptions.parse([])
+        #expect(options.atlOptions(preset: .standard).integerDivision == .real)
+        #expect(options.atlOptions(preset: .legacy).integerDivision == .truncating)
+    }
+
+    @Test("rejects an integer division that does not exist")
+    func rejectsUnknownDivision() {
+        #expect(throws: (any Error).self) {
+            try ATLSemanticsOptions.parse(["--integer-division", "rounding"])
+        }
+    }
+
+    @Test("leaves strict AQL off in both presets unless --strict-aql is given", arguments: SemanticsPreset.allCases)
+    func strictAQL(preset: SemanticsPreset) throws {
+        #expect(!(try MTLSemanticsOptions.parse([]).aqlOptions(preset: preset).strict))
+        let strict = try MTLSemanticsOptions.parse(["--strict-aql"])
+        #expect(strict.aqlOptions(preset: preset).strict)
+        #expect(strict.mtlOptions(preset: preset).aql.strict)
+        #expect(MTLSemanticsOptions.OptionName.strictAQL == "strict-aql")
+        #expect(MTLSemanticsOptions.discussion(reader: "the templates").contains("--strict-aql"))
+    }
+
+    @Test("names the integer division option and describes it")
+    func integerDivisionNames() {
+        #expect(ATLSemanticsOptions.OptionName.integerDivision == "integer-division")
+        let discussion = ATLSemanticsOptions.discussion(reader: "the transformation")
+        #expect(discussion.contains("--integer-division"))
+        #expect(discussion.contains("real"))
+        #expect(discussion.contains("truncating"))
+    }
+
     @Test("names the ATL option and describes it")
     func atlNames() {
         #expect(ATLSemanticsOptions.OptionName.collectionRangeSyntax == "collection-range-syntax")
@@ -214,6 +300,9 @@ struct SemanticsOptionTests {
         #expect(imports.atlOptions == .legacy)
         try ATLSemanticsOptions.parse(["--collection-range-syntax", "ocl"]).apply(to: &imports, preset: .legacy)
         #expect(imports.atlOptions.collectionRangeSyntax == .ocl)
+        try ATLSemanticsOptions.parse(["--integer-division", "real"]).apply(to: &imports, preset: .legacy)
+        #expect(imports.atlOptions.integerDivision == .real)
+        #expect(imports.atlOptions.collectionRangeSyntax == .eclipse)
     }
 
     // MARK: - Combined

@@ -1,21 +1,27 @@
 digraph EcommerceMetamodel {
     bgcolor="white"
+    fontname="Arial"
     rankdir=TB
-    node [shape=record, style=rounded, fontname="Arial", fontsize=12]
+    node [shape=record, style="filled,rounded", fontname="Arial", fontsize=12]
     edge [fontname="Arial", fontsize=10]
-    
-    shop [label="{Shop|+ name : String\l+ url : String\l|+ products : Product[*]\l+ customers : Customer[*]\l}" fillcolor="#e8f4f8" style="filled,rounded"]
-    
-    product [label="{Product|+ name : String\l+ price : Double\l+ stock : Int\l|}" fillcolor="#f8f4e8" style="filled,rounded"]
-    
-    customer [label="{Customer|+ name : String\l+ email : String\l|+ orders : Order[*]\l}" fillcolor="#e8f8f5" style="filled,rounded"]
-    
-    order [label="{Order|+ date : Date\l+ total : Double\l|+ items : OrderItem[*]\l}" fillcolor="#f4e8f8" style="filled,rounded"]
-    
-    shop -> product [label="products"]
-    shop -> customer [label="customers"]
-    customer -> order [label="orders"]
-    order -> product [label="items" style=dashed]
-    
-    legendTitle [label="E-commerce Metamodel" shape=plaintext fontname="Arial Bold" fontsize=14]
+
+    shop [label="{Shop|name : EString [1]\l}" fillcolor="#e8f4f8"]
+    category [label="{Category|name : EString [1]\ldescription : EString\l}" fillcolor="#f8f4e8"]
+    product [label="{Product|name : EString [1]\lsku : EString [1]\lprice : EDouble\lstock : EInt\l|inv positivePrice: price \> 0\linv nonNegativeStock: stock \>= 0\l}" fillcolor="#f8f4e8"]
+    customer [label="{Customer|name : EString [1]\lemail : EString [1]\l|inv validEmail: email contains @\l}" fillcolor="#e8f8f5"]
+    order [label="{Order|orderNumber : EString [1]\ldate : EDate\lpaymentMethod : PaymentMethod [1]\l}" fillcolor="#f4e8f8"]
+    item [label="{OrderItem|quantity : EInt\lunitPrice : EDouble\l|inv positiveQuantity: quantity \>= 1\l}" fillcolor="#f4e8f8"]
+    payment [label="{«enumeration»\nPaymentMethod|CARD\lBANK_TRANSFER\lCASH\l}" fillcolor="#fff8e8"]
+
+    shop -> category [label="categories *" arrowtail=diamond dir=both]
+    shop -> product [label="products *" arrowtail=diamond dir=both]
+    shop -> customer [label="customers *" arrowtail=diamond dir=both]
+    shop -> order [label="orders *" arrowtail=diamond dir=both]
+    order -> item [label="items 1..*" arrowtail=diamond dir=both]
+    category -> product [label="products * / category 1" dir=both arrowtail=open arrowhead=open style=dashed]
+    customer -> order [label="orders * / customer 1" dir=both arrowtail=open arrowhead=open style=dashed]
+    item -> product [label="product 1" arrowhead=open style=dashed]
+    order -> payment [label="paymentMethod 1" arrowhead=open style=dotted]
+
+    legendTitle [label="Shop metamodel (ECommerce.ecore)" shape=plaintext style="" fontname="Arial Bold" fontsize=14]
 }

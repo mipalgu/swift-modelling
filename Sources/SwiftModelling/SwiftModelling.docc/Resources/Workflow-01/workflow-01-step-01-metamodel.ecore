@@ -4,63 +4,100 @@
     xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
     name="shop" nsURI="http://www.example.org/shop" nsPrefix="shop">
 
+  <!-- The shop contains all categories, products, customers and orders. -->
   <eClassifiers xsi:type="ecore:EClass" name="Shop">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="products" upperBound="-1"
-        eType="#//Product" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="categories" upperBound="-1"
         eType="#//Category" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="products" upperBound="-1"
+        eType="#//Product" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="customers" upperBound="-1"
         eType="#//Customer" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="orders" upperBound="-1"
         eType="#//Order" containment="true"/>
   </eClassifiers>
 
-  <eClassifiers xsi:type="ecore:EClass" name="Product">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="sku" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="price" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="stock" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="category" eType="#//Category"/>
-  </eClassifiers>
-
+  <!-- A category groups products; Category.products and Product.category are opposites. -->
   <eClassifiers xsi:type="ecore:EClass" name="Category">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="products" upperBound="-1"
-        eType="#//Product"/>
+        eType="#//Product" eOpposite="#//Product/category"/>
   </eClassifiers>
 
+  <!-- A product: its price must be positive and its stock must not be negative. -->
+  <eClassifiers xsi:type="ecore:EClass" name="Product">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+      <details key="constraints" value="positivePrice nonNegativeStock"/>
+    </eAnnotations>
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
+      <details key="positivePrice" value="self.price > 0"/>
+      <details key="nonNegativeStock" value="self.stock >= 0"/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="sku" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="price"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="stock"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="category" lowerBound="1"
+        eType="#//Category" eOpposite="#//Category/products"/>
+  </eClassifiers>
+
+  <!-- A customer with a plausible email address and the orders placed. -->
   <eClassifiers xsi:type="ecore:EClass" name="Customer">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="email" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+      <details key="constraints" value="validEmail"/>
+    </eAnnotations>
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
+      <details key="validEmail" value="self.email.indexOf('@') > 0"/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="email" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="orders" upperBound="-1"
         eType="#//Order" eOpposite="#//Order/customer"/>
   </eClassifiers>
 
+  <!-- An order of a customer: it is paid in one way and contains at least one item. -->
   <eClassifiers xsi:type="ecore:EClass" name="Order">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="orderNumber" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="date" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="totalAmount" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="items" upperBound="-1"
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="orderNumber" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="date"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDate"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="paymentMethod" lowerBound="1"
+        eType="#//PaymentMethod"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="customer" lowerBound="1"
+        eType="#//Customer" eOpposite="#//Customer/orders"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="items" lowerBound="1" upperBound="-1"
         eType="#//OrderItem" containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="customer" eType="#//Customer"
-        eOpposite="#//Customer/orders"/>
   </eClassifiers>
 
+  <!-- An order item refers to a product and orders at least one unit of it. -->
   <eClassifiers xsi:type="ecore:EClass" name="OrderItem">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="quantity" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="unitPrice" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="product" eType="#//Product"/>
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+      <details key="constraints" value="positiveQuantity"/>
+    </eAnnotations>
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
+      <details key="positiveQuantity" value="self.quantity >= 1"/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="quantity"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="unitPrice"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="product" lowerBound="1"
+        eType="#//Product"/>
   </eClassifiers>
 
   <eClassifiers xsi:type="ecore:EEnum" name="PaymentMethod">
-    <eLiterals name="CREDIT_CARD" value="0"/>
-    <eLiterals name="DEBIT_CARD" value="1"/>
-    <eLiterals name="PAYPAL" value="2"/>
-    <eLiterals name="BANK_TRANSFER" value="3"/>
-    <eLiterals name="CASH" value="4"/>
+    <eLiterals name="CARD" value="0"/>
+    <eLiterals name="BANK_TRANSFER" value="1"/>
+    <eLiterals name="CASH" value="2"/>
   </eClassifiers>
-
 </ecore:EPackage>

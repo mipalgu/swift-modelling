@@ -120,11 +120,11 @@ struct Ecore02Tests {
 
         // Verify specific person data
         #expect(content.contains("name=\"Alice Johnson\""))
-        #expect(content.contains("email=\"alice@techinnovations.com\""))
+        #expect(content.contains("email=\"alice@example.com\""))
         #expect(content.contains("name=\"Bob Smith\""))
-        #expect(content.contains("email=\"bob@techinnovations.com\""))
+        #expect(content.contains("email=\"bob@example.com\""))
         #expect(content.contains("name=\"Carol Williams\""))
-        #expect(content.contains("email=\"carol@techinnovations.com\""))
+        #expect(content.contains("email=\"carol@example.com\""))
     }
 
     // MARK: - Section 3: Validating Model Instances

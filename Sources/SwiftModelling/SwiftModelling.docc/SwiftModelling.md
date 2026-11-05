@@ -38,8 +38,8 @@ Generate Swift model code that compiles against the ECore runtime, from an Ecore
 
 The tools follow the behaviour of this release by default. `--semantics legacy` selects the behaviour of version 0.6 for every behaviour that changed, and one option for each behaviour overrides the preset:
 
-- Templates (`swift-mtl generate`, `swift-ecore generate`, `swift-atl generate`): `--block-line-breaks acceleo|kept`, `--collection-parameters conforming|exact`, `--check-let-types` or `--no-check-let-types`, `--cache-containers` or `--no-cache-containers`, `--collection-arguments whole|first-element`, `--collection-kinds distinguished|sequences`, `--single-value-collections set|sequence` and `--container-lookup resources|registered-objects`.
-- ATL source (`swift-atl parse`, `validate`, `analyze`, `compile`, `test`, `transform`, `query`, and `generate` for a transformation given with `--transformations`): `--collection-range-syntax ocl|eclipse`.
+- Templates (`swift-mtl generate`, `swift-ecore generate`, `swift-atl generate`): `--block-line-breaks acceleo|kept`, `--collection-parameters conforming|exact`, `--check-let-types` or `--no-check-let-types`, `--cache-containers` or `--no-cache-containers`, `--collection-arguments whole|first-element`, `--collection-kinds distinguished|sequences`, `--single-value-collections set|sequence`, `--container-lookup resources|registered-objects`, `--sequence-union concatenation|distinct`, `--null-addition empty-text|null`, `--text-form joined|bracketed`.
+- ATL source (`swift-atl parse`, `validate`, `analyze`, `compile`, `test`, `transform`, `query`, and `generate` for a transformation given with `--transformations`): `--collection-range-syntax ocl|eclipse` and `--integer-division real|truncating`.
 - Models (every command that accepts `--semantics`): `--container-scope any-resource|this-resource`, whether a model finds the containers of objects of the other models of the run.
 
 The first value of each option is the default, and the second that of version 0.6. The help of each command and the documentation of each tool describe the options.

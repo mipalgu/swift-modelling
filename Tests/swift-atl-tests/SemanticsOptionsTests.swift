@@ -215,6 +215,8 @@ struct SemanticsOptionsTests {
             "--cache-containers/--no-cache-containers", "--collection-arguments <whole|first-element>",
             "--collection-kinds <distinguished|sequences>", "--single-value-collections <set|sequence>",
             "--container-lookup <resources|registered-objects>", "--collection-range-syntax <ocl|eclipse>",
+            "--integer-division <real|truncating>", "--sequence-union <concatenation|distinct>",
+            "--null-addition <empty-text|null>", "--text-form <joined|bracketed>", "--strict-aql",
         ] {
             #expect(result.stdout.contains(text), "\(text)")
         }

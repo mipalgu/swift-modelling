@@ -8,7 +8,7 @@ swift-atl transform class2relational.atl \
 #
 # Output (the time varies):
 # Transformation completed successfully in 19.2ms
-#
+
 # output-relational.xmi then holds the schema 'library' with:
 #   - 4 SQL types (INTEGER, VARCHAR(255), BOOLEAN, DATE)
 #   - 6 tables (Author, Book, Member, Loan, Book_keywords, Member_borrowedBooks)

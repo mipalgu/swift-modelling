@@ -43,7 +43,7 @@
 
                 @Code(name: "Terminal", file: java-01-step-04-query.sh)
 
-                Without a query expression the command reports what the file holds: a single root object, the `EPackage` that owns everything else in the model.
+                Without a query expression the command reports what the file holds: a single root object, the `EPackage` that owns everything else in the model, followed by the number of its classes, enumerations and data types, and the number of elements of each kind, such as `EClass` or `EAttribute`. `--query classes` lists every class with its supertypes, and `--query tree` shows the whole package as a tree.
             }
 
             @Step {
@@ -71,7 +71,7 @@
             }
 
             @Step {
-                The command reports where it wrote the file.
+                The command reports where it wrote the file, with the full path of your working directory in place of the `...`.
 
                 @Code(name: "Output", file: java-01-step-07-genmodel-output.txt)
 

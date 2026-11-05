@@ -54,33 +54,25 @@ import Foundation
 
     // MARK: - Initialisation
 
-    [generateInitialiser(cls)/]
+[generateInitialiser(cls)/]
 
     // MARK: - Methods
-
 [for (op : Operation | cls.operations)]
-    [generateOperation(op)/]
+
+[generateOperation(op)/]
 [/for]
 }
 [/template]
 
-[template generateInheritance(cls : Class)]
-[if (cls.superClass <> null or cls.protocols->notEmpty())]
-: [if (cls.superClass <> null)][cls.superClass.name/][if (cls.protocols->notEmpty())], [/if][/if][cls.protocols.name->sep(', ')/][/if]
-[/template]
+[template generateInheritance(cls : Class)][if (cls.superClass <> null or cls.protocols->notEmpty())]: [if (cls.superClass <> null)][cls.superClass.name/][if (cls.protocols->notEmpty())], [/if][/if][cls.protocols.name->sep(', ')/][/if][/template]
 
 [template generateInitialiser(cls : Class)]
-[let requiredProps = cls.properties->select(p | p.defaultValue = null and not p.isOptional)]
-[if (requiredProps->notEmpty())]
-init([for (p : Property | requiredProps) separator(', ')][p.name/]: [generateTypeName(p)/][/for]) {
+[let requiredProps : Sequence(Property) = cls.properties->select(p | p.defaultValue = null and not p.isOptional and not p.isCollection)]
+    init([for (p : Property | requiredProps) separator(', ')][p.name/]: [generateTypeName(p)/][/for]) {
 [for (p : Property | requiredProps)]
         self.[p.name/] = [p.name/]
 [/for]
     }
-[else]
-init() {
-    }
-[/if]
 [/let]
 [/template]
 
@@ -88,47 +80,32 @@ init() {
 [comment                     PROPERTY GENERATION                         /]
 [comment ================================================================ /]
 
-[template generateProperty(prop : Property)]
-[if (prop.isStatic)]static [/if][if (prop.isReadOnly)]let[else]var[/if] [prop.name/]: [generateTypeName(prop)/][generateDefaultValue(prop)/]
-[/template]
+[template generateProperty(prop : Property)][if (prop.isStatic)]static [/if][if (prop.isReadOnly)]let[else]var[/if] [prop.name/]: [generateTypeName(prop)/][generateDefaultValue(prop)/][/template]
 
-[template generateTypeName(prop : TypedElement)]
-[if (prop.isCollection)]['[' + prop.type.name + ']'/][else][prop.type.name/][/if][if (prop.isOptional)]?[/if]
-[/template]
+[template generateTypeName(prop : TypedElement)][if (prop.isCollection)]['[' + prop.type.name + ']'/][else][prop.type.name/][/if][if (prop.isOptional)]?[/if][/template]
 
-[template generateDefaultValue(prop : Property)]
-[if (prop.defaultValue <> null)] = [prop.defaultValue/][elseif (prop.isOptional)] = nil[elseif (prop.isCollection)] = ['[]'/][/if]
-[/template]
+[template generateDefaultValue(prop : Property)][if (prop.defaultValue <> null)] = [prop.defaultValue/][elseif (prop.isOptional)] = nil[elseif (prop.isCollection)] = ['[]'/][/if][/template]
 
 [comment ================================================================ /]
 [comment                    OPERATION GENERATION                         /]
 [comment ================================================================ /]
 
 [template generateOperation(op : Operation)]
-[if (op.isStatic)]static [/if]func [op.name/]([generateParameters(op)/])[if (op.isAsync)] async[/if][if (op.throws)] throws[/if][generateReturnType(op)/] {
+    [generateSignature(op)/] {
         // TODO: Implement [op.name/]
+[if (op.returnType <> null)]
         [generateReturnStub(op)/]
+[/if]
     }
 [/template]
 
-[template generateParameters(op : Operation)]
-[for (p : Parameter | op.parameters) separator(', ')]
-[if (p.label <> null and p.label <> p.name)][p.label/] [/if][p.name/]: [if (p.isCollection)]['[' + p.type.name + ']'/][else][p.type.name/][/if][if (p.isOptional)]?[/if][if (p.defaultValue <> null)] = [p.defaultValue/][/if][/for]
-[/template]
+[template generateSignature(op : Operation)][if (op.isStatic)]static [/if]func [op.name/]([generateParameters(op)/])[if (op.isAsync)] async[/if][if (op.throws)] throws[/if][generateReturnType(op)/][/template]
 
-[template generateReturnType(op : Operation)]
-[if (op.returnType <> null)] -> [op.returnType.name/][/if]
-[/template]
+[template generateParameters(op : Operation)][for (p : Parameter | op.parameters) separator(', ')][if (p.label <> null and p.label <> p.name)][p.label/] [/if][p.name/]: [generateTypeName(p)/][if (p.defaultValue <> null)] = [p.defaultValue/][/if][/for][/template]
 
-[template generateReturnStub(op : Operation)]
-[if (op.returnType <> null)]
-[if (op.returnType.name = 'String')]return ""
-[elseif (op.returnType.name = 'Int' or op.returnType.name = 'Double')]return 0
-[elseif (op.returnType.name = 'Bool')]return false
-[else]fatalError("Not implemented")
-[/if]
-[/if]
-[/template]
+[template generateReturnType(op : Operation)][if (op.returnType <> null)] -> [if (op.isCollection)]['[' + op.returnType.name + ']'/][else][op.returnType.name/][/if][if (op.isOptional)]?[/if][/if][/template]
+
+[template generateReturnStub(op : Operation)][if (op.isOptional)]return nil[elseif (op.isCollection)]return ['[]'/][elseif (op.returnType.name = 'String')]return ""[elseif (op.returnType.name = 'Int' or op.returnType.name = 'Double')]return 0[elseif (op.returnType.name = 'Bool')]return false[else]fatalError("Not implemented")[/if][/template]
 
 [comment ================================================================ /]
 [comment                    PROTOCOL GENERATION                          /]
@@ -151,7 +128,7 @@ protocol [proto.name/][if (proto.extends->notEmpty())]: [proto.extends.name->sep
     var [prop.name/]: [generateTypeName(prop)/] { get[if (not prop.isReadOnly)] set[/if] }
 [/for]
 [for (op : Operation | proto.operations)]
-    func [op.name/]([generateParameters(op)/])[if (op.isAsync)] async[/if][if (op.throws)] throws[/if][generateReturnType(op)/]
+    [generateSignature(op)/]
 [/for]
 }
 [/file]

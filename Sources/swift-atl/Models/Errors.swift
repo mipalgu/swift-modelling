@@ -6,6 +6,7 @@
 //  Copyright © 2025 Rene Hexel. All rights reserved.
 //
 import Foundation
+import ModellingCommandLine
 
 // MARK: - Validation Error
 
@@ -74,6 +75,21 @@ enum TransformationError: Error, LocalizedError {
     /// - Parameter argument: The argument as it was given on the command line
     case invalidParameterArgument(String)
 
+    /// A metamodel file was not given in a form that binds a metamodel of the module.
+    ///
+    /// - Parameter message: Description of what was wrong with the metamodel files
+    case invalidMetamodelArgument(String)
+
+    /// A metamodel of the module is bound neither by a metamodel file nor by a directive.
+    ///
+    /// - Parameter name: The name that the module header gives the metamodel
+    case unboundMetamodel(String)
+
+    /// The transformation refers to types or features that its metamodels do not define.
+    ///
+    /// - Parameter problems: One sentence for each problem, in the order of the module
+    case invalidTransformation([String])
+
     /// Provides a localised description of the transformation error.
     ///
     /// Generates user-friendly error messages with context about the failure,
@@ -92,6 +108,12 @@ enum TransformationError: Error, LocalizedError {
             return "Unsupported model format: \(format)"
         case .invalidParameterArgument(let argument):
             return "Invalid parameter '\(argument)': expected name=value"
+        case .invalidMetamodelArgument(let message):
+            return "Invalid metamodel argument: \(message)"
+        case .unboundMetamodel(let name):
+            return "No file or directive gives the metamodel '\(name)': give it with --\(TransformMetamodelOptions.sourceOptionName), --\(TransformMetamodelOptions.targetOptionName) or --\(MetamodelOptions.optionName), or with an -- @path or -- @nsURI directive"
+        case .invalidTransformation(let problems):
+            return "The transformation is not valid:\n" + problems.map { "  - \($0)" }.joined(separator: "\n")
         }
     }
 }

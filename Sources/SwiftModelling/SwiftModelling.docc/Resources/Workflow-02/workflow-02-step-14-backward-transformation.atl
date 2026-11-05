@@ -1,0 +1,78 @@
+-- Writes an improved order model (Orders 2.0) back in the legacy format
+-- (LegacyOrders 1.0), for tools that have not been updated yet.
+-- Customer details, addresses and payments are copied into each order
+-- again, and the stored totals are computed from the items.
+module Orders2LegacyOrders;
+create OUT: Legacy from IN: Orders;
+
+-- An amount rounded to whole cents.
+helper def: cents(amount: Real): Real = (amount * 100).round() / 100;
+
+helper context Orders!Address def: asText: String =
+    self.street + ', ' + self.suburb + ' ' + self.state + ' ' + self.postcode
+        + ', ' + self.country;
+
+helper context Orders!Order def: itemsTotal: Real =
+    thisModule.cents(self.items->collect(i | i.quantity * i.unitPrice)->sum());
+
+rule Store2Store {
+    from
+        s: Orders!Store
+    to
+        t: Legacy!Store (
+            name <- s.name,
+            products <- s.products,
+            orders <- s.orders
+        )
+}
+
+rule Product2Product {
+    from
+        p: Orders!Product
+    to
+        t: Legacy!Product (
+            code <- p.code,
+            name <- p.name,
+            desc <- p.description,
+            price <- p.price,
+            category <- p.category,
+            stockQty <- p.stock.onHand,
+            reorderLevel <- p.stock.reorderLevel,
+            warehouseLocation <- p.stock.location
+        )
+}
+
+rule Order2Order {
+    from
+        o: Orders!Order
+    to
+        t: Legacy!Order (
+            orderId <- o.orderId,
+            orderDate <- o.orderDate,
+            status <- o.status.toString(),
+            notes <- o.notes,
+            customerName <- o.customer.name,
+            customerEmail <- o.customer.email,
+            customerPhone <- o.customer.phone,
+            shippingAddress <- o.shippingAddress.asText,
+            billingAddress <- o.billingAddress.asText,
+            totalAmount <- o.itemsTotal,
+            taxAmount <- thisModule.cents(o.itemsTotal / 10),
+            paymentMethod <- o.payment.method.toString(),
+            cardLastFour <- o.payment.cardLastFour,
+            items <- o.items
+        )
+}
+
+rule OrderItem2OrderItem {
+    from
+        i: Orders!OrderItem
+    to
+        t: Legacy!OrderItem (
+            productCode <- i.product.code,
+            productName <- i.product.name,
+            qty <- i.quantity,
+            unitPrice <- i.unitPrice,
+            lineTotal <- thisModule.cents(i.quantity * i.unitPrice)
+        )
+}

@@ -11,7 +11,7 @@ swift-aql evaluate --model university-data.xmi \
   --expression "university.students->select(s |
     s.enrolledIn->exists(c | c.prerequisites->notEmpty()))"
 
-# Output: Students enrolled in at least one course with prerequisites
+# Output: [Student(Alex Johnson), Student(Beth Smith), Student(Chris Davis), ..., Student(Julia Adams)]
 
 # Find courses where all prerequisites are level 100 or 200
 swift-aql evaluate --model university-data.xmi \
@@ -19,4 +19,4 @@ swift-aql evaluate --model university-data.xmi \
     c.prerequisites->notEmpty() and
     c.prerequisites->forAll(p | p.level <= 200))"
 
-# Output: Courses with only introductory prerequisites
+# Output: [Course(Algorithms), Course(Machine Learning), Course(Operating Systems), Course(Linear Algebra), Course(Differential Equations), Course(Quantum Mechanics)]

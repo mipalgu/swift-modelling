@@ -32,6 +32,9 @@ jobs:
       - name: Swift version
         run: swift --version
 
+      - name: Install the tools that the tutorials use
+        run: brew install graphviz
+
       - name: Build
         run: swift build --build-tests
 
@@ -66,6 +69,13 @@ jobs:
 
       - name: Swift version
         run: swift --version
+
+      - name: Install the tools that the tutorials use
+        run: |
+          if [ "$(id -u)" = 0 ]; then SUDO=; else SUDO=sudo; fi
+          $SUDO apt-get update
+          $SUDO apt-get install --yes --no-install-recommends \
+            ca-certificates curl default-jdk-headless graphviz perl
 
       - name: Build
         run: swift build --build-tests

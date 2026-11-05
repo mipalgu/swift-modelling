@@ -26,10 +26,12 @@ struct InfoCommand: AsyncParsableCommand {
 
             Available commands:
               validate    Validate models and metamodels
-              convert     Convert between formats (XMI <-> JSON)
+              inspect     Show the structure of a metamodel or a model
+              query       Query models and metamodels
+              convert     Convert models and metamodels to and from JSON
+              create      Create a model with one root object
               genmodel    Write a generator model for an Ecore model
               generate    Generate code from models
-              query       Query models and metamodels
 
             Use 'swift-ecore <command> --help' for detailed help on each command.
             """)

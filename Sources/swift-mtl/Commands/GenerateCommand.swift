@@ -30,13 +30,20 @@ struct GenerateCommand: AsyncParsableCommand {
             Supports generation from models in XMI and JSON formats with automatic
             format detection based on file extensions.
 
+            --template names the main template of the module. A value that ends in .mtl names \
+            the template file instead, when no template file argument is given.
+
             Modules that the template imports are searched in the directory of the template and \
             then in the --template-path directories. Each --param name=value is available to the \
             templates as the variable [name/] and through the services parameter('name') and \
             hasParameter('name'); a name must be an identifier and not a reserved keyword. Existing \
             files are merged with the generated text when the module declares a merge, and \
             replaced otherwise; --force-overwrite always replaces them, and --diff keeps them and \
-            writes the generated text beside them.
+            writes the generated text beside them. Text that the templates write outside their \
+            [file] blocks is saved as stdout in the output directory, unless it is only white \
+            space or a [file] block of the run wrote stdout itself; \
+            --\(GenerateCommand.printStandardOutputOption) prints that text on standard output \
+            instead and saves no stdout file.
 
             Instead of a template file, --template-set names a template set: a directory with a \
             templateset.json descriptor, or the language of a bundled set \
@@ -70,6 +77,11 @@ struct GenerateCommand: AsyncParsableCommand {
                 swift-mtl generate template.mtl \\
                   --model input.xmi \\
                   --template generateAll \\
+                  --output generated/
+
+                # Name the template file with --template instead of as an argument
+                swift-mtl generate --template template.mtl \\
+                  --model input.xmi \\
                   --output generated/
 
                 # Ecore model: the EPackage becomes a template argument
@@ -113,6 +125,9 @@ struct GenerateCommand: AsyncParsableCommand {
                   --model input.xmi \\
                   --output generated/ \\
                   --verbose
+
+                # Trace the template and model parsers
+                swift-mtl generate template.mtl --model input.xmi --debug
             """
     )
 
@@ -151,7 +166,16 @@ struct GenerateCommand: AsyncParsableCommand {
     @Option(name: .shortAndLong, help: "Output directory for generated files")
     var output: String = "."
 
-    @Option(name: .shortAndLong, help: "Main template name to execute (auto-detect if not specified)")
+    /// The main template to run, or the template file when no template file argument is given.
+    ///
+    /// A value with the extension of MTL module files names the template file, since a
+    /// template name cannot contain a dot. Any other value names the main template.
+    @Option(
+        name: .shortAndLong,
+        help: """
+            Main template name to execute (auto-detect if not specified), or the template file \
+            (.mtl) when no template file argument is given
+            """)
     var template: String?
 
     /// The directories searched for imported modules.
@@ -165,6 +189,17 @@ struct GenerateCommand: AsyncParsableCommand {
 
     @Flag(help: "Write the generated text of existing files beside them as .<name>.new")
     var diff: Bool = false
+
+    /// The long name of the option that prints the text outside file blocks.
+    static let printStandardOutputOption = "print-standard-output"
+
+    /// Whether the text written outside any file block is printed instead of saved.
+    @Flag(
+        name: .customLong(GenerateCommand.printStandardOutputOption),
+        help: ArgumentHelp(
+            "Print the text that the templates write outside [file] blocks instead of saving it "
+                + "as \(MTLStandardOutput.fileName) in the output directory"))
+    var printStandardOutput: Bool = false
 
     /// How the templates read features that a model does not set.
     @OptionGroup(title: "Evaluation")
@@ -200,6 +235,9 @@ struct GenerateCommand: AsyncParsableCommand {
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose: Bool = false
 
+    /// Whether the template and model parsers trace their work.
+    @OptionGroup var debugOptions: DebugOptions
+
     /// The languages of the bundled template sets, as text for the help.
     ///
     /// - Returns: The names of the languages, separated by commas.
@@ -207,11 +245,29 @@ struct GenerateCommand: AsyncParsableCommand {
         TemplateSetLocator().availableLanguages().joined(separator: ", ")
     }
 
+    /// Whether a value of `--template` names a template file rather than a template.
+    ///
+    /// - Parameter value: The value of the option.
+    /// - Returns: `true` if the value has the extension of MTL module files.
+    static func namesTemplateFile(_ value: String) -> Bool {
+        URL(fileURLWithPath: value).pathExtension == MTLSyntax.moduleFileExtension
+    }
+
     /// Checks that the command line names either a template file or a template set.
+    ///
+    /// A template file that `--template` names takes the place of the template file argument.
     ///
     /// - Throws: A validation error if both or neither are given, or if an option that applies
     ///   to only one of them is given with the other.
-    func validate() throws {
+    mutating func validate() throws {
+        if let value = template, Self.namesTemplateFile(value) {
+            guard templateFile == nil else {
+                throw ArgumentParser.ValidationError(
+                    "Give the template file either as an argument or with --template, not both")
+            }
+            templateFile = value
+            template = nil
+        }
         switch (templateFile, templateSet) {
         case (nil, nil):
             throw ArgumentParser.ValidationError("Give a template file or --template-set")
@@ -278,7 +334,7 @@ struct GenerateCommand: AsyncParsableCommand {
 
         let searchURLs = try templatePathOptions.directories()
         let parameters = try parameterOptions.services
-        let parser = MTLParser(enableDebugging: verbose, searchPaths: searchURLs)
+        let parser = MTLParser(enableDebugging: debugOptions.debug, searchPaths: searchURLs)
         let mtlModule: MTLModule
         do {
             mtlModule = try await parser.parse(templateURL)
@@ -322,6 +378,7 @@ struct GenerateCommand: AsyncParsableCommand {
         try createOutputDirectory()
 
         // Execute generation
+        let standardOutputBefore = FileState(of: standardOutputURL)
         let strategy = MTLFileSystemStrategy(
             basePath: output, options: generatorOptions, standardOutput: .capture)
         let generator = MTLGenerator(
@@ -340,7 +397,7 @@ struct GenerateCommand: AsyncParsableCommand {
             throw ValidationError.generationFailed(error.localizedDescription)
         }
         GenerationWarningReport.write(generator.statistics.warnings)
-        try await writeStandardOutput(of: strategy)
+        try await writeStandardOutput(of: strategy, before: standardOutputBefore)
 
         // Display results
         if verbose {
@@ -385,10 +442,10 @@ struct GenerateCommand: AsyncParsableCommand {
             arguments: inputs.arguments, models: inputs.models, resourceSet: inputs.resourceSet,
             progress: { update in if verbose { print("  \(update.message)") } })
         GenerationWarningReport.write(result.warnings)
-        if let text = result.standardOutput {
-            let url = URL(fileURLWithPath: output).appendingPathComponent(MTLStandardOutput.fileName)
-            try text.write(to: url, atomically: true, encoding: .utf8)
-        }
+        let standardOutputFile = standardOutputURL.standardizedFileURL
+        try writeStandardOutput(
+            result.standardOutput,
+            writtenByRun: result.files.contains { $0.standardizedFileURL == standardOutputFile })
 
         if verbose {
             print("\n=== Generation Complete ===")
@@ -454,12 +511,14 @@ struct GenerateCommand: AsyncParsableCommand {
             for metamodelPath in metamodel {
                 try await MetamodelRegistration.registerMetamodel(
                     at: metamodelPath, into: resourceSet,
-                    announcement: MetamodelRole.registeredOnly.announcement, verbose: verbose)
+                    announcement: MetamodelRole.registeredOnly.announcement, verbose: verbose,
+                    debug: debugOptions.debug)
             }
             for (index, modelPath) in model.enumerated() where MetamodelRegistration.isEcoreFile(modelPath) {
                 let package = try await MetamodelRegistration.registerMetamodel(
                     at: modelPath, into: resourceSet,
-                    announcement: MetamodelRole.registeredAndInput.announcement, verbose: verbose)
+                    announcement: MetamodelRole.registeredAndInput.announcement, verbose: verbose,
+                    debug: debugOptions.debug)
                 let modelURL = URL(fileURLWithPath: modelPath)
                 let resource = await resourceSet.createResource(uri: modelURL.absoluteString)
                 await resource.add(package)
@@ -481,7 +540,7 @@ struct GenerateCommand: AsyncParsableCommand {
                     print("Loading input model \(index + 1): \(modelPath) (format: \(format.rawValue))")
                 }
 
-                let options = ModelIO.LoadOptions(requiresMetamodel: false, enableDebugging: verbose)
+                let options = ModelIO.LoadOptions(requiresMetamodel: false, enableDebugging: debugOptions.debug)
                 let resource = try await ModelIO.load(
                     url: modelURL, format: format,
                     resourceSet: format == .json ? settings.makeResourceSet() : resourceSet, options: options
@@ -549,18 +608,81 @@ enum ValidationError: Error, CustomStringConvertible {
 }
 
 extension GenerateCommand {
-    /// Writes the text a template produced outside any file block.
+    /// The file in the output directory that keeps the text written outside any file block.
+    ///
+    /// - Returns: The file named ``MTLStandardOutput/fileName`` in the output directory.
+    var standardOutputURL: URL {
+        URL(fileURLWithPath: output).appendingPathComponent(MTLStandardOutput.fileName)
+    }
+
+    /// Writes the text a single template produced outside any file block.
     ///
     /// Text that a template writes outside a `[file]` block is collected by the
     /// generation strategy and saved in the output directory under the standard
-    /// output file name, so that it remains available after the command finishes.
-    /// Nothing is written when the template produced no such text.
+    /// output file name, so that it remains available after the command finishes,
+    /// or printed on standard output with ``printStandardOutput``.
+    /// Nothing is written when the template produced no such text, or only white
+    /// space such as the line breaks between its file blocks. A file of that name
+    /// that the template wrote itself with a `[file]` block is kept as the template
+    /// wrote it: the file counts as written by the run when it appeared, or was
+    /// replaced or modified, during the generation.
     ///
-    /// - Parameter strategy: The file system strategy used for generation.
+    /// - Parameters:
+    ///   - strategy: The file system strategy used for generation.
+    ///   - before: The state of the standard output file before the generation.
     /// - Throws: An error if the file cannot be written.
-    func writeStandardOutput(of strategy: MTLFileSystemStrategy) async throws {
-        guard let text = await strategy.standardOutput else { return }
-        let url = URL(fileURLWithPath: output).appendingPathComponent(MTLStandardOutput.fileName)
-        try text.write(to: url, atomically: true, encoding: .utf8)
+    func writeStandardOutput(of strategy: MTLFileSystemStrategy, before: FileState) async throws {
+        try writeStandardOutput(
+            await strategy.standardOutput, writtenByRun: FileState(of: standardOutputURL) != before)
+    }
+
+    /// Writes the text written outside any file block to the standard output file, or prints it.
+    ///
+    /// Nothing is written or printed when there is no text or when the text is empty or only
+    /// white space. With ``printStandardOutput``, the text is printed on standard output and no
+    /// file is written. Otherwise the text is saved in the standard output file, unless the run
+    /// itself wrote that file with a `[file]` block.
+    ///
+    /// - Parameters:
+    ///   - text: The text written outside any file block, or `nil` if none was kept.
+    ///   - writtenByRun: Whether the run wrote the standard output file with a `[file]` block.
+    /// - Throws: An error if the file cannot be written.
+    func writeStandardOutput(_ text: String?, writtenByRun: Bool) throws {
+        guard let text, text.contains(where: { !$0.isWhitespace }) else { return }
+        if printStandardOutput {
+            print(text, terminator: "")
+            return
+        }
+        guard !writtenByRun else { return }
+        try text.write(to: standardOutputURL, atomically: true, encoding: .utf8)
+    }
+}
+
+/// The state of a file on disk, which tells whether the file was written between two looks.
+///
+/// Two states of the same path differ when the file appeared or disappeared, or when it was
+/// replaced or modified in between.
+struct FileState: Equatable, Sendable {
+    /// Whether the file exists.
+    let exists: Bool
+
+    /// The number of the file in its file system, which changes when the file is replaced.
+    let fileNumber: UInt64?
+
+    /// The time of the last modification of the file.
+    let modificationDate: Date?
+
+    /// The size of the file in bytes.
+    let size: UInt64?
+
+    /// Looks at a file.
+    ///
+    /// - Parameter url: The location of the file.
+    init(of url: URL) {
+        let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
+        exists = attributes != nil
+        fileNumber = (attributes?[.systemFileNumber] as? NSNumber)?.uint64Value
+        modificationDate = attributes?[.modificationDate] as? Date
+        size = (attributes?[.size] as? NSNumber)?.uint64Value
     }
 }

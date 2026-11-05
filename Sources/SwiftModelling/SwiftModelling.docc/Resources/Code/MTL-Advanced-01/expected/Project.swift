@@ -32,9 +32,9 @@ class Project: Identifiable {
         // TODO: Implement removeTask
     }
 
-    func tasksWithPriority(priority: Priority) -> Task {
+    func tasksWithPriority(priority: Priority) -> [Task] {
         // TODO: Implement tasksWithPriority
-        fatalError("Not implemented")
+        return []
     }
 
     func fetchRemoteTasks() async throws {

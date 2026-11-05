@@ -85,7 +85,7 @@
       <!-- Invariant: Account number must be 10 digits -->
       <details key="validAccountNumber" value="self.accountNumber.size() = 10"/>
       <!-- Invariant: Savings accounts must maintain minimum balance -->
-      <details key="sufficientMinimumBalance" value="self.accountType = AccountType::SAVINGS implies self.balance >= self.minimumBalance"/>
+      <details key="sufficientMinimumBalance" value="self.accountType = Bank::AccountType::SAVINGS implies self.balance >= self.minimumBalance"/>
     </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="accountNumber" lowerBound="1"
         eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
@@ -107,14 +107,14 @@
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="totalDeposits" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"
         changeable="false" volatile="true" transient="true" derived="true">
       <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
-        <details key="derivation" value="self.transactions->select(t | t.transactionType = TransactionType::DEPOSIT)->collect(amount)->sum()"/>
+        <details key="derivation" value="self.transactions->select(t | t.transactionType = Bank::TransactionType::DEPOSIT)->collect(amount)->sum()"/>
       </eAnnotations>
     </eStructuralFeatures>
     <!-- Derived: Total withdrawals -->
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="totalWithdrawals" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"
         changeable="false" volatile="true" transient="true" derived="true">
       <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
-        <details key="derivation" value="self.transactions->select(t | t.transactionType = TransactionType::WITHDRAWAL)->collect(amount)->sum()"/>
+        <details key="derivation" value="self.transactions->select(t | t.transactionType = Bank::TransactionType::WITHDRAWAL)->collect(amount)->sum()"/>
       </eAnnotations>
     </eStructuralFeatures>
     <!-- Operation with pre/post conditions -->

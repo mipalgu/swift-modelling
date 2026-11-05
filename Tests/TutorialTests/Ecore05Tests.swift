@@ -63,29 +63,27 @@ struct Ecore05Tests {
         let content = try String(contentsOf: jsonPath, encoding: .utf8)
 
         // Verify JSON structure markers
-        #expect(content.contains("\"$type\""))
-        #expect(content.contains("\"$id\""))
+        #expect(content.contains("\"eClass\""))
 
         // Verify Company element
-        #expect(content.contains("\"$type\": \"company:Company\""))
-        #expect(content.contains("\"$id\": \"company1\""))
-        #expect(content.contains("\"name\": \"Tech Innovations Ltd\""))
+        #expect(content.contains("\"eClass\" : \"http://www.example.org/company#//Company\""))
+        #expect(content.contains("\"name\" : \"Tech Innovations Ltd\""))
 
         // Verify employees array
         #expect(content.contains("\"employees\""))
 
         // Verify Employee instances in JSON
-        #expect(content.contains("\"$type\": \"company:Employee\""))
-        #expect(content.contains("\"employeeId\": \"E001\""))
-        #expect(content.contains("\"employeeId\": \"E002\""))
+        #expect(content.contains("\"eClass\" : \"http://www.example.org/company#//Employee\""))
+        #expect(content.contains("\"employeeId\" : \"E001\""))
+        #expect(content.contains("\"employeeId\" : \"E002\""))
 
         // Verify Manager instance in JSON
-        #expect(content.contains("\"$type\": \"company:Manager\""))
-        #expect(content.contains("\"department\": \"Engineering\""))
+        #expect(content.contains("\"eClass\" : \"http://www.example.org/company#//Manager\""))
+        #expect(content.contains("\"department\" : \"Engineering\""))
 
         // Verify enum values
-        #expect(content.contains("\"status\": \"FULL_TIME\""))
-        #expect(content.contains("\"status\": \"PART_TIME\""))
+        #expect(content.contains("\"status\" : \"FULL_TIME\""))
+        #expect(content.contains("\"status\" : \"PART_TIME\""))
     }
 
     // MARK: - Section 2: Converting Between Formats
@@ -117,7 +115,7 @@ struct Ecore05Tests {
 
         // Verify command structure
         #expect(content.contains("diff"))
-        #expect(content.contains("company-model.xmi"))
+        #expect(content.contains("company-model.json"))
         #expect(content.contains("company-roundtrip.xmi"))
     }
 
@@ -208,8 +206,7 @@ struct Ecore05Tests {
         let root = jsonObject as! [String: Any]
 
         // Verify required top-level fields
-        #expect(root["$type"] as? String == "company:Company")
-        #expect(root["$id"] as? String == "company1")
+        #expect(root["eClass"] as? String == "http://www.example.org/company#//Company")
         #expect(root["name"] as? String == "Tech Innovations Ltd")
         #expect(root["employees"] is [Any])
 
@@ -228,25 +225,25 @@ struct Ecore05Tests {
 
         // Verify same company name in both
         #expect(xmiContent.contains("name=\"Tech Innovations Ltd\""))
-        #expect(jsonContent.contains("\"name\": \"Tech Innovations Ltd\""))
+        #expect(jsonContent.contains("\"name\" : \"Tech Innovations Ltd\""))
 
         // Verify same employee IDs in both
         #expect(xmiContent.contains("employeeId=\"E001\""))
-        #expect(jsonContent.contains("\"employeeId\": \"E001\""))
+        #expect(jsonContent.contains("\"employeeId\" : \"E001\""))
 
         #expect(xmiContent.contains("employeeId=\"E002\""))
-        #expect(jsonContent.contains("\"employeeId\": \"E002\""))
+        #expect(jsonContent.contains("\"employeeId\" : \"E002\""))
 
         // Verify same department in both
         #expect(xmiContent.contains("department=\"Engineering\""))
-        #expect(jsonContent.contains("\"department\": \"Engineering\""))
+        #expect(jsonContent.contains("\"department\" : \"Engineering\""))
 
         // Verify same status values in both
         #expect(xmiContent.contains("status=\"FULL_TIME\""))
-        #expect(jsonContent.contains("\"status\": \"FULL_TIME\""))
+        #expect(jsonContent.contains("\"status\" : \"FULL_TIME\""))
 
         #expect(xmiContent.contains("status=\"PART_TIME\""))
-        #expect(jsonContent.contains("\"status\": \"PART_TIME\""))
+        #expect(jsonContent.contains("\"status\" : \"PART_TIME\""))
     }
 
     @Test("JSON type markers consistency")
@@ -255,17 +252,13 @@ struct Ecore05Tests {
         let content = try String(contentsOf: jsonPath, encoding: .utf8)
 
         // Count type markers (should be 4: 1 Company + 2 Employee + 1 Manager)
-        let typeCount = content.components(separatedBy: "\"$type\"").count - 1
+        let typeCount = content.components(separatedBy: "\"eClass\"").count - 1
         #expect(typeCount == 4)
 
-        // Count ID markers (should be 4: same as types)
-        let idCount = content.components(separatedBy: "\"$id\"").count - 1
-        #expect(idCount == 4)
-
         // Verify specific types
-        #expect(content.contains("\"$type\": \"company:Company\""))
-        #expect(content.contains("\"$type\": \"company:Employee\""))
-        #expect(content.contains("\"$type\": \"company:Manager\""))
+        #expect(content.contains("\"eClass\" : \"http://www.example.org/company#//Company\""))
+        #expect(content.contains("\"eClass\" : \"http://www.example.org/company#//Employee\""))
+        #expect(content.contains("\"eClass\" : \"http://www.example.org/company#//Manager\""))
     }
 
     @Test("Conversion command bidirectionality")

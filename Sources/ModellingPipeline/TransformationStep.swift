@@ -64,12 +64,14 @@ public struct TransformationStep: Sendable {
     /// A target without a location gets a URI with the ``transientScheme`` and its alias.
     public var targetURIs: [String: URL]
 
-    /// The behaviours of the ATL language in which the module is written.
+    /// The behaviours of the ATL language in which the module is written and run.
     ///
     /// A step created with an initialiser that takes `atlOptions` carries the value given there,
     /// such as `ATLOptions.standard` for the behaviour documented for this release, which
-    /// accepts integer ranges such as `Sequence{1..3}`. A step created with an initialiser of
-    /// version 0.6 carries `ATLOptions.legacy`, which rejects them as that version did.
+    /// accepts integer ranges such as `Sequence{1..3}` and divides two Integers into a Real,
+    /// so `7 / 2` is `3.5`. A step created with an initialiser of version 0.6 carries
+    /// `ATLOptions.legacy`, which rejects ranges and truncates the quotient of two Integers,
+    /// as that version did.
     public var atlOptions: ATLOptions
 
     /// Creates a transformation step with a registry of metamodels and the ATL behaviour of
@@ -261,7 +263,8 @@ public struct TransformationStep: Sendable {
             targetModels[alias] = await targetResourceSet.createResource(uri: uri)
         }
         let machine = ATLVirtualMachine(
-            module: module, unsetFeatureReads: unsetFeatureReads, nativeHelpers: nativeHelpers)
+            module: module, options: atlOptions, unsetFeatureReads: unsetFeatureReads,
+            nativeHelpers: nativeHelpers)
         do {
             try await machine.execute(sources: sourceModels, targets: targetModels, parameters: parameters)
         } catch {

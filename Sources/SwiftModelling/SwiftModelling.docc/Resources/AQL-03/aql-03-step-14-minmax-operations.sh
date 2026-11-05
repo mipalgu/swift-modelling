@@ -7,7 +7,7 @@ swift-aql evaluate --model library-data.xmi \
     ->select(b | b.available)
     ->collect(b | b.title)"
 
-# Output: ['Pride and Prejudice', 'Sense and Sensibility', 'Foundation', ...]
+# Output: ["Pride and Prejudice", "Sense and Sensibility", "Foundation", ...]
 
 # Filter, transform, then sort by length
 swift-aql evaluate --model library-data.xmi \
@@ -16,7 +16,7 @@ swift-aql evaluate --model library-data.xmi \
     ->collect(b | b.title)
     ->sortedBy(t | t.size())"
 
-# Output: Titles sorted by length of title string
+# Output: ["1984", "I, Robot", "Foundation", "The Hobbit", "Clean Code", ..., "Murder on the Orient Express"]
 
 # Multi-stage pipeline - expensive fiction books
 swift-aql evaluate --model library-data.xmi \
@@ -25,7 +25,7 @@ swift-aql evaluate --model library-data.xmi \
     ->select(b | b.price > 15)
     ->collect(b | b.title + ': $' + b.price.toString())"
 
-# Output: ['Foundation: $15.99', 'A Brief History of Time: $18.99', 'The Lord of the Rings: $35.99']
+# Output: ["Foundation: $15.99", "The Lord of the Rings: $35.99"]
 
 # Pipeline with navigation - British authors' available books
 swift-aql evaluate --model library-data.xmi \
@@ -36,7 +36,7 @@ swift-aql evaluate --model library-data.xmi \
     ->select(b | b.available)
     ->collect(b | b.title)"
 
-# Output: Available books written by British authors
+# Output: ["Pride and Prejudice", "Sense and Sensibility", "Murder on the Orient Express", ..., "On the Origin of Species"]
 
 # Pipeline with aggregation at the end
 swift-aql evaluate --model library-data.xmi \
@@ -46,7 +46,7 @@ swift-aql evaluate --model library-data.xmi \
     ->collect(b | b.price)
     ->sum()"
 
-# Output: Total price of available 20th/21st century books
+# Output: 180.92
 
 # Complex pipeline - member activity summary
 swift-aql evaluate --model library-data.xmi \
@@ -55,4 +55,4 @@ swift-aql evaluate --model library-data.xmi \
     ->collect(m | m.name)
     ->sortedBy(n | n)"
 
-# Output: Sorted list of members with active borrowings
+# Output: ["Alice Thompson", "Bob Richardson", "Carol Mitchell", "David Patterson", "Frank Anderson"]

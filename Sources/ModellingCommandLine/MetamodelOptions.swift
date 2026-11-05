@@ -50,13 +50,18 @@ public struct MetamodelOptions: ParsableArguments, Sendable {
 
     /// Loads the metamodels given on the command line into a new resource set.
     ///
-    /// - Parameter verbose: Whether to print progress to standard output.
+    /// Verbose output reports each registered metamodel; the trace of the XMI parser is
+    /// printed only for debugging.
+    ///
+    /// - Parameters:
+    ///   - verbose: Whether to print progress to standard output.
+    ///   - debug: Whether the parser prints its trace of each metamodel document to standard output.
     /// - Returns: A resource set with every metamodel registered, or `nil` if none was given.
     /// - Throws: ``MetamodelRegistrationError/fileNotFound(_:)`` if a file does not exist, or
     ///   the error of the parser if a file cannot be loaded.
     @MainActor
-    public func resourceSet(verbose: Bool = false) async throws -> ResourceSet? {
+    public func resourceSet(verbose: Bool = false, debug: Bool = false) async throws -> ResourceSet? {
         guard isGiven else { return nil }
-        return try await MetamodelRegistration.resourceSet(registering: metamodels, verbose: verbose)
+        return try await MetamodelRegistration.resourceSet(registering: metamodels, verbose: verbose, debug: debug)
     }
 }

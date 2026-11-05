@@ -5,25 +5,29 @@ swift-aql evaluate --model university-data.xmi \
         good = university.students->select(s | s.grade >= 80 and s.grade < 90)->size(),
         pass = university.students->select(s | s.grade >= 60 and s.grade < 80)->size(),
         fail = university.students->select(s | s.grade < 60)->size()
-    in 'Excellent: ' + excellent + ', Good: ' + good + ', Pass: ' + pass + ', Fail: ' + fail"
+    in 'Excellent: ' + excellent.toString() + ', Good: ' + good.toString() +
+       ', Pass: ' + pass.toString() + ', Fail: ' + fail.toString()"
 
-# Output: "Excellent: 4, Good: 2, Pass: 3, Fail: 1"
+# Output: "Excellent: 3, Good: 3, Pass: 3, Fail: 1"
 
 # Average grade of CS majors
 swift-aql evaluate --model university-data.xmi \
   --expression "let csStudents = university.students->select(s | s.major.code = 'CS')
     in csStudents->collect(s | s.grade)->sum() / csStudents->size()"
 
-# Output: Average grade for Computer Science students
+# Output: 82.58333333333333
 
 # Total credits of courses taught by experienced professors
+# asSet() removes repeated courses; asSequence() keeps equal credit values
+# apart, as collecting over a set would merge them
 swift-aql evaluate --model university-data.xmi \
   --expression "university.departments.professors
     ->select(p | p.yearsExperience >= 15)
     .teaches
     ->flatten()
     ->asSet()
+    ->asSequence()
     ->collect(c | c.credits)
     ->sum()"
 
-# Output: Total credit hours
+# Output: 19
