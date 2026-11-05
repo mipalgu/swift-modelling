@@ -283,7 +283,7 @@ enum TutorialReplayConfiguration {
     // MARK: - Limits
 
     /// How long one Terminal step may run before it is stopped.
-    static let stepTimeout: Duration = .seconds(180)
+    static let stepTimeout: Duration = .seconds(600)
 
     /// How long the replay waits for the output of a stopped step to end.
     static let terminationGracePeriod: Duration = .seconds(5)
