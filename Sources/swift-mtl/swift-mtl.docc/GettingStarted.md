@@ -186,6 +186,16 @@ the module declares a merge, and replaced otherwise. Two flags change this:
   `.<name>.new`, so that you can compare the two. If both flags are given,
   `--force-overwrite` wins.
 
+Text that the templates write outside their `[file]` blocks is saved as
+`stdout` in the output directory. Nothing is saved when that text is only
+white space, such as the line breaks between file blocks, or when a `[file]`
+block of the same run wrote `stdout` itself. With `--print-standard-output`,
+the text is printed on standard output instead and no `stdout` file is saved:
+
+```bash
+swift-mtl generate hello.mtl --output generated/ --print-standard-output
+```
+
 ```bash
 swift-mtl generate GenerateSwift.mtl \
     --model company.xmi \

@@ -22,7 +22,7 @@ Swift implementation of the Eclipse Modeling Framework
 
 ### convert
 
-Convert models between XMI and JSON formats.
+Convert models between XMI and JSON, and metamodels between Ecore and JSON.
 
 ```bash
 swift-ecore convert <input-file> <output-file> [options]
@@ -32,9 +32,10 @@ swift-ecore convert <input-file> --output <output-file> [options]
 **Options:**
 
 - `-o, --output <file>` - The output file, instead of the second argument
-- `--validate` - Check the model as `validate` does, and write nothing if it has an error
-- `--input-format <xmi|json>` - Input format (inferred from the extension if not specified)
-- `--output-format <xmi|json>` - Output format (inferred from the extension if not specified)
+- `--validate` - Check the model or metamodel as `validate` does, and write nothing if it has an
+  error
+- `--input-format <xmi|json|ecore>` - Input format (inferred from the extension if not specified)
+- `--output-format <xmi|json|ecore>` - Output format (inferred from the extension if not specified)
 - `-m, --metamodel <file.ecore>` - An Ecore metamodel of the model (can be given several times)
 - `--reference-style <encoded|plain>` - How an XMI output spells references into itself
   (default `encoded`)
@@ -52,6 +53,21 @@ that cannot be written as a fragment, is reported once on standard error as a li
 with `warning:`. Without `--metamodel`, the warnings are followed by a `hint:` line suggesting
 it. Warnings do not change the exit status, and the completion message stays on standard
 output.
+
+A metamodel (`.ecore`) is written as a JSON metamodel, in which every object names its Ecore
+metaclass in `eClass`, contained elements are nested, and references are `{"$ref": ...}` objects
+with the name-based fragments of Ecore (`//Book/author`). A JSON file whose roots are Ecore
+packages is read as a metamodel, whatever its name, and can be written as `.ecore`. Enumerations,
+opposites, supertypes, annotations and every other construct of the metamodel are kept. A
+metamodel cannot be written as an XMI model, nor a model as `.ecore`: the command fails with an
+error that names the formats that suit the input, and writes nothing.
+
+References to other metamodel files keep their file names. A `shop.json` converted from a
+`shop.ecore` whose classes extend classes of `base.ecore` still refers to `base.ecore#//Named`,
+and `shop.ecore` converted back from it does too; `swift-ecore` reads such references in either
+format, so the converted file works as long as the file it refers to stays beside it. To convert
+a set of metamodels that refer to each other, convert every file into the same directory, then
+replace the extension in the references of the converted files, as in the last example below.
 
 With `--reference-style encoded`, the default, an XMI output keeps its usual layout, and a
 reference to an object of the same document keeps the leading `#` of its fragment
@@ -74,6 +90,15 @@ swift-ecore convert data.txt result.xmi --input-format json --output-format xmi
 
 # Write XMI whose same-document references match the files Eclipse writes
 swift-ecore convert model.json model.xmi --metamodel MyMetamodel.ecore --reference-style plain
+
+# Convert a metamodel to JSON and back
+swift-ecore convert shop.ecore shop.json
+swift-ecore convert shop.json shop-copy.ecore
+
+# Convert a set of metamodels, then make shop.json refer to base.json instead of base.ecore
+swift-ecore convert base.ecore base.json
+swift-ecore convert shop.ecore shop.json
+sed -i.bak 's/base\.ecore#/base.json#/g' shop.json
 ```
 
 ### validate
@@ -91,6 +116,13 @@ swift-ecore validate <file>... [options]
   concrete classes that extend it, and warn about one that none extends; for a model, confirm
   that no object is an instance of one
 - `--strict` - Fail on warnings as well as on errors
+- `--require-explicit-values` - Report every required single-valued feature that the model
+  leaves unset, even when it reads as a default; unlike the Eclipse Modeling Framework, and
+  unrelated to `--strict`
+- `--strict-aql` - Evaluate the OCL invariants as strictly as Eclipse AQL: a union of a sequence with
+  a set, or a single value passed to `concat`, `sub` or `union`, is a type error instead of being
+  accepted; unrelated to `--strict`. `validate` reads no configuration file, so only this flag
+  turns it on
 - `--format <text|json>` - The format of the report (default `text`)
 - `--report <file>` - Write the report to a file instead of standard output
 - `-v, --verbose` - Show the root objects that were read, and every satisfied OCL invariant
@@ -103,6 +135,26 @@ features, references must lead to objects of the right class, no object may be a
 abstract class or an interface, and every OCL invariant of the metamodel must hold. A JSON model is
 rejected if a value cannot be read by the data type of its attribute, or if a class is not defined
 by any of the metamodels.
+
+Multiplicities are checked as the Eclipse Modeling Framework checks them. Each element of a
+many-valued feature counts as one value, and so does a single value that a many-valued feature
+holds without a list. A required single-valued feature that the model leaves unset is accepted
+when it reads as a default: the first literal of an enumeration, `false`, zero, or the default
+value of the feature. It is an error when the feature has no default, such as a string or a
+reference, or when it is unsettable, which distinguishes being unset from holding its default.
+Only the values that a model sets are checked against the types of their features.
+
+`--require-explicit-values` is stricter than the Eclipse Modeling Framework: every required
+single-valued feature that the model leaves unset is an error, whatever its type. This suits
+models written by hand or migrated from another format, where an omitted value is more likely a
+mistake than a deliberate default. Models that the Eclipse Modeling Framework saves leave out
+values that equal the default of a feature, so they may fail this check although Eclipse accepts
+them.
+
+```bash
+# Report the status of an order that the model leaves unset, although it reads as the first literal
+swift-ecore validate orders.xmi -m Orders.ecore --require-explicit-values
+```
 
 Every problem is printed as a line starting with `error:`, `warning:` or `information:`, with the
 element and its location in the model, such as `//@employees.0`. A violated OCL invariant is
@@ -221,7 +273,10 @@ their location; a weaker identity never matches two objects that both have a str
 and removed objects are reported with their location, and for matched objects every changed
 attribute value and non-containment reference, with referenced objects described by their labels.
 Every given metamodel is registered for both models, so a legacy model and its migrated
-counterpart can be compared with the metamodels of both.
+counterpart can be compared with the metamodels of both. Without a metamodel, an XMI model and a
+JSON model name the classes of their objects differently, so the same objects may be reported as
+removed and added; a warning on standard error then suggests giving the metamodel with
+`--metamodel`.
 
 Each difference is a line that starts with `+` (added), `-` (removed) or `~` (changed), such as
 `~ attribute Order.status type: EString -> Status` or
@@ -369,7 +424,8 @@ Every language has a template set (`c`, `cpp`, `java` and `swift` are bundled) a
 - `--code-style <style>` - The layout of the generated text, one of the styles of the template set (`java`: `eclipse`, the default, or `emf`); rejected for sets that offer none, such as `swift`, `c` and `cpp`
 - `--defaults`, `--root-extends-class`, `--operation-reflection`, `--import-organizing` - The generator model defaults of an Ecore model that is imported for a template language, as for `genmodel`
 - `--let-type-mismatches <error|skip>` - Whether a typed `let` in the templates whose value does not conform to the declared type stops the generation (`error`, the default) or is skipped with a warning on standard error (`skip`, as in Acceleo 3)
-- `--block-line-breaks <acceleo|kept>`, `--collection-parameters <conforming|exact>`, `--check-let-types` / `--no-check-let-types`, `--cache-containers` / `--no-cache-containers`, `--collection-arguments <whole|first-element>`, `--collection-kinds <distinguished|sequences>`, `--single-value-collections <set|sequence>`, `--container-lookup <resources|registered-objects>` - The behaviours of the templates, as for `swift-mtl generate`; the first value is the default, and the second that of version 0.6
+- `--block-line-breaks <acceleo|kept>`, `--collection-parameters <conforming|exact>`, `--check-let-types` / `--no-check-let-types`, `--cache-containers` / `--no-cache-containers`, `--collection-arguments <whole|first-element>`, `--collection-kinds <distinguished|sequences>`, `--single-value-collections <set|sequence>`, `--container-lookup <resources|registered-objects>`, `--sequence-union <concatenation|distinct>`, `--null-addition <empty-text|null>`, `--text-form <joined|bracketed>` - The behaviours of the templates, as for `swift-mtl generate`; the first value is the default, and the second that of version 0.6
+- `--strict-aql` / `--no-strict-aql` - Whether the expressions of the templates reject what Eclipse AQL rejects, as for `swift-mtl generate`; neither preset sets it
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`) for every behaviour option above; a behaviour option that is given overrides it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
@@ -459,7 +515,7 @@ swift-ecore query model.json -q tree
 
 ## Environment and Configuration File
 
-Without `--semantics`, the `SWIFT_MODELLING_SEMANTICS` environment variable (`standard` or `legacy`) chooses the preset, and then the `semantics` key of a configuration file. The configuration file is the first `.swift-modelling.json` in the current directory or one of its parents, up to the directory that holds `.git`; `--config` names another file and `--no-config` reads none. Its keys are the names of the behaviour options without their leading `--`, with the spellings of the command line as JSON strings, or JSON booleans for `check-let-types` and `cache-containers`; a key that does not apply to a command is ignored. A behaviour option given on the command line overrides the file, an option in the file overrides the preset, `--semantics` overrides the environment variable, and the environment variable overrides `semantics` in the file. `--let-type-mismatches` and `--unset-features` do not depend on the preset: the command line overrides the file, which overrides their defaults. An invalid value of the variable, or an unknown key or an invalid value in the file, stops the command with an error that names it.
+Without `--semantics`, the `SWIFT_MODELLING_SEMANTICS` environment variable (`standard` or `legacy`) chooses the preset, and then the `semantics` key of a configuration file. The configuration file is the first `.swift-modelling.json` in the current directory or one of its parents, up to the directory that holds `.git`; `--config` names another file and `--no-config` reads none. Its keys are the names of the behaviour options without their leading `--`, with the spellings of the command line as JSON strings, or JSON booleans for `check-let-types`, `cache-containers` and `strict-aql`; a key that does not apply to a command is ignored. A behaviour option given on the command line overrides the file, an option in the file overrides the preset, `--semantics` overrides the environment variable, and the environment variable overrides `semantics` in the file. `--let-type-mismatches` and `--unset-features` do not depend on the preset: the command line overrides the file, which overrides their defaults. An invalid value of the variable, or an unknown key or an invalid value in the file, stops the command with an error that names it.
 
 ```json
 {
