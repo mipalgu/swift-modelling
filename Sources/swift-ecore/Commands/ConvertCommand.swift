@@ -10,25 +10,38 @@ import ECore
 import Foundation
 import ModellingCommandLine
 
-/// Command for converting between model formats.
+/// Command for converting between model formats and between metamodel formats.
 ///
 /// The convert command supports bidirectional conversion between XMI and JSON formats,
-/// preserving model structure and data integrity. With one or more `--metamodel` files, the
-/// model is read with the classes of those metamodels and written with package-qualified
-/// classes and typed references. Whatever cannot be kept is reported as a warning on standard
+/// preserving model structure and data integrity, and between Ecore metamodels (`.ecore`) and
+/// JSON metamodels. A JSON file is a metamodel when its roots are Ecore packages, whatever its
+/// name. References to other metamodel files keep their file names. With one or more
+/// `--metamodel` files, the model is read with the classes of those metamodels and written
+/// with package-qualified classes and typed references. Whatever cannot be kept is reported as a warning on standard
 /// error, and `--reference-style` chooses how an XMI output spells references into itself.
 struct ConvertCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "convert",
-        abstract: "Convert between model formats (XMI <-> JSON)",
+        abstract: "Convert models (XMI <-> JSON) and metamodels (Ecore <-> JSON)",
         discussion: """
-            Converts a model between XMI and JSON, inferring the formats from the file \
-            extensions unless --input-format or --output-format is given. The output file is \
-            the second argument or the value of --output. JSON is written indented, with the \
-            keys of every object in alphabetical order.
+            Converts a model between XMI and JSON, or a metamodel between Ecore and JSON, \
+            inferring the formats from the file extensions unless --input-format or \
+            --output-format is given. The output file is the second argument or the value of \
+            --output. JSON is written indented, with the keys of every object of a model in \
+            alphabetical order.
 
-            --validate checks the model as the validate command does and writes nothing if it \
-            has an error.
+            A JSON file whose roots are Ecore packages is a metamodel, whatever its name. A \
+            metamodel is written as .ecore or as JSON, and a model as XMI or JSON, so a \
+            metamodel cannot be written as an XMI model, nor a model as .ecore. References to \
+            other metamodel files keep their file names, so a converted metamodel still refers \
+            to the .ecore or JSON files it referred to, and swift-ecore reads either format. To convert a set of \
+            metamodels that refer to each other, convert every file into the same directory, \
+            then replace the extension in the references, for example with \
+            sed -i.bak 's/base\\.ecore#/base.json#/g' shop.json for a shop.json that refers \
+            to base.ecore.
+
+            --validate checks the model or metamodel as the validate command does and writes \
+            nothing if it has an error.
 
             --\(MetamodelOptions.optionName) names an Ecore metamodel of the model. \
             \(MetamodelOptions.effect)
@@ -61,11 +74,11 @@ struct ConvertCommand: AsyncParsableCommand {
 
     /// Input format override.
     @Option(
-        name: .long, help: "Input format (xmi, json) - auto-detect from extension if not specified")
+        name: .long, help: "Input format (xmi, json, ecore) - auto-detect from extension if not specified")
     var inputFormat: String?
 
     /// Output format override.
-    @Option(name: .long, help: "Output format (xmi, json) - infer from extension if not specified")
+    @Option(name: .long, help: "Output format (xmi, json, ecore) - infer from extension if not specified")
     var outputFormat: String?
 
     /// Enable verbose output.
@@ -85,9 +98,11 @@ struct ConvertCommand: AsyncParsableCommand {
     /// Executes the convert command.
     ///
     /// Converts the input file to the output format based on file extensions, and reports
-    /// what the conversion could not keep as warnings on standard error.
+    /// what the conversion could not keep as warnings on standard error. A metamodel is written
+    /// as `.ecore` or as JSON, and a model as XMI or JSON.
     ///
-    /// - Throws: `ConversionError` if conversion fails.
+    /// - Throws: `ConversionError` if conversion fails, or the output format does not suit a
+    ///   metamodel or a model.
     func run() async throws {
         let outputPath = try resolvedOutputPath()
         if verbose {
@@ -137,8 +152,11 @@ struct ConvertCommand: AsyncParsableCommand {
         let resourceSet = try await metamodelOptions.resourceSet(verbose: verbose)
 
         // Load input, collecting what the parser could not keep
-        let readFormat = try Self.instanceFormat(named: inputFormatToUse) {
+        let readFormat = try Self.format(named: inputFormatToUse) {
             ConversionError.unsupportedInputFormat($0)
+        }
+        let writeFormat = try Self.format(named: outputFormatToUse) {
+            ConversionError.unsupportedOutputFormat($0)
         }
         if verbose { print("Reading \(readFormat.description)...") }
         let loaded = try await ModelIO.load(
@@ -146,14 +164,12 @@ struct ConvertCommand: AsyncParsableCommand {
             options: ModelIO.LoadOptions(requiresMetamodel: false))
         let resource = loaded.resource
         var diagnostics = loaded.diagnostics
+        try Self.checkOutput(writeFormat, isMetamodel: !loaded.packages.isEmpty, input: inputURL.lastPathComponent)
         if validate {
             try await check(loaded, at: inputURL, in: resourceSet ?? ResourceSet())
         }
 
         // Save output
-        let writeFormat = try Self.instanceFormat(named: outputFormatToUse) {
-            ConversionError.unsupportedOutputFormat($0)
-        }
         if verbose { print("Writing \(writeFormat.description)...") }
         try await ModelIO.save(
             resource, to: outputURL, format: writeFormat,
@@ -204,15 +220,39 @@ struct ConvertCommand: AsyncParsableCommand {
         if verbose { print("Validation completed successfully") }
     }
 
-    /// The model instance format that a format name denotes.
+    /// The formats in which a metamodel is read and written.
+    static let metamodelFormats: [ModelFormat] = [.ecore, .json]
+
+    /// The formats in which a model is read and written.
+    static let modelFormats: [ModelFormat] = [.xmi, .json]
+
+    /// The format that a format name denotes.
     ///
     /// - Parameters:
-    ///   - name: The name of the format, in lower case, such as `xmi` or `json`.
-    ///   - unsupported: Creates the error for a name that denotes no model instance format.
-    /// - Returns: ``ECore/ModelFormat/xmi`` or ``ECore/ModelFormat/json``.
-    /// - Throws: The error of `unsupported` for any other name, including `ecore`.
-    static func instanceFormat(named name: String, unsupported: (String) -> ConversionError) throws -> ModelFormat {
-        guard let format = ModelFormat(fileExtension: name), format != .ecore else { throw unsupported(name) }
+    ///   - name: The name of the format, in lower case, such as `xmi`, `json` or `ecore`.
+    ///   - unsupported: Creates the error for a name that denotes no format.
+    /// - Returns: The format.
+    /// - Throws: The error of `unsupported` for any other name.
+    static func format(named name: String, unsupported: (String) -> ConversionError) throws -> ModelFormat {
+        guard let format = ModelFormat(fileExtension: name) else { throw unsupported(name) }
         return format
+    }
+
+    /// Checks that a format can hold what a file holds.
+    ///
+    /// - Parameters:
+    ///   - format: The format of the output.
+    ///   - isMetamodel: Whether the input is a metamodel rather than a model.
+    ///   - input: The name of the input file, for the error.
+    /// - Throws: ``ConversionError/metamodelOutputFormat(_:format:)`` for a metamodel in a
+    ///   format other than ``metamodelFormats``, or ``ConversionError/modelOutputFormat(_:format:)``
+    ///   for a model in a format other than ``modelFormats``.
+    static func checkOutput(_ format: ModelFormat, isMetamodel: Bool, input: String) throws {
+        if isMetamodel, !metamodelFormats.contains(format) {
+            throw ConversionError.metamodelOutputFormat(input, format: format.rawValue)
+        }
+        if !isMetamodel, !modelFormats.contains(format) {
+            throw ConversionError.modelOutputFormat(input, format: format.rawValue)
+        }
     }
 }

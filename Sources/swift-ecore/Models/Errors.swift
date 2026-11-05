@@ -6,6 +6,7 @@
 //  Copyright © 2025 Rene Hexel. All rights reserved.
 //
 
+import ECore
 import Foundation
 
 // MARK: - Error Types
@@ -65,6 +66,28 @@ enum ConversionError: Error, LocalizedError {
     /// The associated value is the number of errors.
     case invalidModel(Int)
 
+    /// A metamodel was to be written in a format that holds only models.
+    ///
+    /// - Parameters:
+    ///   - input: The name of the metamodel file.
+    ///   - format: The name of the output format.
+    case metamodelOutputFormat(String, format: String)
+
+    /// A model was to be written in a format that holds only metamodels.
+    ///
+    /// - Parameters:
+    ///   - input: The name of the model file.
+    ///   - format: The name of the output format.
+    case modelOutputFormat(String, format: String)
+
+    /// Names formats in prose.
+    ///
+    /// - Parameter formats: The formats.
+    /// - Returns: The names of the formats, separated by `or`, such as `ecore or json`.
+    private static func formatNames(_ formats: [ModelFormat]) -> String {
+        formats.map(\.rawValue).joined(separator: " or ")
+    }
+
     /// A localised description of the error.
     var errorDescription: String? {
         switch self {
@@ -80,6 +103,12 @@ enum ConversionError: Error, LocalizedError {
             return "Give the output file either as the second argument or with --output, not both"
         case .invalidModel(let errors):
             return "The model has \(errors) validation error(s); no output was written"
+        case .metamodelOutputFormat(let input, let format):
+            return "\(input) is a metamodel, which cannot be written as \(format): "
+                + "convert it to \(Self.formatNames(ConvertCommand.metamodelFormats))"
+        case .modelOutputFormat(let input, let format):
+            return "\(input) is a model, which cannot be written as \(format): "
+                + "convert it to \(Self.formatNames(ConvertCommand.modelFormats))"
         }
     }
 }
