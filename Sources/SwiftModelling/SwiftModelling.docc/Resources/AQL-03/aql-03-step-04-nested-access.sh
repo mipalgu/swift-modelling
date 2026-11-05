@@ -5,7 +5,7 @@
 swift-aql evaluate --model library-data.xmi \
   --expression "library.books->collect(b | b.title)"
 
-# Output: ['Pride and Prejudice', 'Sense and Sensibility', 'Foundation', ...]
+# Output: ["Pride and Prejudice", "Sense and Sensibility", "Foundation", ...]
 
 # Extract page counts from all books
 swift-aql evaluate --model library-data.xmi \
@@ -23,7 +23,7 @@ swift-aql evaluate --model library-data.xmi \
 swift-aql evaluate --model library-data.xmi \
   --expression "library.authors.name"
 
-# Output: ['Jane Austen', 'Isaac Asimov', 'Agatha Christie', ...]
+# Output: ["Jane Austen", "Isaac Asimov", "Agatha Christie", ...]
 
 # Collect computed values - calculate age of each book
 swift-aql evaluate --model library-data.xmi \

@@ -114,18 +114,12 @@ Numbered entity list:
 5. For Loops with Before/After
 ------------------------------
 [comment]
-  [before] executes once before the loop if collection is non-empty.
-  [after] executes once after the loop if collection is non-empty.
+  before(...) is written once before the loop and after(...) once
+  after it, when the collection is not empty.
 [/comment]
 
-[for (entity : Entity | app.entities)]
-[before]
-=== Entity List Start ===
-[/before]
+[for (entity : Entity | app.entities) before('=== Entity List Start ===\n') after('=== Entity List End ===\n')]
 * [entity.name/]
-[after]
-=== Entity List End ===
-[/after]
 [/for]
 
 [comment ================================================================ /]

@@ -1,85 +1,61 @@
 # Pattern matching in queries
 # Identify specific patterns and structures in models
 
-# Find employees matching supervision pattern (manager -> reports)
+# Find employees matching a supervision pattern (manager with two or more reports)
 swift-aql evaluate --model enterprise-data.xmi \
-  --expression "organisation.departments.employees->flatten()
+  --expression "organisation.departments.employees
     ->select(e | e.directReports->size() >= 2)
-    ->collect(e | Tuple{
-        manager = e.name,
-        role = e.role,
-        reportCount = e.directReports->size(),
-        reports = e.directReports->collect(r | r.name)})"
+    ->collect(e | e.name + ' (' + e.role + '): '
+        + e.directReports->size().toString() + ' direct reports')"
 
-# Output: [{manager: "James Wong", role: "Senior Engineer", reportCount: 2, reports: [...]}]
+# Output: ["James Wong (Senior Engineer): 2 direct reports", "Jessica Moore (Product Director): 2 direct reports", "Olivia Martinez (Design Director): 2 direct reports"]
 
 # Match mentorship chains (mentor -> mentee -> mentee)
 swift-aql evaluate --model enterprise-data.xmi \
-  --expression "organisation.departments.employees->flatten()
+  --expression "organisation.departments.employees
     ->select(e | e.mentors->notEmpty())
-    ->collect(e | Tuple{
-        mentee = e.name,
-        directMentors = e.mentors->collect(m | m.name),
-        grandMentors = e.mentors.mentors->flatten()->asSet()->collect(m | m.name)})"
+    ->collect(e | e.mentors
+        ->collect(m | m.mentors
+            ->collect(g | g.name + ' mentors ' + m.name
+                + ', who mentors ' + e.name)))"
 
-# Output: [{mentee: "Michael Brown", directMentors: ["James Wong", "Emily Chen"],
-#           grandMentors: ["Sarah Mitchell"]}]
+# Output: ["Sarah Mitchell mentors James Wong, who mentors Michael Brown", "Daniel Kim mentors Sophie Garcia, who mentors Ryan Hughes", "Nathan Scott mentors Mia Thompson, who mentors Alex Rivera"]
 
-# Pattern: find circular collaboration (A collaborates with B, B with A)
+# Pattern: find mutual collaboration (A collaborates with B, B with A)
 swift-aql evaluate --model enterprise-data.xmi \
   --expression "organisation.departments
-    ->select(d | d.collaboratesWith->exists(c | c.collaboratesWith->includes(d)))
-    ->collect(d | Tuple{
-        department = d.name,
-        bidirectionalPartners = d.collaboratesWith
-            ->select(c | c.collaboratesWith->includes(d))
-            ->collect(c | c.name)})"
+    ->collect(d | d.collaboratesWith
+        ->select(c | c.collaboratesWith->includes(d))
+        ->collect(c | d.name + ' <-> ' + c.name))"
 
-# Output: [{department: "Engineering", bidirectionalPartners: ["Product", "Design"]}]
+# Output: ["Engineering <-> Product", "Engineering <-> Design", "Product <-> Engineering", "Product <-> Design", "Design <-> Engineering", "Design <-> Product"]
 
-# Pattern: project dependency chains
+# Pattern: project dependency chains of length two
 swift-aql evaluate --model enterprise-data.xmi \
   --expression "organisation.projects
-    ->select(p | p.dependencies->notEmpty())
-    ->collect(p | Tuple{
-        project = p.name,
-        directDeps = p.dependencies->collect(d | d.name),
-        transitiveDeps = p.dependencies.dependencies
-            ->flatten()->asSet()->collect(d | d.name)})"
+    ->collect(p | p.dependencies
+        ->collect(d | d.dependencies
+            ->collect(dd | p.name + ' -> ' + d.name + ' -> ' + dd.name)))"
 
-# Output: [{project: "Analytics Dashboard", directDeps: ["Customer Portal", "Infrastructure..."],
-#           transitiveDeps: ["Customer Portal"]}]
+# Output: ["Analytics Dashboard -> Infrastructure Modernisation -> Customer Portal"]
 
-# Pattern: employees with cross-departmental project involvement
+# Pattern: employees working on projects led by another department
 swift-aql evaluate --model enterprise-data.xmi \
-  --expression "organisation.departments.employees->flatten()
-    ->select(e | e.assignedProjects
-        ->collect(p | p.leadDepartment)
-        ->asSet()
-        ->select(d | d <> e.eContainer())
-        ->notEmpty())
-    ->collect(e | Tuple{
-        employee = e.name,
-        homeDept = e.eContainer().name,
-        crossDeptProjects = e.assignedProjects
-            ->select(p | p.leadDepartment <> e.eContainer())
-            ->collect(p | p.name)})"
+  --expression "organisation.departments.employees
+    ->collect(e | e.assignedProjects
+        ->select(p | p.leadDepartment <> e.eContainer())
+        ->collect(p | e.name + ' (' + e.eContainer().name + '): ' + p.name))"
 
-# Output: [{employee: "Emily Chen", homeDept: "Engineering",
-#           crossDeptProjects: ["Mobile App Redesign"]}]
+# Output: ["Sarah Mitchell (Engineering): Infrastructure Modernisation", "Emily Chen (Engineering): Mobile App Redesign", ..., "Alex Rivera (Design): Mobile App Redesign"]
 
 # Pattern: find managers who also mentor
 swift-aql evaluate --model enterprise-data.xmi \
-  --expression "organisation.departments.employees->flatten()
-    ->select(e | e.directReports->notEmpty() and
-        organisation.departments.employees->flatten()
-            ->exists(emp | emp.mentors->includes(e)))
-    ->collect(e | Tuple{
-        managerMentor = e.name,
-        directReports = e.directReports->collect(r | r.name),
-        mentees = organisation.departments.employees
-            ->flatten()
-            ->select(emp | emp.mentors->includes(e))
-            ->collect(emp | emp.name)})"
+  --expression "let employees = organisation.departments.employees
+    in employees
+        ->select(e | e.directReports->notEmpty() and
+            employees->exists(emp | emp.mentors->includes(e)))
+        ->collect(e | e.name + ': manages '
+            + e.directReports->size().toString() + ', mentors '
+            + employees->select(emp | emp.mentors->includes(e))->size().toString())"
 
-# Output: [{managerMentor: "James Wong", directReports: [...], mentees: ["Michael Brown"]}]
+# Output: ["Sarah Mitchell: manages 1, mentors 1", "James Wong: manages 2, mentors 1", "Daniel Kim: manages 1, mentors 2", "Nathan Scott: manages 1, mentors 2", "Emma Wilson: manages 1, mentors 1"]

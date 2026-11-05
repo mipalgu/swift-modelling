@@ -53,7 +53,7 @@
 
     @Section(title: "Select and Reject Operations") {
         @ContentAndMedia {
-            The `select` operation filters collections to keep only elements that satisfy a condition. The `reject` operation does the opposite—it filters out elements that satisfy a condition.
+            The `select` operation filters collections to keep only elements that satisfy a condition. The `reject` operation does the opposite: it filters out elements that satisfy a condition.
 
             Both operations use lambda expressions with a variable that represents each element being tested. The condition must evaluate to a boolean value.
         }

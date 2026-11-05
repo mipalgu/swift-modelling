@@ -33,7 +33,7 @@ Required string attributes (not null AND string type AND not nullable):
 [for (entity : Entity | app.entities)]
 [entity.name/]:
 [for (attr : Attribute | entity.attributes)]
-[if (attr.dataType = DataType::string and not attr.isNullable and not attr.isPrimaryKey)]
+[if (attr.dataType = WebApp::DataType::string and not attr.isNullable and not attr.isPrimaryKey)]
   - [attr.name/] (required string)
 [/if]
 [/for]
@@ -55,7 +55,7 @@ Temporal attributes (date OR datetime):
 [for (entity : Entity | app.entities)]
 [entity.name/]:
 [for (attr : Attribute | entity.attributes)]
-[if (attr.dataType = DataType::date or attr.dataType = DataType::datetime)]
+[if (attr.dataType = WebApp::DataType::date or attr.dataType = WebApp::DataType::datetime)]
   - [attr.name/]: [attr.dataType/]
 [/if]
 [/for]
@@ -106,7 +106,7 @@ Complex attribute filter (string type AND (nullable OR has default)):
 [for (entity : Entity | app.entities)]
 [entity.name/]:
 [for (attr : Attribute | entity.attributes)]
-[if (attr.dataType = DataType::string and (attr.isNullable or (attr.defaultValue <> null and attr.defaultValue.size() > 0)))]
+[if (attr.dataType = WebApp::DataType::string and (attr.isNullable or (attr.defaultValue <> null and attr.defaultValue.size() > 0)))]
   - [attr.name/]: optional string
 [/if]
 [/for]

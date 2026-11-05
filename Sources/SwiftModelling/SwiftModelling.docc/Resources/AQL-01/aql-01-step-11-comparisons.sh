@@ -36,11 +36,11 @@ swift-aql evaluate --model company-data.xmi \
     ->select(e | e.salary > 80000 and e.age < 35)
     ->collect(e | e.name)"
 
-# Output: ["Bob Chen", "Ivy Chen"]
+# Output: ["Bob Chen", "Carol Williams", "Ivy Chen"]
 
 swift-aql evaluate --model company-data.xmi \
   --expression "company.departments.employees
     ->select(e | e.salary > 110000 or e.age > 40)
     ->collect(e | e.name)"
 
-# Output: ["Alice Smith", "Henry Brown", "Emma Davis"]
+# Output: ["Alice Smith", "Henry Brown"]

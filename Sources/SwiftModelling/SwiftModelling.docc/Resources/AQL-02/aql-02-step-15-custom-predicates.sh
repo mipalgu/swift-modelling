@@ -2,23 +2,23 @@
 # Define meaningful conditions for readability
 
 # "High achiever" = grade >= 90 and year >= 3
+# Name the thresholds with let, so the condition reads like its definition
 swift-aql evaluate --model university-data.xmi \
-  --expression "let highAchiever = (s : Student) | s.grade >= 90 and s.year >= 3
-    in university.students->select(highAchiever)"
+  --expression "let minimumGrade = 90, minimumYear = 3
+    in university.students->select(s | s.grade >= minimumGrade and s.year >= minimumYear)"
 
-# Output: [Student(Alex, 92.5, year 3), Student(Julia, 96.5, year 3)]
+# Output: [Student(Alex Johnson), Student(Julia Adams)]
 
 # "Experienced professor" = yearsExperience >= 15
 swift-aql evaluate --model university-data.xmi \
   --expression "university.departments.professors
     ->select(p | p.yearsExperience >= 15)"
 
-# Output: [Professor(Dr Alice Chen, 15), Professor(Dr David Lee, 20),
-#          Professor(Dr Frank Taylor, 18)]
+# Output: [Professor(Dr Alice Chen), Professor(Dr David Lee), Professor(Dr Frank Taylor)]
 
 # "Advanced course" = level >= 300 and has prerequisites
 swift-aql evaluate --model university-data.xmi \
   --expression "university.courses
     ->select(c | c.level >= 300 and c.prerequisites->notEmpty())"
 
-# Output: Advanced courses with prerequisites
+# Output: [Course(Machine Learning), Course(Deep Learning), Course(Operating Systems), ..., Course(Astrophysics)]

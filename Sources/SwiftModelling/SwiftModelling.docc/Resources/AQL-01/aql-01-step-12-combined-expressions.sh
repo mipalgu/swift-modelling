@@ -31,7 +31,7 @@ swift-aql evaluate --model company-data.xmi \
     in 'Senior employees: ' + seniorEmployees->size().toString() +
        ', Total salary: $' + seniorEmployees.salary->sum().toString()"
 
-# Output: "Senior employees: 6, Total salary: $595000.0"
+# Output: "Senior employees: 6, Total salary: $600000.0"
 
 # Conditional report generation
 swift-aql evaluate --model company-data.xmi \

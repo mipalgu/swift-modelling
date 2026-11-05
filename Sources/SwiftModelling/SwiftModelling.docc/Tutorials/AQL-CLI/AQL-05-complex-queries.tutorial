@@ -1,8 +1,8 @@
 @Tutorial(time: 40) {
     @Intro(title: "Complex Queries") {
-        Master advanced AQL query patterns for sophisticated model analysis and cross-model operations.
+        Master advanced AQL query patterns for sophisticated model analysis.
 
-        In this tutorial, you'll learn how to build complex queries using let bindings, nested iterations, cross-model navigation, and advanced query composition techniques. These patterns enable powerful model analysis and validation scenarios.
+        In this tutorial, you'll learn how to build complex queries using let bindings, nested iterations, pattern matching, transitive closures and query composition techniques. These patterns enable powerful model analysis and validation scenarios.
 
         @Image(source: "aql-complex-queries.svg", alt: "Advanced AQL Query Patterns")
     }
@@ -22,7 +22,7 @@
 
                 @Code(name: "Enterprise.ecore", file: aql-05-step-01-enterprise-metamodel.ecore)
 
-                This comprehensive metamodel represents an enterprise system with Organisations, Projects, Teams, and Resources. The complex relationships provide rich opportunities for sophisticated queries.
+                This comprehensive metamodel represents an enterprise with organisations, departments, employees, projects and milestones. The complex relationships provide rich opportunities for sophisticated queries.
             }
 
             @Step {
@@ -30,7 +30,7 @@
 
                 @Code(name: "enterprise-data.xmi", file: aql-05-step-02-enterprise-instance.xmi)
 
-                This model contains multiple organisations with overlapping projects, shared resources, and complex team structures. Perfect for demonstrating advanced query patterns.
+                This model contains an organisation with departments, sub-departments, overlapping project teams, mentoring relationships and project dependencies. Perfect for demonstrating advanced query patterns.
             }
 
             @Step {
@@ -76,137 +76,137 @@
             }
 
             @Step {
-                Filter cross-products with complex conditions.
+                Navigate relationships between model elements.
 
                 @Code(name: "Terminal", file: aql-05-step-07-filtered-cross-product.sh)
 
-                Apply sophisticated filtering to cross-products to find specific relationship patterns or constraint violations across model elements.
+                Follow references from projects, employees and milestones to related elements, and filter the combinations to find specific relationship patterns, such as members of collaborating departments on the same project.
             }
 
             @Step {
-                Optimise nested queries for performance.
+                Compose nested queries efficiently.
 
                 @Code(name: "Terminal", file: aql-05-step-08-optimised-nested.sh)
 
-                Use efficient query patterns to minimise computation in nested iterations. Order operations to filter early and reduce unnecessary processing.
+                Build complex queries from simpler let-bound components. Order operations to filter early, so that later iterations process fewer elements.
             }
         }
     }
 
-    @Section(title: "Cross-Model Navigation") {
+    @Section(title: "Pattern Matching and Statistics") {
         @ContentAndMedia {
-            Real-world modeling scenarios often involve multiple related models. AQL can navigate across model boundaries through references and shared elements.
+            Beyond simple navigation, AQL can recognise structural patterns in a model, such as supervision and mentorship chains, mutual collaborations and dependency chains, and it can select elements by their type.
 
-            Cross-model queries enable comprehensive analysis that spans multiple model files, supporting complex enterprise scenarios and distributed model architectures.
+            Collection operations such as `sum`, `min`, `max` and `sortedBy` also support statistical analysis of model data, from means and medians to quartiles and risk scores.
         }
 
         @Steps {
             @Step {
-                Set up related models for cross-model queries.
+                Match structural patterns.
 
-                @Code(name: "setup-cross-models.sh", file: aql-05-step-09-setup-cross-models.sh)
+                @Code(name: "Terminal", file: aql-05-step-09-setup-cross-models.sh)
 
-                Create multiple related model files that reference each other. This simulates real-world scenarios where models are distributed across multiple files.
+                Combine nested navigation and filtering to find patterns such as managers with several direct reports, mentorship chains, mutual collaborations and project dependency chains.
             }
 
             @Step {
-                Navigate between models through references.
+                Query elements by type.
 
                 @Code(name: "Terminal", file: aql-05-step-10-cross-model-navigation.sh)
 
-                Use AQL to navigate from elements in one model to related elements in other models. This enables queries that span multiple model files.
+                Use `oclIsKindOf`, `oclAsType` and `eClass()` to find, count and safely navigate elements by their metaclass, and to check type constraints on references. Type literals are qualified with the package name, as in `enterprise::Employee`.
             }
 
             @Step {
-                Query across model hierarchies.
+                Calculate descriptive statistics.
 
                 @Code(name: "Terminal", file: aql-05-step-11-hierarchical-queries.sh)
 
-                Build queries that traverse model hierarchies across files, analyzing relationships between parent and child models in complex architectures.
+                Use `sum`, `min`, `max` and `size` to calculate means, ranges, percentages and variances, and to break results down by role or department. Dividing one Integer by another truncates, so divide a Real when you need a fractional result.
             }
 
             @Step {
-                Validate cross-model consistency.
+                Perform advanced statistical analysis.
 
                 @Code(name: "Terminal", file: aql-05-step-12-cross-model-validation.sh)
 
-                Use cross-model queries to validate consistency and integrity constraints that span multiple model files, ensuring system-wide correctness.
+                Combine `sortedBy` and `at` (whose positions start at 1) to find medians and quartiles, compare departments against the organisation average, and rank projects by a computed risk score.
             }
         }
     }
 
-    @Section(title: "Query Composition and Abstraction") {
+    @Section(title: "Grouping, Hierarchies and Dependencies") {
         @ContentAndMedia {
-            Complex queries benefit from composition and abstraction techniques. Build reusable query components that can be combined to solve larger problems.
+            Many analysis questions group elements into categories, walk hierarchical structures or follow chains of references. Composing let bindings, `select`, `asSet` and `closure` makes these questions straightforward to express.
 
-            Query composition enables modular query development, making complex analysis tasks manageable and maintainable.
+            Breaking such queries into named components keeps complex analysis tasks manageable and maintainable.
         }
 
         @Steps {
             @Step {
-                Create reusable query components.
+                Group and categorise elements.
 
                 @Code(name: "Terminal", file: aql-05-step-13-query-components.sh)
 
-                Build focused query components that solve specific analysis problems. These can be combined to create comprehensive analysis queries.
+                Group employees, projects and departments by years of service, status, location or salary band, and calculate metrics for each group.
             }
 
             @Step {
-                Compose queries for comprehensive analysis.
+                Query hierarchical structures.
 
                 @Code(name: "Terminal", file: aql-05-step-14-query-composition.sh)
 
-                Combine multiple query components to perform comprehensive model analysis. This approach scales to complex enterprise analysis scenarios.
+                Navigate department hierarchies and supervision chains to calculate depths, management levels, employee counts and budgets that include sub-departments.
             }
 
             @Step {
-                Build query libraries for domain-specific analysis.
+                Compute transitive closures.
 
                 @Code(name: "Terminal", file: aql-05-step-15-query-libraries.sh)
 
-                Create libraries of domain-specific queries that can be reused across different models and analysis scenarios within the same domain.
+                Use `closure` to find everything reachable through a relationship, such as indirect project dependencies, chains of supervisors and mentors, or the number of ancestors of each department. The result does not include the starting element unless it can be reached again.
             }
 
             @Step {
-                Parameterize queries for flexibility.
+                Analyse dependencies.
 
                 @Code(name: "Terminal", file: aql-05-step-16-parameterized-queries.sh)
 
-                Design flexible queries that can be adapted to different scenarios through parameterization, increasing reusability and maintainability.
+                Find critical and blocking projects, the most common skills, projects shared by collaborating departments and people at risk of over-allocation.
             }
         }
     }
 
     @Section(title: "Advanced Analysis Patterns") {
         @ContentAndMedia {
-            Advanced AQL patterns enable sophisticated model analysis including graph traversal, pattern matching, and statistical analysis.
+            Advanced AQL patterns combine everything covered so far to assess the impact of changes, validate business rules and produce summary reports.
 
-            These patterns support complex modeling scenarios such as dependency analysis, impact assessment, and comprehensive model validation.
+            These patterns support complex modelling scenarios such as impact assessment, comprehensive model validation and organisational reporting.
         }
 
         @Steps {
             @Step {
-                Implement graph traversal algorithms.
+                Assess the impact of changes.
 
                 @Code(name: "Terminal", file: aql-05-step-17-graph-traversal.sh)
 
-                Use recursive-style queries to traverse graph structures in models, finding paths, cycles, and connectivity patterns.
+                Estimate what happens if an employee leaves, a budget is cut, a project is delayed or a department is reorganised, by following the affected references through the model.
             }
 
             @Step {
-                Build pattern matching queries.
+                Validate constraints and business rules.
 
                 @Code(name: "Terminal", file: aql-05-step-18-pattern-matching.sh)
 
-                Create queries that match complex structural patterns in models, enabling sophisticated model analysis and transformation planning.
+                Check for supervision and dependency cycles, budget limits, team composition, orphaned references, milestone dates and role hierarchies, reporting whether each rule holds.
             }
 
             @Step {
-                Perform statistical analysis on models.
+                Generate summary reports.
 
                 @Code(name: "Terminal", file: aql-05-step-19-statistical-analysis.sh)
 
-                Apply statistical operations to model data to generate insights about model complexity, distribution patterns, and structural characteristics.
+                Summarise the organisation, its departments, project portfolio, workforce and locations. A `Sequence{...}` literal of labelled strings presents a multi-part result as a list.
             }
 
             @Step {
@@ -214,7 +214,7 @@
 
                 @Code(name: "Terminal", file: aql-05-step-20-comprehensive-reports.sh)
 
-                Combine all advanced query patterns to generate comprehensive model analysis reports that provide deep insights into model structure and quality.
+                Combine all advanced query patterns to generate comprehensive model analysis reports that provide deep insights into model structure and quality. Use `concat` to join the sections of a report into a single result.
             }
         }
     }
@@ -243,7 +243,7 @@
                 They allow queries to modify model data
 
                 @Justification(reaction: "Incorrect!") {
-                    AQL queries are read-only. Let bindings store query results, but they don't enable data modification—that would require transformation languages like ATL.
+                    AQL queries are read-only. Let bindings store query results, but they don't enable data modification: that would require transformation languages like ATL.
                 }
             }
         }
@@ -327,7 +327,7 @@
                 It produces the same results every time
 
                 @Justification(reaction: "That's consistency, not reusability!") {
-                    Reusable patterns may produce different results for different inputs—that's the point of reusability. Consistency means reliable behavior, which is different.
+                    Reusable patterns may produce different results for different inputs; that's the point of reusability. Consistency means reliable behavior, which is different.
                 }
             }
         }

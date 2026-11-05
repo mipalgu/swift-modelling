@@ -171,7 +171,7 @@
       <components xsi:type="webapp:Form" name="LoginForm" cssClass="card shadow-lg mx-auto"
           action="/api/auth/login" method="POST" boundEntity="//@entities.0">
         <fields name="email" label="Email" fieldType="email" isRequired="true"
-            placeholder="your@email.com" boundAttribute="//@entities.0/@attributes.1"/>
+            placeholder="your@example.com" boundAttribute="//@entities.0/@attributes.1"/>
         <fields name="password" label="Password" fieldType="password" isRequired="true"
             placeholder="Enter your password"/>
         <fields name="remember" label="Remember me" fieldType="checkbox" isRequired="false"/>
@@ -188,7 +188,7 @@
             placeholder="Choose a username" validationPattern="^[a-zA-Z0-9_]{3,20}$"
             boundAttribute="//@entities.0/@attributes.2"/>
         <fields name="email" label="Email" fieldType="email" isRequired="true"
-            placeholder="your@email.com" validationPattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+            placeholder="your@example.com" validationPattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
             boundAttribute="//@entities.0/@attributes.1"/>
         <fields name="password" label="Password" fieldType="password" isRequired="true"
             placeholder="Create a password"/>

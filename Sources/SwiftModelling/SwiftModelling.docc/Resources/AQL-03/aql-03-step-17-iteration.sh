@@ -1,50 +1,56 @@
 # Any and One Operations - Selecting Single Elements
 # Extract individual elements from collections
 
-# Get any book from the collection
-swift-aql evaluate --model library-data.xmi \
-  --expression "library.books->any(true).title"
-
-# Output: A title of any book (non-deterministic)
-
-# Get any available book
+# Get an available book (any returns the first match of an ordered collection)
 swift-aql evaluate --model library-data.xmi \
   --expression "library.books->any(b | b.available).title"
 
-# Output: Title of any available book
+# Output: "Pride and Prejudice"
 
-# Get one specific book matching criteria
+# Get the book with a specific ISBN
 swift-aql evaluate --model library-data.xmi \
-  --expression "library.books->one(b | b.isbn = '978-0553380163').title"
+  --expression "library.books->any(b | b.isbn = '978-0553380163').title"
 
-# Output: 'A Brief History of Time'
+# Output: "A Brief History of Time"
 
-# Get any expensive book
+# Check that exactly one book has this ISBN
+swift-aql evaluate --model library-data.xmi \
+  --expression "library.books->one(b | b.isbn = '978-0553380163')"
+
+# Output: true
+
+# Get an expensive book (Notes on Programming also costs more than 40)
 swift-aql evaluate --model library-data.xmi \
   --expression "library.books->any(b | b.price > 40).title"
 
-# Output: Either 'Radioactive Substances' or 'Notes on Programming'
+# Output: "Radioactive Substances"
+
+# one is false when more than one element matches
+swift-aql evaluate --model library-data.xmi \
+  --expression "library.books->one(b | b.price > 40)"
+
+# Output: false
 
 # Get any British author
 swift-aql evaluate --model library-data.xmi \
   --expression "library.authors->any(a | a.nationality = 'British').name"
 
-# Output: Name of any British author
+# Output: "Jane Austen"
 
-# Get the one Polish author (unique match)
+# Get the Polish author
 swift-aql evaluate --model library-data.xmi \
-  --expression "library.authors->one(a | a.nationality = 'Polish').name"
+  --expression "library.authors->any(a | a.nationality = 'Polish').name"
 
-# Output: 'Marie Curie'
+# Output: "Marie Curie"
 
-# Get any subcategory of Fiction
+# Get a subcategory of Fiction by its code
 swift-aql evaluate --model library-data.xmi \
-  --expression "library.categories->select(c | c.code = 'FIC')->first().subcategories->any(true).name"
+  --expression "library.categories->select(c | c.code = 'FIC')->first().subcategories->any(s | s.code = 'FAN').name"
 
-# Output: Any of 'Science Fiction', 'Fantasy', or 'Mystery'
+# Output: "Fantasy"
 
 # Get any member with no current borrowings
 swift-aql evaluate --model library-data.xmi \
   --expression "library.members->any(m | m.borrowed->isEmpty()).name"
 
-# Output: 'Emma Williams'
+# Output: "Emma Williams"

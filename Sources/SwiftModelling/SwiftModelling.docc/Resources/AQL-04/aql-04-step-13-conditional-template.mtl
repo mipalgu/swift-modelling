@@ -117,14 +117,14 @@ Component classification:
 -------------------------
 [comment]
   Compare enumeration values using = and <>.
-  Reference enum literals with EnumType::literal.
+  Reference enum literals with Package::EnumType::literal.
 [/comment]
 
 Attribute type classification:
 [for (entity : Entity | app.entities)]
 [entity.name/]:
 [for (attr : Attribute | entity.attributes)]
-  - [attr.name/]: [if (attr.dataType = DataType::string or attr.dataType = DataType::text)]Text[elseif (attr.dataType = DataType::integer or attr.dataType = DataType::decimal)]Numeric[elseif (attr.dataType = DataType::date or attr.dataType = DataType::datetime)]Temporal[elseif (attr.dataType = DataType::boolean)]Boolean[else]Other[/if]
+  - [attr.name/]: [if (attr.dataType = WebApp::DataType::string or attr.dataType = WebApp::DataType::text)]Text[elseif (attr.dataType = WebApp::DataType::integer or attr.dataType = WebApp::DataType::decimal)]Numeric[elseif (attr.dataType = WebApp::DataType::date or attr.dataType = WebApp::DataType::datetime)]Temporal[elseif (attr.dataType = WebApp::DataType::boolean)]Boolean[else]Other[/if]
 [/for]
 
 [/for]

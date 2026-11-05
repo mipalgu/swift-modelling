@@ -1,29 +1,28 @@
 # Nested let bindings for layered calculations
 # Build complex queries step by step
 
-# Nested let for multi-stage calculation
+# Nested let for multi-stage calculation: who earns above the average?
 swift-aql evaluate --model enterprise-data.xmi \
   --expression "let depts = organisation.departments in
-    let employees = depts.employees->flatten() in
+    let employees = depts.employees in
     let avgSalary = employees->collect(e | e.salary)->sum() / employees->size() in
     let aboveAvg = employees->select(e | e.salary > avgSalary)
-    in Tuple{average = avgSalary,
-             aboveAverageCount = aboveAvg->size(),
-             aboveAverageNames = aboveAvg->collect(e | e.name)}"
+    in aboveAvg->collect(e | e.name + ' earns ' + e.salary.toString()
+        + ' (average ' + avgSalary.toString() + ')')"
 
-# Output: {average: 128571.43, aboveAverageCount: 8, aboveAverageNames: [...]}
+# Output: ["Sarah Mitchell earns 185000.0 (average 127333.33333333333)", ..., "William Anderson earns 150000.0 (average 127333.33333333333)"]
 
 # Nested let for department analysis
 swift-aql evaluate --model enterprise-data.xmi \
   --expression "let dept = organisation.departments->select(d | d.code = 'ENG')->first() in
     let directEmployees = dept.employees in
-    let subDeptEmployees = dept.subDepartments.employees->flatten() in
+    let subDeptEmployees = dept.subDepartments.employees in
     let allEmployees = directEmployees->union(subDeptEmployees)
-    in Tuple{direct = directEmployees->size(),
-             subDept = subDeptEmployees->size(),
-             total = allEmployees->size()}"
+    in 'direct: ' + directEmployees->size().toString()
+        + ', sub-departments: ' + subDeptEmployees->size().toString()
+        + ', total: ' + allEmployees->size().toString()"
 
-# Output: {direct: 4, subDept: 6, total: 10}
+# Output: "direct: 4, sub-departments: 6, total: 10"
 
 # Nested let for project metrics
 swift-aql evaluate --model enterprise-data.xmi \
@@ -31,11 +30,11 @@ swift-aql evaluate --model enterprise-data.xmi \
     let totalBudget = activeProjects->collect(p | p.budget)->sum() in
     let avgTeamSize = activeProjects->collect(p | p.teamMembers->size())->sum()
                       / activeProjects->size()
-    in Tuple{activeCount = activeProjects->size(),
-             totalBudget = totalBudget,
-             averageTeamSize = avgTeamSize}"
+    in 'active: ' + activeProjects->size().toString()
+        + ', total budget: ' + totalBudget.toString()
+        + ', average team size: ' + avgTeamSize.toString()"
 
-# Output: {activeCount: 3, totalBudget: 1050000.0, averageTeamSize: 8}
+# Output: "active: 3, total budget: 1050000.0, average team size: 7"
 
 # Deeply nested let for complex reporting
 swift-aql evaluate --model enterprise-data.xmi \
@@ -44,8 +43,8 @@ swift-aql evaluate --model enterprise-data.xmi \
     let engDept = depts->select(d | d.code = 'ENG')->first() in
     let engBudget = engDept.budget in
     let subBudgets = engDept.subDepartments->collect(d | d.budget)->sum()
-    in Tuple{departmentBudget = engBudget,
-             subDepartmentBudgets = subBudgets,
-             totalEngineeringBudget = engBudget + subBudgets}"
+    in 'department: ' + engBudget.toString()
+        + ', sub-departments: ' + subBudgets.toString()
+        + ', engineering total: ' + (engBudget + subBudgets).toString()"
 
-# Output: {departmentBudget: 2500000.0, subDepartmentBudgets: 1400000.0, totalEngineeringBudget: 3900000.0}
+# Output: "department: 2500000.0, sub-departments: 1400000.0, engineering total: 3900000.0"

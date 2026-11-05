@@ -12,28 +12,6 @@ swift-mtl generate \
 # generated/
 #   README.md
 
-# Example generated README.md content:
-# -----------------------------------------
-# # TaskManager
-#
-# Version: 1.0.0
-# Base URL: https://tasks.example.com
-#
-# ## Overview
-#
-# This web application contains:
-# - 7 pages
-# - 4 data entities
-# - 3 stylesheets
-#
-# ## Pages
-#
-# - **Dashboard**: `/`
-# - **TaskList**: `/tasks`
-# - **Projects**: `/projects`
-# ...
-# -----------------------------------------
-
 # The AQL expressions in the template are evaluated:
 # [app.name/] -> TaskManager
 # [app.version/] -> 1.0.0
@@ -42,3 +20,17 @@ swift-mtl generate \
 
 # View the generated file
 cat ./generated/README.md
+
+# Output (excerpt):
+# ✓ Generation complete
+# # TaskManager
+# Version: 1.0.0
+# Base URL: https://tasks.example.com
+# This web application contains:
+# - 7 pages
+# - 4 data entities
+# - 3 stylesheets
+# ## Pages
+# - **Dashboard**: `/`
+# - **TaskList**: `/tasks`
+# - **Projects**: `/projects`

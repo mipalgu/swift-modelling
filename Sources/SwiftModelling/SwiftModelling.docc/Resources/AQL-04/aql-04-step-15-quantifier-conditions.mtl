@@ -55,21 +55,21 @@ External stylesheets (CDN resources) are configured.
 [/comment]
 
 [if (app.entities->forAll(e | e.attributes->exists(a | a.isPrimaryKey)))]
-[OK] All entities have primary keys defined.
+['[OK]'/] All entities have primary keys defined.
 [else]
-[WARNING] Some entities lack primary keys.
+['[WARNING]'/] Some entities lack primary keys.
 [/if]
 
 [if (app.pages->forAll(p | p.title <> null and p.title.size() > 0))]
-[OK] All pages have titles set.
+['[OK]'/] All pages have titles set.
 [else]
-[WARNING] Some pages are missing titles.
+['[WARNING]'/] Some pages are missing titles.
 [/if]
 
 [if (app.entities->forAll(e | e.tableName <> null and e.tableName.size() > 0))]
-[OK] All entities have table names defined.
+['[OK]'/] All entities have table names defined.
 [else]
-[WARNING] Some entities lack table name configuration.
+['[WARNING]'/] Some entities lack table name configuration.
 [/if]
 
 [comment ================================================================ /]
@@ -86,13 +86,13 @@ External stylesheets (CDN resources) are configured.
 Entity relationship status:
 [for (entity : Entity | app.entities)]
 [entity.name/]:
-[if (entity.relationships->exists(r | r.relationType = RelationType::oneToMany))]
+[if (entity.relationships->exists(r | r.relationType = WebApp::RelationType::oneToMany))]
   - Has one-to-many relationships
 [/if]
-[if (entity.relationships->exists(r | r.relationType = RelationType::manyToMany))]
+[if (entity.relationships->exists(r | r.relationType = WebApp::RelationType::manyToMany))]
   - Has many-to-many relationships
 [/if]
-[if (entity.relationships->exists(r | r.relationType = RelationType::manyToOne))]
+[if (entity.relationships->exists(r | r.relationType = WebApp::RelationType::manyToOne))]
   - Has many-to-one relationships
 [/if]
 [if (not entity.relationships->exists(r | true))]
@@ -116,19 +116,19 @@ Entity validation report:
 [for (entity : Entity | app.entities)]
 [entity.name/]:
 [if (entity.attributes->forAll(a | a.name <> null and a.name.size() > 0))]
-  [PASS] All attributes are named
+  ['[PASS]'/] All attributes are named
 [else]
-  [FAIL] Some attributes lack names
+  ['[FAIL]'/] Some attributes lack names
 [/if]
 [if (entity.attributes->forAll(a | a.dataType <> null))]
-  [PASS] All attributes have data types
+  ['[PASS]'/] All attributes have data types
 [else]
-  [FAIL] Some attributes lack data types
+  ['[FAIL]'/] Some attributes lack data types
 [/if]
 [if (entity.attributes->reject(a | a.isPrimaryKey)->forAll(a | a.isNullable or (a.defaultValue <> null and a.defaultValue.size() > 0)))]
-  [PASS] All non-PK attributes are nullable or have defaults
+  ['[PASS]'/] All non-PK attributes are nullable or have defaults
 [else]
-  [INFO] Some non-PK attributes are required without defaults
+  ['[INFO]'/] Some non-PK attributes are required without defaults
 [/if]
 
 [/for]
@@ -148,25 +148,25 @@ Application validation summary:
 
 Schema validation:
 [if (app.entities->forAll(e | e.attributes->exists(a | a.isPrimaryKey)))]
-  [PASS] Every entity has a primary key
+  ['[PASS]'/] Every entity has a primary key
 [else]
-  [FAIL] Not all entities have primary keys
+  ['[FAIL]'/] Not all entities have primary keys
 [/if]
 
 Security validation:
 [if (app.pages->exists(p | not p.requiresAuth) and app.pages->exists(p | p.requiresAuth))]
-  [INFO] Mixed access - both public and protected pages
+  ['[INFO]'/] Mixed access - both public and protected pages
 [elseif (app.pages->forAll(p | p.requiresAuth))]
-  [INFO] Fully protected - all pages require authentication
+  ['[INFO]'/] Fully protected - all pages require authentication
 [else]
-  [INFO] Fully public - no authentication required
+  ['[INFO]'/] Fully public - no authentication required
 [/if]
 
 UI completeness:
 [if (app.pages->forAll(p | p.components->notEmpty()))]
-  [PASS] All pages have components
+  ['[PASS]'/] All pages have components
 [else]
-  [WARN] Some pages have no components
+  ['[WARN]'/] Some pages have no components
 [/if]
 
 [comment ================================================================ /]
@@ -182,13 +182,13 @@ UI completeness:
 
 Deep validation:
 [if (app.pages->forAll(p | p.components->forAll(c | c.name <> null)))]
-  [PASS] All components on all pages are named
+  ['[PASS]'/] All components on all pages are named
 [else]
-  [FAIL] Some components lack names
+  ['[FAIL]'/] Some components lack names
 [/if]
 
 [if (app.pages->exists(p | p.components->exists(c | c.oclIsTypeOf(Form))))]
-  [INFO] Application includes data entry forms
+  ['[INFO]'/] Application includes data entry forms
 [/if]
 
 Form completeness:
@@ -197,14 +197,14 @@ Form completeness:
 [if (forms->notEmpty())]
 [page.name/]:
 [if (forms->forAll(f | f.fields->notEmpty()))]
-    [PASS] All forms have fields
+    ['[PASS]'/] All forms have fields
 [else]
-    [WARN] Some forms are empty
+    ['[WARN]'/] Some forms are empty
 [/if]
 [if (forms->forAll(f | f.boundEntity <> null))]
-    [PASS] All forms are bound to entities
+    ['[PASS]'/] All forms are bound to entities
 [else]
-    [INFO] Some forms are not bound to entities
+    ['[INFO]'/] Some forms are not bound to entities
 [/if]
 [/if]
 [/let]

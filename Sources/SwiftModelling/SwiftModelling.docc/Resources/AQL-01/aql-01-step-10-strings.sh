@@ -19,9 +19,9 @@ swift-aql evaluate --model company-data.xmi \
 
 # Output: 9
 
-# Substring
+# Substring (positions start at 1 and include both ends)
 swift-aql evaluate --model company-data.xmi \
-  --expression "'Engineering'.substring(1, 4)"
+  --expression "'Engineering'.substring(1, 3)"
 
 # Output: "Eng"
 

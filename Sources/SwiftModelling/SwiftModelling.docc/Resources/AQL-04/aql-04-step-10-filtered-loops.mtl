@@ -73,7 +73,7 @@ Non-primary-key attributes per entity:
 
 Required string attributes:
 [for (entity : Entity | app.entities)]
-[let reqStrings = entity.attributes->select(a | a.dataType = DataType::string and not a.isNullable)]
+[let reqStrings = entity.attributes->select(a | a.dataType = WebApp::DataType::string and not a.isNullable)]
 [if (reqStrings->notEmpty())]
 [entity.name/]:
 [for (attr : Attribute | reqStrings)]

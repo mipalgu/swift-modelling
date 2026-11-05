@@ -3,11 +3,10 @@
 swift-aql evaluate --model university-data.xmi \
   --expression "university.students->reject(s | s.grade >= 60)"
 
-# Output: [Student(Ian, 58.0)]
+# Output: [Student(Ian Clark)]
 
 # Reject introductory courses (keep advanced courses)
 swift-aql evaluate --model university-data.xmi \
   --expression "university.courses->reject(c | c.level = 100)"
 
-# Output: [Course(Algorithms, 200), Course(Machine Learning, 300),
-#          Course(Deep Learning, 400), Course(Operating Systems, 300), ...]
+# Output: [Course(Algorithms), Course(Machine Learning), Course(Deep Learning), Course(Operating Systems), ...]

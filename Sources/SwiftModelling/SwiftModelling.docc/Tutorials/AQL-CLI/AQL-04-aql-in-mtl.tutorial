@@ -198,7 +198,7 @@
 
                 @Code(name: "QueryLibrary.mtl", file: aql-04-step-18-query-library.mtl)
 
-                Create templates that serve as AQL query libraries. These templates can be imported and reused across multiple generation scenarios.
+                Create templates that serve as AQL query libraries. These templates can be imported and reused across multiple generation scenarios. The main template comes after them, so `[comment @main /]` marks it as the template that swift-mtl runs.
             }
 
             @Step {
@@ -214,7 +214,7 @@
 
                 @Code(name: "Terminal", file: aql-04-step-20-comprehensive-generation.sh)
 
-                Combine all AQL-MTL patterns to create sophisticated code generators. See how queries drive every aspect of code structure and content.
+                Run every template of this tutorial on the web application model, each writing its own file into `generated/`. See how queries drive every aspect of code structure and content.
             }
         }
     }

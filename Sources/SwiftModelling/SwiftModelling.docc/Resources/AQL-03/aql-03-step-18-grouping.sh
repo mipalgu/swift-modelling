@@ -44,11 +44,11 @@ swift-aql evaluate --model library-data.xmi \
   --expression "library.members->select(m |
     m.favourites->collect(b | b.title)->includes('Foundation'))->collect(m | m.name)"
 
-# Output: ['Alice Thompson']
+# Output: ["Alice Thompson"]
 
 # Check which members have NOT borrowed any books
 swift-aql evaluate --model library-data.xmi \
   --expression "library.members->select(m |
     library.books->excludesAll(m.borrowed))->collect(m | m.name)"
 
-# Output: ['Emma Williams']
+# Output: ["Emma Williams"]

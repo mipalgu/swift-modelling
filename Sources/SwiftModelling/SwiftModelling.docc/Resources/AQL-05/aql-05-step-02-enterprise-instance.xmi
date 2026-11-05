@@ -10,44 +10,70 @@
         collaboratesWith="//@departments.1 //@departments.2">
 
       <employees name="Sarah Mitchell" employeeId="E001" salary="185000.0" yearsOfService="12"
-          role="Engineering Director" skills="Leadership Strategy Architecture"
-          assignedProjects="//@projects.0 //@projects.1"/>
+          role="Engineering Director"
+          assignedProjects="//@projects.0 //@projects.1">
+        <skills>Leadership</skills>
+        <skills>Strategy</skills>
+        <skills>Architecture</skills>
+      </employees>
 
       <employees name="James Wong" employeeId="E002" salary="145000.0" yearsOfService="8"
-          role="Senior Engineer" skills="Swift Kotlin Architecture"
+          role="Senior Engineer"
           supervisor="//@departments.0/@employees.0"
           assignedProjects="//@projects.0"
-          mentors="//@departments.0/@employees.0"/>
+          mentors="//@departments.0/@employees.0">
+        <skills>Swift</skills>
+        <skills>Kotlin</skills>
+        <skills>Architecture</skills>
+      </employees>
 
       <employees name="Emily Chen" employeeId="E003" salary="125000.0" yearsOfService="5"
-          role="Software Engineer" skills="Swift Python Testing"
+          role="Software Engineer"
           supervisor="//@departments.0/@employees.1"
-          assignedProjects="//@projects.0 //@projects.2"/>
+          assignedProjects="//@projects.0 //@projects.2">
+        <skills>Swift</skills>
+        <skills>Python</skills>
+        <skills>Testing</skills>
+      </employees>
 
       <employees name="Michael Brown" employeeId="E004" salary="115000.0" yearsOfService="3"
-          role="Junior Engineer" skills="Swift JavaScript"
+          role="Junior Engineer"
           supervisor="//@departments.0/@employees.1"
           assignedProjects="//@projects.2"
-          mentors="//@departments.0/@employees.1 //@departments.0/@employees.2"/>
+          mentors="//@departments.0/@employees.1 //@departments.0/@employees.2">
+        <skills>Swift</skills>
+        <skills>JavaScript</skills>
+      </employees>
 
       <!-- Platform Team sub-department -->
       <subDepartments name="Platform Team" code="ENG-PLT" budget="800000.0" location="Melbourne"
           manager="//@departments.0/@subDepartments.0/@employees.0">
 
         <employees name="David Lee" employeeId="E005" salary="155000.0" yearsOfService="10"
-            role="Platform Lead" skills="Infrastructure Cloud Kubernetes"
-            assignedProjects="//@projects.1"/>
+            role="Platform Lead"
+            assignedProjects="//@projects.1">
+          <skills>Infrastructure</skills>
+          <skills>Cloud</skills>
+          <skills>Kubernetes</skills>
+        </employees>
 
         <employees name="Anna Kowalski" employeeId="E006" salary="130000.0" yearsOfService="6"
-            role="Platform Engineer" skills="Docker Terraform AWS"
+            role="Platform Engineer"
             supervisor="//@departments.0/@subDepartments.0/@employees.0"
-            assignedProjects="//@projects.1"/>
+            assignedProjects="//@projects.1">
+          <skills>Docker</skills>
+          <skills>Terraform</skills>
+          <skills>AWS</skills>
+        </employees>
 
         <employees name="Tom Nguyen" employeeId="E007" salary="110000.0" yearsOfService="2"
-            role="DevOps Engineer" skills="CI/CD Monitoring"
+            role="DevOps Engineer"
             supervisor="//@departments.0/@subDepartments.0/@employees.0"
             assignedProjects="//@projects.1"
-            mentors="//@departments.0/@subDepartments.0/@employees.1"/>
+            mentors="//@departments.0/@subDepartments.0/@employees.1">
+          <skills>CI/CD</skills>
+          <skills>Monitoring</skills>
+        </employees>
       </subDepartments>
 
       <!-- Mobile Team sub-department -->
@@ -55,19 +81,30 @@
           manager="//@departments.0/@subDepartments.1/@employees.0">
 
         <employees name="Rachel Adams" employeeId="E008" salary="150000.0" yearsOfService="9"
-            role="Mobile Lead" skills="iOS Android SwiftUI"
-            assignedProjects="//@projects.0 //@projects.2"/>
+            role="Mobile Lead"
+            assignedProjects="//@projects.0 //@projects.2">
+          <skills>iOS</skills>
+          <skills>Android</skills>
+          <skills>SwiftUI</skills>
+        </employees>
 
         <employees name="Chris Taylor" employeeId="E009" salary="120000.0" yearsOfService="4"
-            role="iOS Developer" skills="Swift SwiftUI UIKit"
+            role="iOS Developer"
             supervisor="//@departments.0/@subDepartments.1/@employees.0"
-            assignedProjects="//@projects.0"/>
+            assignedProjects="//@projects.0">
+          <skills>Swift</skills>
+          <skills>SwiftUI</skills>
+          <skills>UIKit</skills>
+        </employees>
 
         <employees name="Linda Park" employeeId="E010" salary="118000.0" yearsOfService="3"
-            role="Android Developer" skills="Kotlin Compose"
+            role="Android Developer"
             supervisor="//@departments.0/@subDepartments.1/@employees.0"
             assignedProjects="//@projects.2"
-            mentors="//@departments.0/@subDepartments.1/@employees.0"/>
+            mentors="//@departments.0/@subDepartments.1/@employees.0">
+          <skills>Kotlin</skills>
+          <skills>Compose</skills>
+        </employees>
       </subDepartments>
     </departments>
 
@@ -77,25 +114,38 @@
         collaboratesWith="//@departments.0 //@departments.2">
 
       <employees name="Jessica Moore" employeeId="E011" salary="170000.0" yearsOfService="11"
-          role="Product Director" skills="Strategy Roadmap Analytics"
-          assignedProjects="//@projects.0 //@projects.2 //@projects.3"/>
+          role="Product Director"
+          assignedProjects="//@projects.0 //@projects.2 //@projects.3">
+        <skills>Strategy</skills>
+        <skills>Roadmap</skills>
+        <skills>Analytics</skills>
+      </employees>
 
       <employees name="Daniel Kim" employeeId="E012" salary="135000.0" yearsOfService="7"
-          role="Senior Product Manager" skills="UserResearch Agile"
+          role="Senior Product Manager"
           supervisor="//@departments.1/@employees.0"
-          assignedProjects="//@projects.0"/>
+          assignedProjects="//@projects.0">
+        <skills>UserResearch</skills>
+        <skills>Agile</skills>
+      </employees>
 
       <employees name="Sophie Garcia" employeeId="E013" salary="110000.0" yearsOfService="4"
-          role="Product Manager" skills="Analytics Design"
+          role="Product Manager"
           supervisor="//@departments.1/@employees.0"
           assignedProjects="//@projects.2 //@projects.3"
-          mentors="//@departments.1/@employees.1"/>
+          mentors="//@departments.1/@employees.1">
+        <skills>Analytics</skills>
+        <skills>Design</skills>
+      </employees>
 
       <employees name="Ryan Hughes" employeeId="E014" salary="95000.0" yearsOfService="2"
-          role="Associate Product Manager" skills="Research Documentation"
+          role="Associate Product Manager"
           supervisor="//@departments.1/@employees.1"
           assignedProjects="//@projects.3"
-          mentors="//@departments.1/@employees.1 //@departments.1/@employees.2"/>
+          mentors="//@departments.1/@employees.1 //@departments.1/@employees.2">
+        <skills>Research</skills>
+        <skills>Documentation</skills>
+      </employees>
     </departments>
 
     <!-- Design Department -->
@@ -104,25 +154,40 @@
         collaboratesWith="//@departments.0 //@departments.1">
 
       <employees name="Olivia Martinez" employeeId="E015" salary="160000.0" yearsOfService="10"
-          role="Design Director" skills="Leadership UX BrandStrategy"
-          assignedProjects="//@projects.0 //@projects.2"/>
+          role="Design Director"
+          assignedProjects="//@projects.0 //@projects.2">
+        <skills>Leadership</skills>
+        <skills>UX</skills>
+        <skills>BrandStrategy</skills>
+      </employees>
 
       <employees name="Nathan Scott" employeeId="E016" salary="125000.0" yearsOfService="6"
-          role="Senior UX Designer" skills="Figma UserResearch Prototyping"
+          role="Senior UX Designer"
           supervisor="//@departments.2/@employees.0"
-          assignedProjects="//@projects.0"/>
+          assignedProjects="//@projects.0">
+        <skills>Figma</skills>
+        <skills>UserResearch</skills>
+        <skills>Prototyping</skills>
+      </employees>
 
       <employees name="Mia Thompson" employeeId="E017" salary="105000.0" yearsOfService="3"
-          role="UI Designer" skills="Figma Sketch Illustration"
+          role="UI Designer"
           supervisor="//@departments.2/@employees.0"
           assignedProjects="//@projects.2"
-          mentors="//@departments.2/@employees.1"/>
+          mentors="//@departments.2/@employees.1">
+        <skills>Figma</skills>
+        <skills>Sketch</skills>
+        <skills>Illustration</skills>
+      </employees>
 
       <employees name="Alex Rivera" employeeId="E018" salary="90000.0" yearsOfService="1"
-          role="Junior Designer" skills="Figma Basics"
+          role="Junior Designer"
           supervisor="//@departments.2/@employees.1"
           assignedProjects="//@projects.2"
-          mentors="//@departments.2/@employees.1 //@departments.2/@employees.2"/>
+          mentors="//@departments.2/@employees.1 //@departments.2/@employees.2">
+        <skills>Figma</skills>
+        <skills>Basics</skills>
+      </employees>
     </departments>
 
     <!-- Operations Department -->
@@ -130,16 +195,25 @@
         manager="//@departments.3/@employees.0">
 
       <employees name="William Anderson" employeeId="E019" salary="150000.0" yearsOfService="14"
-          role="Operations Director" skills="ProcessOptimisation SupplyChain"/>
+          role="Operations Director">
+        <skills>ProcessOptimisation</skills>
+        <skills>SupplyChain</skills>
+      </employees>
 
       <employees name="Emma Wilson" employeeId="E020" salary="115000.0" yearsOfService="8"
-          role="Operations Manager" skills="ProjectManagement Logistics"
-          supervisor="//@departments.3/@employees.0"/>
+          role="Operations Manager"
+          supervisor="//@departments.3/@employees.0">
+        <skills>ProjectManagement</skills>
+        <skills>Logistics</skills>
+      </employees>
 
       <employees name="Jack Robinson" employeeId="E021" salary="85000.0" yearsOfService="2"
-          role="Operations Analyst" skills="DataAnalysis Reporting"
+          role="Operations Analyst"
           supervisor="//@departments.3/@employees.1"
-          mentors="//@departments.3/@employees.1"/>
+          mentors="//@departments.3/@employees.1">
+        <skills>DataAnalysis</skills>
+        <skills>Reporting</skills>
+      </employees>
     </departments>
 
     <!-- Projects -->

@@ -5,7 +5,7 @@
 swift-aql evaluate --model library-data.xmi \
   --expression "library.authors->collect(a | a.nationality)->asSet()"
 
-# Output: {'British', 'American', 'Polish'}
+# Output: ["British", "American", "Polish"]
 
 # Union of two collections - all favourite and borrowed books
 swift-aql evaluate --model library-data.xmi \
@@ -13,7 +13,7 @@ swift-aql evaluate --model library-data.xmi \
       favourites = library.members->collect(m | m.favourites)->flatten()
     in borrowed->union(favourites)->asSet()->size()"
 
-# Output: Number of unique books that are either borrowed or favourited
+# Output: 14
 
 # Intersection - books that are both borrowed AND favourited
 swift-aql evaluate --model library-data.xmi \
@@ -21,7 +21,7 @@ swift-aql evaluate --model library-data.xmi \
       favourites = library.members->collect(m | m.favourites)->flatten()->asSet()
     in borrowed->intersection(favourites)->collect(b | b.title)"
 
-# Output: Titles of books in both sets
+# Output: ["Foundation", "A Brief History of Time", "Pride and Prejudice", "1984", ..., "On the Origin of Species"]
 
 # Difference - favourites that are not currently borrowed
 swift-aql evaluate --model library-data.xmi \
@@ -29,20 +29,20 @@ swift-aql evaluate --model library-data.xmi \
       favourites = library.members->collect(m | m.favourites)->flatten()->asSet()
     in favourites->difference(borrowed)->collect(b | b.title)"
 
-# Output: Books that are favourited but not borrowed
+# Output: ["I, Robot", "Sense and Sensibility", "The ABC Murders", "Radioactive Substances"]
 
-# Symmetric difference - books in one set but not both
+# Symmetric difference - books in one set but not both (the union of both differences)
 swift-aql evaluate --model library-data.xmi \
   --expression "let borrowed = library.members->collect(m | m.borrowed)->flatten()->asSet(),
       favourites = library.members->collect(m | m.favourites)->flatten()->asSet()
-    in borrowed->symmetricDifference(favourites)->size()"
+    in borrowed->difference(favourites)->union(favourites->difference(borrowed))->size()"
 
-# Output: Count of books in exactly one of the two sets
+# Output: 4
 
-# Check if one set is subset of another
+# Check if one set is subset of another (Alice's favourites do not include every book)
 swift-aql evaluate --model library-data.xmi \
   --expression "let aliceFavs = library.members->select(m | m.name = 'Alice Thompson')->first().favourites->asSet(),
       allBooks = library.books->asSet()
     in aliceFavs->includesAll(allBooks)"
 
-# Output: false (Alice's favourites is not a superset of all books)
+# Output: false

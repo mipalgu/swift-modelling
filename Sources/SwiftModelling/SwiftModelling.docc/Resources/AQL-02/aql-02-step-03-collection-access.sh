@@ -3,7 +3,7 @@
 swift-aql evaluate --model university-data.xmi \
   --expression "university.students"
 
-# Output: [Student(Alex), Student(Beth), Student(Chris), ...]
+# Output: [Student(Alex Johnson), Student(Beth Smith), Student(Chris Davis), ...]
 
 # Access nested collections - all professors in all departments
 swift-aql evaluate --model university-data.xmi \

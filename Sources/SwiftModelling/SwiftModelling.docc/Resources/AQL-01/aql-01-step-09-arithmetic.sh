@@ -28,22 +28,22 @@ swift-aql evaluate --model company-data.xmi \
 
 # Output: 2
 
-# Calculations with model values
+# Calculations with model values (monthly budget)
 swift-aql evaluate --model company-data.xmi \
   --expression "company.departments->first().budget / 12"
 
-# Output: 41666.67 (monthly budget)
+# Output: 41666.666666666664
 
 # Calculate average salary
 swift-aql evaluate --model company-data.xmi \
   --expression "let salaries = company.departments.employees.salary
     in salaries->sum() / salaries->size()"
 
-# Output: 92777.78 (approximate average)
+# Output: 92777.77777777778
 
-# Percentage calculation
+# Percentage calculation (salaries as a percentage of the budget)
 swift-aql evaluate --model company-data.xmi \
   --expression "let eng = company.departments->first()
     in eng.employees.salary->sum() / eng.budget * 100"
 
-# Output: 75.0 (salary as percentage of budget)
+# Output: 75.0

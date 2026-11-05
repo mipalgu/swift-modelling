@@ -3,7 +3,7 @@
 
 # Run the conditional template
 swift-mtl generate \
-  --template ConditionalTemplate.mtl \
+  --template ConditionalLogic.mtl \
   --model webapp-model.xmi \
   --metamodel WebApp.ecore \
   --output ./generated
@@ -28,43 +28,6 @@ swift-mtl generate \
 
 echo "Generated: quantifier-conditions.txt"
 
-# Example output from conditional-logic.txt:
-# -----------------------------------------
-# Conditional Logic with AQL Expressions
-# ======================================
-#
-# Application: TaskManager
-#
-# Page access levels:
-# - Dashboard: Protected
-# - TaskList: Protected
-# - Projects: Protected
-# - NewProject: Protected
-# - Profile: Protected
-# - Login: Public
-# - Register: Public
-#
-# Entity complexity analysis:
-# - User: 6 attributes - Medium
-# - Task: 7 attributes - Complex
-# - Project: 6 attributes - Medium
-# - Comment: 3 attributes - Simple
-# -----------------------------------------
-
-# Example output from quantifier-conditions.txt:
-# -----------------------------------------
-# Application validation summary:
-#
-# Schema validation:
-#   [PASS] Every entity has a primary key
-#
-# Security validation:
-#   [INFO] Mixed access - both public and protected pages
-#
-# UI completeness:
-#   [PASS] All pages have components
-# -----------------------------------------
-
 # View generated output
 echo ""
 echo "=== Conditional Logic Output ==="
@@ -76,4 +39,24 @@ cat ./generated/complex-conditions.txt | head -40
 
 echo ""
 echo "=== Quantifier Conditions Output ==="
-cat ./generated/quantifier-conditions.txt | head -50
+cat ./generated/quantifier-conditions.txt | head -90
+
+# Output (excerpt):
+# === Conditional Logic Output ===
+# Page access levels:
+# - Dashboard: Protected
+# - Login: Public
+# - Register: Public
+# Entity complexity analysis:
+# - User: 6 attributes - Medium
+# - Task: 7 attributes - Complex
+# - Project: 6 attributes - Medium
+# - Comment: 3 attributes - Simple
+# === Quantifier Conditions Output ===
+# Application validation summary:
+# Schema validation:
+#   [PASS] Every entity has a primary key
+# Security validation:
+#   [INFO] Mixed access - both public and protected pages
+# UI completeness:
+#   [PASS] All pages have components

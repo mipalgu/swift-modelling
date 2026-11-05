@@ -11,8 +11,8 @@ swift-aql evaluate --model university-data.xmi \
 
 # Output: true
 
-# Check for empty prerequisites on introductory courses
+# Count the courses without prerequisites (CS101 and MATH101)
 swift-aql evaluate --model university-data.xmi \
   --expression "university.courses->select(c | c.prerequisites->isEmpty())->size()"
 
-# Output: 3 (CS101, MATH101, and one other have no prerequisites)
+# Output: 2

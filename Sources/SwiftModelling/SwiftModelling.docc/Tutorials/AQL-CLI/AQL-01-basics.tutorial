@@ -28,7 +28,7 @@
             @Step {
                 Create a model instance to query.
 
-                @Code(name: "company-instance.xmi", file: aql-01-step-02-company-instance.xmi)
+                @Code(name: "company-data.xmi", file: aql-01-step-02-company-instance.xmi)
 
                 This model instance contains a company with several employees in different departments. We'll query this data using AQL expressions.
             }
@@ -106,7 +106,7 @@
 
                 @Code(name: "Terminal", file: aql-01-step-09-arithmetic.sh)
 
-                AQL supports standard arithmetic: addition (+), subtraction (-), multiplication (*), division (/), and modulo (%). Operations follow standard precedence rules.
+                AQL supports standard arithmetic: addition (+), subtraction (-), multiplication (*), division (/), and remainder (`mod`). Operations follow standard precedence rules.
             }
 
             @Step {

@@ -6,52 +6,42 @@ swift-aql evaluate --model enterprise-data.xmi \
   --expression "organisation.departments
     ->select(d | d.collaboratesWith->notEmpty())
     ->collect(d | d.collaboratesWith
-        ->collect(c | Tuple{from = d.name, to = c.name}))
-    ->flatten()"
+        ->collect(c | d.name + ' -> ' + c.name))"
 
-# Output: [{from: "Engineering", to: "Product"}, {from: "Engineering", to: "Design"},
-#          {from: "Product", to: "Engineering"}, {from: "Product", to: "Design"}, ...]
+# Output: ["Engineering -> Product", "Engineering -> Design", "Product -> Engineering", "Product -> Design", "Design -> Engineering", "Design -> Product"]
 
-# Cross-product: employees who could mentor each other (different departments)
+# Cross-product: possible mentoring pairs across different departments
 swift-aql evaluate --model enterprise-data.xmi \
-  --expression "let seniors = organisation.departments.employees->flatten()
+  --expression "let seniors = organisation.departments.employees
         ->select(e | e.yearsOfService >= 8),
-        juniors = organisation.departments.employees->flatten()
+        juniors = organisation.departments.employees
         ->select(e | e.yearsOfService <= 3)
     in seniors->collect(s |
         juniors->select(j | j.eContainer() <> s.eContainer())
-            ->collect(j | Tuple{mentor = s.name, mentee = j.name}))
-    ->flatten()
-    ->select(p | true)"  -- limit output
+            ->collect(j | s.name + ' could mentor ' + j.name))"
 
-# Output: [{mentor: "Sarah Mitchell", mentee: "Tom Nguyen"}, ...]
+# Output: ["Sarah Mitchell could mentor Ryan Hughes", "Sarah Mitchell could mentor Mia Thompson", ..., "Emma Wilson could mentor Alex Rivera"]
 
-# Cartesian product of projects and departments
+# Cartesian product of projects and departments, keeping involved pairs
 swift-aql evaluate --model enterprise-data.xmi \
   --expression "organisation.projects
     ->collect(p | organisation.departments
-        ->collect(d | Tuple{project = p.name,
-                            department = d.name,
-                            involved = p.teamMembers
-                                ->exists(e | e.eContainer() = d or
-                                    d.subDepartments.employees
-                                        ->flatten()->includes(e))}))
-    ->flatten()
-    ->select(t | t.involved)"
+        ->select(d | p.teamMembers
+            ->exists(e | e.eContainer() = d or
+                d.subDepartments.employees->includes(e)))
+        ->collect(d | p.name + ' involves ' + d.name))"
 
-# Output: [{project: "Customer Portal", department: "Engineering", involved: true}, ...]
+# Output: ["Customer Portal involves Engineering", "Customer Portal involves Product", "Customer Portal involves Design", "Infrastructure Modernisation involves Engineering", ..., "Analytics Dashboard involves Product"]
 
-# Find all possible skill pairs in the organisation
+# The first ten skill pairs in the organisation
 swift-aql evaluate --model enterprise-data.xmi \
   --expression "let allSkills = organisation.departments.employees
-        ->flatten()
         ->collect(e | e.skills)
-        ->flatten()
         ->asSet()
     in allSkills->collect(s1 |
         allSkills->select(s2 | s1 < s2)
-            ->collect(s2 | Tuple{skill1 = s1, skill2 = s2}))
-    ->flatten()
-    ->select(p | true)->subSequence(1, 10)"  -- first 10 pairs
+            ->collect(s2 | s1 + ' + ' + s2))
+    ->asSequence()
+    ->subSequence(1, 10)"
 
-# Output: [{skill1: "Architecture", skill2: "Kotlin"}, ...]
+# Output: ["Leadership + Strategy", "Leadership + Swift", "Leadership + Python", ..., "Leadership + Sketch"]
