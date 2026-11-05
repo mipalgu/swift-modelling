@@ -44,11 +44,15 @@ public enum MetamodelRegistration {
     /// the resource set find its classes, and resources of the set are written with its
     /// namespace.
     ///
+    /// Verbose output names the file and the registered package. The trace of the XMI parser
+    /// is a separate debugging aid that only `debug` turns on.
+    ///
     /// - Parameters:
     ///   - path: The path to the `.ecore` file.
     ///   - resourceSet: The resource set in which to register the metamodel.
     ///   - announcement: The text that introduces the path in verbose output.
     ///   - verbose: Whether to print progress to standard output.
+    ///   - debug: Whether the parser prints its trace of the metamodel document to standard output.
     /// - Returns: The loaded root package.
     /// - Throws: ``MetamodelRegistrationError/fileNotFound(_:)`` if the file does not exist, or
     ///   the error of the parser if the file cannot be loaded.
@@ -58,7 +62,8 @@ public enum MetamodelRegistration {
         at path: String,
         into resourceSet: ResourceSet,
         announcement: String = defaultAnnouncement,
-        verbose: Bool = false
+        verbose: Bool = false,
+        debug: Bool = false
     ) async throws -> EPackage {
         guard FileManager.default.fileExists(atPath: path) else {
             throw MetamodelRegistrationError.fileNotFound(path)
@@ -66,7 +71,7 @@ public enum MetamodelRegistration {
         if verbose {
             print("\(announcement): \(path)")
         }
-        let package = try await EPackage(url: URL(fileURLWithPath: path), enableDebugging: verbose)
+        let package = try await EPackage(url: URL(fileURLWithPath: path), enableDebugging: debug)
         await resourceSet.registerMetamodel(package, uri: package.nsURI)
         if verbose {
             print(registeredMessage(for: package))
@@ -79,14 +84,17 @@ public enum MetamodelRegistration {
     /// - Parameters:
     ///   - paths: The paths to the `.ecore` files, in command line order.
     ///   - verbose: Whether to print progress to standard output.
+    ///   - debug: Whether the parser prints its trace of each metamodel document to standard output.
     /// - Returns: The resource set with every metamodel registered.
-    /// - Throws: The error of ``registerMetamodel(at:into:announcement:verbose:)`` for the first
-    ///   file that cannot be registered.
+    /// - Throws: The error of ``registerMetamodel(at:into:announcement:verbose:debug:)`` for the
+    ///   first file that cannot be registered.
     @MainActor
-    public static func resourceSet(registering paths: [String], verbose: Bool = false) async throws -> ResourceSet {
+    public static func resourceSet(
+        registering paths: [String], verbose: Bool = false, debug: Bool = false
+    ) async throws -> ResourceSet {
         let resourceSet = ResourceSet()
         for path in paths {
-            try await registerMetamodel(at: path, into: resourceSet, verbose: verbose)
+            try await registerMetamodel(at: path, into: resourceSet, verbose: verbose, debug: debug)
         }
         return resourceSet
     }
