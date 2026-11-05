@@ -57,6 +57,113 @@ struct TemplateSetOptionTests {
         return ["--metamodel", metamodel.path, "--model", model.path]
     }
 
+    @Test("writes no stdout file when only line breaks lie outside the file blocks of a set")
+    @MainActor
+    func noStandardOutputFile() async throws {
+        let scratch = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(scratch) }
+        let set = scratch.appendingPathComponent("sets/report")
+        try write(
+            """
+            { "name": "report", "mainModule": "generate", "mainTemplate": "generate" }
+            """, to: set.appendingPathComponent("templateset.json"))
+        try write(
+            """
+            [module generate('http://www.example.org/company')]
+
+            [template public generate(c : Company)]
+            [file ('company.txt')][c.name/][/file]
+            [/template]
+            """, to: set.appendingPathComponent("generate.mtl"))
+        let output = scratch.appendingPathComponent("out")
+
+        let result = try await executeSwiftMTL(
+            command: "generate",
+            arguments: ["--template-set", set.path, "--output", output.path] + (try modelArguments()))
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+        #expect(try text(of: output.appendingPathComponent("company.txt")) == "Tech Innovations Ltd")
+        #expect(!FileManager.default.fileExists(atPath: output.appendingPathComponent("stdout").path))
+    }
+
+    /// Writes a template set whose main template writes `stdout` with a file block and some
+    /// text outside it.
+    ///
+    /// - Parameter scratch: The directory that receives the set.
+    /// - Returns: The directory of the set.
+    private func writeStandardOutputFileSet(in scratch: URL) throws -> URL {
+        let set = scratch.appendingPathComponent("sets/console")
+        try write(
+            """
+            { "name": "console", "mainModule": "generate", "mainTemplate": "generate" }
+            """, to: set.appendingPathComponent("templateset.json"))
+        try write(
+            """
+            [module generate('http://www.example.org/company')]
+
+            [template public generate(c : Company)]
+            [file ('stdout', overwrite)]from the block [c.name/][/file]
+            [file ('company.txt')][c.name/][/file]
+            outside the blocks
+            [/template]
+            """, to: set.appendingPathComponent("generate.mtl"))
+        return set
+    }
+
+    @Test("writes a file named stdout from a file block of a set and keeps it")
+    @MainActor
+    func standardOutputFileBlock() async throws {
+        let scratch = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(scratch) }
+        let set = try writeStandardOutputFileSet(in: scratch)
+        let output = scratch.appendingPathComponent("out")
+
+        let result = try await executeSwiftMTL(
+            command: "generate",
+            arguments: ["--template-set", set.path, "--output", output.path] + (try modelArguments()))
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+        #expect(try text(of: output.appendingPathComponent("stdout")) == "from the block Tech Innovations Ltd")
+        #expect(try text(of: output.appendingPathComponent("company.txt")) == "Tech Innovations Ltd")
+    }
+
+    @Test("writes a file named stdout from a file block of a set and prints the other text with --print-standard-output")
+    @MainActor
+    func standardOutputFileBlockPrinting() async throws {
+        let scratch = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(scratch) }
+        let set = try writeStandardOutputFileSet(in: scratch)
+        let output = scratch.appendingPathComponent("out")
+
+        let result = try await executeSwiftMTL(
+            command: "generate",
+            arguments: ["--template-set", set.path, "--output", output.path, "--print-standard-output"]
+                + (try modelArguments()))
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+        #expect(result.stdout.contains("outside the blocks\n"), "\(result.stdout)")
+        #expect(try text(of: output.appendingPathComponent("stdout")) == "from the block Tech Innovations Ltd")
+    }
+
+    @Test("prints the text outside the file blocks of a set with --print-standard-output")
+    @MainActor
+    func printsStandardOutput() async throws {
+        let scratch = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(scratch) }
+        let set = try writeSet(in: scratch)
+        let output = scratch.appendingPathComponent("out")
+
+        let result = try await executeSwiftMTL(
+            command: "generate",
+            arguments: ["--template-set", set.path, "--output", output.path, "--print-standard-output"]
+                + (try modelArguments()))
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+        #expect(result.stdout.contains("done\n"), "\(result.stdout)")
+        #expect(try text(of: output.appendingPathComponent("company.txt")) == "Tech Innovations Ltd")
+        #expect(!FileManager.default.fileExists(atPath: output.appendingPathComponent("stdout").path))
+    }
+
     @Test("runs the main template of a template set directory with the models and parameters")
     @MainActor
     func runsSetDirectory() async throws {

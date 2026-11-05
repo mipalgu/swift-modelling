@@ -39,7 +39,11 @@ struct GenerateCommand: AsyncParsableCommand {
             hasParameter('name'); a name must be an identifier and not a reserved keyword. Existing \
             files are merged with the generated text when the module declares a merge, and \
             replaced otherwise; --force-overwrite always replaces them, and --diff keeps them and \
-            writes the generated text beside them.
+            writes the generated text beside them. Text that the templates write outside their \
+            [file] blocks is saved as stdout in the output directory, unless it is only white \
+            space or a [file] block of the run wrote stdout itself; \
+            --\(GenerateCommand.printStandardOutputOption) prints that text on standard output \
+            instead and saves no stdout file.
 
             Instead of a template file, --template-set names a template set: a directory with a \
             templateset.json descriptor, or the language of a bundled set \
@@ -185,6 +189,17 @@ struct GenerateCommand: AsyncParsableCommand {
 
     @Flag(help: "Write the generated text of existing files beside them as .<name>.new")
     var diff: Bool = false
+
+    /// The long name of the option that prints the text outside file blocks.
+    static let printStandardOutputOption = "print-standard-output"
+
+    /// Whether the text written outside any file block is printed instead of saved.
+    @Flag(
+        name: .customLong(GenerateCommand.printStandardOutputOption),
+        help: ArgumentHelp(
+            "Print the text that the templates write outside [file] blocks instead of saving it "
+                + "as \(MTLStandardOutput.fileName) in the output directory"))
+    var printStandardOutput: Bool = false
 
     /// How the templates read features that a model does not set.
     @OptionGroup(title: "Evaluation")
@@ -363,6 +378,7 @@ struct GenerateCommand: AsyncParsableCommand {
         try createOutputDirectory()
 
         // Execute generation
+        let standardOutputBefore = FileState(of: standardOutputURL)
         let strategy = MTLFileSystemStrategy(
             basePath: output, options: generatorOptions, standardOutput: .capture)
         let generator = MTLGenerator(
@@ -381,7 +397,7 @@ struct GenerateCommand: AsyncParsableCommand {
             throw ValidationError.generationFailed(error.localizedDescription)
         }
         GenerationWarningReport.write(generator.statistics.warnings)
-        try await writeStandardOutput(of: strategy)
+        try await writeStandardOutput(of: strategy, before: standardOutputBefore)
 
         // Display results
         if verbose {
@@ -426,10 +442,10 @@ struct GenerateCommand: AsyncParsableCommand {
             arguments: inputs.arguments, models: inputs.models, resourceSet: inputs.resourceSet,
             progress: { update in if verbose { print("  \(update.message)") } })
         GenerationWarningReport.write(result.warnings)
-        if let text = result.standardOutput {
-            let url = URL(fileURLWithPath: output).appendingPathComponent(MTLStandardOutput.fileName)
-            try text.write(to: url, atomically: true, encoding: .utf8)
-        }
+        let standardOutputFile = standardOutputURL.standardizedFileURL
+        try writeStandardOutput(
+            result.standardOutput,
+            writtenByRun: result.files.contains { $0.standardizedFileURL == standardOutputFile })
 
         if verbose {
             print("\n=== Generation Complete ===")
@@ -592,18 +608,81 @@ enum ValidationError: Error, CustomStringConvertible {
 }
 
 extension GenerateCommand {
-    /// Writes the text a template produced outside any file block.
+    /// The file in the output directory that keeps the text written outside any file block.
+    ///
+    /// - Returns: The file named ``MTLStandardOutput/fileName`` in the output directory.
+    var standardOutputURL: URL {
+        URL(fileURLWithPath: output).appendingPathComponent(MTLStandardOutput.fileName)
+    }
+
+    /// Writes the text a single template produced outside any file block.
     ///
     /// Text that a template writes outside a `[file]` block is collected by the
     /// generation strategy and saved in the output directory under the standard
-    /// output file name, so that it remains available after the command finishes.
-    /// Nothing is written when the template produced no such text.
+    /// output file name, so that it remains available after the command finishes,
+    /// or printed on standard output with ``printStandardOutput``.
+    /// Nothing is written when the template produced no such text, or only white
+    /// space such as the line breaks between its file blocks. A file of that name
+    /// that the template wrote itself with a `[file]` block is kept as the template
+    /// wrote it: the file counts as written by the run when it appeared, or was
+    /// replaced or modified, during the generation.
     ///
-    /// - Parameter strategy: The file system strategy used for generation.
+    /// - Parameters:
+    ///   - strategy: The file system strategy used for generation.
+    ///   - before: The state of the standard output file before the generation.
     /// - Throws: An error if the file cannot be written.
-    func writeStandardOutput(of strategy: MTLFileSystemStrategy) async throws {
-        guard let text = await strategy.standardOutput else { return }
-        let url = URL(fileURLWithPath: output).appendingPathComponent(MTLStandardOutput.fileName)
-        try text.write(to: url, atomically: true, encoding: .utf8)
+    func writeStandardOutput(of strategy: MTLFileSystemStrategy, before: FileState) async throws {
+        try writeStandardOutput(
+            await strategy.standardOutput, writtenByRun: FileState(of: standardOutputURL) != before)
+    }
+
+    /// Writes the text written outside any file block to the standard output file, or prints it.
+    ///
+    /// Nothing is written or printed when there is no text or when the text is empty or only
+    /// white space. With ``printStandardOutput``, the text is printed on standard output and no
+    /// file is written. Otherwise the text is saved in the standard output file, unless the run
+    /// itself wrote that file with a `[file]` block.
+    ///
+    /// - Parameters:
+    ///   - text: The text written outside any file block, or `nil` if none was kept.
+    ///   - writtenByRun: Whether the run wrote the standard output file with a `[file]` block.
+    /// - Throws: An error if the file cannot be written.
+    func writeStandardOutput(_ text: String?, writtenByRun: Bool) throws {
+        guard let text, text.contains(where: { !$0.isWhitespace }) else { return }
+        if printStandardOutput {
+            print(text, terminator: "")
+            return
+        }
+        guard !writtenByRun else { return }
+        try text.write(to: standardOutputURL, atomically: true, encoding: .utf8)
+    }
+}
+
+/// The state of a file on disk, which tells whether the file was written between two looks.
+///
+/// Two states of the same path differ when the file appeared or disappeared, or when it was
+/// replaced or modified in between.
+struct FileState: Equatable, Sendable {
+    /// Whether the file exists.
+    let exists: Bool
+
+    /// The number of the file in its file system, which changes when the file is replaced.
+    let fileNumber: UInt64?
+
+    /// The time of the last modification of the file.
+    let modificationDate: Date?
+
+    /// The size of the file in bytes.
+    let size: UInt64?
+
+    /// Looks at a file.
+    ///
+    /// - Parameter url: The location of the file.
+    init(of url: URL) {
+        let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
+        exists = attributes != nil
+        fileNumber = (attributes?[.systemFileNumber] as? NSNumber)?.uint64Value
+        modificationDate = attributes?[.modificationDate] as? Date
+        size = (attributes?[.size] as? NSNumber)?.uint64Value
     }
 }

@@ -130,6 +130,119 @@ struct CLIIntegrationTests {
 
         #expect(content1.contains("File 1 content"))
         #expect(content2.contains("File 2 content"))
+
+        // Only line breaks lie outside the file blocks, so no stdout file is written
+        let stdoutFile = outputDir.appendingPathComponent("stdout")
+        #expect(!FileManager.default.fileExists(atPath: stdoutFile.path))
+    }
+
+    @Test("Generate command - keeps a stdout file that a file block wrote")
+    @MainActor
+    func testGenerateKeepsStdoutFileBlock() async throws {
+        let scratch = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(scratch) }
+        let templateURL = scratch.appendingPathComponent("stdout-block.mtl")
+        try """
+            [module StdoutBlock('http://www.example.org/stdout')]
+
+            [template public main()]
+            [file ('stdout', 'overwrite', 'UTF-8')]real[/file]
+            [/template]
+            """.write(to: templateURL, atomically: true, encoding: .utf8)
+        let outputDir = scratch.appendingPathComponent("out")
+
+        let result = try await executeSwiftMTL(
+            command: "generate", arguments: [templateURL.path, "--output", outputDir.path])
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+        let content = try String(contentsOf: outputDir.appendingPathComponent("stdout"), encoding: .utf8)
+        #expect(content == "real")
+    }
+
+    @Test("Generate command - prints the text outside file blocks with --print-standard-output")
+    @MainActor
+    func testGeneratePrintsStandardOutput() async throws {
+        let templateURL = try loadTestResource(named: "simple-hello.mtl", subdirectory: "templates")
+        let outputDir = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(outputDir) }
+
+        let result = try await executeSwiftMTL(
+            command: "generate", arguments: [templateURL.path, "--output", outputDir.path, "--print-standard-output"])
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+        #expect(result.stdout == "Hello, World!\nThis is a simple MTL template.\n✓ Generation complete\n")
+        #expect(!FileManager.default.fileExists(atPath: outputDir.appendingPathComponent("stdout").path))
+    }
+
+    @Test("Generate command - prints nothing but writes the files of a template with file blocks")
+    @MainActor
+    func testGeneratePrintsNothingForFileBlocks() async throws {
+        let templateURL = try loadTestResource(named: "with-file-blocks.mtl", subdirectory: "templates")
+        let outputDir = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(outputDir) }
+
+        let result = try await executeSwiftMTL(
+            command: "generate", arguments: [templateURL.path, "--output", outputDir.path, "--print-standard-output"])
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+        #expect(result.stdout == "✓ Generation complete\n")
+        #expect(FileManager.default.fileExists(atPath: outputDir.appendingPathComponent("output1.txt").path))
+        #expect(FileManager.default.fileExists(atPath: outputDir.appendingPathComponent("output2.txt").path))
+        #expect(!FileManager.default.fileExists(atPath: outputDir.appendingPathComponent("stdout").path))
+    }
+
+    @Test("Generate command - rejects a single value passed to concat only with --strict-aql")
+    @MainActor
+    func testGenerateStrictAQL() async throws {
+        let scratch = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(scratch) }
+        let templateURL = scratch.appendingPathComponent("concat.mtl")
+        try """
+            [module Concat('http://www.example.org/concat')]
+
+            [template public main()]
+            [file ('count.txt', 'overwrite', 'UTF-8')][Sequence{'a'}->concat('b')->size()/][/file]
+            [/template]
+            """.write(to: templateURL, atomically: true, encoding: .utf8)
+        let lenientDir = scratch.appendingPathComponent("lenient")
+        let strictDir = scratch.appendingPathComponent("strict")
+
+        let lenient = try await executeSwiftMTL(
+            command: "generate", arguments: [templateURL.path, "--output", lenientDir.path, "--no-config"])
+        let strict = try await executeSwiftMTL(
+            command: "generate", arguments: [templateURL.path, "--output", strictDir.path, "--no-config", "--strict-aql"])
+
+        #expect(lenient.succeeded, "\(lenient.stdout)\(lenient.stderr)")
+        #expect(try String(contentsOf: lenientDir.appendingPathComponent("count.txt"), encoding: .utf8) == "2")
+        #expect(!strict.succeeded, "\(strict.stdout)")
+        #expect(strict.stderr.contains("concat"), "\(strict.stderr)")
+    }
+
+    @Test("Generate command - describes --print-standard-output in the help")
+    @MainActor
+    func testGenerateHelpDescribesPrintStandardOutput() async throws {
+        let result = try await executeSwiftMTL(command: "generate", arguments: ["--help"])
+
+        #expect(result.succeeded)
+        #expect(result.stdout.contains("--print-standard-output"))
+    }
+
+    @Test("Generate command - replaces a stdout file left by an earlier run with new text")
+    @MainActor
+    func testGenerateReplacesEarlierStdout() async throws {
+        let templateURL = try loadTestResource(named: "simple-hello.mtl", subdirectory: "templates")
+        let outputDir = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(outputDir) }
+        let stdoutFile = outputDir.appendingPathComponent("stdout")
+        try "earlier".write(to: stdoutFile, atomically: true, encoding: .utf8)
+
+        let result = try await executeSwiftMTL(
+            command: "generate", arguments: [templateURL.path, "--output", outputDir.path])
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+        let content = try String(contentsOf: stdoutFile, encoding: .utf8)
+        #expect(content.contains("Hello, World!"))
+        #expect(!content.contains("earlier"))
     }
 
     @Test("Generate command - verbose output")

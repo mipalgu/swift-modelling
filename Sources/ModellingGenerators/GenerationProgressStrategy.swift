@@ -10,17 +10,16 @@ import MTL
 /// A generation strategy that reports each finished file and passes everything else on.
 ///
 /// The strategy wraps another strategy, normally the file system strategy. It remembers the files
-/// that were completed and tells a progress receiver about each of them. Text that a template
-/// writes outside any file block is kept in memory and discarded, so that it never reaches the disk,
-/// unless the strategy is told to pass it on to the wrapped strategy.
+/// that were completed and tells a progress receiver about each of them, including a file named
+/// ``MTL/MTLStandardOutput/fileName`` that a file block writes. Text that a template writes outside
+/// any file block is discarded, so that it never reaches the disk, unless the strategy is told to
+/// pass it on to the wrapped strategy.
 actor GenerationProgressStrategy: MTLGenerationStrategy {
     private let base: any MTLGenerationStrategy
     private let outputDirectory: URL
     private let total: Int?
     private let report: GenerationProgressReporter
     private let keepsStandardOutput: Bool
-    private let discarding = MTLInMemoryStrategy()
-    private var discarded: Set<ObjectIdentifier> = []
     private var targets: [ObjectIdentifier: String] = [:]
     private var finished: [URL] = []
 
@@ -56,35 +55,35 @@ actor GenerationProgressStrategy: MTLGenerationStrategy {
     /// - Parameter text: The complete text written outside any file block.
     @MainActor
     func writeStandardOutput(_ text: String) async throws {
-        if keepsStandardOutput {
-            try await base.writeStandardOutput(text)
-        } else {
-            try await discarding.writeStandardOutput(text)
-        }
+        guard keepsStandardOutput else { return }
+        try await base.writeStandardOutput(text)
     }
 
+    /// Creates the writer of a file block with the wrapped strategy and remembers its file.
+    ///
+    /// - Parameters:
+    ///   - url: The file URL, relative to the output directory unless absolute.
+    ///   - mode: Whether the file is overwritten or appended to.
+    ///   - charset: The character set of the file.
+    ///   - indentation: The indentation of the writer.
+    /// - Returns: The writer of the wrapped strategy.
+    /// - Throws: The error of the wrapped strategy.
     @MainActor
     func createWriter(
         url: String, mode: MTLOpenMode, charset: String, indentation: MTLIndentation
     ) async throws -> MTLWriter {
-        if url == GenerationProgressStrategy.mainOutputName {
-            let writer = try await discarding.createWriter(
-                url: url, mode: mode, charset: charset, indentation: indentation)
-            await discard(writer)
-            return writer
-        }
         let writer = try await base.createWriter(
             url: url, mode: mode, charset: charset, indentation: indentation)
         await remember(writer, url: url)
         return writer
     }
 
+    /// Finishes a file with the wrapped strategy and reports it as completed.
+    ///
+    /// - Parameter writer: The writer of the file block.
+    /// - Throws: The error of the wrapped strategy.
     @MainActor
     func finalizeWriter(_ writer: MTLWriter) async throws {
-        if await isDiscarded(writer) {
-            try await discarding.finalizeWriter(writer)
-            return
-        }
         try await base.finalizeWriter(writer)
         await complete(writer)
     }
@@ -101,17 +100,6 @@ actor GenerationProgressStrategy: MTLGenerationStrategy {
     @MainActor
     func fileExists(url: String) async -> Bool {
         await base.fileExists(url: url)
-    }
-
-    /// The name under which the template engine reports text written outside any file block.
-    static let mainOutputName = "stdout"
-
-    private func discard(_ writer: MTLWriter) {
-        discarded.insert(ObjectIdentifier(writer))
-    }
-
-    private func isDiscarded(_ writer: MTLWriter) -> Bool {
-        discarded.remove(ObjectIdentifier(writer)) != nil
     }
 
     private func remember(_ writer: MTLWriter, url: String) {
