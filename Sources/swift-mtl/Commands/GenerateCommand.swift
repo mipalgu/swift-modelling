@@ -30,6 +30,9 @@ struct GenerateCommand: AsyncParsableCommand {
             Supports generation from models in XMI and JSON formats with automatic
             format detection based on file extensions.
 
+            --template names the main template of the module. A value that ends in .mtl names \
+            the template file instead, when no template file argument is given.
+
             Modules that the template imports are searched in the directory of the template and \
             then in the --template-path directories. Each --param name=value is available to the \
             templates as the variable [name/] and through the services parameter('name') and \
@@ -70,6 +73,11 @@ struct GenerateCommand: AsyncParsableCommand {
                 swift-mtl generate template.mtl \\
                   --model input.xmi \\
                   --template generateAll \\
+                  --output generated/
+
+                # Name the template file with --template instead of as an argument
+                swift-mtl generate --template template.mtl \\
+                  --model input.xmi \\
                   --output generated/
 
                 # Ecore model: the EPackage becomes a template argument
@@ -113,6 +121,9 @@ struct GenerateCommand: AsyncParsableCommand {
                   --model input.xmi \\
                   --output generated/ \\
                   --verbose
+
+                # Trace the template and model parsers
+                swift-mtl generate template.mtl --model input.xmi --debug
             """
     )
 
@@ -151,7 +162,16 @@ struct GenerateCommand: AsyncParsableCommand {
     @Option(name: .shortAndLong, help: "Output directory for generated files")
     var output: String = "."
 
-    @Option(name: .shortAndLong, help: "Main template name to execute (auto-detect if not specified)")
+    /// The main template to run, or the template file when no template file argument is given.
+    ///
+    /// A value with the extension of MTL module files names the template file, since a
+    /// template name cannot contain a dot. Any other value names the main template.
+    @Option(
+        name: .shortAndLong,
+        help: """
+            Main template name to execute (auto-detect if not specified), or the template file \
+            (.mtl) when no template file argument is given
+            """)
     var template: String?
 
     /// The directories searched for imported modules.
@@ -200,6 +220,9 @@ struct GenerateCommand: AsyncParsableCommand {
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose: Bool = false
 
+    /// Whether the template and model parsers trace their work.
+    @OptionGroup var debugOptions: DebugOptions
+
     /// The languages of the bundled template sets, as text for the help.
     ///
     /// - Returns: The names of the languages, separated by commas.
@@ -207,11 +230,29 @@ struct GenerateCommand: AsyncParsableCommand {
         TemplateSetLocator().availableLanguages().joined(separator: ", ")
     }
 
+    /// Whether a value of `--template` names a template file rather than a template.
+    ///
+    /// - Parameter value: The value of the option.
+    /// - Returns: `true` if the value has the extension of MTL module files.
+    static func namesTemplateFile(_ value: String) -> Bool {
+        URL(fileURLWithPath: value).pathExtension == MTLSyntax.moduleFileExtension
+    }
+
     /// Checks that the command line names either a template file or a template set.
+    ///
+    /// A template file that `--template` names takes the place of the template file argument.
     ///
     /// - Throws: A validation error if both or neither are given, or if an option that applies
     ///   to only one of them is given with the other.
-    func validate() throws {
+    mutating func validate() throws {
+        if let value = template, Self.namesTemplateFile(value) {
+            guard templateFile == nil else {
+                throw ArgumentParser.ValidationError(
+                    "Give the template file either as an argument or with --template, not both")
+            }
+            templateFile = value
+            template = nil
+        }
         switch (templateFile, templateSet) {
         case (nil, nil):
             throw ArgumentParser.ValidationError("Give a template file or --template-set")
@@ -278,7 +319,7 @@ struct GenerateCommand: AsyncParsableCommand {
 
         let searchURLs = try templatePathOptions.directories()
         let parameters = try parameterOptions.services
-        let parser = MTLParser(enableDebugging: verbose, searchPaths: searchURLs)
+        let parser = MTLParser(enableDebugging: debugOptions.debug, searchPaths: searchURLs)
         let mtlModule: MTLModule
         do {
             mtlModule = try await parser.parse(templateURL)
@@ -454,12 +495,14 @@ struct GenerateCommand: AsyncParsableCommand {
             for metamodelPath in metamodel {
                 try await MetamodelRegistration.registerMetamodel(
                     at: metamodelPath, into: resourceSet,
-                    announcement: MetamodelRole.registeredOnly.announcement, verbose: verbose)
+                    announcement: MetamodelRole.registeredOnly.announcement, verbose: verbose,
+                    debug: debugOptions.debug)
             }
             for (index, modelPath) in model.enumerated() where MetamodelRegistration.isEcoreFile(modelPath) {
                 let package = try await MetamodelRegistration.registerMetamodel(
                     at: modelPath, into: resourceSet,
-                    announcement: MetamodelRole.registeredAndInput.announcement, verbose: verbose)
+                    announcement: MetamodelRole.registeredAndInput.announcement, verbose: verbose,
+                    debug: debugOptions.debug)
                 let modelURL = URL(fileURLWithPath: modelPath)
                 let resource = await resourceSet.createResource(uri: modelURL.absoluteString)
                 await resource.add(package)
@@ -481,7 +524,7 @@ struct GenerateCommand: AsyncParsableCommand {
                     print("Loading input model \(index + 1): \(modelPath) (format: \(format.rawValue))")
                 }
 
-                let options = ModelIO.LoadOptions(requiresMetamodel: false, enableDebugging: verbose)
+                let options = ModelIO.LoadOptions(requiresMetamodel: false, enableDebugging: debugOptions.debug)
                 let resource = try await ModelIO.load(
                     url: modelURL, format: format,
                     resourceSet: format == .json ? settings.makeResourceSet() : resourceSet, options: options

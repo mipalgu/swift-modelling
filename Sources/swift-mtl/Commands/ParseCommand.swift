@@ -36,6 +36,9 @@ struct ParseCommand: AsyncParsableCommand {
 
                 # Parse multiple files
                 swift-mtl parse template1.mtl template2.mtl --detailed
+
+                # Trace the template parser
+                swift-mtl parse template.mtl --debug
             """
     )
 
@@ -51,9 +54,12 @@ struct ParseCommand: AsyncParsableCommand {
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose: Bool = false
 
+    /// Whether the template parser traces its work.
+    @OptionGroup var debugOptions: DebugOptions
+
     @MainActor
     func run() async throws {
-        let parser = MTLParser(enableDebugging: verbose)
+        let parser = MTLParser(enableDebugging: debugOptions.debug)
 
         for templatePath in templates {
             if verbose {
