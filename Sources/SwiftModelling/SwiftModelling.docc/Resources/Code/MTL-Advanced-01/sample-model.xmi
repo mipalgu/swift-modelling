@@ -35,8 +35,8 @@
 
     <!-- Task Class (struct) -->
     <classifiers xsi:type="uml:Class" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Task"
-        documentation="Represents a task in the system" isStruct="true">
-      <protocols>//@classifiers.4</protocols>
+        documentation="Represents a task in the system" isStruct="true"
+        protocols="//@classifiers.4">
       <properties name="id" isReadOnly="true" type="//@classifiers.0"/>
       <properties name="title" type="//@classifiers.0"/>
       <properties name="description" isOptional="true" type="//@classifiers.0"/>
@@ -53,8 +53,7 @@
 
     <!-- Project Class -->
     <classifiers xsi:type="uml:Class" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Project"
-        documentation="A project containing multiple tasks">
-      <protocols>//@classifiers.4</protocols>
+        documentation="A project containing multiple tasks" protocols="//@classifiers.4">
       <properties name="id" isReadOnly="true" type="//@classifiers.0"/>
       <properties name="name" type="//@classifiers.0"/>
       <properties name="tasks" isCollection="true" type="//@classifiers.7"/>

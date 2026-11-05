@@ -16,6 +16,14 @@
 
         @Steps {
             @Step {
+                Save the Company metamodel that the generator reads.
+
+                @Code(name: "Company.ecore", file: step-13-containment-reference.ecore)
+
+                This is the metamodel of the Code Generation from Models tutorial. The generator turns each of its classes into a Swift struct.
+            }
+
+            @Step {
                 Create the main generation template.
 
                 @Code(name: "SwiftGenerator.mtl", file: mtl-step-38-main-generator.mtl)

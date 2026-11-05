@@ -26,7 +26,7 @@
 
                 @Code(name: "Families.ecore", file: step-01-families-metamodel.ecore)
 
-                The metamodel defines two classes: Family (with lastName) and Member (with firstName). Families contain references to father, mother, sons, and daughters.
+                The metamodel defines two classes: Family (with lastName) and Member (with firstName). Families contain their father, mother, sons, and daughters, and each member refers back to its family through the opposite references familyFather, familyMother, familySon, and familyDaughter.
             }
 
             @Step {
@@ -50,7 +50,7 @@
 
                 @Code(name: "Families2Persons.atl", file: step-03-module-declaration.atl)
 
-                The module specifies the transformation name and declares the source (IN: Families) and target (OUT: Persons) models.
+                The module specifies the transformation name and declares the source (IN: Families) and target (OUT: Persons) models. The `-- @path` directives name the metamodel files as Eclipse does, by their place in a workspace project: `/Families2Persons/Families.ecore` is `Families.ecore` in the project `Families2Persons`. swift-atl looks such a path up in the directory of the transformation and the current directory, both as a workspace (`Families2Persons/Families.ecore`) and as the project directory itself (`Families.ecore`), so the metamodels you saved beside the transformation are found.
             }
 
             @Step {

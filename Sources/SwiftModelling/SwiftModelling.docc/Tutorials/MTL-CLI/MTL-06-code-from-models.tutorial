@@ -2,7 +2,7 @@
     @Intro(title: "Code Generation from Models") {
         Learn how to load models and navigate them in MTL templates to generate code based on metamodel structure.
 
-        In this tutorial, you'll work with the Company metamodel from earlier tutorials, loading model instances and generating Swift code from them.
+        In this tutorial, you'll work with the Company metamodel of the Ecore tutorials, loading model instances and generating text from them.
 
         @Image(source: "mtl-code-generation.svg", alt: "Model-Based Code Generation")
     }
@@ -15,6 +15,22 @@
         }
 
         @Steps {
+            @Step {
+                Save the Company metamodel.
+
+                @Code(name: "Company.ecore", file: step-13-containment-reference.ecore)
+
+                This is the Company metamodel of the Ecore tutorials: a company contains its employees, each a person with a name and an email address. Its namespace URI, `http://www.example.org/company`, is the one that the module declares.
+            }
+
+            @Step {
+                Save a company model.
+
+                @Code(name: "company-model.xmi", file: step-15-containment-instance.xmi)
+
+                The model holds one company with three employees. The templates of this tutorial generate text from it.
+            }
+
             @Step {
                 Declare a metamodel-aware module.
 
@@ -36,7 +52,7 @@
 
                 @Code(name: "Terminal", file: mtl-step-33-generate-from-model.sh)
 
-                Pass both the template and model file to swift-mtl. It loads the model and executes the template with the root element.
+                Pass the template, the model and its metamodel to swift-mtl. It loads the model with the classes of the metamodel and executes the template with the root element. The template writes no file, so its text is saved as `generated/stdout`.
             }
         }
     }

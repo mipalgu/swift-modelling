@@ -53,6 +53,8 @@
                 Review the complete UML to Swift template with main entry point, generateClassFile, generateProperty, generateOperation, generateProtocolFile, and generateEnumFile templates.
 
                 @Code(name: "uml2swift.mtl", file: uml2swift.mtl)
+
+                A template that produces part of a line, such as `generateTypeName`, is written on one line: a template body that spans lines ends with a line break, which would split the generated line. A template that produces whole lines, such as `generateInitialiser`, spans several lines, and its call stands on a line of its own.
             }
         }
     }
@@ -136,7 +138,7 @@
 
                 @Code(name: "Terminal", file: mtl-advanced-01-run.sh)
 
-                Execute swift-mtl with the template and model. Each classifier produces a separate Swift file with proper naming and structure.
+                Execute swift-mtl with the template, the metamodel and the model. Each class, protocol and enumeration produces a separate Swift file, as shown in the previous section.
             }
         }
     }
