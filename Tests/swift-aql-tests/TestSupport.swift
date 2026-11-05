@@ -45,17 +45,32 @@ enum Fixture {
     /// The model of the shop fixture.
     static let shopModel = "shop.xmi"
 
+    /// The directory that holds the fixtures within the resource bundle of the tests.
+    static let resourcesDirectory = "Resources"
+
     /// The location of a file of the shop fixture.
+    ///
+    /// The resource bundle of the tests is laid out differently by the build systems and
+    /// platforms, so the bundle is asked for the file first, and the layouts in which a
+    /// copied resource directory can appear are then tried in turn.
     ///
     /// - Parameter name: The name of the file.
     /// - Returns: Its location within the resources of the tests.
-    /// - Throws: ``SwiftAQLTestError/fixtureNotFound(_:)`` if the file does not exist.
+    /// - Throws: ``SwiftAQLTestError/fixtureNotFound(_:)``, naming every location that was
+    ///   tried, if the file does not exist.
     static func shop(_ name: String) throws -> URL {
-        guard let resources = Bundle.module.resourceURL else { throw SwiftAQLTestError.fixtureNotFound(name) }
-        let url = resources.appendingPathComponent("Resources").appendingPathComponent(shopDirectory)
-            .appendingPathComponent(name)
-        guard FileManager.default.fileExists(atPath: url.path) else { throw SwiftAQLTestError.fixtureNotFound(name) }
-        return url
+        let bundle = Bundle.module
+        let subdirectory = resourcesDirectory + "/" + shopDirectory
+        if let url = bundle.url(forResource: name, withExtension: nil, subdirectory: subdirectory) {
+            return url
+        }
+        let roots = [bundle.resourceURL, bundle.bundleURL, bundle.bundleURL.appendingPathComponent("Contents/Resources")]
+        let candidates = roots.compactMap { $0?.appendingPathComponent(subdirectory).appendingPathComponent(name) }
+        if let url = candidates.first(where: { FileManager.default.fileExists(atPath: $0.path) }) {
+            return url
+        }
+        let tried = candidates.map(\.path).joined(separator: ", ")
+        throw SwiftAQLTestError.fixtureNotFound("\(name) (tried: \(tried))")
     }
 
     /// Creates an empty directory for one test.
