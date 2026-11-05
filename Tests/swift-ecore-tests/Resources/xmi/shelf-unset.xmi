@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelf:Shelf xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:shelf="http://www.example.org/shelf"
+    favourite="//@books.0" picks="//@books.0" tags="classics">
+  <books title="Emma"/>
+  <sign/>
+</shelf:Shelf>

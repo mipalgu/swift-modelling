@@ -17,8 +17,10 @@ import ModellingGenerators
 /// into other documents that cannot be resolved; with one or more `--metamodel` files it is also
 /// checked against those metamodels: every class and feature must be defined, values must fit
 /// their types and bounds, no object may be an instance of an abstract class, and every OCL
-/// invariant of the metamodel must hold. Several files are validated one after the other with
-/// the same metamodels and options, and the command fails if any of them is invalid.
+/// invariant of the metamodel must hold. Bounds are checked as the Eclipse Modeling Framework
+/// checks them, or with `--require-explicit-values` so that every required single-valued
+/// feature needs a value that the model sets. Several files are validated one after the other
+/// with the same metamodels and options, and the command fails if any of them is invalid.
 struct ValidateCommand: AsyncParsableCommand {
     /// The name, summary and help of the `validate` subcommand.
     static let configuration = CommandConfiguration(
@@ -35,8 +37,20 @@ struct ValidateCommand: AsyncParsableCommand {
             class, no object may be an instance of an abstract class, and every OCL invariant \
             of the metamodel must hold. \(MetamodelOptions.effect)
 
+            Multiplicities follow the Eclipse Modeling Framework: a required single-valued \
+            feature that the model leaves unset is accepted when it reads as a default, such as \
+            the first literal of an enumeration, false, zero, or the default value of the \
+            feature, but not when it has none, such as a string or a reference, or when it is \
+            unsettable. --\(ValidateCommand.requireExplicitValuesOption) reports every required \
+            single-valued feature that the model leaves unset, which suits models written by \
+            hand or migrated from another format; models that the Eclipse Modeling Framework \
+            saves omit default values and may then fail.
+
             Problems are reported as errors or warnings, followed by a summary. The command \
-            fails if there is an error, or with --strict also if there is a warning.
+            fails if there is an error, or with --strict also if there is a warning. \
+            --\(MTLSemanticsOptions.OptionName.strictAQL) is unrelated to --strict: it makes the \
+            OCL invariants reject the expressions that Eclipse AQL rejects, such as a union of a \
+            sequence with a set.
 
             Several files are validated one after the other with the same metamodels and \
             options. The findings of each file follow a line that names it and precede a line \
@@ -60,6 +74,21 @@ struct ValidateCommand: AsyncParsableCommand {
     /// Whether warnings count as errors.
     @Flag(help: "Fail on warnings as well as on errors")
     var strict = false
+
+    /// The long name of the flag that makes required features need values of their own.
+    static let requireExplicitValuesOption = "require-explicit-values"
+
+    /// Whether every required single-valued feature needs a value that the model sets.
+    @Flag(
+        name: .customLong(ValidateCommand.requireExplicitValuesOption),
+        help: "Report required features that the model leaves unset even when they read as a default, unlike the Eclipse Modeling Framework")
+    var requireExplicitValues = false
+
+    /// Whether OCL invariants reject the expressions that Eclipse AQL rejects.
+    @Flag(
+        name: .customLong(MTLSemanticsOptions.OptionName.strictAQL),
+        help: MTLSemanticsOptions.strictAQLHelp)
+    var strictAQL = false
 
     /// The format of the report.
     @Option(help: "Format of the report: \(ReportFormat.allCases.map(\.rawValue).joined(separator: " or "))")
@@ -174,7 +203,9 @@ struct ValidateCommand: AsyncParsableCommand {
     /// - Parameter document: The document.
     /// - Returns: The report of the document.
     private func check(_ document: ModelDocument) async -> ValidationReport {
-        let options = ValidationOptions(strict: strict, checkAbstractClasses: checkAbstractClasses)
+        let options = ValidationOptions(
+            strict: strict, checkAbstractClasses: checkAbstractClasses, strictAQL: strictAQL,
+            requiresExplicitValues: requireExplicitValues)
         let outcome = await ModelChecker(document: document, options: options).check()
         withExtendedLifetime(document) {}
         return ValidationReport(

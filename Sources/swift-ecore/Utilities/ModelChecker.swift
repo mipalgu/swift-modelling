@@ -4,6 +4,7 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import AQL
 import ECore
 import EMFBase
 import Foundation
@@ -15,6 +16,17 @@ struct ValidationOptions: Sendable, Equatable {
 
     /// Whether abstract classes and interfaces are checked explicitly.
     var checkAbstractClasses = false
+
+    /// Whether OCL invariants reject the expressions that Eclipse AQL rejects.
+    var strictAQL = false
+
+    /// Whether every required single-valued feature needs a value that the model sets.
+    ///
+    /// When this is `false`, as in the Eclipse Modeling Framework, a required feature that the
+    /// model leaves unset satisfies its lower bound when it reads as a default, such as the
+    /// first literal of an enumeration or zero for a number. When it is `true`, such a feature
+    /// is reported as having no value.
+    var requiresExplicitValues = false
 }
 
 /// Checks a metamodel or a model and collects what is wrong with it.
@@ -23,7 +35,9 @@ struct ValidationOptions: Sendable, Equatable {
 /// references into other documents that cannot be resolved. With a metamodel, a model is also
 /// checked for classes and features that the metamodel does not define, for the bounds and
 /// types of its features, for objects of abstract classes, and for the OCL invariants of the
-/// metamodel.
+/// metamodel. The multiplicities of features follow the Eclipse Modeling Framework: a required
+/// feature that the model leaves unset is accepted when it reads as a default, unless
+/// ``ValidationOptions/requiresExplicitValues`` asks for a value of its own.
 @MainActor
 struct ModelChecker {
     /// The document to check.
@@ -103,7 +117,10 @@ struct ModelChecker {
         }
         outcome.findings += undefinedFeatureFindings(objects: objects)
         let snapshot = await document.resource.snapshot()
-        for diagnostic in ModelValidator(metamodels: document.metamodels).validate(snapshot) {
+        let validator = ModelValidator(
+            metamodels: document.metamodels,
+            options: ModelValidator.Options(requiresExplicitValues: options.requiresExplicitValues))
+        for diagnostic in validator.validate(snapshot) {
             let entry = objects.entry(for: diagnostic.objectID)
             outcome.findings.append(
                 ValidationFinding(
@@ -123,7 +140,10 @@ struct ModelChecker {
                         message: "No object is an instance of an abstract class or an interface"))
             }
         }
-        let checks = await OCLInvariantChecker(document: document, objects: objects, catalogue: catalogue).check()
+        let checks = await OCLInvariantChecker(
+            document: document, objects: objects, catalogue: catalogue,
+            aqlOptions: AQLOptions(strict: options.strictAQL)
+        ).check()
         if !checks.isEmpty {
             outcome.constraints = checks
             for check in checks where check.outcome != .satisfied {

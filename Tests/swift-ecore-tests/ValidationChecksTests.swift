@@ -185,3 +185,180 @@ struct ValidateInvariantTests {
         #expect(json["kind"] as? String == "model")
     }
 }
+
+@Suite("swift-ecore validate - Multiplicities")
+struct ValidateMultiplicityTests {
+    /// The metamodel of the shelf models.
+    private static let metamodel = "ecore/shelf.ecore"
+
+    @Test("counts the one child of a required many-valued containment and every other single value")
+    @MainActor
+    func singleValues() async throws {
+        let result = try await validate("xmi/shelf-single.xmi", metamodel: Self.metamodel)
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+        #expect(result.stdout == "Validation completed successfully\n")
+    }
+
+    /// The flag that makes every required single-valued feature need a value of its own.
+    private static let requireExplicitValues = "--require-explicit-values"
+
+    @Test("accepts unset required attributes that read as defaults, as the Eclipse Modeling Framework does")
+    @MainActor
+    func unsetAttributes() async throws {
+        let result = try await validate("xmi/shelf-unset.xmi", metamodel: Self.metamodel)
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+        #expect(result.stdout == "Validation completed successfully\n")
+    }
+
+    @Test("reports required attributes that are unset, whatever the default of their type, with --require-explicit-values")
+    @MainActor
+    func unsetAttributesRequiringExplicitValues() async throws {
+        let result = try await validate(
+            "xmi/shelf-unset.xmi", metamodel: Self.metamodel, [Self.requireExplicitValues])
+
+        #expect(!result.succeeded)
+        #expect(
+            result.stdout == """
+                error: Book 'Emma' (//@books.0): Feature 'kind' needs at least 1 value(s) but has 0
+                error: Book 'Emma' (//@books.0): Feature 'pages' needs at least 1 value(s) but has 0
+
+                """)
+        #expect(result.stderr.contains("Validation failed: 2 error(s), 0 warning(s)"))
+    }
+
+    @Test("reports an unset required attribute without a default in either mode", arguments: [[], [requireExplicitValues]])
+    @MainActor
+    func unsetAttributeWithoutDefault(options: [String]) async throws {
+        let result = try await validate("xmi/shelf-untitled.xmi", metamodel: Self.metamodel, options)
+
+        #expect(!result.succeeded)
+        #expect(
+            result.stdout == """
+                error: Book (//@books.0): Feature 'title' needs at least 1 value(s) but has 0
+
+                """)
+        #expect(result.stderr.contains("Validation failed: 1 error(s), 0 warning(s)"))
+    }
+
+    @Test("does not confuse --require-explicit-values with --strict")
+    @MainActor
+    func strictIsNotExplicit() async throws {
+        let result = try await validate("xmi/shelf-unset.xmi", metamodel: Self.metamodel, ["--strict"])
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+    }
+
+    @Test("lists --require-explicit-values in the help and explains how it differs from Eclipse")
+    @MainActor
+    func help() async throws {
+        let result = try await executeSwiftEcore(command: "validate", arguments: ["--help"])
+
+        #expect(result.succeeded)
+        #expect(result.stdout.contains(Self.requireExplicitValues))
+        #expect(result.stdout.contains("Eclipse Modeling Framework"))
+    }
+
+    @Test("reports every kind of required feature without values, in feature order")
+    @MainActor
+    func emptyFeatures() async throws {
+        let result = try await validate("xmi/shelf-empty.xmi", metamodel: Self.metamodel)
+
+        #expect(!result.succeeded)
+        #expect(
+            result.stdout == """
+                error: Shelf (/): Feature 'books' needs at least 1 value(s) but has 0
+                error: Shelf (/): Feature 'sign' needs at least 1 value(s) but has 0
+                error: Shelf (/): Feature 'favourite' needs at least 1 value(s) but has 0
+                error: Shelf (/): Feature 'picks' needs at least 1 value(s) but has 0
+                error: Shelf (/): Feature 'tags' needs at least 1 value(s) but has 0
+
+                """)
+    }
+
+    @Test("reports many-valued references and attributes with more values than allowed")
+    @MainActor
+    func upperBounds() async throws {
+        let result = try await validate("xmi/shelf-crowded.xmi", metamodel: Self.metamodel)
+
+        #expect(!result.succeeded)
+        #expect(
+            result.stdout == """
+                error: Shelf (/): Feature 'picks' allows at most 2 value(s) but has 3
+                error: Shelf (/): Feature 'tags' allows at most 2 value(s) but has 3
+
+                """)
+    }
+
+    @Test("checks every file of a batch with the same counts")
+    @MainActor
+    func batch() async throws {
+        let paths = try ["shelf-single.xmi", "shelf-unset.xmi"].map {
+            try loadTestResource(named: $0, subdirectory: "xmi").path
+        }
+        let metamodel = try loadTestResource(named: "shelf.ecore", subdirectory: "ecore").path
+        let result = try await executeSwiftEcore(
+            command: "validate", arguments: paths + ["--metamodel", metamodel, Self.requireExplicitValues])
+
+        #expect(!result.succeeded)
+        #expect(!result.stdout.contains("'books'"), "\(result.stdout)")
+        #expect(result.stdout.contains("Feature 'kind' needs at least 1 value(s) but has 0"), "\(result.stdout)")
+    }
+}
+
+@Suite("swift-ecore validate - Strict AQL")
+struct ValidateStrictAQLTests {
+    /// A metamodel whose only class has an invariant that concatenates a single value to a sequence.
+    private static let metamodel = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="notes"
+            nsURI="http://www.example.org/notes" nsPrefix="notes">
+          <eClassifiers xsi:type="ecore:EClass" name="Note">
+            <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
+              <details key="twoWords" value="Sequence{'a'}->concat('b')->size() = 2"/>
+            </eAnnotations>
+          </eClassifiers>
+        </ecore:EPackage>
+        """
+
+    /// A model with one note.
+    private static let model = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <notes:Note xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:notes="http://www.example.org/notes"/>
+        """
+
+    /// Validates the note model with extra arguments.
+    private func validate(_ extra: [String]) async throws -> SubprocessResult {
+        let directory = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(directory) }
+        let metamodel = directory.appendingPathComponent("notes.ecore")
+        let model = directory.appendingPathComponent("note.xmi")
+        try Self.metamodel.write(to: metamodel, atomically: true, encoding: .utf8)
+        try Self.model.write(to: model, atomically: true, encoding: .utf8)
+        return try await executeSwiftEcore(
+            command: "validate", arguments: [model.path, "--metamodel", metamodel.path] + extra)
+    }
+
+    @Test("accepts an invariant that passes a single value to concat by default")
+    @MainActor
+    func lenient() async throws {
+        let result = try await validate([])
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+        #expect(result.stdout.contains("OCL invariants: 1 of 1 check(s) satisfied"))
+    }
+
+    @Test("reports the invariant as an error with --strict-aql, unlike --strict")
+    @MainActor
+    func strict() async throws {
+        let strictAQL = try await validate(["--strict-aql"])
+        let strictWarnings = try await validate(["--strict"])
+
+        #expect(!strictAQL.succeeded, "\(strictAQL.stdout)")
+        #expect(strictAQL.stdout.contains("twoWords"), "\(strictAQL.stdout)")
+        #expect(strictWarnings.succeeded, "\(strictWarnings.stdout)\(strictWarnings.stderr)")
+    }
+}

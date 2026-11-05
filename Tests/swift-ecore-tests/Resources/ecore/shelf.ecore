@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="shelf" nsURI="http://www.example.org/shelf" nsPrefix="shelf">
+  <eClassifiers xsi:type="ecore:EClass" name="Shelf">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="books" lowerBound="1" upperBound="-1"
+        eType="#//Book" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="sign" lowerBound="1" eType="#//Sign"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="favourite" lowerBound="1" eType="#//Book"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="picks" lowerBound="1" upperBound="2"
+        eType="#//Book"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="tags" lowerBound="1" upperBound="2"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Sign"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Book">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="title" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="kind" lowerBound="1" eType="#//Kind"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="pages" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="Kind">
+    <eLiterals name="fiction"/>
+    <eLiterals name="reference" value="1"/>
+  </eClassifiers>
+</ecore:EPackage>

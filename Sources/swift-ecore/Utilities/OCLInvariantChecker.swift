@@ -105,6 +105,9 @@ struct OCLInvariantChecker {
     /// The classes of the metamodels.
     let catalogue: MetamodelCatalogue
 
+    /// The behaviours of the expressions of the invariants.
+    var aqlOptions: AQLOptions = .standard
+
     /// Evaluates every invariant that applies to every object of the model.
     ///
     /// On an interactive terminal, a progress bar shows how many objects have been checked.
@@ -152,7 +155,7 @@ struct OCLInvariantChecker {
     private func makeContext() async -> AQLExecutionContext {
         let engine = ECoreExecutionEngine(models: [:])
         await engine.registerResource(document.resource, alias: document.fileName)
-        let context = AQLExecutionContext(executionEngine: engine, options: .standard, serviceProviders: [OCLStringServices()])
+        let context = AQLExecutionContext(executionEngine: engine, options: aqlOptions, serviceProviders: [OCLStringServices()])
         context.addResource(document.resource)
         return context
     }
