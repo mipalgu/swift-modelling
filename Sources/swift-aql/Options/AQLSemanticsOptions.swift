@@ -54,6 +54,42 @@ struct AQLSemanticsOptions: ParsableArguments, Sendable {
             valueName: MTLSemanticsOptions.valueList(AQLContainerLookup.self)))
     var containerLookup: AQLContainerLookup?
 
+    /// Whether the union of a sequence or a bag keeps repeated elements.
+    @Option(
+        name: .customLong(OptionName.sequenceUnion),
+        help: ArgumentHelp(
+            "The union of sequences: \(AQLSequenceUnion.concatenation.rawValue) (the default) "
+                + "or \(AQLSequenceUnion.distinct.rawValue), as in version 0.6",
+            valueName: MTLSemanticsOptions.valueList(AQLSequenceUnion.self)))
+    var sequenceUnion: AQLSequenceUnion?
+
+    /// What `+` and the `add` services make of a null operand.
+    @Option(
+        name: .customLong(OptionName.nullAddition),
+        help: ArgumentHelp(
+            "What + makes of null: \(AQLNullAddition.emptyText.rawValue) (the default) "
+                + "or \(AQLNullAddition.null.rawValue), as in version 0.6",
+            valueName: MTLSemanticsOptions.valueList(AQLNullAddition.self)))
+    var nullAddition: AQLNullAddition?
+
+    /// The text of a value, as `toString()` gives it and `+` joins it to a string.
+    @Option(
+        name: .customLong(OptionName.textForm),
+        help: ArgumentHelp(
+            "The text of a collection: \(AQLTextForm.joined.rawValue) (the default) "
+                + "or \(AQLTextForm.bracketed.rawValue), as in version 0.6",
+            valueName: MTLSemanticsOptions.valueList(AQLTextForm.self)))
+    var textForm: AQLTextForm?
+
+    /// Whether expressions reject the arguments that Eclipse AQL rejects.
+    ///
+    /// `--strict-aql` turns strict mode on and `--no-strict-aql` turns it off, whatever the
+    /// configuration file says; `nil` leaves it to the configuration file, and off without one.
+    @Flag(
+        name: .customLong(OptionName.strictAQL), inversion: .prefixedNo,
+        help: MTLSemanticsOptions.strictAQLHelp)
+    var strictAQL: Bool?
+
     /// Creates the options with nothing given, which leaves every behaviour to the preset.
     init() {}
 
@@ -71,6 +107,10 @@ struct AQLSemanticsOptions: ParsableArguments, Sendable {
         options.collectionKinds = collectionKinds
         options.singleValueCollections = singleValueCollections
         options.containerLookup = containerLookup
+        options.sequenceUnion = sequenceUnion
+        options.nullAddition = nullAddition
+        options.textForm = textForm
+        options.strictAQL = strictAQL
         return options.aqlOptions(settings: settings)
     }
 }

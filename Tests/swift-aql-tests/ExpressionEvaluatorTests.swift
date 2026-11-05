@@ -117,7 +117,13 @@ struct ExpressionEvaluatorTests {
         await #expect(throws: SwiftAQLError.evaluationFailed("Variable 'warehouse' not found")) {
             try await evaluator.evaluate("warehouse.name")
         }
-        await #expect(throws: SwiftAQLError.self) { try await evaluator.evaluate("'a' + 1") }
+        await #expect(throws: SwiftAQLError.self) { try await evaluator.evaluate("'a' - 1") }
+    }
+
+    @Test("A string joined with a number gives the text of both, as in Eclipse AQL")
+    func stringConcatenation() async throws {
+        let evaluator = await ExpressionEvaluator(models: [], options: .standard)
+        #expect(formatter.format(try await evaluator.evaluate("'a' + 1")) == "\"a1\"")
     }
 
     @Test("Without models, expressions see null as self")

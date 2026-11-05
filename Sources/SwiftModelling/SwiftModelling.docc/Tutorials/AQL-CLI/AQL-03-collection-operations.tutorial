@@ -130,7 +130,7 @@
 
                 @Code(name: "Terminal", file: aql-03-step-12-deep-nesting.sh)
 
-                Collect over the categories and select the books of each one, including those of its subcategories, to count and total them per group.
+                Collect over the categories and select the books of each one, including those of its subcategories, to count and total them per group. `sep('[', ', ', ']')` writes a list of names between brackets with commas between them; joined to text without it, the names of a collection would run together, as in Eclipse AQL.
             }
         }
     }
@@ -148,7 +148,7 @@
 
                 @Code(name: "Terminal", file: aql-03-step-13-sum-operations.sh)
 
-                Use `collect` to build a line of text for each element, combining several properties, counts and conditional text.
+                Use `collect` to build a line of text for each element, combining several properties, counts, conditional text and, with `sep`, the names of a collection.
             }
 
             @Step {

@@ -39,7 +39,7 @@ swift-aql evaluate --model library-data.xmi \
 swift-aql evaluate --model library-data.xmi \
   --expression "let oneBook = library.authors->select(a | a.books->size() = 1),
       twoBooks = library.authors->select(a | a.books->size() = 2)
-    in 'Authors with 1 book: ' + oneBook->collect(a | a.name)->toString() +
-       ', Authors with 2 books: ' + twoBooks->collect(a | a.name)->toString()"
+    in 'Authors with 1 book: ' + oneBook->collect(a | a.name)->sep('[', ', ', ']') +
+       ', Authors with 2 books: ' + twoBooks->collect(a | a.name)->sep('[', ', ', ']')"
 
 # Output: "Authors with 1 book: [Stephen Hawking, Robert Martin, Marie Curie, Ada Lovelace, Charles Darwin], Authors with 2 books: [Jane Austen, Isaac Asimov, Agatha Christie, J.R.R. Tolkien, George Orwell]"

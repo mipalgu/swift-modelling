@@ -139,8 +139,8 @@ struct ModellingConfigurationTests {
             Set(ModellingConfiguration.keys) == [
                 "semantics", "block-line-breaks", "collection-parameters", "check-let-types",
                 "cache-containers", "collection-arguments", "collection-kinds", "single-value-collections",
-                "container-lookup", "collection-range-syntax", "container-scope", "let-type-mismatches",
-                "unset-features",
+                "container-lookup", "sequence-union", "null-addition", "text-form", "collection-range-syntax",
+                "integer-division", "container-scope", "let-type-mismatches", "unset-features", "strict-aql",
             ])
     }
 
@@ -170,10 +170,15 @@ struct ModellingConfigurationTests {
               "collection-kinds": "sequences",
               "single-value-collections": "sequence",
               "container-lookup": "registered-objects",
+              "sequence-union": "distinct",
+              "null-addition": "null",
+              "text-form": "bracketed",
               "collection-range-syntax": "eclipse",
+              "integer-division": "truncating",
               "container-scope": "this-resource",
               "let-type-mismatches": "skip",
-              "unset-features": "undefined"
+              "unset-features": "undefined",
+              "strict-aql": true
             }
             """)
         #expect(configuration.url == Self.file)
@@ -186,10 +191,15 @@ struct ModellingConfigurationTests {
         #expect(configuration.collectionKinds == .sequences)
         #expect(configuration.singleValueCollections == .sequence)
         #expect(configuration.containerLookup == .registeredObjects)
+        #expect(configuration.sequenceUnion == .distinct)
+        #expect(configuration.nullAddition == .null)
+        #expect(configuration.textForm == .bracketed)
         #expect(configuration.collectionRangeSyntax == .eclipse)
+        #expect(configuration.integerDivision == .truncating)
         #expect(configuration.containerLookupScope == .thisResource)
         #expect(configuration.letTypeMismatches == .skip)
         #expect(configuration.unsetFeatures == .undefined)
+        #expect(configuration.strictAQL == true)
     }
 
     @Test("reads each preset and scope", arguments: SemanticsPreset.allCases, ContainerLookupScope.allCases)
@@ -198,6 +208,40 @@ struct ModellingConfigurationTests {
             #"{ "semantics": "\#(preset.rawValue)", "container-scope": "\#(scope.rawValue)" }"#)
         #expect(configuration.semantics == preset)
         #expect(configuration.containerLookupScope == scope)
+    }
+
+    // MARK: - Strict AQL
+
+    @Test("names the strict AQL key after its flag")
+    func strictAQLKey() {
+        #expect(ModellingConfiguration.keys.contains(MTLSemanticsOptions.OptionName.strictAQL))
+    }
+
+    @Test("turns strict AQL on or off from the file in both presets", arguments: SemanticsPreset.allCases, [true, false])
+    func strictAQLFromFile(preset: SemanticsPreset, strict: Bool) throws {
+        let configuration = try parse(#"{ "strict-aql": \#(strict) }"#)
+        #expect(configuration.strictAQL == strict)
+        let settings = SemanticsSettings(preset: preset, configuration: configuration)
+        let options = try MTLSemanticsOptions.parse([])
+        #expect(options.aqlOptions(settings: settings).strict == strict)
+        #expect(options.mtlOptions(settings: settings).aql.strict == strict)
+    }
+
+    @Test("leaves strict AQL off without the key")
+    func strictAQLAbsent() throws {
+        let configuration = try parse(#"{ "semantics": "legacy" }"#)
+        #expect(configuration.strictAQL == nil)
+        let settings = SemanticsSettings(preset: .legacy, configuration: configuration)
+        #expect(!(try MTLSemanticsOptions.parse([]).aqlOptions(settings: settings).strict))
+    }
+
+    @Test("lets the command line override the strict AQL key of the file", arguments: [true, false])
+    func strictAQLOverridden(inFile: Bool) throws {
+        let configuration = try parse(#"{ "strict-aql": \#(inFile) }"#)
+        let settings = SemanticsSettings(preset: .standard, configuration: configuration)
+        let flag = inFile ? "--no-strict-aql" : "--strict-aql"
+        let options = try MTLSemanticsOptions.parse([flag])
+        #expect(options.aqlOptions(settings: settings).strict == !inFile)
     }
 
     // MARK: - Errors
@@ -240,6 +284,7 @@ struct ModellingConfigurationTests {
             (#"{ "let-type-mismatches": null }"#, "let-type-mismatches"),
             (#"{ "check-let-types": "false" }"#, "check-let-types"),
             (#"{ "cache-containers": 0 }"#, "cache-containers"),
+            (#"{ "strict-aql": "true" }"#, "strict-aql"),
             (#"{ "unset-features": { "mode": "undefined" } }"#, "unset-features"),
         ])
     func wrongType(text: String, key: String) {
@@ -262,6 +307,10 @@ struct ModellingConfigurationTests {
             (#"{ "semantics": "Legacy" }"#, "semantics", "Legacy", ["standard", "legacy"]),
             (#"{ "container-scope": "everywhere" }"#, "container-scope", "everywhere", ["any-resource", "this-resource"]),
             (#"{ "collection-range-syntax": "sometimes" }"#, "collection-range-syntax", "sometimes", ["ocl", "eclipse"]),
+            (#"{ "integer-division": "rounding" }"#, "integer-division", "rounding", ["real", "truncating"]),
+            (#"{ "sequence-union": "all" }"#, "sequence-union", "all", ["concatenation", "distinct"]),
+            (#"{ "null-addition": "zero" }"#, "null-addition", "zero", ["empty-text", "null"]),
+            (#"{ "text-form": "quoted" }"#, "text-form", "quoted", ["joined", "bracketed"]),
             (#"{ "let-type-mismatches": "warn" }"#, "let-type-mismatches", "warn", ["error", "skip"]),
             (#"{ "unset-features": "" }"#, "unset-features", "", ["defaults", "undefined"]),
         ])

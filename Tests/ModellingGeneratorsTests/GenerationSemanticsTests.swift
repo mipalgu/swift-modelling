@@ -7,6 +7,7 @@
 import ATL
 import ECore
 import Foundation
+import GenModel
 import MTL
 import Testing
 
@@ -41,6 +42,21 @@ struct GenerationSemanticsTests {
 
     /// A helper that uses an integer range, appended to a copy of the bundled transformation.
     static let rangeHelper = "\nhelper def : probeRange : Sequence(Integer) = Sequence{1..2};\n"
+
+    /// A transformation that replaces the bundled one and names the model after a quotient of
+    /// two Integers.
+    static let division = """
+        -- @nsURI Ecore=http://www.eclipse.org/emf/2002/Ecore
+        -- @nsURI GenModel=http://www.eclipse.org/emf/2002/GenModel
+        module Division;
+        create OUT : GenModel from IN : Ecore;
+
+        entrypoint rule Root() {
+            to m : GenModel!GenModel (
+                modelName <- (7 / 2).toString()
+            )
+        }
+        """
 
     /// The behaviours of this release, with typed `let` mismatches skipped.
     static var standardSkipping: MTLOptions {
@@ -211,6 +227,37 @@ struct GenerationSemanticsTests {
     @MainActor
     func standardImportAcceptsRanges() async throws {
         try await importWithRange { GenModelImportOptions(transformation: $0, atlOptions: .standard) }
+    }
+
+    /// Runs the division transformation with options and returns the name of the model it creates.
+    ///
+    /// - Parameter atlOptions: The behaviours of the ATL language to load and run it with.
+    /// - Returns: The model names that the transformation wrote.
+    @MainActor
+    private func divide(atlOptions: ATLOptions) async throws -> [String] {
+        let project = try FixtureProject.make("library")
+        defer { project.remove() }
+        let file = project.root.appendingPathComponent("Division.atl")
+        try Self.division.write(to: file, atomically: true, encoding: .utf8)
+        let transformation = try await GenModelTransformation.load(
+            generatorMetamodel: try await GenModelPackage.load(), replacement: file, atlOptions: atlOptions)
+        let resourceSet = ResourceSet()
+        let source = await resourceSet.createResource(uri: "memory:source")
+        let target = await resourceSet.createResource(uri: "memory:target")
+        try await transformation.run(source: source, target: target, parameters: [:])
+        return await target.getAllObjects().compactMap { ($0 as? DynamicEObject)?.eGet("modelName") as? String }
+    }
+
+    @Test("runs a replacement transformation that divides two Integers into a Real with the standard options")
+    @MainActor
+    func standardImportDividesIntoReal() async throws {
+        #expect(try await divide(atlOptions: .standard) == ["3.5"])
+    }
+
+    @Test("runs a replacement transformation that truncates the quotient of two Integers as version 0.6 did")
+    @MainActor
+    func legacyImportTruncates() async throws {
+        #expect(try await divide(atlOptions: .legacy) == ["3"])
     }
 
     @Test("imports with the bundled transformation without options")

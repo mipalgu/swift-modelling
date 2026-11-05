@@ -120,3 +120,84 @@ struct EndToEndTests {
         }
     }
 }
+
+/// Tests for `--strict-aql`, which makes expressions reject what Eclipse AQL rejects.
+@Suite("swift-aql strict expressions")
+struct StrictAQLTests {
+    /// Expressions that Eclipse AQL rejects, with their values outside strict mode.
+    static let rejected = [
+        ("Sequence{'a'}->union(OrderedSet{'b'})", "[\"a\", \"b\"]\n"),
+        ("Sequence{'a'}->concat('b')", "[\"a\", \"b\"]\n"),
+    ]
+
+    @Test("accepts a mixed-kind union and a single value passed to concat by default", arguments: rejected)
+    func acceptsByDefault(expression: String, value: String) async throws {
+        let run = try await runSwiftAQL(["evaluate", "-e", expression, "--no-config"])
+
+        #expect(run.succeeded, "\(run.error)")
+        #expect(run.output == value)
+    }
+
+    @Test("rejects a mixed-kind union and a single value passed to concat with --strict-aql", arguments: rejected)
+    func rejectsWhenStrict(expression: String, value: String) async throws {
+        for command in [["evaluate", "-e", expression], ["query", try Fixture.shop(Fixture.shopModel).path, expression]] {
+            let run = try await runSwiftAQL(command + ["--no-config", "--strict-aql"])
+
+            #expect(!run.succeeded, "\(command): \(run.output)")
+            #expect(run.error.contains("Type error"), "\(run.error)")
+        }
+    }
+
+    @Test("describes --strict-aql in the help of both commands")
+    func help() async throws {
+        for command in ["evaluate", "query"] {
+            let run = try await runSwiftAQL([command, "--help"])
+
+            #expect(run.output.contains("--strict-aql"), "\(command)")
+        }
+    }
+}
+
+/// Tests for `--sequence-union`, `--null-addition` and `--text-form`.
+@Suite("swift-aql union, null addition and text form")
+struct ExpressionFormTests {
+    /// Each option with a value, the expression whose value it changes, and the value it gives.
+    static let cases: [(arguments: [String], expression: String, value: String)] = [
+        ([], "Sequence{'a', 'b'}->union(Sequence{'b'})->size()", "3\n"),
+        (["--sequence-union", "distinct"], "Sequence{'a', 'b'}->union(Sequence{'b'})->size()", "2\n"),
+        (["--semantics", "legacy"], "Sequence{'a', 'b'}->union(Sequence{'b'})->size()", "2\n"),
+        (["--semantics", "legacy", "--sequence-union", "concatenation"], "Sequence{'a', 'b'}->union(Sequence{'b'})->size()", "3\n"),
+        ([], "null + 'x'", "\"x\"\n"),
+        (["--null-addition", "null"], "null + 'x'", "null\n"),
+        (["--semantics", "legacy", "--null-addition", "empty-text"], "null + 'x'", "\"x\"\n"),
+        ([], "'=' + Sequence{'a', 'b'}", "\"=ab\"\n"),
+        (["--text-form", "bracketed"], "'=' + Sequence{'a', 'b'}", "\"=[a, b]\"\n"),
+        (["--semantics", "legacy", "--text-form", "joined"], "'=' + Sequence{'a', 'b'}", "\"=ab\"\n"),
+    ]
+
+    @Test("selects each value of each option over the preset", arguments: cases.indices)
+    func option(index: Int) async throws {
+        let (arguments, expression, value) = Self.cases[index]
+        let run = try await runSwiftAQL(["evaluate", "--no-config", "-e", expression] + arguments)
+
+        #expect(run.succeeded, "\(arguments): \(run.error)")
+        #expect(run.output == value, "\(arguments)")
+    }
+
+    @Test("reads the options from the configuration file")
+    func configuration() async throws {
+        let directory = try Fixture.temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(
+            at: directory.appendingPathComponent(".git"), withIntermediateDirectories: true)
+        try #"{ "sequence-union": "distinct", "null-addition": "null", "text-form": "bracketed" }"#.write(
+            to: directory.appendingPathComponent(".swift-modelling.json"), atomically: true, encoding: .utf8)
+
+        let run = try await runSwiftAQL(
+            ["evaluate", "-e", "Sequence{Sequence{'a', 'b'}->union(Sequence{'b'})->size().toString(), ((null + 'x') = null).toString(), '=' + Sequence{'a'}}"],
+            in: directory)
+
+        #expect(run.succeeded, "\(run.error)")
+        #expect(run.output == "[\"2\", \"true\", \"=[a]\"]\n", "\(run.output)")
+    }
+}

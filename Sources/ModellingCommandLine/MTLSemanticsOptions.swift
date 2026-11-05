@@ -27,6 +27,15 @@ extension AQLSingleValueCollections: @retroactive ExpressibleByArgument {}
 /// Parses a command-line value into a way of looking up containers.
 extension AQLContainerLookup: @retroactive ExpressibleByArgument {}
 
+/// Parses a command-line value into whether the union of a sequence keeps repeated elements.
+extension AQLSequenceUnion: @retroactive ExpressibleByArgument {}
+
+/// Parses a command-line value into what `+` makes of a null operand.
+extension AQLNullAddition: @retroactive ExpressibleByArgument {}
+
+/// Parses a command-line value into the text form of values.
+extension AQLTextForm: @retroactive ExpressibleByArgument {}
+
 /// The command line options that choose the behaviours of templates and their expressions.
 ///
 /// Each option selects one behaviour of `MTLOptions` or of its expression language options,
@@ -72,7 +81,24 @@ public struct MTLSemanticsOptions: ParsableArguments, Sendable {
 
         /// The option that chooses `AQLOptions.containerLookup`.
         public static let containerLookup = "container-lookup"
+
+        /// The option that chooses `AQLOptions.sequenceUnion`.
+        public static let sequenceUnion = "sequence-union"
+
+        /// The option that chooses `AQLOptions.nullAddition`.
+        public static let nullAddition = "null-addition"
+
+        /// The option that chooses `AQLOptions.textForm`.
+        public static let textForm = "text-form"
+
+        /// The flag that sets `AQLOptions.strict`.
+        public static let strictAQL = "strict-aql"
     }
+
+    /// The help of the flag that sets `AQLOptions.strict`, shared by every command that offers it.
+    public static let strictAQLHelp = ArgumentHelp(
+        "Reject the expressions that Eclipse AQL rejects, such as a union of a sequence with a set "
+            + "or a single value passed to concat, sub or union")
 
     /// The prefix of the inverted form of a flag.
     public static let inversionPrefix = "no-"
@@ -187,6 +213,42 @@ public struct MTLSemanticsOptions: ParsableArguments, Sendable {
             valueName: MTLSemanticsOptions.valueList(AQLContainerLookup.self)))
     public var containerLookup: AQLContainerLookup?
 
+    /// Whether the union of a sequence or a bag keeps repeated elements.
+    @Option(
+        name: .customLong(OptionName.sequenceUnion),
+        help: ArgumentHelp(
+            "The union of sequences: \(AQLSequenceUnion.concatenation.rawValue) (the default) "
+                + "or \(AQLSequenceUnion.distinct.rawValue), as in version 0.6",
+            valueName: MTLSemanticsOptions.valueList(AQLSequenceUnion.self)))
+    public var sequenceUnion: AQLSequenceUnion?
+
+    /// What `+` and the `add` services make of a null operand.
+    @Option(
+        name: .customLong(OptionName.nullAddition),
+        help: ArgumentHelp(
+            "What + makes of null: \(AQLNullAddition.emptyText.rawValue) (the default) "
+                + "or \(AQLNullAddition.null.rawValue), as in version 0.6",
+            valueName: MTLSemanticsOptions.valueList(AQLNullAddition.self)))
+    public var nullAddition: AQLNullAddition?
+
+    /// The text of a value, as `toString()` gives it and `+` joins it to a string.
+    @Option(
+        name: .customLong(OptionName.textForm),
+        help: ArgumentHelp(
+            "The text of a collection: \(AQLTextForm.joined.rawValue) (the default) "
+                + "or \(AQLTextForm.bracketed.rawValue), as in version 0.6",
+            valueName: MTLSemanticsOptions.valueList(AQLTextForm.self)))
+    public var textForm: AQLTextForm?
+
+    /// Whether expressions reject the arguments that Eclipse AQL rejects.
+    ///
+    /// `--strict-aql` turns strict mode on and `--no-strict-aql` turns it off, whatever the
+    /// configuration file says; `nil` leaves it to the configuration file, and off without one.
+    @Flag(
+        name: .customLong(OptionName.strictAQL), inversion: .prefixedNo,
+        help: MTLSemanticsOptions.strictAQLHelp)
+    public var strictAQL: Bool?
+
     /// Creates the options with nothing set, which leaves every behaviour to the preset.
     public init() {}
 
@@ -210,7 +272,9 @@ public struct MTLSemanticsOptions: ParsableArguments, Sendable {
     /// The behaviours of the expression language that the options and the settings of a run select.
     ///
     /// Each behaviour is the option given on the command line, else the option in the
-    /// configuration file of the settings, else that of their preset.
+    /// configuration file of the settings, else that of their preset. Strict mode follows
+    /// ``strictAQL``, else the `strict-aql` key of the configuration file; neither preset turns
+    /// it on.
     ///
     /// - Parameter settings: The preset and configuration file of the run.
     /// - Returns: The options of the expression language.
@@ -221,6 +285,10 @@ public struct MTLSemanticsOptions: ParsableArguments, Sendable {
         if let value = collectionKinds ?? file.collectionKinds { options.collectionKinds = value }
         if let value = singleValueCollections ?? file.singleValueCollections { options.singleValueCollections = value }
         if let value = containerLookup ?? file.containerLookup { options.containerLookup = value }
+        if let value = sequenceUnion ?? file.sequenceUnion { options.sequenceUnion = value }
+        if let value = nullAddition ?? file.nullAddition { options.nullAddition = value }
+        if let value = textForm ?? file.textForm { options.textForm = value }
+        if let value = strictAQL ?? file.strictAQL { options.strict = value }
         return options
     }
 
@@ -290,9 +358,12 @@ public struct MTLSemanticsOptions: ParsableArguments, Sendable {
         "--\(OptionName.blockLineBreaks), --\(OptionName.collectionParameters), "
             + "--[\(inversionPrefix)]\(OptionName.checkLetTypes), --[\(inversionPrefix)]"
             + "\(OptionName.cacheContainers), --\(OptionName.collectionArguments), "
-            + "--\(OptionName.collectionKinds), --\(OptionName.singleValueCollections) and "
-            + "--\(OptionName.containerLookup) choose how \(reader) and their expressions behave. "
+            + "--\(OptionName.collectionKinds), --\(OptionName.singleValueCollections), "
+            + "--\(OptionName.containerLookup), --\(OptionName.sequenceUnion), "
+            + "--\(OptionName.nullAddition) and --\(OptionName.textForm) choose how \(reader) and their expressions behave. "
             + "Each defaults to the behaviour of this release, or to that of version 0.6 with "
-            + "--\(SemanticsOptions.optionName) \(SemanticsPreset.legacy.rawValue)."
+            + "--\(SemanticsOptions.optionName) \(SemanticsPreset.legacy.rawValue). "
+            + "--\(OptionName.strictAQL) makes the expressions reject what Eclipse AQL rejects, and "
+            + "--\(inversionPrefix)\(OptionName.strictAQL) accepts them; neither preset sets it."
     }
 }

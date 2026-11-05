@@ -26,7 +26,7 @@ import MTL
 /// ```
 ///
 /// The values are the spellings of the options on the command line, as JSON strings, except
-/// for `check-let-types` and `cache-containers`, which take JSON booleans. ``keys`` lists the
+/// for `check-let-types`, `cache-containers` and `strict-aql`, which take JSON booleans. ``keys`` lists the
 /// accepted keys.
 ///
 /// A command reads the file named ``fileName`` that ``discover(from:)`` finds from the current
@@ -67,10 +67,15 @@ public struct ModellingConfiguration: Sendable, Equatable {
         MTLSemanticsOptions.OptionName.collectionKinds,
         MTLSemanticsOptions.OptionName.singleValueCollections,
         MTLSemanticsOptions.OptionName.containerLookup,
+        MTLSemanticsOptions.OptionName.sequenceUnion,
+        MTLSemanticsOptions.OptionName.nullAddition,
+        MTLSemanticsOptions.OptionName.textForm,
         ATLSemanticsOptions.OptionName.collectionRangeSyntax,
+        ATLSemanticsOptions.OptionName.integerDivision,
         SemanticsOptions.OptionName.containerScope,
         LetTypeMismatchOptions.optionName,
         UnsetFeatureOptions.optionName,
+        MTLSemanticsOptions.OptionName.strictAQL,
     ]
 
     /// The file that the settings were read from, or `nil` if they were not read from a file.
@@ -104,8 +109,20 @@ public struct ModellingConfiguration: Sendable, Equatable {
     /// How the containers of model objects are found (`container-lookup`).
     public var containerLookup: AQLContainerLookup?
 
+    /// Whether the union of a sequence or a bag keeps repeated elements (`sequence-union`).
+    public var sequenceUnion: AQLSequenceUnion?
+
+    /// What `+` makes of a null operand (`null-addition`).
+    public var nullAddition: AQLNullAddition?
+
+    /// The text of a value, as `toString()` gives it (`text-form`).
+    public var textForm: AQLTextForm?
+
     /// Whether ATL collection literals accept integer ranges (`collection-range-syntax`).
     public var collectionRangeSyntax: ATLCollectionRangeSyntax?
+
+    /// What the ATL `/` operator yields for two Integers (`integer-division`).
+    public var integerDivision: ATLIntegerDivision?
 
     /// The objects whose containers a model answers for (`container-scope`).
     public var containerLookupScope: ContainerLookupScope?
@@ -115,6 +132,9 @@ public struct ModellingConfiguration: Sendable, Equatable {
 
     /// How unset features read (`unset-features`).
     public var unsetFeatures: UnsetFeatureReads?
+
+    /// Whether expressions reject what Eclipse AQL rejects (`strict-aql`).
+    public var strictAQL: Bool?
 
     /// Creates settings that set nothing, as when no configuration file is read.
     public init() {}
@@ -175,10 +195,15 @@ public struct ModellingConfiguration: Sendable, Equatable {
         collectionKinds = try reader.value(of: MTLSemanticsOptions.OptionName.collectionKinds)
         singleValueCollections = try reader.value(of: MTLSemanticsOptions.OptionName.singleValueCollections)
         containerLookup = try reader.value(of: MTLSemanticsOptions.OptionName.containerLookup)
+        sequenceUnion = try reader.value(of: MTLSemanticsOptions.OptionName.sequenceUnion)
+        nullAddition = try reader.value(of: MTLSemanticsOptions.OptionName.nullAddition)
+        textForm = try reader.value(of: MTLSemanticsOptions.OptionName.textForm)
         collectionRangeSyntax = try reader.value(of: ATLSemanticsOptions.OptionName.collectionRangeSyntax)
+        integerDivision = try reader.value(of: ATLSemanticsOptions.OptionName.integerDivision)
         containerLookupScope = try reader.value(of: SemanticsOptions.OptionName.containerScope)
         letTypeMismatches = try reader.value(of: LetTypeMismatchOptions.optionName)
         unsetFeatures = try reader.value(of: UnsetFeatureOptions.optionName)
+        strictAQL = try reader.flag(MTLSemanticsOptions.OptionName.strictAQL)
     }
 
     /// Finds the configuration file that applies to a directory.

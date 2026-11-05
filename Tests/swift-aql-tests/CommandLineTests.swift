@@ -7,6 +7,7 @@
 import AQL
 import ArgumentParser
 import EMFBase
+import Foundation
 import ModellingCommandLine
 import Testing
 
@@ -76,6 +77,35 @@ struct CommandLineTests {
         #expect(options.collectionArguments == .whole)
         #expect(options.singleValueCollections == .set)
         #expect(options.containerLookup == .resources)
+    }
+
+    @Test("Strict mode is off in both presets and on with --strict-aql")
+    func strict() throws {
+        for preset in ["standard", "legacy"] {
+            let lenient = try EvaluateCommand.parse(["-e", "self", "--no-config", "--semantics", preset]).evaluationOptions
+            let strict = try EvaluateCommand.parse(
+                ["-e", "self", "--no-config", "--semantics", preset, "--strict-aql"]).evaluationOptions
+            #expect(!lenient.aqlSemanticsOptions.aqlOptions(settings: try lenient.semanticsOptions.settings(environment: [:])).strict)
+            #expect(strict.aqlSemanticsOptions.aqlOptions(settings: try strict.semanticsOptions.settings(environment: [:])).strict)
+        }
+    }
+
+    @Test("Strict mode follows the strict-aql key of the configuration file unless a flag overrides it")
+    func strictFromConfiguration() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-aql-strict-configuration-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appendingPathComponent(ModellingConfiguration.fileName)
+        try #"{ "strict-aql": true }"#.write(to: file, atomically: true, encoding: .utf8)
+
+        func strict(_ extra: [String]) throws -> Bool {
+            let options = try EvaluateCommand.parse(["-e", "self", "--config", file.path] + extra).evaluationOptions
+            return options.aqlSemanticsOptions.aqlOptions(settings: try options.semanticsOptions.settings(environment: [:])).strict
+        }
+        #expect(try strict([]))
+        #expect(try !strict(["--no-strict-aql"]))
+        #expect(try strict(["--strict-aql"]))
     }
 
     @Test("Unset features read as the command line says")

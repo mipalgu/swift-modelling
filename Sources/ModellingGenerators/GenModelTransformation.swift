@@ -19,6 +19,9 @@ struct GenModelTransformation {
     /// The parsed transformation.
     let module: ATLModule
 
+    /// The behaviours of the ATL language with which the transformation is parsed and run.
+    let atlOptions: ATLOptions
+
     /// The location of the bundled transformation.
     ///
     /// - Returns: The file URL of the transformation, or `nil` if the bundle does not contain it.
@@ -78,13 +81,16 @@ struct GenModelTransformation {
         let registry = ATLMetamodelRegistry(packages: [EcorePackage.instance, generatorMetamodel])
         do {
             let module = try await ATLParser(options: atlOptions).parse(url, metamodelRegistry: registry)
-            return GenModelTransformation(module: module)
+            return GenModelTransformation(module: module, atlOptions: atlOptions)
         } catch {
             throw GenerationError.transformationUnavailable(String(describing: error))
         }
     }
 
     /// Runs the transformation on one source model.
+    ///
+    /// The transformation evaluates its expressions with the options it was loaded with, so
+    /// `/` divides two Integers as ``atlOptions`` selects.
     ///
     /// - Parameters:
     ///   - source: The resource holding the source model.
@@ -99,7 +105,9 @@ struct GenModelTransformation {
         unsetFeatureReads: UnsetFeatureReads = .defaults
     ) async throws {
         do {
-            try await ATLVirtualMachine(module: module, unsetFeatureReads: unsetFeatureReads).execute(
+            try await ATLVirtualMachine(
+                module: module, options: atlOptions, unsetFeatureReads: unsetFeatureReads
+            ).execute(
                 sources: [GenModelImportConstants.sourceAlias: source],
                 targets: [GenModelImportConstants.targetAlias: target],
                 parameters: parameters)

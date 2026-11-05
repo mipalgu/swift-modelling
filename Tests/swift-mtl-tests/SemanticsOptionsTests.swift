@@ -258,7 +258,8 @@ struct SemanticsOptionsTests {
             "--collection-parameters <conforming|exact>", "--check-let-types/--no-check-let-types",
             "--cache-containers/--no-cache-containers", "--collection-arguments <whole|first-element>",
             "--collection-kinds <distinguished|sequences>", "--single-value-collections <set|sequence>",
-            "--container-lookup <resources|registered-objects>", "version 0.6",
+            "--container-lookup <resources|registered-objects>", "--sequence-union <concatenation|distinct>",
+            "--null-addition <empty-text|null>", "--text-form <joined|bracketed>", "--strict-aql", "version 0.6",
         ] {
             #expect(result.stdout.contains(text), "\(text)")
         }

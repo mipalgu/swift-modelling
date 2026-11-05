@@ -6,7 +6,7 @@ module Orders2LegacyOrders;
 create OUT: Legacy from IN: Orders;
 
 -- An amount rounded to whole cents.
-helper def: cents(amount: Real): Real = (amount * 100).round() / 100.0;
+helper def: cents(amount: Real): Real = (amount * 100).round() / 100;
 
 helper context Orders!Address def: asText: String =
     self.street + ', ' + self.suburb + ' ' + self.state + ' ' + self.postcode
@@ -57,7 +57,7 @@ rule Order2Order {
             shippingAddress <- o.shippingAddress.asText,
             billingAddress <- o.billingAddress.asText,
             totalAmount <- o.itemsTotal,
-            taxAmount <- thisModule.cents(o.itemsTotal / 10.0),
+            taxAmount <- thisModule.cents(o.itemsTotal / 10),
             paymentMethod <- o.payment.method.toString(),
             cardLastFour <- o.payment.cardLastFour,
             items <- o.items

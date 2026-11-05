@@ -40,6 +40,6 @@ swift-aql evaluate --model library-data.xmi \
 # Category hierarchy display
 swift-aql evaluate --model library-data.xmi \
   --expression "library.categories->collect(c |
-    c.name + ' -> ' + c.subcategories->collect(s | s.name)->toString())"
+    c.name + ' -> ' + c.subcategories->collect(s | s.name)->sep('[', ', ', ']'))"
 
 # Output: ["Fiction -> [Science Fiction, Fantasy, Mystery]", ...]

@@ -398,7 +398,7 @@ struct TransformCommand: AsyncParsableCommand {
 
             let unsetFeatureReads = unsetFeatureOptions.unsetFeatures(settings: settings)
             let virtualMachine = await MainActor.run {
-                ATLVirtualMachine(module: module, unsetFeatureReads: unsetFeatureReads)
+                ATLVirtualMachine(module: module, options: atlOptions, unsetFeatureReads: unsetFeatureReads)
             }
 
             // Enable debug mode if requested

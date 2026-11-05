@@ -219,7 +219,8 @@ struct QueryCommand: AsyncParsableCommand {
         let unsetFeatureReads = unsetFeatureOptions.unsetFeatures(settings: settings)
         let virtualMachine = await MainActor.run {
             ATLVirtualMachine(
-                module: bound, unsetFeatureReads: unsetFeatureReads, fileOutput: fileOutput)
+                module: bound, options: atlOptions, unsetFeatureReads: unsetFeatureReads,
+                fileOutput: fileOutput)
         }
         if debug {
             await virtualMachine.enableDebugging(true)
