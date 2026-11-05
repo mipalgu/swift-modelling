@@ -1,113 +1,47 @@
 #!/bin/bash
-# Workflow-01 Step 8: Create Additional Test Instances
+# Creates small test instances of the shop metamodel in test-instances/.
+set -e
+mkdir -p test-instances
 
-echo "=== Creating Test Instance Variations ==="
-echo ""
+# A new shop, created from the metamodel: one Shop object without any values.
+swift-ecore create --metamodel ECommerce.ecore --root-class Shop \
+    --output test-instances/new-shop.xmi --force
 
-BASE_INSTANCE="workflow-01-step-05-instance.xmi"
-METAMODEL="workflow-01-step-01-metamodel.ecore"
+# A shop that has a name but no products, customers or orders yet.
+cat > test-instances/empty-shop.xmi <<'XMI'
+<?xml version="1.0" encoding="UTF-8"?>
+<shop:Shop xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:shop="http://www.example.org/shop" name="Opening Soon"/>
+XMI
 
-echo "Base instance: $BASE_INSTANCE"
-echo "Metamodel: $METAMODEL"
-echo ""
+# The smallest complete shop: one product, one customer and one order.
+cat > test-instances/single-order.xmi <<'XMI'
+<?xml version="1.0" encoding="UTF-8"?>
+<shop:Shop xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:shop="http://www.example.org/shop" name="Corner Shop">
+  <categories xmi:id="books" name="Books"/>
+  <products xmi:id="BK-01" name="Notebook" sku="BK-01" price="12.5" stock="3" category="books"/>
+  <customers xmi:id="sam" name="Sam Lee" email="sam@example.com"/>
+  <orders orderNumber="T-001" date="2026-04-01" paymentMethod="CASH" customer="sam">
+    <items quantity="2" unitPrice="12.5" product="BK-01"/>
+  </orders>
+</shop:Shop>
+XMI
 
-echo "Creating test instance variations for different scenarios..."
-echo ""
+# A shop that breaks the business rules: a negative price, an email address
+# without @, an order item with a quantity of zero and an order without items.
+cat > test-instances/invalid-shop.xmi <<'XMI'
+<?xml version="1.0" encoding="UTF-8"?>
+<shop:Shop xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:shop="http://www.example.org/shop" name="Broken Shop">
+  <categories xmi:id="misc" name="Miscellaneous"/>
+  <products xmi:id="GIFT" name="Gift Card" sku="GIFT" price="-10.0" stock="5" category="misc"/>
+  <customers xmi:id="kim" name="Kim Park" email="kim.example.com"/>
+  <orders orderNumber="T-002" customer="kim">
+    <items quantity="0" unitPrice="10.0" product="GIFT"/>
+  </orders>
+  <orders orderNumber="T-003" customer="kim"/>
+</shop:Shop>
+XMI
 
-# Small instance for unit testing
-echo "1. Small test instance (test-small-shop.xmi)"
-echo "   Purpose: Quick unit tests and validation"
-echo "   Content:"
-echo "     - 1 Shop"
-echo "     - 2 Categories"
-echo "     - 5 Products"
-echo "     - 3 Customers"
-echo "     - 3 Orders"
-echo "   Use cases: Fast test execution, edge case testing"
-echo ""
-
-# Medium instance for integration testing
-echo "2. Medium test instance (test-medium-shop.xmi)"
-echo "   Purpose: Integration testing"
-echo "   Content:"
-echo "     - 1 Shop"
-echo "     - 4 Categories (as in base)"
-echo "     - 10 Products (as in base)"
-echo "     - 7 Customers (as in base)"
-echo "     - 10 Orders (as in base)"
-echo "   Use cases: Full workflow testing, transformation testing"
-echo ""
-
-# Large instance for performance testing
-echo "3. Large test instance (test-large-shop.xmi)"
-echo "   Purpose: Performance and scalability testing"
-echo "   Content:"
-echo "     - 1 Shop"
-echo "     - 10 Categories"
-echo "     - 100 Products"
-echo "     - 50 Customers"
-echo "     - 200 Orders"
-echo "   Use cases: Performance benchmarks, stress testing"
-echo ""
-
-# Edge case instance
-echo "4. Edge case instance (test-edge-cases.xmi)"
-echo "   Purpose: Boundary condition testing"
-echo "   Content:"
-echo "     - Products with zero stock"
-echo "     - Products with very high prices"
-echo "     - Orders with single items"
-echo "     - Orders with many items"
-echo "     - Empty categories"
-echo "     - Customers with no orders"
-echo "   Use cases: Validation testing, error handling"
-echo ""
-
-# Empty instance
-echo "5. Minimal instance (test-empty-shop.xmi)"
-echo "   Purpose: Minimal valid instance"
-echo "   Content:"
-echo "     - 1 Shop (name only)"
-echo "     - No products, categories, customers, or orders"
-echo "   Use cases: Schema validation, initialisation testing"
-echo ""
-
-echo "Test instance generation approach:"
-echo ""
-echo "Option A: Manual creation"
-echo "  - Copy base instance"
-echo "  - Modify in text editor"
-echo "  - Validate with swift-ecore"
-echo ""
-echo "Option B: Programmatic generation"
-echo "  - Use Swift code with swift-ecore library"
-echo "  - Generate instances with different parameters"
-echo "  - Automated generation for large datasets"
-echo ""
-echo "Option C: Template-based"
-echo "  - Create MTL templates that generate test instances"
-echo "  - Parameterise size and complexity"
-echo "  - Reusable across projects"
-echo ""
-
-echo "Recommended test instance suite:"
-echo "  ✓ test-small-shop.xmi (for speed)"
-echo "  ✓ workflow-01-step-05-instance.xmi (base case)"
-echo "  ✓ test-large-shop.xmi (for performance)"
-echo "  ✓ test-edge-cases.xmi (for robustness)"
-echo ""
-
-echo "These instances should be used throughout the workflow:"
-echo "  - Model validation (Step 6)"
-echo "  - ATL transformations (Steps 9-12)"
-echo "  - MTL code generation (Steps 13-16)"
-echo "  - Integration testing (Steps 17-20)"
-echo ""
-
-echo "✅ Test instance strategy defined"
-echo ""
-echo "Next steps:"
-echo "  1. Create each test instance variant"
-echo "  2. Validate all instances against metamodel"
-echo "  3. Document expected behaviour for each"
-echo "  4. Integrate into automated test suite"
+ls test-instances

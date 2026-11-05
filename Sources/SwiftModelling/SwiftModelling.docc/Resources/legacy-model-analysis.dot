@@ -1,41 +1,45 @@
 digraph LegacyModelAnalysis {
     bgcolor="white"
+    fontname="Arial"
     rankdir=TB
     node [shape=box, style=rounded, fontname="Arial", fontsize=12]
     edge [fontname="Arial", fontsize=10]
-    
+
     subgraph cluster_legacy {
-        label="Legacy System"
+        label="Legacy system"
         style=rounded
         bgcolor="#f8f4e8"
-        
-        legacy [label="Legacy\nModels" shape=box3d]
+
+        metamodel [label="LegacyOrders.ecore" shape=note]
+        data [label="orders-2024-01.xmi" shape=box3d]
     }
-    
+
     subgraph cluster_analysis {
-        label="Analysis Pipeline"
+        label="Analysis"
         style=rounded
         bgcolor="#e8f4f8"
-        
-        validate [label="Validate\nStructure" shape=ellipse]
-        analyse [label="Analyse\nPatterns" shape=ellipse]
-        report [label="Generate\nReport" shape=ellipse]
+
+        validate [label="swift-ecore validate\n(does it load?)" shape=ellipse]
+        measure [label="swift-ecore statistics, inspect\n(where is the structure overloaded?)" shape=ellipse]
+        query [label="swift-aql query\n(which data is inconsistent?)" shape=ellipse]
     }
-    
+
     subgraph cluster_output {
-        label="Outputs"
+        label="Findings"
         style=rounded
         bgcolor="#e8f8f5"
-        
-        issues [label="Issues\nLog" shape=note]
-        metrics [label="Quality\nMetrics" shape=note]
-        migration [label="Migration\nPlan" shape=note]
+
+        structure [label="Order with 14 attributes,\nfree-text status, code strings" shape=note]
+        quality [label="Mixed-case statuses, repeated customers,\nunlinked product codes, wrong totals" shape=note]
+        plan [label="refactoring-plan.md" shape=note]
     }
-    
-    legacy -> validate -> analyse -> report
-    report -> issues
-    report -> metrics
-    report -> migration
-    
-    legendTitle [label="Legacy Model Analysis" shape=plaintext fontname="Arial Bold" fontsize=14]
+
+    metamodel -> validate
+    data -> validate
+    validate -> measure
+    validate -> query
+    measure -> structure
+    query -> quality
+    structure -> plan
+    quality -> plan
 }

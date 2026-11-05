@@ -1,59 +1,64 @@
 [comment encoding = UTF-8 /]
 [comment]
-  MTL Template: Generate REST API from Ecore Metamodel
-  Creates OpenAPI specification and server stubs
-  Part of the Cross-Format Integration tutorial
+  Generates a REST interface from an Ecore metamodel:
+  - openapi.yaml: an OpenAPI 3 description of the interface,
+  - DTOs.swift: the data transfer objects, using Foundation only, so that
+    servers, clients and event handlers can share them,
+  - routes.swift: route stubs for a Vapor 4 server that delegate to
+    service protocols, which the server implements.
+  Every class with an identifier attribute becomes a resource. References
+  between objects become identifiers, and contained objects are nested.
+  The [ and ] of the generated text are written as ['['/] and [']'/],
+  because a bare [ starts an MTL tag.
 [/comment]
-
 [module GenerateRestAPI('http://www.eclipse.org/emf/2002/Ecore')]
 
-[comment Main entry point /]
 [template public generate(pkg : EPackage)]
-[comment Generate OpenAPI specification /]
 [file ('openapi.yaml', false, 'UTF-8')]
 [generateOpenAPISpec(pkg)/]
 [/file]
-
-[comment Generate server routes /]
-[file ('routes.swift', false, 'UTF-8')]
-[generateServerRoutes(pkg)/]
-[/file]
-
-[comment Generate request/response DTOs /]
 [file ('DTOs.swift', false, 'UTF-8')]
 [generateDTOs(pkg)/]
 [/file]
+[file ('routes.swift', false, 'UTF-8')]
+[generateServerRoutes(pkg)/]
+[/file]
 [/template]
 
-[comment Generate OpenAPI 3.0 specification /]
+[comment The classes that become REST resources: those with an identifier. /]
+[query private resources(pkg : EPackage) : Sequence(EClass) =
+    pkg.eClassifiers->filter(EClass)->select(c | c.eAllAttributes->exists(a | a.iD))->asSequence()
+/]
+
+[comment The root class: the first class that no containment reference holds. /]
+[query private rootClass(pkg : EPackage) : EClass =
+    pkg.eClassifiers->filter(EClass)->select(c |
+        not pkg.eClassifiers->filter(EClass)->exists(o |
+            o.eReferences->exists(r | r.containment and r.eType = c)))->asSequence()->first()
+/]
+
+[comment Generate the OpenAPI 3.0 specification /]
 [template private generateOpenAPISpec(pkg : EPackage)]
-# OpenAPI Specification for [pkg.name/] API
-# Generated from [pkg.name/].ecore
-# Do not edit manually - changes will be overwritten
+# OpenAPI specification for the [pkg.name/] API
+# Generated from [pkg.name/].ecore by GenerateRestAPI.mtl; regenerate instead of editing.
 
 openapi: "3.0.3"
 info:
   title: [pkg.name/] API
-  description: REST API for [pkg.name/] model management
+  description: REST API for [pkg.name/] models
   version: "1.0.0"
-  contact:
-    name: API Support
-    email: api-support@acme.com.au
 
 servers:
-  - url: https://api.acme.com.au/v1
-    description: Production server
-  - url: https://api-staging.acme.com.au/v1
-    description: Staging server
+  - url: https://api.example.com/v1
+    description: Example server
 
 paths:
-[for (cls : EClass | pkg.eClassifiers->filter(EClass))]
+[for (cls : EClass | resources(pkg))]
 [generatePathsForClass(cls)/]
 [/for]
-
   /sync/status:
     get:
-      summary: Get synchronisation status
+      summary: Get the synchronisation status
       operationId: getSyncStatus
       tags: ['['/]Synchronisation[']'/]
       responses:
@@ -97,13 +102,13 @@ paths:
       parameters:
         - name: since
           in: query
-          description: Timestamp of last sync
+          description: Time of the last synchronisation
           schema:
             type: string
             format: date-time
       responses:
         '200':
-          description: Remote changes retrieved
+          description: Remote changes
           content:
             application/json:
               schema:
@@ -111,12 +116,12 @@ paths:
 
   /export/xmi:
     get:
-      summary: Export model as XMI
+      summary: Export the model as XMI
       operationId: exportXMI
       tags: ['['/]Export[']'/]
       responses:
         '200':
-          description: XMI export
+          description: The model in XMI
           content:
             application/xml:
               schema:
@@ -124,16 +129,16 @@ paths:
 
   /export/json:
     get:
-      summary: Export model as JSON
+      summary: Export the model as JSON
       operationId: exportJSON
       tags: ['['/]Export[']'/]
       responses:
         '200':
-          description: JSON export
+          description: The model in the JSON format of swift-ecore convert (root class [rootClass(pkg).name/])
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Organisation'
+                type: object
 
 components:
   schemas:
@@ -143,7 +148,6 @@ components:
 [for (enum : EEnum | pkg.eClassifiers->filter(EEnum))]
 [generateSchemaForEnum(enum)/]
 [/for]
-
     SyncStatus:
       type: object
       properties:
@@ -156,7 +160,7 @@ components:
           type: integer
         status:
           type: string
-          enum: ['['/]SYNCED[']'/], ['['/]PENDING[']'/], ['['/]CONFLICT[']'/]
+          enum: ['['/]SYNCED, PENDING, CONFLICT[']'/]
 
     ChangeSet:
       type: object
@@ -178,7 +182,7 @@ components:
           type: string
         type:
           type: string
-          enum: ['['/]ADD[']'/], ['['/]UPDATE[']'/], ['['/]DELETE[']'/]
+          enum: ['['/]ADD, UPDATE, DELETE[']'/]
         elementType:
           type: string
         elementId:
@@ -221,17 +225,16 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
 
 security:
   - bearerAuth: ['['/][']'/]
 [/template]
 
-[comment Generate paths for a class /]
+[comment Generate the paths of a resource class /]
 [template private generatePathsForClass(cls : EClass)]
   /[cls.name.toLower()/]s:
     get:
-      summary: List all [cls.name.toLower()/]s
+      summary: List [cls.name/] objects
       operationId: list[cls.name/]s
       tags: ['['/][cls.name/][']'/]
       parameters:
@@ -247,7 +250,7 @@ security:
             default: 0
       responses:
         '200':
-          description: List of [cls.name.toLower()/]s
+          description: A page of [cls.name/] objects
           content:
             application/json:
               schema:
@@ -260,7 +263,7 @@ security:
                   total:
                     type: integer
     post:
-      summary: Create a new [cls.name.toLower()/]
+      summary: Create a [cls.name/]
       operationId: create[cls.name/]
       tags: ['['/][cls.name/][']'/]
       requestBody:
@@ -279,7 +282,7 @@ security:
 
   /[cls.name.toLower()/]s/{id}:
     get:
-      summary: Get [cls.name.toLower()/] by ID
+      summary: Get a [cls.name/] by its identifier
       operationId: get[cls.name/]
       tags: ['['/][cls.name/][']'/]
       parameters:
@@ -290,15 +293,15 @@ security:
             type: string
       responses:
         '200':
-          description: [cls.name/] details
+          description: The [cls.name/]
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/[cls.name/]'
         '404':
-          description: [cls.name/] not found
+          description: No [cls.name/] has this identifier
     put:
-      summary: Update [cls.name.toLower()/]
+      summary: Update a [cls.name/]
       operationId: update[cls.name/]
       tags: ['['/][cls.name/][']'/]
       parameters:
@@ -321,7 +324,7 @@ security:
               schema:
                 $ref: '#/components/schemas/[cls.name/]'
     delete:
-      summary: Delete [cls.name.toLower()/]
+      summary: Delete a [cls.name/]
       operationId: delete[cls.name/]
       tags: ['['/][cls.name/][']'/]
       parameters:
@@ -336,7 +339,7 @@ security:
 
 [/template]
 
-[comment Generate schema for a class /]
+[comment Generate the schemas of a class /]
 [template private generateSchemaForClass(cls : EClass)]
     [cls.name/]:
       type: object
@@ -354,10 +357,11 @@ security:
           [ref.openAPIContainmentType()/]
 [/for]
 
+[if (cls.eAllAttributes->exists(a | a.iD))]
     [cls.name/]Input:
       type: object
       properties:
-[for (attr : EAttribute | cls.eAllAttributes->select(a | a.name <> 'id'))]
+[for (attr : EAttribute | cls.eAllAttributes->reject(a | a.iD))]
         [attr.name/]:
           [attr.openAPIType()/]
 [/for]
@@ -365,14 +369,11 @@ security:
         [ref.name/]Id[if (ref.upperBound <> 1)]s[/if]:
           [ref.openAPIRefType()/]
 [/for]
-      required:
-[for (attr : EAttribute | cls.eAllAttributes->select(a | a.lowerBound > 0 and a.name <> 'id'))]
-        - [attr.name/]
-[/for]
 
+[/if]
 [/template]
 
-[comment Generate schema for an enum /]
+[comment Generate the schema of an enumeration /]
 [template private generateSchemaForEnum(enum : EEnum)]
     [enum.name/]:
       type: string
@@ -383,334 +384,351 @@ security:
 
 [/template]
 
-[comment Map attribute to OpenAPI type /]
+[comment Map an attribute to an OpenAPI type; continuation lines take the indentation of the calling line /]
 [query private openAPIType(attr : EAttribute) : String =
     if attr.eType.name = 'EString' then 'type: string'
     else if attr.eType.name = 'EInt' then 'type: integer'
-    else if attr.eType.name = 'EDouble' then 'type: number\n          format: double'
+    else if attr.eType.name = 'EDouble' then 'type: number\nformat: double'
     else if attr.eType.name = 'EBoolean' then 'type: boolean'
-    else if attr.eType.name = 'EDate' then 'type: string\n          format: date'
     else if attr.eType.oclIsKindOf(EEnum) then '$ref: \'#/components/schemas/' + attr.eType.name + '\''
     else 'type: string'
-    endif endif endif endif endif endif
+    endif endif endif endif endif
 /]
 
-[comment Map reference to OpenAPI type /]
+[comment Map a reference to an OpenAPI type of identifiers /]
 [query private openAPIRefType(ref : EReference) : String =
     if ref.upperBound = 1 then 'type: string'
-    else 'type: array\n          items:\n            type: string'
+    else 'type: array\nitems:\n  type: string'
     endif
 /]
 
-[comment Map containment to OpenAPI type /]
+[comment Map a containment reference to an OpenAPI type /]
 [query private openAPIContainmentType(ref : EReference) : String =
     if ref.upperBound = 1 then '$ref: \'#/components/schemas/' + ref.eType.name + '\''
-    else 'type: array\n          items:\n            $ref: \'#/components/schemas/' + ref.eType.name + '\''
+    else 'type: array\nitems:\n  $ref: \'#/components/schemas/' + ref.eType.name + '\''
     endif
 /]
 
-[comment Generate server routes /]
-[template private generateServerRoutes(pkg : EPackage)]
-// routes.swift
-// Generated from [pkg.name/].ecore
-// Vapor server routes for [pkg.name/] API
-
-import Vapor
-
-/// Configure all routes for the [pkg.name/] API
-func configureRoutes(_ app: Application) throws {
-    // API version prefix
-    let api = app.grouped("v1")
-
-    // Configure CORS
-    let cors = CORSMiddleware(configuration: .default())
-    api.middleware.use(cors)
-
-    // Authentication middleware
-    let protected = api.grouped(JWTAuthMiddleware())
-
-[for (cls : EClass | pkg.eClassifiers->filter(EClass))]
-    // [cls.name/] routes
-    configure[cls.name/]Routes(protected)
-
-[/for]
-    // Synchronisation routes
-    configureSyncRoutes(protected)
-
-    // Export routes
-    configureExportRoutes(protected)
-}
-
-[for (cls : EClass | pkg.eClassifiers->filter(EClass))]
-[generateRoutesForClass(cls)/]
-[/for]
-
-/// Configure synchronisation routes
-func configureSyncRoutes(_ routes: RoutesBuilder) {
-    let sync = routes.grouped("sync")
-
-    sync.get("status") { req async throws -> SyncStatusDTO in
-        let service = try req.make(SyncService.self)
-        return try await service.getStatus()
-    }
-
-    sync.post("push") { req async throws -> PushResultDTO in
-        let changeSet = try req.content.decode(ChangeSetDTO.self)
-        let service = try req.make(SyncService.self)
-        return try await service.pushChanges(changeSet)
-    }
-
-    sync.get("pull") { req async throws -> ChangeSetDTO in
-        let since = req.query[String.self, at: "since"]
-        let service = try req.make(SyncService.self)
-        return try await service.pullChanges(since: since)
-    }
-}
-
-/// Configure export routes
-func configureExportRoutes(_ routes: RoutesBuilder) {
-    let export = routes.grouped("export")
-
-    export.get("xmi") { req async throws -> Response in
-        let service = try req.make(ExportService.self)
-        let xmi = try await service.exportXMI()
-        return Response(
-            status: .ok,
-            headers: ["Content-Type": "application/xml"],
-            body: .init(string: xmi)
-        )
-    }
-
-    export.get("json") { req async throws -> OrganisationDTO in
-        let service = try req.make(ExportService.self)
-        return try await service.exportJSON()
-    }
-}
-[/template]
-
-[comment Generate routes for a class /]
-[template private generateRoutesForClass(cls : EClass)]
-/// Configure [cls.name/] routes
-func configure[cls.name/]Routes(_ routes: RoutesBuilder) {
-    let [cls.name.toLowerFirst()/]s = routes.grouped("[cls.name.toLower()/]s")
-
-    // List all [cls.name.toLower()/]s
-    [cls.name.toLowerFirst()/]s.get { req async throws -> Page<[cls.name/]DTO> in
-        let service = try req.make([cls.name/]Service.self)
-        let limit = req.query[Int.self, at: "limit"] ?? 20
-        let offset = req.query[Int.self, at: "offset"] ?? 0
-        return try await service.list(limit: limit, offset: offset)
-    }
-
-    // Get [cls.name.toLower()/] by ID
-    [cls.name.toLowerFirst()/]s.get(":id") { req async throws -> [cls.name/]DTO in
-        guard let id = req.parameters.get("id") else {
-            throw Abort(.badRequest, reason: "Missing ID parameter")
-        }
-        let service = try req.make([cls.name/]Service.self)
-        guard let [cls.name.toLowerFirst()/] = try await service.find(id: id) else {
-            throw Abort(.notFound, reason: "[cls.name/] not found")
-        }
-        return [cls.name.toLowerFirst()/]
-    }
-
-    // Create new [cls.name.toLower()/]
-    [cls.name.toLowerFirst()/]s.post { req async throws -> [cls.name/]DTO in
-        let input = try req.content.decode([cls.name/]InputDTO.self)
-        let service = try req.make([cls.name/]Service.self)
-        return try await service.create(input)
-    }
-
-    // Update [cls.name.toLower()/]
-    [cls.name.toLowerFirst()/]s.put(":id") { req async throws -> [cls.name/]DTO in
-        guard let id = req.parameters.get("id") else {
-            throw Abort(.badRequest, reason: "Missing ID parameter")
-        }
-        let input = try req.content.decode([cls.name/]InputDTO.self)
-        let service = try req.make([cls.name/]Service.self)
-        return try await service.update(id: id, input: input)
-    }
-
-    // Delete [cls.name.toLower()/]
-    [cls.name.toLowerFirst()/]s.delete(":id") { req async throws -> HTTPStatus in
-        guard let id = req.parameters.get("id") else {
-            throw Abort(.badRequest, reason: "Missing ID parameter")
-        }
-        let service = try req.make([cls.name/]Service.self)
-        try await service.delete(id: id)
-        return .noContent
-    }
-}
-
-[/template]
-
-[comment Generate DTOs /]
+[comment Generate the data transfer objects /]
 [template private generateDTOs(pkg : EPackage)]
 // DTOs.swift
-// Generated from [pkg.name/].ecore
-// Data Transfer Objects for [pkg.name/] API
+// Generated from [pkg.name/].ecore by GenerateRestAPI.mtl; regenerate instead of editing.
+// Data transfer objects of the [pkg.name/] API, shared by servers and clients.
 
-import Vapor
+import Foundation
+[for (enum : EEnum | pkg.eClassifiers->filter(EEnum))]
 
+/// The [enum.name/] values of [pkg.name/].
+public enum [enum.name/]: String, Codable, CaseIterable, Sendable {
+[for (literal : EEnumLiteral | enum.eLiterals)]
+    case [caseName(literal.name)/] = "[literal.name/]"
+[/for]
+}
+[/for]
 [for (cls : EClass | pkg.eClassifiers->filter(EClass))]
+
 [generateDTOForClass(cls)/]
 [/for]
 
-// MARK: - Synchronisation DTOs
+// MARK: - Synchronisation
 
-struct SyncStatusDTO: Content {
-    let lastSync: Date?
-    let pendingChanges: Int
-    let conflicts: Int
-    let status: SyncState
+/// The synchronisation status of the server.
+public struct SyncStatusDTO: Codable, Sendable {
+    public var lastSync: Date?
+    public var pendingChanges: Int
+    public var conflicts: Int
+    public var status: SyncState
 }
 
-enum SyncState: String, Content {
+/// The state of the synchronisation.
+public enum SyncState: String, Codable, Sendable {
     case synced = "SYNCED"
     case pending = "PENDING"
     case conflict = "CONFLICT"
 }
 
-struct ChangeSetDTO: Content {
-    let timestamp: Date
-    let source: String
-    let changes: [ChangeDTO]
+/// Changes that one client sends or receives.
+public struct ChangeSetDTO: Codable, Sendable {
+    public var timestamp: Date
+    public var source: String
+    public var changes: ['['/]ChangeDTO[']'/]
+
+    public init(timestamp: Date, source: String, changes: ['['/]ChangeDTO[']'/]) {
+        self.timestamp = timestamp
+        self.source = source
+        self.changes = changes
+    }
 }
 
-struct ChangeDTO: Content {
-    let id: String
-    let type: ChangeType
-    let elementType: String
-    let elementId: String
-    let properties: [String: AnyCodable]
+/// One change of one object.
+public struct ChangeDTO: Codable, Sendable {
+    public var id: String
+    public var type: ChangeType
+    public var elementType: String
+    public var elementId: String
+    public var properties: ['['/]String: PropertyValue[']'/]
+
+    public init(id: String, type: ChangeType, elementType: String, elementId: String, properties: ['['/]String: PropertyValue[']'/]) {
+        self.id = id
+        self.type = type
+        self.elementType = elementType
+        self.elementId = elementId
+        self.properties = properties
+    }
 }
 
-enum ChangeType: String, Content {
+/// The kind of a change.
+public enum ChangeType: String, Codable, Sendable {
     case add = "ADD"
     case update = "UPDATE"
     case delete = "DELETE"
 }
 
-struct PushResultDTO: Content {
-    let success: Bool
-    let changesApplied: Int
-    let newVersion: String
+/// The result of pushing changes.
+public struct PushResultDTO: Codable, Sendable {
+    public var success: Bool
+    public var changesApplied: Int
+    public var newVersion: String
 }
 
-struct ConflictReportDTO: Content {
-    let conflicts: [ConflictDTO]
+/// The conflicts that prevented a push.
+public struct ConflictReportDTO: Codable, Sendable {
+    public var conflicts: ['['/]ConflictDTO[']'/]
 }
 
-struct ConflictDTO: Content {
-    let elementId: String
-    let elementType: String
-    let localChange: ChangeDTO
-    let remoteChange: ChangeDTO
+/// Two changes of the same object that cannot both be applied.
+public struct ConflictDTO: Codable, Sendable {
+    public var elementId: String
+    public var elementType: String
+    public var localChange: ChangeDTO
+    public var remoteChange: ChangeDTO
 }
 
 // MARK: - Pagination
 
-struct Page<T: Content>: Content {
-    let items: [T]
-    let total: Int
+/// A page of a list of objects.
+public struct Page<T: Codable & Sendable>: Codable, Sendable {
+    public var items: ['['/]T[']'/]
+    public var total: Int
+
+    public init(items: ['['/]T[']'/], total: Int) {
+        self.items = items
+        self.total = total
+    }
 }
 
-// MARK: - AnyCodable for dynamic properties
+// MARK: - Property values
 
-struct AnyCodable: Codable {
-    let value: Any
+/// The value of a changed property.
+public enum PropertyValue: Codable, Sendable, Equatable {
+    case string(String)
+    case int(Int)
+    case double(Double)
+    case bool(Bool)
 
-    init(_ value: Any) {
-        self.value = value
-    }
-
-    init(from decoder: Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
-        if let string = try? container.decode(String.self) {
-            value = string
+        if let bool = try? container.decode(Bool.self) {
+            self = .bool(bool)
         } else if let int = try? container.decode(Int.self) {
-            value = int
+            self = .int(int)
         } else if let double = try? container.decode(Double.self) {
-            value = double
-        } else if let bool = try? container.decode(Bool.self) {
-            value = bool
+            self = .double(double)
         } else {
-            value = ""
+            self = .string(try container.decode(String.self))
         }
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
-        if let string = value as? String {
-            try container.encode(string)
-        } else if let int = value as? Int {
-            try container.encode(int)
-        } else if let double = value as? Double {
-            try container.encode(double)
-        } else if let bool = value as? Bool {
-            try container.encode(bool)
+        switch self {
+        case .string(let value): try container.encode(value)
+        case .int(let value): try container.encode(value)
+        case .double(let value): try container.encode(value)
+        case .bool(let value): try container.encode(value)
         }
     }
 }
 [/template]
 
-[comment Generate DTO for a class /]
+[comment Generate the data transfer objects of a class /]
 [template private generateDTOForClass(cls : EClass)]
-// MARK: - [cls.name/] DTOs
+// MARK: - [cls.name/]
 
-struct [cls.name/]DTO: Content, Identifiable {
+/// The transfer form of a [cls.name/].
+public struct [cls.name/]DTO: Codable, Sendable[if (cls.eAllAttributes->exists(a | a.iD))], Identifiable[/if] {
 [for (attr : EAttribute | cls.eAllAttributes)]
-    let [attr.name/]: [attr.swiftDTOType()/]
+    public var [attr.name/]: [attr.swiftDTOType()/]
 [/for]
 [for (ref : EReference | cls.eAllReferences->select(r | not r.containment))]
-    let [ref.name/]Id[if (ref.upperBound <> 1)]s[/if]: [ref.swiftRefDTOType()/]
+    public var [ref.name/]Id[if (ref.upperBound <> 1)]s[/if]: [ref.swiftRefDTOType()/]
 [/for]
 [for (ref : EReference | cls.eAllReferences->select(r | r.containment))]
-    let [ref.name/]: [ref.swiftContainmentDTOType()/]
+    public var [ref.name/]: [ref.swiftContainmentDTOType()/]
 [/for]
 }
+[if (cls.eAllAttributes->exists(a | a.iD))]
 
-struct [cls.name/]InputDTO: Content {
-[for (attr : EAttribute | cls.eAllAttributes->select(a | a.name <> 'id'))]
-    [if (attr.lowerBound > 0)]let[else]var[/if] [attr.name/]: [attr.swiftDTOType()/]
+/// The values that create or update a [cls.name/].
+public struct [cls.name/]InputDTO: Codable, Sendable {
+[for (attr : EAttribute | cls.eAllAttributes->reject(a | a.iD))]
+    public var [attr.name/]: [attr.swiftDTOType()/]
 [/for]
 [for (ref : EReference | cls.eAllReferences->select(r | not r.containment))]
-    var [ref.name/]Id[if (ref.upperBound <> 1)]s[/if]: [ref.swiftRefDTOType()/]
+    public var [ref.name/]Id[if (ref.upperBound <> 1)]s[/if]: [ref.swiftRefDTOType()/]
 [/for]
 }
-
+[/if]
 [/template]
 
-[comment Map attribute to Swift DTO type /]
+[comment Converts a literal name such as NOT_STARTED to notStarted. /]
+[template private caseName(name : String)][for (word : String | name.toLower().tokenize('_'))][if (i = 1)][word/][else][word.toUpperFirst()/][/if][/for][/template]
+
+[comment Map an attribute to a Swift type /]
 [query private swiftDTOType(attr : EAttribute) : String =
-    if attr.eType.name = 'EString' then
-        if attr.lowerBound > 0 then 'String' else 'String?' endif
-    else if attr.eType.name = 'EInt' then
-        if attr.lowerBound > 0 then 'Int' else 'Int?' endif
-    else if attr.eType.name = 'EDouble' then
-        if attr.lowerBound > 0 then 'Double' else 'Double?' endif
-    else if attr.eType.name = 'EBoolean' then
-        if attr.lowerBound > 0 then 'Bool' else 'Bool?' endif
-    else if attr.eType.name = 'EDate' then
-        if attr.lowerBound > 0 then 'Date' else 'Date?' endif
-    else if attr.eType.oclIsKindOf(EEnum) then
-        if attr.lowerBound > 0 then attr.eType.name else attr.eType.name + '?' endif
-    else 'String'
-    endif endif endif endif endif endif
+    let base : String =
+        if attr.eType.name = 'EInt' then 'Int'
+        else if attr.eType.name = 'EDouble' then 'Double'
+        else if attr.eType.name = 'EBoolean' then 'Bool'
+        else if attr.eType.oclIsKindOf(EEnum) then attr.eType.name
+        else 'String'
+        endif endif endif endif in
+    if attr.upperBound <> 1 then '[' + base + ']'
+    else if attr.lowerBound > 0 then base else base + '?' endif
+    endif
 /]
 
-[comment Map reference to Swift DTO type /]
+[comment Map a reference to the Swift type of identifiers /]
 [query private swiftRefDTOType(ref : EReference) : String =
-    if ref.upperBound = 1 then
-        if ref.lowerBound > 0 then 'String' else 'String?' endif
-    else '[String]'
+    if ref.upperBound <> 1 then '[String]'
+    else if ref.lowerBound > 0 then 'String' else 'String?' endif
     endif
 /]
 
-[comment Map containment to Swift DTO type /]
+[comment Map a containment reference to a Swift type /]
 [query private swiftContainmentDTOType(ref : EReference) : String =
-    if ref.upperBound = 1 then
-        if ref.lowerBound > 0 then ref.eType.name + 'DTO' else ref.eType.name + 'DTO?' endif
-    else '[' + ref.eType.name + 'DTO]'
+    if ref.upperBound <> 1 then '[' + ref.eType.name + 'DTO]'
+    else if ref.lowerBound > 0 then ref.eType.name + 'DTO' else ref.eType.name + 'DTO?' endif
     endif
 /]
+
+[comment Generate the Vapor route stubs /]
+[template private generateServerRoutes(pkg : EPackage)]
+// routes.swift
+// Generated from [pkg.name/].ecore by GenerateRestAPI.mtl; regenerate instead of editing.
+// Route stubs for a Vapor 4 server. The server implements the service
+// protocols below and passes its services to configureRoutes.
+
+import Vapor
+[for (cls : EClass | pkg.eClassifiers->filter(EClass))]
+
+extension [cls.name/]DTO: Content {}
+[if (cls.eAllAttributes->exists(a | a.iD))]
+extension [cls.name/]InputDTO: Content {}
+[/if]
+[/for]
+
+extension Page: Content, RequestDecodable, ResponseEncodable, AsyncRequestDecodable, AsyncResponseEncodable where T: Content {}
+extension SyncStatusDTO: Content {}
+extension ChangeSetDTO: Content {}
+extension PushResultDTO: Content {}
+[for (cls : EClass | resources(pkg))]
+
+/// The operations behind the [cls.name/] routes.
+protocol [cls.name/]Service: Sendable {
+    func list(limit: Int, offset: Int) async throws -> Page<[cls.name/]DTO>
+    func find(id: String) async throws -> [cls.name/]DTO?
+    func create(_ input: [cls.name/]InputDTO) async throws -> [cls.name/]DTO
+    func update(id: String, input: [cls.name/]InputDTO) async throws -> [cls.name/]DTO
+    func delete(id: String) async throws
+}
+[/for]
+
+/// The synchronisation and export operations.
+protocol SyncService: Sendable {
+    func status() async throws -> SyncStatusDTO
+    func push(_ changes: ChangeSetDTO) async throws -> PushResultDTO
+    func pull(since: String?) async throws -> ChangeSetDTO
+    func exportXMI() async throws -> String
+    func exportJSON() async throws -> String
+}
+
+/// Registers all routes of the [pkg.name/] API below /v1.
+func configureRoutes(
+    _ app: Application,
+[for (cls : EClass | resources(pkg))]
+    [cls.name.toLowerFirst()/]Service: some [cls.name/]Service,
+[/for]
+    syncService: some SyncService
+) {
+    let api = app.grouped("v1")
+[for (cls : EClass | resources(pkg))]
+    configure[cls.name/]Routes(api, service: [cls.name.toLowerFirst()/]Service)
+[/for]
+    configureSyncRoutes(api, service: syncService)
+}
+[for (cls : EClass | resources(pkg))]
+
+[generateRoutesForClass(cls)/]
+[/for]
+
+/// Registers the synchronisation and export routes.
+func configureSyncRoutes(_ routes: any RoutesBuilder, service: some SyncService) {
+    let sync = routes.grouped("sync")
+    sync.get("status") { _ async throws -> SyncStatusDTO in
+        try await service.status()
+    }
+    sync.post("push") { req async throws -> PushResultDTO in
+        try await service.push(req.content.decode(ChangeSetDTO.self))
+    }
+    sync.get("pull") { req async throws -> ChangeSetDTO in
+        let since = req.query['['/]String.self, at: "since"[']'/]
+        return try await service.pull(since: since)
+    }
+
+    let export = routes.grouped("export")
+    export.get("xmi") { _ async throws -> Response in
+        Response(
+            status: .ok,
+            headers: ['['/]"Content-Type": "application/xml"[']'/],
+            body: .init(string: try await service.exportXMI()))
+    }
+    export.get("json") { _ async throws -> Response in
+        Response(
+            status: .ok,
+            headers: ['['/]"Content-Type": "application/json"[']'/],
+            body: .init(string: try await service.exportJSON()))
+    }
+}
+[/template]
+
+[comment Generate the routes of a resource class /]
+[template private generateRoutesForClass(cls : EClass)]
+/// Registers the [cls.name/] routes.
+func configure[cls.name/]Routes(_ routes: any RoutesBuilder, service: some [cls.name/]Service) {
+    let group = routes.grouped("[cls.name.toLower()/]s")
+    group.get { req async throws -> Page<[cls.name/]DTO> in
+        let limit = req.query['['/]Int.self, at: "limit"[']'/] ?? 20
+        let offset = req.query['['/]Int.self, at: "offset"[']'/] ?? 0
+        return try await service.list(limit: limit, offset: offset)
+    }
+    group.get(":id") { req async throws -> [cls.name/]DTO in
+        let id = try req.parameters.require("id")
+        guard let found = try await service.find(id: id) else {
+            throw Abort(.notFound, reason: "No [cls.name/] has the identifier \(id)")
+        }
+        return found
+    }
+    group.post { req async throws -> [cls.name/]DTO in
+        try await service.create(req.content.decode([cls.name/]InputDTO.self))
+    }
+    group.put(":id") { req async throws -> [cls.name/]DTO in
+        let id = try req.parameters.require("id")
+        return try await service.update(id: id, input: req.content.decode([cls.name/]InputDTO.self))
+    }
+    group.delete(":id") { req async throws -> HTTPStatus in
+        try await service.delete(id: req.parameters.require("id"))
+        return .noContent
+    }
+}
+[/template]

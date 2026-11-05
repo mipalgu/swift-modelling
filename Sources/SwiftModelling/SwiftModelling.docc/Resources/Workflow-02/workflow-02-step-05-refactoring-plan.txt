@@ -1,0 +1,54 @@
+# Refactoring plan: LegacyOrders 1.0 to Orders 2.0
+
+## Findings
+
+From `swift-ecore statistics`, `swift-ecore inspect` and the AQL queries
+on the January export (`legacy/orders-2024-01.xmi`):
+
+1. `Order` is the largest class by far: 15 features, 14 of them
+   attributes that mix order, customer, address, payment, total and
+   audit data.
+2. `status` and `paymentMethod` are free text. The export spells the same
+   status in different cases (`SHIPPED`, `Shipped`, `pending`).
+3. Customer details are copied into every order. Five orders hold five
+   different e-mail spellings for only four customers; ORD-2024-001 and
+   ORD-2024-005 belong to the same customer.
+4. Items name products by a code string. The code `cable-001` matches no
+   product, so the item has no reliable link to the catalogue.
+5. Totals are stored, not derived. ORD-2024-004 stores 949.98, but its
+   items add up to 958.97.
+6. `Product` mixes catalogue data with warehouse stock data, and names
+   such as `qty` and `desc` are abbreviated.
+
+## Goals
+
+1. A `Customer` class with one object per e-mail address, referred to by
+   its orders.
+2. An `Address` class with street, suburb, state, postcode and country.
+3. Enumerations `OrderStatus` and `PaymentMethod` instead of free text.
+4. `OrderItem` refers to its `Product`; `qty` becomes `quantity`.
+5. Totals are computed from the items when needed, never stored.
+6. Stock data moves to a `StockLevel` object owned by its product.
+7. The business rules are OCL invariants of the metamodel, so that
+   `swift-ecore validate` checks every migrated model.
+
+## Pipeline
+
+1. Clean each legacy export (a refining ATL transformation): normalise
+   the case of statuses, payment methods, e-mail addresses and product
+   codes.
+2. Migrate the cleaned export to Orders 2.0 (an ATL transformation).
+3. Validate the result against `Orders.ecore`, including its invariants.
+
+## Success criteria
+
+- Every migrated model validates against `Orders.ecore`, also with
+  `--strict`.
+- Orders, items and products keep their numbers; there is one customer
+  per distinct e-mail address.
+- Every item refers to a product, and every order keeps its status.
+- Writing a migrated model back in the legacy format reproduces the
+  cleaned export, except for wrong stored totals, addresses without a
+  country and the dropped `lastModified` attribute.
+- An XMI to JSON to XMI round trip of each migrated model reports no
+  differences.

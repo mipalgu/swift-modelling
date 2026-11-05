@@ -1,19 +1,19 @@
 @Tutorial(time: 90) {
     @Intro(title: "Complete MDE Workflow: From Metamodel to Code") {
-        Experience the full model-driven engineering workflow by building a complete system from metamodel design through code generation.
+        Experience the full model-driven engineering workflow by building a complete chain from metamodel design to compiled, checked code.
 
-        In this comprehensive tutorial, you'll create a metamodel, build sample instances, transform models with ATL, generate code with MTL, and query results with AQL. This demonstrates how all Swift Modelling tools work together in a real-world scenario.
+        In this tutorial, you'll design an e-commerce metamodel with business rules, create and validate instance models, query them with AQL, transform them into a reporting model with ATL, generate Swift, JSON and Markdown with MTL, and verify the result end to end. Every step runs the real Swift Modelling tools on files you create in an empty directory.
 
-        @Image(source: "complete-mde-workflow.svg", alt: "Complete MDE Workflow")
+        @Image(source: "complete-mde-workflow.svg", alt: "The complete MDE workflow: an Ecore metamodel with OCL invariants defines the shop data and test instances, which are validated and queried; an ATL transformation turns the shop data into a sales report; MTL templates generate a Swift API, JSON and Markdown from it; a Swift package and end-to-end checks verify the artefacts.")
     }
 
     @Section(title: "Designing the Metamodel") {
         @ContentAndMedia {
-            Every MDE project starts with metamodel design. We'll create a simple e-commerce system metamodel that captures the essential concepts and relationships.
+            Every MDE project starts with metamodel design. We'll create a small e-commerce metamodel that captures the essential concepts, their relationships and the business rules that valid data must follow.
 
-            This metamodel will serve as the foundation for all subsequent transformation and generation steps, demonstrating how metamodel quality affects the entire workflow.
+            This metamodel is the foundation for every later step: the instances conform to it, the transformation reads it and the validation enforces its rules.
 
-            @Image(source: "ecommerce-metamodel.svg", alt: "E-commerce Metamodel Structure")
+            @Image(source: "ecommerce-metamodel.svg", alt: "The shop metamodel: a Shop contains categories, products, customers and orders; a product belongs to a category, an order belongs to a customer and contains order items that refer to products. Products, customers, orders and order items carry OCL invariants.")
         }
 
         @Steps {
@@ -22,7 +22,7 @@
 
                 @Code(name: "ECommerce.ecore", file: workflow-01-step-01-metamodel.ecore)
 
-                This metamodel defines a simple e-commerce system with Products, Categories, Customers, and Orders. The relationships capture typical business rules and constraints.
+                A `Shop` contains categories, products, customers and orders, and an order contains its items. `Product.category` and `Category.products` are opposite references, as are `Order.customer` and `Customer.orders`, so each relationship can be navigated from both ends while the data store only one end. The OCL annotations state the business rules as invariants: prices are positive, stock is never negative, email addresses contain `@`, every order has an item and every item orders at least one unit.
             }
 
             @Step {
@@ -30,32 +30,32 @@
 
                 @Code(name: "Terminal", file: workflow-01-step-02-validate-metamodel.sh)
 
-                Use swift-ecore to validate that the metamodel is well-formed and follows Ecore conventions. This catches design issues early in the workflow.
+                `swift-ecore validate` checks that the metamodel is well-formed Ecore: names, bounds, opposite references and annotations. With `--verbose` it also lists what it found. This catches design issues before any instance depends on them.
             }
 
             @Step {
-                Generate metamodel documentation.
+                Document the metamodel.
 
                 @Code(name: "Terminal", file: workflow-01-step-03-metamodel-docs.sh)
 
-                Create visual documentation of the metamodel to share with stakeholders and team members. Good documentation is essential for collaborative MDE.
+                `swift-ecore inspect --detail full` describes every class with its attributes, references, multiplicities, opposites and invariants; `--show-references` and `--show-supertypes` add the reference graph and the inheritance. Written to a file with `-o`, this description can be shared with stakeholders and team members.
             }
 
             @Step {
-                Export metamodel to different formats.
+                Export the metamodel structure as JSON.
 
                 @Code(name: "Terminal", file: workflow-01-step-04-metamodel-export.sh)
 
-                Export the metamodel to JSON format for web-based tools and integration scenarios. This demonstrates metamodel interoperability.
+                With `--format json`, `swift-ecore inspect` writes the same description as JSON, which web-based tools and scripts can read without an Ecore parser. Model instances, in contrast, are converted between XMI and JSON with `swift-ecore convert`.
             }
         }
     }
 
     @Section(title: "Creating Model Instances") {
         @ContentAndMedia {
-            With a validated metamodel, we can create instance models that represent actual business data. These instances serve as input for transformations and code generation.
+            With a validated metamodel, we can create instance models that represent actual business data. These instances serve as input for queries, transformations and code generation.
 
-            Model instances should reflect realistic business scenarios to ensure that transformations and generators produce useful results.
+            Instances should reflect realistic scenarios, including edge cases such as a shop without orders, so that transformations and generators are tested on more than one shape of data.
         }
 
         @Steps {
@@ -64,7 +64,7 @@
 
                 @Code(name: "shop-data.xmi", file: workflow-01-step-05-instance.xmi)
 
-                This instance represents a small online shop with various products, categories, customers, and order history. It provides rich data for transformation examples.
+                The shop has four categories, ten products, five customers and eight orders. Objects that are referred to carry an `xmi:id`: each product names its category, each order its customer and each order item its product. The opposite ends, such as the products of a category or the orders of a customer, follow from these references when the model is loaded.
             }
 
             @Step {
@@ -72,7 +72,7 @@
 
                 @Code(name: "Terminal", file: workflow-01-step-06-validate-instance.sh)
 
-                Ensure the instance conforms to the metamodel constraints. Instance validation prevents errors in later workflow steps.
+                Validation with `--metamodel` checks every object against its class: feature types, multiplicities and reference targets. It also evaluates every invariant for every object it applies to: two for each of the ten products and one for each customer, order and order item, 48 checks in all. `swift-ecore inspect` then counts the objects of each class.
             }
 
             @Step {
@@ -80,24 +80,32 @@
 
                 @Code(name: "Terminal", file: workflow-01-step-07-query-instance.sh)
 
-                Use AQL to explore the instance data and verify it contains the expected information. This validates both the metamodel design and instance quality.
+                `swift-aql query` evaluates AQL expressions on the model, with `self` bound to the shop or, with `--context`, to the object with that identifier or name. The queries navigate opposite references, select with `->select(p | ...)`, follow references from orders to products and aggregate with `->collect(...)->sum()`. The figures, such as a revenue of 6815.0 from 20 units in 8 orders, are the ones the report must reproduce later.
             }
 
             @Step {
-                Create additional test instances.
+                Write a script that creates additional test instances.
 
                 @Code(name: "create-test-instances.sh", file: workflow-01-step-08-create-test-instances.sh)
 
-                Generate multiple instance variations to test transformation and generation robustness across different data scenarios.
+                `swift-ecore create` creates a new model with one root object of a metamodel class. The other instances are small hand-written XMI files: a shop without orders, the smallest complete shop and a shop that deliberately breaks the business rules.
+            }
+
+            @Step {
+                Create and validate the test instances.
+
+                @Code(name: "Terminal", file: workflow-01-step-08-validate-test-instances.sh)
+
+                The empty shop and the single-order shop are valid; the empty shop has no objects that an invariant applies to. The new shop from `swift-ecore create` lacks the name that the metamodel requires, and the invalid shop violates four invariants, each reported with the object and its location. `swift-ecore validate` then exits with status 1, so a script can stop at an invalid model.
             }
         }
     }
 
     @Section(title: "Model Transformation with ATL") {
         @ContentAndMedia {
-            ATL transformations reshape model data for different purposes. We'll transform our e-commerce model into a reporting-focused structure that emphasises analytics over operational data.
+            ATL transformations reshape model data for different purposes. We'll transform the operational e-commerce model into a reporting model that holds sales figures instead of individual orders.
 
-            This transformation demonstrates how ATL can adapt model structures to meet different system requirements.
+            This transformation demonstrates how ATL adapts model structures to different requirements, and how the result can be checked against the source.
         }
 
         @Steps {
@@ -106,7 +114,7 @@
 
                 @Code(name: "Reporting.ecore", file: workflow-01-step-09-reporting-metamodel.ecore)
 
-                This metamodel focuses on analytics and reporting needs, with different structure and relationships optimised for data analysis rather than operational use.
+                A `SalesReport` holds the key figures of a shop and one metric for each category, customer and product. Its invariants require the category sales to add up to the total revenue and the orders of the customers to add up to the total number of orders.
             }
 
             @Step {
@@ -114,7 +122,7 @@
 
                 @Code(name: "ECommerce2Reporting.atl", file: workflow-01-step-10-transformation.atl)
 
-                This transformation converts operational e-commerce data into analytical reporting structures, demonstrating complex model reshaping with ATL.
+                Helpers compute the value of an order item, the total of an order and the units and revenue of a product. Four matched rules turn the shop into a report and each category, customer and product into its metric. Assigning `s.categories` to `categoryMetrics` uses the metrics that the rules created for those categories.
             }
 
             @Step {
@@ -122,91 +130,91 @@
 
                 @Code(name: "Terminal", file: workflow-01-step-11-run-transformation.sh)
 
-                Run the ATL transformation to convert the e-commerce instance into the reporting format. This produces the target model for code generation.
+                `--validate-only` checks the rules and helpers against both metamodels without running them. `--source-metamodel` and `--target-metamodel` bind the metamodels `Shop` and `Reporting` of the module header to their files. The result is a report with 20 objects.
             }
 
             @Step {
-                Validate transformation results.
+                Validate the transformation results.
 
                 @Code(name: "Terminal", file: workflow-01-step-12-validate-transformation.sh)
 
-                Verify that the transformation produced correct results by querying the output model and checking key relationships and data integrity.
+                The report satisfies the invariants of the reporting metamodel. The script then recomputes the revenue and the units sold from the shop data with AQL and compares them with the report; `test` stops the script if a figure differs. You can recompute the figures by hand from `shop-data.xmi`: the laptops alone account for 4200.0 of the 6815.0.
             }
         }
     }
 
     @Section(title: "Code Generation with MTL") {
         @ContentAndMedia {
-            MTL templates generate code artefacts from transformed models. We'll create templates that generate Swift classes, JSON APIs, and documentation from our reporting model.
+            MTL templates generate artefacts from models. We'll create templates that generate a Swift API, a JSON schema with JSON data, and Markdown documentation from the sales report.
 
-            This demonstrates how MTL can produce multiple types of artefacts from a single model source, maximising the value of model-driven development.
+            This demonstrates how MTL produces several kinds of artefacts from a single model, all consistent with each other because they share one source.
         }
 
         @Steps {
             @Step {
-                Create Swift class generation templates.
+                Create the Swift generation template.
 
                 @Code(name: "GenerateSwiftClasses.mtl", file: workflow-01-step-13-swift-templates.mtl)
 
-                These templates generate Swift data classes from the reporting model, creating a type-safe API for working with the analytics data.
+                The template generates `Codable` structures for the report and its metrics, functions for derived figures such as the top category and the products out of stock, and a `generated` value that holds the figures of the model. `['['/]` writes a literal square bracket, which would otherwise start an MTL expression.
             }
 
             @Step {
-                Create JSON API templates.
+                Create the JSON generation template.
 
                 @Code(name: "GenerateJSONAPI.mtl", file: workflow-01-step-14-json-templates.mtl)
 
-                Generate REST API specifications and JSON schema definitions from the model, enabling web integration and data exchange.
+                One template writes two files: a JSON schema that describes sales reports for web clients, and the report itself as JSON data. `separator(',\n')` puts commas only between the array elements.
             }
 
             @Step {
-                Create documentation templates.
+                Create the documentation template.
 
                 @Code(name: "GenerateDocumentation.mtl", file: workflow-01-step-15-docs-templates.mtl)
 
-                Automatically generate comprehensive documentation from the model structure, ensuring documentation stays synchronized with the model.
+                The documentation lists the key figures and a Markdown table for categories, customers and products. An AQL `select` in the last loop lists the products that are out of stock, so the documentation stays synchronised with the model.
             }
 
             @Step {
-                Execute all code generation.
+                Generate all artefacts.
 
                 @Code(name: "Terminal", file: workflow-01-step-16-generate-code.sh)
 
-                Run all MTL templates to generate the complete codebase. This produces Swift classes, API definitions, and documentation from the transformed model.
+                `swift-mtl validate` checks the templates first. Each `swift-mtl generate` then registers the reporting metamodel, reads the report and writes the files of its template into its own output directory.
             }
         }
     }
 
     @Section(title: "Integration and Validation") {
         @ContentAndMedia {
-            The final workflow step integrates all generated artefacts and validates the complete system. This ensures that the MDE workflow produces working, high-quality results.
+            The final stage integrates the generated artefacts and validates the complete chain. This ensures that the workflow produces working, consistent results, and that it produces them again when the inputs are unchanged.
 
-            Integration testing validates that generated code works correctly and that the entire workflow chain maintains consistency and quality.
+            Integration checks validate that the generated code compiles, that the generated documentation is complete, and that the figures agree from the source model to every artefact.
         }
 
         @Steps {
             @Step {
-                Compile generated Swift code.
+                Compile the generated Swift code.
 
                 @Code(name: "Terminal", file: workflow-01-step-17-compile-swift.sh)
 
-                Verify that generated Swift classes compile without errors and integrate correctly with the target application framework.
+                The script makes a Swift package with the generated API as its library and the generated JSON data as a resource of its test target, then builds the library with `swift build`. The first build takes a little while.
             }
 
             @Step {
-                Test generated APIs.
+                Test the generated API.
 
-                @Code(name: "TestAPIs.swift", file: workflow-01-step-18-test-apis.swift)
+                @Code(name: "SalesReport/Tests/SalesReportTests/TestAPIs.swift", file: workflow-01-step-18-test-apis.swift)
 
-                Create comprehensive tests for generated APIs to ensure they behave correctly and handle edge cases appropriately.
+                These Swift Testing tests check the generated figures against the shop data, check that category, customer and product figures add up, find the top performers, cover a report without orders, and decode the generated JSON data to compare them with the generated Swift value. Run them with `swift test --package-path SalesReport`. With only the Command Line Tools installed on macOS, building Swift Testing tests occasionally fails with "plugin for module 'TestingMacros' not found"; running `swift test` again usually succeeds.
             }
 
             @Step {
-                Validate generated documentation.
+                Validate the generated documentation.
 
                 @Code(name: "Terminal", file: workflow-01-step-19-validate-docs.sh)
 
-                Check that generated documentation is complete, accurate, and properly formatted. Good documentation is essential for maintainable systems.
+                Plain shell commands check the generated Markdown: `grep` finds each section, a small function counts the table rows, and `test` compares the counts with what AQL counts in the report model. The key figures must match the model, and no unexpanded template text may remain.
             }
 
             @Step {
@@ -214,7 +222,7 @@
 
                 @Code(name: "Terminal", file: workflow-01-step-20-end-to-end-validation.sh)
 
-                Execute comprehensive tests that validate the entire workflow from metamodel through generated code, ensuring consistency and correctness throughout.
+                The script runs the whole chain again for the shop data and the two valid test instances: validate, transform, validate the report, generate the artefacts and type-check the Swift code with `swiftc -typecheck`. For each input, the revenue that AQL computes from the source model must appear in the report, the Swift code, the JSON data and the Markdown. Finally, `diff` confirms that the shop data produce exactly the same report and artefacts as before, and `shasum` prints checksums that you can record to detect later changes.
             }
         }
     }
@@ -235,7 +243,7 @@
                 Code generation → Metamodel design → Instance creation → Transformation → Integration
 
                 @Justification(reaction: "Not quite!") {
-                    Code generation can't come first—you need a metamodel and instances before you can generate code from models.
+                    Code generation can't come first: you need a metamodel and instances before you can generate code from models.
                 }
             }
 
@@ -249,29 +257,29 @@
         }
 
         @MultipleChoice {
-            Why is metamodel validation important in the MDE workflow?
+            How does `swift-ecore validate --metamodel ECommerce.ecore` check business rules such as positive prices?
 
             @Choice(isCorrect: false) {
-                It makes the metamodel run faster
+                It compares the instance with a list of known valid shops
 
-                @Justification(reaction: "Not about performance!") {
-                    Metamodel validation is about correctness and quality, not performance. It ensures the metamodel follows proper conventions and constraints.
+                @Justification(reaction: "Not quite!") {
+                    Validation does not compare instances with each other. It checks each instance against the metamodel it conforms to.
                 }
             }
 
             @Choice(isCorrect: true) {
-                It catches design issues before they affect the entire workflow
+                It evaluates the OCL invariants of the metamodel for every object they apply to
 
                 @Justification(reaction: "Exactly right!") {
-                    Early validation prevents design problems from cascading through instance creation, transformation, and code generation stages.
+                    The invariants in the OCL annotations of a class are checked for each of its objects, and every violation is reported with the object and its location.
                 }
             }
 
             @Choice(isCorrect: false) {
-                It's only needed for complex metamodels
+                It only checks that the XML is well-formed
 
-                @Justification(reaction: "All metamodels benefit!") {
-                    Even simple metamodels benefit from validation. It's a best practice that should be applied consistently across all MDE projects.
+                @Justification(reaction: "It does much more!") {
+                    Besides reading the document, validation checks classes, feature types, multiplicities and references against the metamodel, and evaluates its invariants.
                 }
             }
         }
@@ -283,7 +291,7 @@
                 It adapts models to meet different system requirements
 
                 @Justification(reaction: "Correct!") {
-                    Transformations reshape models for different purposes—operational to analytical, platform-independent to platform-specific, or domain-specific adaptations.
+                    Transformations reshape models for different purposes: operational to analytical, platform-independent to platform-specific, or domain-specific adaptations.
                 }
             }
 
@@ -291,7 +299,7 @@
                 It's only needed when working with multiple metamodels
 
                 @Justification(reaction: "Not just for multiple metamodels!") {
-                    Even single-metamodel projects often benefit from transformations to create specialized views or structures for different purposes.
+                    Even single-metamodel projects often benefit from transformations, for example to refine a model or to create specialised views of it.
                 }
             }
 
@@ -299,7 +307,7 @@
                 It replaces the need for code generation
 
                 @Justification(reaction: "They work together!") {
-                    Transformation and code generation are complementary. Transformation prepares models, then code generation produces artifacts from the transformed models.
+                    Transformation and code generation are complementary. Transformation prepares models, then code generation produces artefacts from the transformed models.
                 }
             }
         }
@@ -319,7 +327,7 @@
                 Combine individual step validation with end-to-end workflow testing
 
                 @Justification(reaction: "Perfect approach!") {
-                    Comprehensive validation tests each step individually for quality, then validates the entire workflow for consistency and integration.
+                    Each step is validated on its own, and an end-to-end run checks that figures computed from the source model appear unchanged in every artefact and that the same inputs reproduce the same outputs.
                 }
             }
 

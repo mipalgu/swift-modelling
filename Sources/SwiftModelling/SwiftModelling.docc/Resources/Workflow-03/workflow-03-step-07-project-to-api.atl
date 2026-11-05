@@ -1,0 +1,53 @@
+-- @path PM=ProjectManagement.ecore
+-- @path API=ProjectAPI.ecore
+
+-- Maps the project management model to the compact web view of ProjectAPI.
+-- Unlike a format conversion, this changes the structure: people become
+-- names, task dependencies become identifiers, and totals are computed.
+module ProjectToAPI;
+create OUT : API from IN : PM;
+
+-- A task is open until it is completed.
+helper context PM!Task def : isOpen : Boolean =
+    self.status <> #COMPLETED;
+
+rule OrganisationToCatalogue {
+    from
+        o : PM!Organisation
+    to
+        c : API!ProjectCatalogue (
+            organisation <- o.name,
+            projects <- o.projects
+        )
+}
+
+rule ProjectToSummary {
+    from
+        p : PM!Project
+    to
+        s : API!ProjectSummary (
+            id <- p.id,
+            name <- p.name,
+            status <- p.status.toString(),
+            owner <- p.owner.name,
+            department <- p.department.code,
+            taskCount <- p.tasks->size(),
+            openTaskCount <- p.tasks->select(t | t.isOpen)->size(),
+            estimatedHours <- p.tasks->collect(t | t.estimatedHours)->sum(),
+            tasks <- p.tasks
+        )
+}
+
+rule TaskToSummary {
+    from
+        t : PM!Task
+    to
+        s : API!TaskSummary (
+            id <- t.id,
+            title <- t.title,
+            status <- t.status.toString(),
+            priority <- t.priority.toString(),
+            assignee <- t.assignee.name,
+            dependsOn <- t.dependencies->collect(d | d.id)
+        )
+}

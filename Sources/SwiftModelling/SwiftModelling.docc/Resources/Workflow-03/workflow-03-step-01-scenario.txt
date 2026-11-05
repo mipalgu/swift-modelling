@@ -2,46 +2,45 @@
 
 ## Overview
 
-This tutorial demonstrates integrating models across three different platforms:
+Example Software Co keeps its project data in three places:
 
-1. **Java EMF Tool** - Enterprise design tool using XMI format
-2. **Web Editor** - Browser-based model editor using JSON format
-3. **Swift Application** - Native iOS/macOS app using Swift structs
+1. **Desktop planning tool**: an EMF-based tool that saves XMI files.
+2. **Web editor**: a browser application that reads and writes JSON.
+3. **Swift application**: a native app that works with Swift value types.
 
-## Business Context
+All three share one metamodel, `ProjectManagement.ecore`. The metamodel,
+not any single file format, is the authoritative definition of the data.
 
-Acme Organisation uses different tools for project management:
+## Data Flows
 
-- **Enterprise Architects** use a Java EMF-based tool for project planning
-- **Team Members** use a web-based interface for task updates
-- **Mobile Users** access projects through a native Swift app
-
-## Integration Requirements
-
-| Source | Format | Direction | Consumer |
-|--------|--------|-----------|----------|
-| Java EMF Tool | XMI | Export | Web Editor, Swift App |
-| Web Editor | JSON | Import/Export | Java EMF Tool, Swift App |
-| Swift App | Swift | Import | Local storage |
+| From          | To            | Format change        | Tool                       |
+|---------------|---------------|----------------------|----------------------------|
+| Desktop tool  | Web editor    | XMI to JSON          | `swift-ecore convert`      |
+| Desktop tool  | Web dashboard | ProjectManagement to ProjectAPI | `swift-atl transform` |
+| Web editor    | Swift app     | JSON to Swift types  | `swift-mtl generate`       |
+| Web editor    | Desktop tool  | JSON to XMI          | `swift-ecore convert`      |
+| Any client    | Any client    | Change events        | Generated event API        |
 
 ## Key Challenges
 
-1. **Format Translation** - XMI references vs JSON IDs vs Swift optionals
-2. **Schema Evolution** - Different tools may have different versions
-3. **Conflict Resolution** - Concurrent edits from multiple sources
-4. **Type Safety** - Preserving type information across formats
+1. **Format translation**: XMI and JSON spell references and types
+   differently, and Swift needs static types.
+2. **Change detection**: knowing what another tool changed.
+3. **Consistency**: edits from several tools can break rules of the
+   domain, such as a milestone marked complete while work is still open.
+4. **Fidelity**: a round trip through other formats must not lose data.
 
 ## Success Criteria
 
-- [ ] Bidirectional XMI <-> JSON conversion
-- [ ] Type-safe Swift code generation
-- [ ] Automated synchronisation pipeline
-- [ ] Conflict detection and resolution
-- [ ] Complete audit trail of changes
+- XMI and JSON files validate against the same metamodel.
+- Swift types generated from the metamodel decode the JSON files.
+- Differences between versions are reported per object and feature.
+- A rule restores consistency after a merge.
+- An XMI to JSON to XMI round trip has no differences.
 
 ## Tools Used
 
-- `swift-ecore` - Metamodel operations
-- `swift-atl` - Model transformations
-- `swift-mtl` - Code generation
-- `swift-sync` - Synchronisation management
+- `swift-ecore`: validation, conversion and comparison of models
+- `swift-aql`: queries over models in either format
+- `swift-atl`: transformations between metamodels and refinements
+- `swift-mtl`: generation of Swift code and API descriptions

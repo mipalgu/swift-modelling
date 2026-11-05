@@ -1,0 +1,38 @@
+# Mapping from LegacyOrders 1.0 to Orders 2.0
+
+| LegacyOrders 1.0                     | Orders 2.0                                   | Rule                 |
+|--------------------------------------|----------------------------------------------|----------------------|
+| Store.name                           | Store.name                                   | Store2Store          |
+| Store.products                       | Store.products                               | Store2Store          |
+| Store.orders                         | Store.orders                                 | Store2Store          |
+| (distinct Order.customerEmail)       | Store.customers                              | Store2Store          |
+| Order.customerName / Email / Phone   | Customer.name / email / phone                | Customer (lazy)      |
+| Order.orderId, orderDate, notes      | Order.orderId, orderDate, notes              | Order2Order          |
+| Order.status (text)                  | Order.status (OrderStatus)                   | Order2Order          |
+| Order.shippingAddress (text)         | Order.shippingAddress (Address)              | Order2Order          |
+| Order.billingAddress (text)          | Order.billingAddress (Address)               | Order2Order          |
+| Order.paymentMethod (text)           | Order.payment.method (PaymentMethod)         | Order2Order          |
+| Order.cardLastFour                   | Order.payment.cardLastFour                   | Order2Order          |
+| Order.totalAmount, taxAmount         | (computed from the items)                    | not migrated         |
+| Order.lastModified                   | (dropped)                                    | not migrated         |
+| OrderItem.productCode                | OrderItem.product (reference to Product)     | OrderItem2OrderItem  |
+| OrderItem.productName                | (read from the product)                      | not migrated         |
+| OrderItem.qty                        | OrderItem.quantity                           | OrderItem2OrderItem  |
+| OrderItem.unitPrice                  | OrderItem.unitPrice                          | OrderItem2OrderItem  |
+| OrderItem.lineTotal                  | (quantity * unitPrice)                       | not migrated         |
+| Product.code, name, price, category  | Product.code, name, price, category          | Product2Product      |
+| Product.desc                         | Product.description                          | Product2Product      |
+| Product.stockQty                     | Product.stock.onHand (StockLevel)            | Product2Product      |
+| Product.reorderLevel                 | Product.stock.reorderLevel                   | Product2Product      |
+| Product.warehouseLocation            | Product.stock.location                       | Product2Product      |
+
+## Value mappings
+
+- Status text (after cleaning, upper case) to `OrderStatus`: PENDING,
+  PROCESSING, SHIPPED, DELIVERED, CANCELLED.
+- Payment text (after cleaning) to `PaymentMethod`: CREDIT_CARD,
+  BANK_TRANSFER, INVOICE, PAYPAL.
+- Address text `street, suburb STATE postcode[, country]` to `Address`;
+  the country defaults to Australia when it is missing.
+- One `Customer` per e-mail address (after cleaning, lower case), created
+  from the details of that customer's first order.

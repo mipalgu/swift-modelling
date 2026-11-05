@@ -1,115 +1,63 @@
 # Integration Architecture
 
-## System Overview
+## Overview
 
 ```
-+------------------+     +------------------+     +------------------+
-|   Java EMF Tool  |     |    Web Editor    |     |    Swift App     |
-|   (Enterprise)   |     |   (Browser)      |     |   (iOS/macOS)    |
-+--------+---------+     +--------+---------+     +--------+---------+
-         |                        |                        |
-         | XMI                    | JSON                   | Swift
-         |                        |                        |
-+--------v------------------------v------------------------v---------+
-|                    Integration Gateway                             |
-|  +-------------+  +-------------+  +-------------+  +-------------+ |
-|  | XMI Parser  |  | JSON Parser |  | Validator   |  | Sync Engine | |
-|  +-------------+  +-------------+  +-------------+  +-------------+ |
-+--------+------------------------+------------------------+---------+
-         |                        |                        |
-         v                        v                        v
-+--------+------------------------+------------------------+---------+
-|                       Canonical Model                              |
-|              (In-memory Ecore representation)                      |
-+--------------------------------------------------------------------+
+  Desktop tool (XMI) <--- swift-ecore convert ---> Web editor (JSON)
+          |                                               |
+          |                                               +---> Swift app
+          |                                               |     (generated types)
+          +------------ ProjectManagement.ecore ----------+
+                  validate, query, compare, generate
 ```
 
-## Component Responsibilities
+Every file, whatever its format, is an instance of
+`ProjectManagement.ecore`. Each tool reads the format it knows, and the
+modelling tools translate between formats and check the results.
 
-### XMI Parser
-- Parse XMI 2.0/2.1 documents
-- Resolve cross-file references
-- Validate against Ecore metamodel
-- Generate XMI output with proper namespaces
+## Building Blocks
 
-### JSON Parser
-- Parse/generate JSON documents
-- Map IDs to model references
-- Handle embedded vs referenced objects
-- Support JSON Schema validation
-
-### Validator
-- Enforce metamodel constraints
-- Validate multiplicity bounds
-- Check referential integrity
-- Report validation errors
-
-### Sync Engine
-- Track change timestamps
-- Detect concurrent modifications
-- Apply conflict resolution policies
-- Maintain audit log
+| Concern              | How it is done in this tutorial                         |
+|----------------------|---------------------------------------------------------|
+| Format conversion    | `swift-ecore convert` with `-m ProjectManagement.ecore`  |
+| Validation           | `swift-ecore validate` against the metamodel            |
+| Queries              | `swift-aql query` on XMI or JSON files                  |
+| Web view             | ATL transformation `ProjectToAPI.atl` to `ProjectAPI`   |
+| Swift types          | `GenerateSwiftModels.mtl` applied to the metamodel      |
+| Change detection     | `swift-ecore compare` of two versions                   |
+| Consistency rules    | ATL refining transformation `ReconcileProject.atl`      |
+| Round-trip fidelity  | XMI to JSON to XMI, then `swift-ecore compare --exit-code` |
+| APIs                 | REST, Swift client and event code generated with MTL    |
 
 ## Data Flow Patterns
 
-### Pattern 1: XMI to JSON Export
+### Desktop tool to web editor
+1. The desktop tool saves `project-data.xmi`.
+2. `swift-ecore convert` writes `project-data.json`.
+3. `swift-ecore validate` checks the JSON against the metamodel.
+
+### Web editor back to the desktop tool
+1. The web editor saves `updated-project-data.json`.
+2. `swift-ecore validate` rejects files that break the metamodel.
+3. `swift-ecore compare` lists what changed since `project-data.xmi`.
+4. `ReconcileProject.atl` restores the rules of the domain.
+5. `swift-ecore convert` writes XMI for the desktop tool.
+
+### Web editor to the Swift app
+1. `GenerateSwiftModels.mtl` generates Swift types from the metamodel.
+2. The app decodes the JSON files with `JSONDecoder`.
+
+## Directory Layout
+
 ```
-1. Java EMF Tool exports XMI
-2. Gateway parses XMI to canonical model
-3. Validator checks model integrity
-4. JSON serialiser flattens references
-5. Web Editor receives JSON
+integration/
+  ProjectManagement.ecore     shared metamodel
+  ProjectAPI.ecore            compact web view
+  project-data.xmi            desktop tool data
+  project-data.json           converted for the web editor
+  updated-project-data.json   edited in the web editor
+  web/                        ProjectAPI view for web clients
+  swift-models/               generated Swift types
+  sync/                       reconciled and round-tripped models
+  api/                        generated REST, client and event code
 ```
-
-### Pattern 2: JSON to XMI Import
-```
-1. Web Editor sends modified JSON
-2. Gateway parses JSON
-3. Validator checks against metamodel
-4. Sync Engine detects changes
-5. XMI serialiser generates output
-6. Java EMF Tool imports XMI
-```
-
-### Pattern 3: Real-time Synchronisation
-```
-1. Any client makes change
-2. Change event sent to Gateway
-3. Conflict detection runs
-4. If no conflict: broadcast to all clients
-5. If conflict: apply resolution policy
-```
-
-## Synchronisation Strategies
-
-### Strategy A: Last-Write-Wins
-- Simplest approach
-- Based on timestamps
-- May lose concurrent changes
-- Suitable for single-user scenarios
-
-### Strategy B: Merge-on-Conflict
-- Attempts automatic merge
-- Field-level granularity
-- Falls back to manual resolution
-- Better for team collaboration
-
-### Strategy C: Operational Transform
-- Real-time collaboration
-- Transform concurrent operations
-- Preserves all user intent
-- Most complex to implement
-
-## API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/projects` | GET | List all projects |
-| `/api/projects/{id}` | GET | Get project by ID |
-| `/api/projects` | POST | Create new project |
-| `/api/projects/{id}` | PUT | Update project |
-| `/api/sync/status` | GET | Get sync status |
-| `/api/sync/push` | POST | Push local changes |
-| `/api/sync/pull` | GET | Pull remote changes |
-| `/api/export/xmi` | GET | Export as XMI |
-| `/api/export/json` | GET | Export as JSON |

@@ -1,0 +1,39 @@
+-- Data-quality clean-up of a legacy order export.
+-- A refining transformation: the output starts as a copy of the input,
+-- and the rules below change only the attributes they assign.
+module CleanLegacyOrders;
+create OUT: Legacy refining IN: Legacy;
+
+-- Text with surrounding spaces removed, or the empty string if unset.
+helper def: tidy(text: String): String =
+    if text.oclIsUndefined() then '' else text.trim() endif;
+
+rule CleanOrder {
+    from
+        o: Legacy!Order
+    to
+        t: Legacy!Order (
+            status <- thisModule.tidy(o.status).toUpper(),
+            paymentMethod <- thisModule.tidy(o.paymentMethod).toUpper(),
+            customerName <- thisModule.tidy(o.customerName),
+            customerEmail <- thisModule.tidy(o.customerEmail).toLower()
+        )
+}
+
+rule CleanProduct {
+    from
+        p: Legacy!Product
+    to
+        t: Legacy!Product (
+            code <- thisModule.tidy(p.code).toUpper()
+        )
+}
+
+rule CleanOrderItem {
+    from
+        i: Legacy!OrderItem
+    to
+        t: Legacy!OrderItem (
+            productCode <- thisModule.tidy(i.productCode).toUpper()
+        )
+}

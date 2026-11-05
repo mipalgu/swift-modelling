@@ -1,93 +1,62 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ecommerce:Shop xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
-    xmlns:ecommerce="http://www.example.org/ecommerce" name="TechStore">
+<shop:Shop xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:shop="http://www.example.org/shop" name="Example Electronics">
 
-  <!-- Categories -->
-  <categories name="Laptops" description="Portable computers for work and entertainment"/>
-  <categories name="Smartphones" description="Mobile devices and accessories"/>
-  <categories name="Accessories" description="Tech accessories and peripherals"/>
-  <categories name="Audio" description="Headphones, speakers, and audio equipment"/>
+  <!-- Categories: each product names its category by xmi:id. -->
+  <categories xmi:id="computers" name="Computers" description="Laptops for work and study"/>
+  <categories xmi:id="phones" name="Phones" description="Mobile phones"/>
+  <categories xmi:id="accessories" name="Accessories" description="Keyboards, mice and cables"/>
+  <categories xmi:id="audio" name="Audio" description="Headphones, speakers and earbuds"/>
 
-  <!-- Products -->
-  <products name="MacBook Pro 16-inch" sku="MBP-16-001" price="2499.00"
-            description="High-performance laptop with M3 Pro chip" stock="15"/>
-  <products name="MacBook Air 13-inch" sku="MBA-13-001" price="1299.00"
-            description="Lightweight laptop with M3 chip" stock="25"/>
-  <products name="iPhone 15 Pro" sku="IP15P-001" price="999.00"
-            description="Latest iPhone with titanium design" stock="40"/>
-  <products name="iPhone 15" sku="IP15-001" price="799.00"
-            description="Standard iPhone 15 model" stock="50"/>
-  <products name="AirPods Pro 2nd Gen" sku="APP2-001" price="249.00"
-            description="Wireless earbuds with active noise cancellation" stock="60"/>
-  <products name="Magic Keyboard" sku="MK-001" price="99.00"
-            description="Wireless keyboard for Mac" stock="35"/>
-  <products name="Magic Mouse" sku="MM-001" price="79.00"
-            description="Wireless mouse for Mac" stock="45"/>
-  <products name="USB-C Cable 2m" sku="USBC-2M-001" price="19.00"
-            description="USB-C charging cable" stock="100"/>
-  <products name="HomePod mini" sku="HPM-001" price="99.00"
-            description="Compact smart speaker" stock="30"/>
-  <products name="Apple Watch Series 9" sku="AWS9-001" price="399.00"
-            description="Latest Apple Watch with new S9 chip" stock="20"/>
+  <!-- Products: the earbuds are out of stock. -->
+  <products xmi:id="LAP-14" name="Laptop 14" sku="LAP-14" price="1200.0" stock="12" category="computers"/>
+  <products xmi:id="LAP-16" name="Laptop 16" sku="LAP-16" price="1800.0" stock="6" category="computers"/>
+  <products xmi:id="PHN-STD" name="Phone" sku="PHN-STD" price="700.0" stock="30" category="phones"/>
+  <products xmi:id="PHN-CMP" name="Phone Compact" sku="PHN-CMP" price="500.0" stock="25" category="phones"/>
+  <products xmi:id="KBD-W" name="Wireless Keyboard" sku="KBD-W" price="80.0" stock="40" category="accessories"/>
+  <products xmi:id="MSE-W" name="Wireless Mouse" sku="MSE-W" price="40.0" stock="50" category="accessories"/>
+  <products xmi:id="CBL-2M" name="USB-C Cable" sku="CBL-2M" price="15.0" stock="100" category="accessories"/>
+  <products xmi:id="HDP-NC" name="Headphones" sku="HDP-NC" price="300.0" stock="20" category="audio"/>
+  <products xmi:id="SPK-BT" name="Speaker" sku="SPK-BT" price="150.0" stock="15" category="audio"/>
+  <products xmi:id="EAR-01" name="Earbuds" sku="EAR-01" price="120.0" stock="0" category="audio"/>
 
-  <!-- Customers -->
-  <customers name="Alice Johnson" email="alice.johnson@example.com"/>
-  <customers name="Bob Smith" email="bob.smith@example.com"/>
-  <customers name="Carol Williams" email="carol.williams@example.com"/>
-  <customers name="David Brown" email="david.brown@example.com"/>
-  <customers name="Eve Davis" email="eve.davis@example.com"/>
-  <customers name="Frank Miller" email="frank.miller@example.com"/>
-  <customers name="Grace Lee" email="grace.lee@example.com"/>
+  <!-- Customers: their orders follow from Order.customer, the opposite of Customer.orders. -->
+  <customers xmi:id="alice" name="Alice Nguyen" email="alice@example.com"/>
+  <customers xmi:id="ben" name="Ben Carter" email="ben@example.com"/>
+  <customers xmi:id="chloe" name="Chloe Martin" email="chloe@example.com"/>
+  <customers xmi:id="daniel" name="Daniel Kim" email="daniel@example.com"/>
+  <customers xmi:id="emma" name="Emma Wilson" email="emma@example.com"/>
 
-  <!-- Orders -->
-  <orders orderNumber="ORD-2024-001" date="2024-01-15" totalAmount="2998.00">
-    <items quantity="1" unitPrice="2499.00"/>
-    <items quantity="1" unitPrice="499.00"/>
+  <!-- Orders: each item refers to a product and records the price paid per unit. -->
+  <orders orderNumber="ORD-001" date="2026-03-02" paymentMethod="CARD" customer="alice">
+    <items quantity="1" unitPrice="1200.0" product="LAP-14"/>
+    <items quantity="1" unitPrice="40.0" product="MSE-W"/>
   </orders>
-
-  <orders orderNumber="ORD-2024-002" date="2024-01-16" totalAmount="1048.00">
-    <items quantity="1" unitPrice="999.00"/>
-    <items quantity="1" unitPrice="49.00"/>
+  <orders orderNumber="ORD-002" date="2026-03-05" paymentMethod="CARD" customer="ben">
+    <items quantity="1" unitPrice="700.0" product="PHN-STD"/>
+    <items quantity="2" unitPrice="15.0" product="CBL-2M"/>
   </orders>
-
-  <orders orderNumber="ORD-2024-003" date="2024-01-17" totalAmount="1547.00">
-    <items quantity="1" unitPrice="1299.00"/>
-    <items quantity="1" unitPrice="249.00"/>
+  <orders orderNumber="ORD-003" date="2026-03-09" paymentMethod="BANK_TRANSFER" customer="alice">
+    <items quantity="1" unitPrice="300.0" product="HDP-NC"/>
   </orders>
-
-  <orders orderNumber="ORD-2024-004" date="2024-01-18" totalAmount="897.00">
-    <items quantity="1" unitPrice="799.00"/>
-    <items quantity="1" unitPrice="99.00"/>
+  <orders orderNumber="ORD-004" date="2026-03-12" paymentMethod="CARD" customer="chloe">
+    <items quantity="1" unitPrice="1800.0" product="LAP-16"/>
+    <items quantity="1" unitPrice="80.0" product="KBD-W"/>
+    <items quantity="1" unitPrice="40.0" product="MSE-W"/>
   </orders>
-
-  <orders orderNumber="ORD-2024-005" date="2024-01-19" totalAmount="1697.00">
-    <items quantity="2" unitPrice="799.00"/>
-    <items quantity="1" unitPrice="99.00"/>
+  <orders orderNumber="ORD-005" date="2026-03-15" paymentMethod="BANK_TRANSFER" customer="daniel">
+    <items quantity="2" unitPrice="500.0" product="PHN-CMP"/>
+    <items quantity="2" unitPrice="15.0" product="CBL-2M"/>
   </orders>
-
-  <orders orderNumber="ORD-2024-006" date="2024-01-20" totalAmount="347.00">
-    <items quantity="1" unitPrice="249.00"/>
-    <items quantity="1" unitPrice="99.00"/>
+  <orders orderNumber="ORD-006" date="2026-03-20" paymentMethod="CASH" customer="ben">
+    <items quantity="1" unitPrice="150.0" product="SPK-BT"/>
+    <items quantity="1" unitPrice="120.0" product="EAR-01"/>
   </orders>
-
-  <orders orderNumber="ORD-2024-007" date="2024-01-21" totalAmount="2697.00">
-    <items quantity="1" unitPrice="2499.00"/>
-    <items quantity="2" unitPrice="99.00"/>
+  <orders orderNumber="ORD-007" date="2026-03-24" paymentMethod="CARD" customer="chloe">
+    <items quantity="1" unitPrice="1200.0" product="LAP-14"/>
   </orders>
-
-  <orders orderNumber="ORD-2024-008" date="2024-01-22" totalAmount="1446.00">
-    <items quantity="1" unitPrice="1299.00"/>
-    <items quantity="1" unitPrice="99.00"/>
-    <items quantity="1" unitPrice="49.00"/>
+  <orders orderNumber="ORD-008" date="2026-03-28" paymentMethod="CASH" customer="emma">
+    <items quantity="3" unitPrice="15.0" product="CBL-2M"/>
+    <items quantity="1" unitPrice="80.0" product="KBD-W"/>
   </orders>
-
-  <orders orderNumber="ORD-2024-009" date="2024-01-23" totalAmount="498.00">
-    <items quantity="2" unitPrice="249.00"/>
-  </orders>
-
-  <orders orderNumber="ORD-2024-010" date="2024-01-24" totalAmount="1397.00">
-    <items quantity="1" unitPrice="999.00"/>
-    <items quantity="1" unitPrice="399.00"/>
-  </orders>
-
-</ecommerce:Shop>
+</shop:Shop>

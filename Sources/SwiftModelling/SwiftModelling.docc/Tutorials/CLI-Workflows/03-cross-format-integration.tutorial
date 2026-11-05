@@ -1,333 +1,367 @@
-@Tutorial(time: 60) {
+@Tutorial(time: 75) {
     @Intro(title: "Cross-Format Integration") {
-        Master cross-format model integration by connecting XMI, JSON, and native Swift data sources.
+        Connect XMI, JSON and native Swift data through one shared metamodel.
 
-        In this tutorial, you'll integrate models from different sources and formats, create unified workflows that span multiple platforms, and build APIs that bridge between model-driven and traditional development approaches.
+        In this tutorial, you'll move project data between an EMF-based desktop tool (XMI), a web editor (JSON) and a Swift application, detect and reconcile the changes that each tool makes, and generate the REST, client and event code that ties the tools together.
 
-        @Image(source: "cross-format-integration.svg", alt: "Cross-Format Integration Pipeline")
+        All files of this tutorial live in a directory named `integration`. Each terminal step starts in its parent directory and changes into `integration` first.
+
+        @Image(source: "cross-format-integration.svg", alt: "Cross-format integration pipeline: XMI and JSON are converted into each other, ATL maps to a web view and refines models, and MTL generates Swift code and APIs")
     }
 
     @Section(title: "Understanding Format Integration Challenges") {
         @ContentAndMedia {
-            Modern systems often involve multiple data formats and platforms. XMI from Java EMF tools, JSON from web APIs, and native Swift data structures each have different characteristics and constraints.
+            Systems often hold the same data in several formats. XMI comes from EMF-based tools, JSON from web applications, and native apps want typed Swift values. Each format spells classes, references and enumerations differently.
 
-            Cross-format integration enables Swift Modelling tools to work seamlessly with existing toolchains while providing the benefits of model-driven development.
+            The key to integration is to make one metamodel the authoritative definition of the data. Every file in every format is then an instance of that metamodel, and the modelling tools can validate, convert and compare them.
 
-            @Image(source: "format-ecosystem.svg", alt: "Multi-Format Ecosystem")
+            @Image(source: "format-ecosystem.svg", alt: "The Ecore metamodel at the centre: XMI and JSON files are validated and converted against it, and Swift code is generated from it")
         }
 
         @Steps {
             @Step {
-                Set up the integration scenario.
+                Describe the integration scenario.
 
-                @Code(name: "integration-overview.md", file: workflow-03-step-01-scenario.txt)
+                @Code(name: "integration/integration-overview.md", file: workflow-03-step-01-scenario.txt)
 
-                This scenario involves integrating a Java EMF-based design tool, a web-based model editor that uses JSON, and a Swift application that needs native data structures.
+                A desktop planning tool saves XMI, a web editor works with JSON, and a Swift app needs native types. The table lists every data flow and the tool that performs it.
             }
 
             @Step {
                 Create the shared metamodel.
 
-                @Code(name: "ProjectManagement.ecore", file: workflow-03-step-02-shared-metamodel.ecore)
+                @Code(name: "integration/ProjectManagement.ecore", file: workflow-03-step-02-shared-metamodel.ecore)
 
-                This metamodel defines project management concepts that will be represented in multiple formats across different tools and platforms.
+                The `id` attributes are marked as identifiers (`iD="true"`), so tools can match objects across files. Dates are ISO 8601 text, which every format holds in the same way.
             }
 
             @Step {
-                Identify format-specific constraints.
+                Validate and inspect the metamodel.
 
-                @Code(name: "format-constraints.md", file: workflow-03-step-03-constraints.txt)
+                @Code(name: "Terminal", file: workflow-03-step-02-check-metamodel.sh)
 
-                Document the specific limitations and features of each format to understand integration challenges and design appropriate bridging strategies.
+                Every later step relies on this metamodel, so check it first. The inspection lists its classes and enumerations, and the statistics count its attributes, references, containments and opposite pairs.
+            }
+
+            @Step {
+                Record how each format represents the data.
+
+                @Code(name: "integration/format-constraints.md", file: workflow-03-step-03-constraints.txt)
+
+                XMI and JSON both name classes and use the same fragment paths for references, so a conversion keeps everything. Swift needs generated types. A transformation is only needed when the structure must change.
             }
 
             @Step {
                 Plan the integration architecture.
 
-                @Code(name: "integration-architecture.md", file: workflow-03-step-04-architecture.txt)
+                @Code(name: "integration/integration-architecture.md", file: workflow-03-step-04-architecture.txt)
 
-                Design the overall architecture that connects different format sources while maintaining data integrity and enabling bidirectional synchronisation.
+                The plan assigns each concern to a tool: conversion and validation to `swift-ecore`, queries to `swift-aql`, structural mappings and consistency rules to `swift-atl`, and code generation to `swift-mtl`.
             }
         }
     }
 
     @Section(title: "XMI to JSON Bridge") {
         @ContentAndMedia {
-            The first integration challenge is converting between XMI (used by Java EMF tools) and JSON (used by web applications). This bridge enables model data to flow between enterprise tools and web interfaces.
+            The desktop tool saves XMI, but the web editor needs JSON. Changing the format of a model is a conversion, not a transformation: `swift-ecore convert` reads the model with its metamodel and writes the same objects in the other format.
 
-            XMI contains rich metamodel information and references, while JSON provides simple, web-friendly data structures that are easy to consume in modern web applications.
+            Web dashboards often want a different shape as well, such as names instead of references and computed totals. That is a mapping between two metamodels, which is the job of an ATL transformation.
         }
 
         @Steps {
             @Step {
-                Create sample XMI data from Java EMF.
+                Save the XMI data of the desktop tool.
 
-                @Code(name: "project-data.xmi", file: workflow-03-step-05-xmi-data.xmi)
+                @Code(name: "integration/project-data.xmi", file: workflow-03-step-05-xmi-data.xmi)
 
-                This XMI file represents project data created by a Java EMF-based tool. It includes complex references and metamodel-specific information typical of enterprise modeling tools.
+                The model holds an organisation with departments, team members and two projects. References such as `#//@members.0` are EMF fragment paths: the first object of the `members` reference of the root object.
             }
 
             @Step {
-                Design JSON schema for web consumption.
+                Convert the XMI file to JSON and validate the result.
 
-                @Code(name: "project-schema.json", file: workflow-03-step-06-json-schema.json)
+                @Code(name: "Terminal", file: workflow-03-step-06-convert-to-json.sh)
 
-                This JSON schema defines a web-friendly representation of project data that's optimised for REST APIs and JavaScript consumption while preserving essential model information.
+                With `-m`, the conversion keeps the classes, enumeration literals and references of the metamodel. The validation confirms that the JSON file is an instance of the same metamodel, and `swift-ecore compare` finds no difference between the two files. Each JSON object names its class in `eClass`.
             }
 
             @Step {
-                Create XMI-to-JSON transformation.
+                Query the JSON data.
 
-                @Code(name: "XMI2JSON.atl", file: workflow-03-step-07-xmi-to-json.atl)
+                @Code(name: "Terminal", file: workflow-03-step-06-query-json.sh)
 
-                This ATL transformation converts XMI project data into JSON format, handling reference resolution and adapting the structure for web consumption.
+                AQL navigates the JSON file as it navigates the XMI file, following references and their opposites, so both formats answer the same queries in the same way.
             }
 
             @Step {
-                Execute the XMI-to-JSON conversion.
+                Define a compact view for web clients.
 
-                @Code(name: "Terminal", file: workflow-03-step-08-run-xmi-to-json.sh)
+                @Code(name: "integration/ProjectAPI.ecore", file: workflow-03-step-07-api-metamodel.ecore)
 
-                Run the transformation to convert XMI data to JSON format, demonstrating how model data can flow from enterprise tools to web applications.
+                Apart from containment, the `ProjectAPI` metamodel has no references: owners and assignees are names, dependencies are task identifiers, and each project carries its task totals.
+            }
+
+            @Step {
+                Write the transformation to the web view.
+
+                @Code(name: "integration/ProjectToAPI.atl", file: workflow-03-step-07-project-to-api.atl)
+
+                The rules map an organisation to a catalogue, each project to a summary and each task to a task summary. The `isOpen` helper and the collection operations compute the totals.
+            }
+
+            @Step {
+                Run the transformation.
+
+                @Code(name: "Terminal", file: workflow-03-step-08-run-project-to-api.sh)
+
+                The transformation reads the JSON file and writes the web view as JSON. Validating the result against `ProjectAPI.ecore` confirms that it is a correct instance of the view.
             }
         }
     }
 
     @Section(title: "JSON to Swift Integration") {
         @ContentAndMedia {
-            Web applications often modify model data through JSON APIs. These changes need to be integrated back into the Swift modeling environment and potentially synchronized with other tools.
+            The web editor changes the data and saves it as JSON. Before other tools use the file, it is validated against the metamodel, so invalid edits stop at the boundary.
 
-            This integration enables web-based model editing while maintaining the benefits of strong typing and validation available in Swift Modelling tools.
+            A Swift application can then read the same JSON with types that are generated from the metamodel, so the compiler checks every access and the types stay in step with the model.
         }
 
         @Steps {
             @Step {
-                Create modified JSON data from web interface.
+                Save the JSON data that the web editor changed.
 
-                @Code(name: "updated-project-data.json", file: workflow-03-step-09-updated-json.json)
+                @Code(name: "integration/updated-project-data.json", file: workflow-03-step-09-updated-json.json)
 
-                This JSON represents project data modified through a web interface. It includes new projects, updated tasks, and changed relationships that need to be integrated.
+                In the web editor, the team completed TASK-003, started TASK-004, ticked off milestone MS-002, activated PROJ-002 and added TASK-008 with a new assignment.
             }
 
             @Step {
-                Create JSON-to-XMI reverse transformation.
+                Validate the update and reject an invalid one.
 
-                @Code(name: "JSON2XMI.atl", file: workflow-03-step-10-json-to-xmi.atl)
+                @Code(name: "Terminal", file: workflow-03-step-10-validate-updated-json.sh)
 
-                This transformation converts JSON data back to XMI format, handling data validation and ensuring the result conforms to the original metamodel constraints.
+                The valid update passes. A copy that uses the status `STARTED`, which `TaskStatus` does not define, fails with an error for each offending task, so no other tool receives it.
             }
 
             @Step {
-                Generate Swift data structures.
+                Write the template that generates Swift types.
 
-                @Code(name: "GenerateSwiftModels.mtl", file: workflow-03-step-11-swift-generation.mtl)
+                @Code(name: "integration/GenerateSwiftModels.mtl", file: workflow-03-step-11-swift-generation.mtl)
 
-                MTL templates generate Swift data structures from the model, creating native Swift classes that provide type safety and integrate seamlessly with Swift applications.
+                The model of this template is the metamodel itself. It generates a `Codable` struct per class, a Swift enum per enumeration with the literal names as raw values, and a `ModelReference` type for the `$ref` objects of the JSON format.
             }
 
             @Step {
-                Create the complete JSON-to-Swift pipeline.
+                Write a Swift program that uses the generated types.
+
+                @Code(name: "integration/ProjectReport.swift", file: workflow-03-step-12-project-report.swift)
+
+                The program decodes a JSON model file with `JSONDecoder` and prints the progress of each project. It resolves the assignee references by their fragment paths.
+            }
+
+            @Step {
+                Generate the types, compile the program and run it.
 
                 @Code(name: "Terminal", file: workflow-03-step-12-json-to-swift-pipeline.sh)
 
-                Execute the complete pipeline that takes JSON input, validates it against the metamodel, and generates type-safe Swift code for native application use.
+                The same program reads the web editor's file and the file converted from the desktop tool's XMI, because both are instances of the metamodel the types were generated from.
             }
         }
     }
 
     @Section(title: "Bidirectional Synchronisation") {
         @ContentAndMedia {
-            Real integration scenarios require bidirectional synchronisation where changes in any format can be propagated to all other formats while maintaining data consistency.
+            Changes must also flow back: the desktop tool needs the web editor's edits as XMI. Synchronisation needs three things: knowing what changed, keeping the rules of the domain intact, and converting without loss.
 
-            This requires careful change detection, conflict resolution, and synchronisation protocols that preserve data integrity across the entire ecosystem.
+            Comparing models rather than files makes the format irrelevant, a refining transformation applies the rules of the domain, and a round trip followed by a comparison proves that the conversion keeps every value.
         }
 
         @Steps {
             @Step {
-                Design change detection mechanisms.
+                Plan change detection and reconciliation.
 
-                @Code(name: "change-detection.md", file: workflow-03-step-13-change-detection.txt)
+                @Code(name: "integration/change-detection.md", file: workflow-03-step-13-change-detection.txt)
 
-                Document strategies for detecting changes in different formats and identifying conflicts that require resolution during synchronisation.
+                Objects are matched by class and identifier, and a domain rule decides what happens when edits contradict each other: a milestone is complete exactly when all of its deliverables are.
             }
 
             @Step {
-                Create synchronisation transformations.
+                Compare the original model with the update.
 
-                @Code(name: "SynchroniseFormats.atl", file: workflow-03-step-14-sync-transformations.atl)
+                @Code(name: "Terminal", file: workflow-03-step-14-compare-versions.sh)
 
-                These transformations handle bidirectional synchronisation by comparing model states and applying changes while resolving conflicts according to defined policies.
+                The comparison reads the XMI and the JSON file with the metamodel and reports each change of the web editor: `~` for a changed attribute or reference, `+` for an added object. With `--summary`, it counts the objects of each class in both versions.
             }
 
             @Step {
-                Build conflict resolution logic.
+                Write the reconciliation rule.
 
-                @Code(name: "ConflictResolution.atl", file: workflow-03-step-15-conflict-resolution.atl)
+                @Code(name: "integration/ReconcileProject.atl", file: workflow-03-step-15-reconcile-project.atl)
 
-                Implement conflict resolution strategies that handle simultaneous changes in multiple formats, ensuring consistent resolution across the entire system.
+                In refining mode, ATL copies the whole model and applies only the rules that match. `ReconcileMilestone` matches the milestones whose `completed` flag contradicts their deliverables and corrects the flag.
             }
 
             @Step {
-                Test synchronisation scenarios.
+                Reconcile, convert back to XMI and check the round trip.
 
                 @Code(name: "Terminal", file: workflow-03-step-16-test-synchronisation.sh)
 
-                Execute comprehensive tests that validate synchronisation behaviour under various scenarios including conflicts, partial updates, and error conditions.
+                The comparison shows that the rule changed nothing but the flag of MS-002. The conversion validates the XMI file for the desktop tool before writing it, and the round trip through JSON reproduces the original model without any difference.
             }
         }
     }
 
     @Section(title: "API Integration Layer") {
         @ContentAndMedia {
-            Production integration requires robust APIs that handle format conversion, validation, and synchronisation seamlessly. These APIs abstract the complexity from client applications while ensuring data integrity.
+            Live integration needs interfaces as well as files: a REST API for web clients, a Swift client for native apps, and change events for real-time collaboration.
 
-            The integration layer provides REST APIs for web clients, native Swift APIs for iOS/macOS apps, and event-driven synchronisation for real-time collaboration.
+            Generating all three from the metamodel keeps them consistent with each other and with the files of the earlier sections.
         }
 
         @Steps {
             @Step {
-                Generate REST API definitions.
+                Write the REST API template.
 
-                @Code(name: "GenerateRestAPI.mtl", file: workflow-03-step-17-rest-api-generation.mtl)
+                @Code(name: "integration/GenerateRestAPI.mtl", file: workflow-03-step-17-rest-api-generation.mtl)
 
-                These templates generate OpenAPI specifications and server stubs from the metamodel, creating consistent APIs that support all format conversions and validation.
+                Every class with an identifier becomes a resource with list, get, create, update and delete operations. The template writes an OpenAPI description, data transfer objects that use Foundation only, and route stubs for a Vapor server. Square brackets of the generated text are written as `['['/]` and `[']'/]`, because a bare `[` starts an MTL tag.
             }
 
             @Step {
-                Create Swift API client libraries.
+                Write the Swift client template.
 
-                @Code(name: "GenerateSwiftAPI.mtl", file: workflow-03-step-18-swift-api-generation.mtl)
+                @Code(name: "integration/GenerateSwiftAPI.mtl", file: workflow-03-step-18-swift-api-generation.mtl)
 
-                Generate Swift client libraries that provide type-safe access to the integration APIs, handling format conversion transparently for Swift applications.
+                The generated client is an actor with an `async` method for each operation of each resource. It uses the generated data transfer objects and `URLSession`.
             }
 
             @Step {
-                Build real-time synchronisation support.
+                Write the event API template.
 
-                @Code(name: "GenerateEventAPI.mtl", file: workflow-03-step-19-event-api-generation.mtl)
+                @Code(name: "integration/GenerateEventAPI.mtl", file: workflow-03-step-19-event-api-generation.mtl)
 
-                Create event-driven APIs that support real-time synchronisation between different clients and formats, enabling collaborative modeling scenarios.
+                The generated `ModelEvent` enumeration has a case per resource class. Events encode to JSON for any transport, and the `ModelEventBus` actor delivers them to all subscribers as an `AsyncStream`.
             }
 
             @Step {
-                Deploy and test the complete integration system.
+                Generate the APIs and check them.
 
-                @Code(name: "Terminal", file: workflow-03-step-20-deploy-integration.sh)
+                @Code(name: "Terminal", file: workflow-03-step-20-generate-apis.sh)
 
-                Deploy the complete cross-format integration system and run comprehensive tests that validate end-to-end functionality across all supported formats and clients.
+                The data transfer objects, the client and the events type-check together. The route stubs need the Vapor package of a server project. Checksums show that regenerating produces identical files.
             }
         }
     }
 
     @Assessments {
         @MultipleChoice {
-            What is the main challenge in cross-format integration?
+            Which tool should turn an XMI model into JSON for a web editor that uses the same metamodel?
 
             @Choice(isCorrect: true) {
-                Preserving semantic meaning while adapting to different format constraints
+                `swift-ecore convert` with the metamodel
 
                 @Justification(reaction: "Exactly right!") {
-                    Each format has different capabilities and constraints. The challenge is maintaining the model's semantic meaning while adapting to what each format can represent.
+                    Only the format changes, not the structure. A conversion with `-m` keeps the classes, enumeration literals and references of the metamodel.
                 }
             }
 
             @Choice(isCorrect: false) {
-                Converting between different file extensions
+                An ATL transformation that copies every class
 
-                @Justification(reaction: "More than just file formats!") {
-                    The challenge goes beyond file formats to include different data models, reference mechanisms, and platform constraints.
+                @Justification(reaction: "That does more work than needed!") {
+                    ATL is for mappings between metamodels, such as the `ProjectAPI` view. A copy transformation would only repeat what a conversion does.
                 }
             }
 
             @Choice(isCorrect: false) {
-                Making all formats identical
+                A text editor and careful search and replace
 
-                @Justification(reaction: "That's not practical!") {
-                    Different formats exist for different reasons. The goal is interoperability while preserving each format's strengths.
+                @Justification(reaction: "Too fragile!") {
+                    Hand edits easily break references and enumeration literals. The conversion reads and writes the model through its metamodel.
                 }
             }
         }
 
         @MultipleChoice {
-            Why might JSON representation differ from XMI representation?
+            Why does the Swift program read both the converted file and the web editor's file?
 
             @Choice(isCorrect: false) {
-                JSON is always simpler than XMI
+                Because JSON files are always simpler than XMI files
 
-                @Justification(reaction: "Not necessarily simpler!") {
-                    JSON can be complex too. The difference is more about structure, references, and intended use than complexity.
+                @Justification(reaction: "Simplicity is not the reason!") {
+                    Both JSON files have the same structure, whatever their size.
                 }
             }
 
             @Choice(isCorrect: true) {
-                JSON is optimised for web consumption while XMI preserves full metamodel information
+                Both files are instances of the metamodel from which the Swift types were generated
 
                 @Justification(reaction: "Perfect!") {
-                    JSON representations are typically flattened and optimised for web APIs, while XMI preserves the full metamodel structure and references.
+                    The metamodel defines the data in every format, so types generated from it decode every valid JSON model file.
                 }
             }
 
             @Choice(isCorrect: false) {
-                XMI cannot represent the same data as JSON
+                Because `JSONDecoder` ignores keys that it does not know
 
-                @Justification(reaction: "Both can represent the same data!") {
-                    Both formats can represent the same logical model data, but they structure and present it differently.
+                @Justification(reaction: "That would hide errors!") {
+                    Unknown keys are not what makes this work. The generated types match the metamodel, and validation keeps the files in line with it.
                 }
             }
         }
 
         @MultipleChoice {
-            What is bidirectional synchronisation?
+            What does `swift-ecore compare` match objects by?
 
             @Choice(isCorrect: false) {
-                Converting from one format to another and back
+                Their line numbers in the files
 
-                @Justification(reaction: "That's just conversion!") {
-                    Bidirectional synchronisation is more sophisticated—it involves detecting and merging changes from multiple sources over time.
+                @Justification(reaction: "Lines depend on the format!") {
+                    The two files may be in different formats, so line numbers say nothing about the model.
                 }
             }
 
             @Choice(isCorrect: true) {
-                Keeping multiple format representations synchronized as they change independently
+                Their class and identifier, regardless of the file format
 
                 @Justification(reaction: "Correct!") {
-                    Bidirectional synchronisation maintains consistency between multiple format representations that can be modified independently by different tools or users.
+                    The comparison reads both files with the metamodel and matches objects by class and identifier, so it reports changes per object and feature.
                 }
             }
 
             @Choice(isCorrect: false) {
-                Making sure all formats contain exactly the same information
+                Their position in the containment hierarchy only
 
-                @Justification(reaction: "They may have different perspectives!") {
-                    Synchronisation maintains logical consistency while allowing each format to emphasize different aspects of the model.
+                @Justification(reaction: "Positions change!") {
+                    A new or removed object shifts the positions of its siblings. Identifiers stay the same.
                 }
             }
         }
 
         @MultipleChoice {
-            How should conflicts be handled during synchronisation?
+            How should contradictory edits from different tools be handled?
 
             @Choice(isCorrect: false) {
-                Always prefer the most recent change
+                Always keep the most recent change
 
                 @Justification(reaction: "Too simplistic!") {
-                    Timestamp-based resolution can lead to data loss. Conflict resolution needs to consider the semantic meaning of changes.
+                    The most recent edit may break a rule of the domain, such as a milestone marked complete while a deliverable is still in progress.
                 }
             }
 
             @Choice(isCorrect: true) {
-                Use domain-specific resolution policies that preserve data integrity
+                Apply documented domain rules, for example with a refining transformation
 
                 @Justification(reaction: "Excellent approach!") {
-                    Conflict resolution should be based on the domain semantics and business rules, ensuring that resolution preserves data integrity and business meaning.
+                    A rule such as "a milestone is complete exactly when its deliverables are" can be applied automatically, and a comparison shows exactly what it changed.
                 }
             }
 
             @Choice(isCorrect: false) {
-                Manual resolution is always required
+                Always resolve them by hand
 
                 @Justification(reaction: "Automation is often possible!") {
-                    Many conflicts can be resolved automatically using well-designed policies. Manual resolution should be reserved for genuine semantic conflicts.
+                    Many contradictions follow from rules that a transformation can apply. Manual resolution is for genuine disagreements.
                 }
             }
         }

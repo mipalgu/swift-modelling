@@ -3,111 +3,80 @@
 ## XMI (XML Metadata Interchange)
 
 ### Strengths
-- Full metamodel information preserved
-- Rich reference semantics (containment, opposites)
-- Standardised by OMG (Object Management Group)
-- Supports cross-file references via hrefs
+- Standardised by the OMG and written by EMF-based tools
+- Classes are named by namespace prefix (`pm:Organisation`)
+- Containment is the nesting of XML elements
 
 ### Constraints
-- Verbose XML syntax increases file size
-- Requires XMI namespace declarations
-- Reference resolution depends on resource sets
-- Not directly consumable by web browsers
+- Verbose and awkward to consume in a browser
+- References are fragment paths (`#//@members.0`) that depend on the
+  position of the target object
+- A textual `diff` of two XMI files mixes layout with content
 
-### Example Reference Handling
+### Reference Example
 ```xml
-<!-- Containment reference -->
-<tasks xsi:type="pm:Task" id="TASK-001">
-  <assignee href="#MEMBER-001"/>
+<tasks id="TASK-004" title="Implement customer data API" status="NOT_STARTED">
+  <assignee href="#//@members.1"/>
+  <dependencies href="#//@projects.0/@tasks.2"/>
 </tasks>
-
-<!-- Cross-file reference -->
-<owner href="team.xmi#//@members.0"/>
 ```
 
----
-
-## JSON (JavaScript Object Notation)
+## JSON (as written by swift-ecore convert)
 
 ### Strengths
-- Native to web browsers and JavaScript
-- Compact representation
-- Easy to parse and generate
-- Well-supported by REST APIs
+- Native to web browsers and REST interfaces
+- Every object names its class in `eClass`, so no information is lost
+- Keys are sorted, so files are stable under version control
 
 ### Constraints
-- No built-in type information
-- Flat reference model (IDs only)
-- No containment semantics
-- Circular references require special handling
+- JSON itself has no types: the metamodel says what a key means
+- References are `{"$ref": "//@members.1"}` objects with the same
+  fragment paths as XMI
+- Numbers lose their spelling (`40.0` is written as `40`)
 
-### Example Reference Handling
+### Reference Example
 ```json
 {
-  "id": "TASK-001",
-  "title": "Implement feature",
-  "assigneeId": "MEMBER-001"
+  "assignee" : { "$ref" : "//@members.1" },
+  "eClass" : "http://www.example.org/projectmanagement/1.0#//Task",
+  "id" : "TASK-004",
+  "status" : "NOT_STARTED",
+  "title" : "Implement customer data API"
 }
 ```
 
----
-
-## Swift (Native Structures)
+## Swift (generated value types)
 
 ### Strengths
-- Full type safety with compiler checks
-- Optional handling for nullable values
-- Value types vs reference types
-- Protocol-based abstraction
+- The compiler checks every access
+- Enumerations become Swift enums with the literal names as raw values
+- `Codable` reads and writes the JSON format directly
 
 ### Constraints
-- No direct serialisation format
-- Requires Codable conformance for JSON
-- Reference cycles need weak/unowned
-- Metamodel changes require recompilation
-
-### Example Type Definition
-```swift
-struct Task: Identifiable, Codable {
-    let id: String
-    var title: String
-    var assigneeId: String?
-    var status: TaskStatus
-}
-```
-
----
+- Types must be regenerated when the metamodel changes
+- References stay `ModelReference` values that the app resolves
+- A struct cannot contain itself, so recursive containment needs care
 
 ## Translation Matrix
 
-| Feature | XMI | JSON | Swift |
-|---------|-----|------|-------|
-| Type Information | Full | None | Compile-time |
-| Containment | Native | Manual | Manual |
-| Opposites | Native | Manual | Manual |
-| Null Handling | xsi:nil | null | Optional |
-| Collections | Ordered | Array | Array/Set |
-| Dates | ISO 8601 | ISO 8601 | Date |
-| Enums | Literal names | Strings | Swift enum |
+| Feature        | XMI                 | JSON                 | Swift               |
+|----------------|---------------------|----------------------|---------------------|
+| Class          | `pm:Class` element  | `eClass` URI         | struct              |
+| Containment    | nested element      | nested object        | nested array        |
+| Reference      | `href` fragment     | `$ref` fragment      | `ModelReference`    |
+| Enumeration    | literal name        | literal name         | enum (raw value)    |
+| Dates          | ISO 8601 text       | ISO 8601 text        | `String`            |
+| Identity       | `id` attribute      | `id` key             | `id` property       |
 
----
+Dates are `EString` attributes holding ISO 8601 text, so that every
+format keeps them exactly as written.
 
-## Integration Considerations
+## Consequences for the Integration
 
-### XMI -> JSON
-1. Flatten containment hierarchy to ID references
-2. Include type discriminator for polymorphism
-3. Convert XMI references to simple IDs
-4. Serialise dates as ISO 8601 strings
-
-### JSON -> XMI
-1. Reconstruct containment from type information
-2. Resolve ID references to XMI hrefs
-3. Validate against metamodel constraints
-4. Handle missing optional values
-
-### JSON -> Swift
-1. Map JSON types to Swift types
-2. Generate Codable conformance
-3. Handle optional vs required fields
-4. Create custom date decoders if needed
+1. Use one metamodel for every format and validate each file against it.
+2. Convert formats with `swift-ecore convert -m ProjectManagement.ecore`,
+   which keeps classes, references and enumeration literals.
+3. Use a transformation only when the *structure* must change, such as a
+   compact view for web clients.
+4. Compare models, not files: `swift-ecore compare` matches objects by
+   their identifiers, whatever the format.

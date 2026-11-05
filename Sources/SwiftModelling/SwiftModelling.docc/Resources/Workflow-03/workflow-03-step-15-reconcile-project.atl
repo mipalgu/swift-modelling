@@ -1,0 +1,20 @@
+-- @path PM=ProjectManagement.ecore
+
+-- Restores a rule of the project domain after edits from several tools:
+-- a milestone is complete exactly when all of its deliverables are.
+-- Refining mode copies everything else unchanged.
+module ReconcileProject;
+create OUT : PM refining IN : PM;
+
+-- Whether every deliverable of the milestone has been completed.
+helper context PM!Milestone def : deliverablesDone : Boolean =
+    self.deliverables->forAll(t | t.status = #COMPLETED);
+
+rule ReconcileMilestone {
+    from
+        m : PM!Milestone (m.completed <> m.deliverablesDone)
+    to
+        r : PM!Milestone (
+            completed <- m.deliverablesDone
+        )
+}

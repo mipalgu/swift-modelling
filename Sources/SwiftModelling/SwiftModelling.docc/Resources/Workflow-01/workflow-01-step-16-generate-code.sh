@@ -1,54 +1,31 @@
-#!/bin/bash
-echo "=== MTL Code Generation from Sales Report ==="
-echo ""
-echo "Step 1: Generate Swift API"
-echo "  swift-mtl generate \\"
-echo "    --metamodel workflow-01-step-09-reporting-metamodel.ecore \\"
-echo "    --model sales-report.xmi \\"
-echo "    --template workflow-01-step-13-swift-templates.mtl \\"
-echo "    --output-dir ./generated/swift"
-echo ""
-echo "  Generated file: generated/swift/SalesReportAPI.swift"
-echo "  - SalesReportAPI struct with all metrics"
-echo "  - CategoryMetricAPI, CustomerMetricAPI, ProductMetricAPI"
-echo "  - Computed properties: averageOrderValue, topCategory, topCustomer, topProduct"
-echo "  - Summary generation methods"
-echo ""
-echo "Step 2: Generate JSON Schema"
-echo "  swift-mtl generate \\"
-echo "    --metamodel workflow-01-step-09-reporting-metamodel.ecore \\"
-echo "    --model sales-report.xmi \\"
-echo "    --template workflow-01-step-14-json-templates.mtl \\"
-echo "    --output-dir ./generated/json"
-echo ""
-echo "  Generated files:"
-echo "    - generated/json/sales-report-schema.json (JSON Schema v7)"
-echo "    - generated/json/sales-report-instance.json (JSON data)"
-echo ""
-echo "Step 3: Generate Documentation"
-echo "  swift-mtl generate \\"
-echo "    --metamodel workflow-01-step-09-reporting-metamodel.ecore \\"
-echo "    --model sales-report.xmi \\"
-echo "    --template workflow-01-step-15-docs-templates.mtl \\"
-echo "    --output-dir ./generated/docs"
-echo ""
-echo "  Generated file: generated/docs/SalesReportDocumentation.md"
-echo "  - Executive summary with key metrics"
-echo "  - Category performance breakdown"
-echo "  - Customer analytics and segmentation"
-echo "  - Product performance tables"
-echo "  - Insights and recommendations"
-echo ""
-echo "Output Directory Structure:"
-echo "  generated/"
-echo "  ├── swift/"
-echo "  │   └── SalesReportAPI.swift"
-echo "  ├── json/"
-echo "  │   ├── sales-report-schema.json"
-echo "  │   └── sales-report-instance.json"
-echo "  └── docs/"
-echo "      └── SalesReportDocumentation.md"
-echo ""
-echo "✅ MTL templates transform models into multiple output formats"
-echo "✅ Single source model → multiple target artefacts"
-echo "✅ Demonstrates Model-to-Text transformation power"
+# Check the syntax and structure of the three templates.
+swift-mtl validate GenerateSwiftClasses.mtl GenerateJSONAPI.mtl GenerateDocumentation.mtl
+
+# Output:
+# Valid: 3
+# Errors: 0
+
+# Generate the Swift API, the JSON schema and data, and the documentation
+# from the sales report.
+swift-mtl generate GenerateSwiftClasses.mtl --metamodel Reporting.ecore \
+    --model sales-report.xmi --output generated/swift
+swift-mtl generate GenerateJSONAPI.mtl --metamodel Reporting.ecore \
+    --model sales-report.xmi --output generated/json
+swift-mtl generate GenerateDocumentation.mtl --metamodel Reporting.ecore \
+    --model sales-report.xmi --output generated/docs
+
+# Output:
+# Generation complete
+# Generation complete
+# Generation complete
+
+# The generated artefacts and their sizes in lines.
+wc -l generated/swift/SalesReportAPI.swift generated/json/sales-report.schema.json \
+    generated/json/sales-report.json generated/docs/sales-report.md
+
+# Output:
+# 142 generated/swift/SalesReportAPI.swift
+# 52 generated/json/sales-report.schema.json
+# 31 generated/json/sales-report.json
+# 49 generated/docs/sales-report.md
+# 274 total

@@ -1,164 +1,56 @@
-#!/bin/bash
-echo "=== End-to-End MDE Workflow Validation ==="
-echo ""
-echo "This script validates the complete Model-Driven Engineering workflow"
-echo "from metamodel design through code generation and testing."
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "PHASE 1: METAMODEL VALIDATION"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-echo "1.1 Validate Shop metamodel"
-echo "    swift-ecore validate --metamodel workflow-01-step-01-metamodel.ecore"
-echo "    Expected: ✓ Valid Ecore metamodel"
-echo ""
-echo "1.2 Validate Reporting metamodel"
-echo "    swift-ecore validate --metamodel workflow-01-step-09-reporting-metamodel.ecore"
-echo "    Expected: ✓ Valid Ecore metamodel"
-echo ""
-echo "1.3 Generate metamodel documentation"
-echo "    swift-ecore document --metamodel workflow-01-step-01-metamodel.ecore --output shop-metamodel.html"
-echo "    Expected: ✓ HTML documentation generated"
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "PHASE 2: INSTANCE VALIDATION"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-echo "2.1 Validate Shop instance"
-echo "    swift-ecore validate \\"
-echo "      --metamodel workflow-01-step-01-metamodel.ecore \\"
-echo "      --model workflow-01-step-05-instance.xmi"
-echo "    Expected: ✓ Valid instance (10 products, 7 customers, 10 orders)"
-echo ""
-echo "2.2 Query instance data"
-echo "    swift-aql query workflow-01-step-05-instance.xmi \\"
-echo "      'Shop.allInstances()->first().products->size()'"
-echo "    Expected: 10"
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "PHASE 3: ATL TRANSFORMATION"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-echo "3.1 Validate ATL transformation syntax"
-echo "    swift-atl validate workflow-01-step-10-transformation.atl"
-echo "    Expected: ✓ Valid ATL transformation (4 rules, 6 helpers)"
-echo ""
-echo "3.2 Execute transformation"
-echo "    swift-atl transform \\"
-echo "      --source-metamodel workflow-01-step-01-metamodel.ecore \\"
-echo "      --target-metamodel workflow-01-step-09-reporting-metamodel.ecore \\"
-echo "      --source-model workflow-01-step-05-instance.xmi \\"
-echo "      --transformation workflow-01-step-10-transformation.atl \\"
-echo "      --output sales-report.xmi"
-echo "    Expected: ✓ Transformation successful"
-echo ""
-echo "3.3 Validate output model"
-echo "    swift-ecore validate \\"
-echo "      --metamodel workflow-01-step-09-reporting-metamodel.ecore \\"
-echo "      --model sales-report.xmi"
-echo "    Expected: ✓ Valid SalesReport instance"
-echo ""
-echo "3.4 Verify transformation results"
-echo "    swift-aql query sales-report.xmi 'SalesReport.allInstances()->first().totalRevenue'"
-echo "    Expected: ~15847.00"
-echo ""
-echo "    swift-aql query sales-report.xmi 'CategoryMetric.allInstances()->size()'"
-echo "    Expected: 3"
-echo ""
-echo "    swift-aql query sales-report.xmi 'CustomerMetric.allInstances()->size()'"
-echo "    Expected: 7"
-echo ""
-echo "    swift-aql query sales-report.xmi 'ProductMetric.allInstances()->size()'"
-echo "    Expected: 10"
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "PHASE 4: MTL CODE GENERATION"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-echo "4.1 Generate Swift API"
-echo "    swift-mtl generate \\"
-echo "      --metamodel workflow-01-step-09-reporting-metamodel.ecore \\"
-echo "      --model sales-report.xmi \\"
-echo "      --template workflow-01-step-13-swift-templates.mtl \\"
-echo "      --output-dir ./generated/swift"
-echo "    Expected: ✓ SalesReportAPI.swift generated"
-echo ""
-echo "4.2 Generate JSON Schema"
-echo "    swift-mtl generate \\"
-echo "      --metamodel workflow-01-step-09-reporting-metamodel.ecore \\"
-echo "      --model sales-report.xmi \\"
-echo "      --template workflow-01-step-14-json-templates.mtl \\"
-echo "      --output-dir ./generated/json"
-echo "    Expected: ✓ sales-report-schema.json, sales-report-instance.json"
-echo ""
-echo "4.3 Generate Documentation"
-echo "    swift-mtl generate \\"
-echo "      --metamodel workflow-01-step-09-reporting-metamodel.ecore \\"
-echo "      --model sales-report.xmi \\"
-echo "      --template workflow-01-step-15-docs-templates.mtl \\"
-echo "      --output-dir ./generated/docs"
-echo "    Expected: ✓ SalesReportDocumentation.md generated"
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "PHASE 5: SWIFT COMPILATION"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-echo "5.1 Compile Swift package"
-echo "    cd SalesReportPackage && swift build"
-echo "    Expected: ✓ Build complete"
-echo ""
-echo "5.2 Run Swift tests"
-echo "    swift test"
-echo "    Expected: ✓ All tests pass (17 tests)"
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "PHASE 6: ARTEFACT VALIDATION"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-echo "6.1 Validate JSON Schema"
-echo "    jsonschema -i generated/json/sales-report-instance.json \\"
-echo "              generated/json/sales-report-schema.json"
-echo "    Expected: ✓ Instance validates against schema"
-echo ""
-echo "6.2 Validate Documentation"
-echo "    markdownlint generated/docs/SalesReportDocumentation.md"
-echo "    Expected: ✓ No linting errors"
-echo ""
-echo "6.3 Check file completeness"
-echo "    ls -lh generated/swift/SalesReportAPI.swift"
-echo "    ls -lh generated/json/sales-report-schema.json"
-echo "    ls -lh generated/json/sales-report-instance.json"
-echo "    ls -lh generated/docs/SalesReportDocumentation.md"
-echo "    Expected: ✓ All 4 files exist"
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "SUMMARY: END-TO-END VALIDATION RESULTS"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-echo "Workflow Steps Validated:"
-echo "  ✅ Metamodel Design (2 metamodels)"
-echo "  ✅ Instance Creation (1 shop instance)"
-echo "  ✅ Model Validation (Ecore conformance)"
-echo "  ✅ Query Execution (AQL queries)"
-echo "  ✅ Model Transformation (ATL Shop→Reporting)"
-echo "  ✅ Code Generation (MTL → Swift/JSON/Markdown)"
-echo "  ✅ Swift Compilation (Package builds)"
-echo "  ✅ Unit Testing (17 tests pass)"
-echo "  ✅ Documentation Generation (Markdown report)"
-echo ""
-echo "Artefacts Generated:"
-echo "  • 2 Ecore metamodels (.ecore)"
-echo "  • 1 Shop instance (.xmi)"
-echo "  • 1 Sales report instance (.xmi)"
-echo "  • 1 ATL transformation (.atl)"
-echo "  • 3 MTL templates (.mtl)"
-echo "  • 1 Swift API library (.swift + .dylib)"
-echo "  • 1 JSON Schema + instance (.json)"
-echo "  • 1 Markdown documentation (.md)"
-echo ""
-echo "Total: 11 primary artefacts demonstrating complete MDE workflow"
-echo ""
-echo "🎉 END-TO-END VALIDATION COMPLETE"
-echo "✅ All phases executed successfully"
-echo "✅ Demonstrates production-ready MDE pipeline"
-echo "✅ Ready for tutorial deployment"
+# Stop at the first command or check that fails.
+set -e
+
+# Run the whole chain again for the shop data and the valid test instances:
+# validate, transform, validate the report, generate and type-check the Swift
+# code, then compare the revenue in the source model with every artefact.
+for model in shop-data.xmi test-instances/single-order.xmi test-instances/empty-shop.xmi; do
+    out="e2e/$(basename "$model" .xmi)"
+    mkdir -p "$out"
+    echo "== $model"
+    swift-ecore validate "$model" --metamodel ECommerce.ecore
+    swift-atl transform ECommerce2Reporting.atl --quiet \
+        --source "$model" --source-metamodel ECommerce.ecore \
+        --target "$out/sales-report.xmi" --target-metamodel Reporting.ecore
+    swift-ecore validate "$out/sales-report.xmi" --metamodel Reporting.ecore
+    swift-mtl generate GenerateSwiftClasses.mtl --metamodel Reporting.ecore \
+        --model "$out/sales-report.xmi" --output "$out/generated/swift"
+    swift-mtl generate GenerateJSONAPI.mtl --metamodel Reporting.ecore \
+        --model "$out/sales-report.xmi" --output "$out/generated/json"
+    swift-mtl generate GenerateDocumentation.mtl --metamodel Reporting.ecore \
+        --model "$out/sales-report.xmi" --output "$out/generated/docs"
+    swiftc -typecheck "$out/generated/swift/SalesReportAPI.swift"
+
+    # Adding 0.0 makes the sum a real number, also for a shop without orders.
+    revenue=$(swift-aql query "$model" --metamodel ECommerce.ecore \
+        "0.0 + self.orders.items->collect(i | i.quantity * i.unitPrice)->sum()")
+    test "$(swift-aql query "$out/sales-report.xmi" 'self.totalRevenue')" = "$revenue"
+    grep -q "totalRevenue: $revenue," "$out/generated/swift/SalesReportAPI.swift"
+    grep -q "\"totalRevenue\": $revenue," "$out/generated/json/sales-report.json"
+    grep -q "| Total revenue | $revenue |" "$out/generated/docs/sales-report.md"
+    echo "Revenue $revenue agrees in the model, the report, Swift, JSON and Markdown"
+done
+
+# Output:
+# == shop-data.xmi
+# OCL invariants: 48 of 48 check(s) satisfied
+# ...
+# Revenue 6815.0 agrees in the model, the report, Swift, JSON and Markdown
+# == test-instances/single-order.xmi
+# ...
+# Revenue 25.0 agrees in the model, the report, Swift, JSON and Markdown
+# == test-instances/empty-shop.xmi
+# ...
+# Revenue 0.0 agrees in the model, the report, Swift, JSON and Markdown
+
+# The chain is reproducible: the second run produced exactly the same report
+# and artefacts as the steps before.
+diff sales-report.xmi e2e/shop-data/sales-report.xmi
+diff -r generated e2e/shop-data/generated
+shasum -a 256 e2e/shop-data/generated/*/*.*
+
+# Output:
+# ...  e2e/shop-data/generated/docs/sales-report.md
+# ...  e2e/shop-data/generated/json/sales-report.json
+# ...  e2e/shop-data/generated/json/sales-report.schema.json
+# ...  e2e/shop-data/generated/swift/SalesReportAPI.swift
