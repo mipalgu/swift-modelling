@@ -115,15 +115,21 @@ JSON provides a more readable alternative:
 Use `swift-ecore convert` to move between formats:
 
 ```bash
-# XMI to JSON (with pretty printing)
-swift-ecore convert model.xmi --output model.json --pretty
+# XMI to JSON, with the metamodel so that classes keep their namespace
+swift-ecore convert model.xmi --output model.json --metamodel Company.ecore
 
 # JSON to XMI
-swift-ecore convert model.json --output model.xmi
+swift-ecore convert model.json --output model.xmi --metamodel Company.ecore
 ```
 
-Format conversion is lossless - all model data is preserved.
-Add `--validate` to ensure the converted model is valid.
+The output file is the second argument or the value of `--output`
+(`-o`). JSON is written indented, with the keys of every object in
+alphabetical order, so two conversions of the same model compare
+equal with `diff`. Every object, attribute value and reference is
+kept; the `xmi:id` values of an XMI file are not, since JSON
+locates objects by their position. Add `--validate` to check the
+model as `swift-ecore validate` does before it is written: if it
+has an error, no file is written.
 
 ## Validation
 
@@ -137,10 +143,56 @@ swift-ecore validate company.xmi --metamodel Company.ecore
 
 This verifies:
 - All objects are instances of classes defined in the metamodel
-- Required attributes are present
-- Attribute types match their declarations
-- References point to valid objects
-- Cardinality constraints are satisfied
+- Every feature that an object sets is defined by its class
+- Required features are present and no feature has too many values
+- Attribute values match their types, including enumeration literals
+- References point to existing objects of the right class, also in
+  other documents
+- No object is an instance of an abstract class or an interface
+- Every OCL invariant of the metamodel holds
+
+Without `--metamodel`, the command checks that the model can be read
+and that its references into other documents can be resolved. A
+metamodel (`.ecore`) is checked against the constraints of Ecore,
+such as well-formed names, consistent bounds and opposites, and
+acyclic inheritance.
+
+### OCL Invariants
+
+A class declares invariants as in the Eclipse Modeling Framework:
+the `constraints` detail of its annotation with the source
+`http://www.eclipse.org/emf/2002/Ecore` names them, and the detail
+of the same name of its annotation with the source
+`http://www.eclipse.org/emf/2002/Ecore/OCL` gives the expression:
+
+```xml
+<eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+  <details key="constraints" value="positiveBalance"/>
+</eAnnotations>
+<eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
+  <details key="positiveBalance" value="self.balance >= 0"/>
+</eAnnotations>
+```
+
+Every invariant is evaluated for every object whose class or
+superclass declares it. Expressions use the OCL that AQL shares,
+including collection operations with implicit iterators such as
+`self.accounts->isUnique(number)` and the string operation
+`indexOf`. Write an enumeration literal with its package, as in
+`Bank::AccountType::SAVINGS`. A violated invariant is reported with
+the object and its location; `--verbose` also lists the satisfied
+ones.
+
+### Abstract Classes
+
+```bash
+swift-ecore validate Company.ecore --check-abstract-classes
+```
+
+For a metamodel, the option lists every abstract class and
+interface with the concrete classes that extend it, and warns about
+one that no concrete class extends. For a model, it confirms that
+no object is an instance of an abstract class or an interface.
 
 ### Strict Validation
 
@@ -152,11 +204,9 @@ swift-ecore validate company.xmi \
     --strict
 ```
 
-Additional checks include:
-- No unknown attributes or references
-- All containment relationships are valid
-- No circular containment
-- All cross-references are resolvable
+In strict mode, warnings fail validation as well as errors, for
+example an abstract class that no concrete class extends or a
+problem that the parser reported while reading the model.
 
 ### Validation Reports
 
@@ -169,11 +219,13 @@ swift-ecore validate company.xmi \
     --format json
 ```
 
-JSON reports include:
-- Error locations (file, line, column)
-- Error types and messages
-- Affected model elements
-- Suggested fixes
+`--format` chooses `text` or `json`; without `--report`, the report
+is written to standard output. JSON reports include:
+- Whether the file is valid, and the numbers of errors and warnings
+- Every finding with its severity, the identifier of the check,
+  the location of the element as a fragment such as
+  `//@employees.0`, a description of the element, and the message
+- Every evaluation of an OCL invariant, with its outcome
 
 ## Inspection
 
@@ -185,7 +237,9 @@ Quick overview of metamodel or model structure:
 swift-ecore inspect Company.ecore
 ```
 
-Shows package structure, class count, and top-level organisation.
+Shows the packages with their namespaces, and the names of their
+classes, enumerations and data types. For a model (`.xmi` or
+`.json`), it shows the number of objects of each class.
 
 ### Full Inspection
 
@@ -199,11 +253,18 @@ swift-ecore inspect Company.ecore \
 ```
 
 Displays:
-- Complete class hierarchy
-- All attributes with types and bounds
-- All references with containment status
-- Inheritance relationships
-- Operations and parameters
+- All attributes with types, bounds and default values
+- All references with containment status and opposites, and the
+  reference graph of the metamodel
+- Operations with their parameters, and OCL invariants
+- Enumeration literals with their values
+
+`--show-supertypes` adds the inheritance: all supertypes, subclasses
+and inherited features of every class, and the class hierarchy.
+`--show-attributes` lists the attributes also in a summary. For a
+model, `--detail full` shows every object with its values, nested
+as the objects contain each other, and `--show-references` lists the
+references between the objects.
 
 ### JSON Output
 
@@ -211,6 +272,7 @@ Export inspection results for programmatic processing:
 
 ```bash
 swift-ecore inspect Company.ecore \
+    --detail full \
     --format json \
     --output structure.json
 ```
@@ -233,75 +295,21 @@ swift-ecore create \
 
 The created model contains a single root element with no
 attributes set. Use this as a starting point for manual editing
-or programmatic population.
+or programmatic population. The class must be a concrete class of
+the metamodel; an abstract class or an interface is rejected.
 
 ### Format Selection
 
-Choose the output format:
+The format follows from the extension of the output file, or from
+`--output-format`:
 
 ```bash
 # Create JSON model
 swift-ecore create \
     --metamodel Company.ecore \
     --output skeleton.json \
-    --format json \
     --root-class Company
 ```
-
-## Model Merging
-
-### Merge Strategies
-
-Three strategies control how models are combined:
-
-**Append Strategy**
-
-```bash
-swift-ecore merge model1.xmi model2.xmi \
-    --output merged.xmi \
-    --strategy append
-```
-
-Adds all elements from all models. Elements with the same
-identifier appear multiple times.
-
-**Replace Strategy**
-
-```bash
-swift-ecore merge model1.xmi model2.xmi \
-    --output merged.xmi \
-    --strategy replace
-```
-
-Later files override elements from earlier files when identifiers
-match.
-
-**Merge Strategy**
-
-```bash
-swift-ecore merge model1.xmi model2.xmi \
-    --output merged.xmi \
-    --strategy merge
-```
-
-Intelligently combines elements:
-- Matching elements are unified
-- Attributes from later files override earlier ones
-- Collections are merged
-
-### Merge with Validation
-
-Ensure the merged result is valid:
-
-```bash
-swift-ecore merge model1.xmi model2.xmi \
-    --output merged.xmi \
-    --validate \
-    --metamodel Company.ecore
-```
-
-Validation runs after merging. If the result is invalid, the
-output file is not written.
 
 ## Integration Patterns
 
@@ -355,8 +363,6 @@ for file in inputs/*; do
     output="normalised/$(basename "$file" .xmi).json"
     swift-ecore convert "$file" \
         --output "$output" \
-        --format json \
-        --pretty \
         --validate \
         --metamodel schema.ecore
 done
@@ -368,7 +374,6 @@ done
 
 Validate models after any modification:
 - After conversion between formats
-- After merging multiple models
 - Before expensive operations (transformations, code generation)
 - In production pipelines
 
@@ -429,9 +434,9 @@ validate:
 
 The swift-ecore tool uses standard exit codes:
 - `0` - Success
-- `1` - Validation failed or invalid arguments
-- `2` - File not found or IO error
-- `3` - Parse error (malformed XMI/JSON)
+- `1` - Validation failed, or a file cannot be found, read or
+  parsed
+- `64` - Invalid arguments, such as an unknown option
 
 Use in scripts:
 
@@ -446,13 +451,12 @@ fi
 
 ### Error Messages
 
-Error messages indicate the problem and location:
+Each problem is reported with its severity, the element and its
+location in the model, followed by a summary on standard error:
 
 ```
-Error: Validation failed
-  File: company.xmi:15:8
-  Element: Employee[employeeId=1001]
-  Issue: Required attribute 'name' is missing
+error: Employee (//@departments.0/@employees.0): Feature 'name' needs at least 1 value(s) but has 0
+Error: Validation failed: 1 error(s), 0 warning(s)
 ```
 
 ## Next Steps

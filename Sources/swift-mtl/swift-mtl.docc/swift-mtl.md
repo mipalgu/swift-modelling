@@ -24,6 +24,7 @@ Execute an MTL template to generate text from models.
 
 ```bash
 swift-mtl generate <template-file> [options]
+swift-mtl generate --template <template-file> [options]
 swift-mtl generate --template-set <directory|language> [options]
 ```
 
@@ -32,7 +33,7 @@ swift-mtl generate --template-set <directory|language> [options]
 - `--model <path>` - Input model (XMI, JSON or Ecore); repeat for several models. The root object of each model is passed to the main template in command line order. An Ecore file is also registered as a metamodel and its package is passed as an argument.
 - `--metamodel <path>` - Ecore metamodel to register without passing it to the template (repeatable)
 - `-o, --output <path>` - Output directory for generated files (default: the current directory)
-- `-t, --template <name>` - Main template to run (default: the template marked `@main`, otherwise the first)
+- `-t, --template <name|file.mtl>` - Main template to run (default: the template marked `@main`, otherwise the first); a value that ends in `.mtl` names the template file instead, when no template file argument is given
 - `--template-set <directory|language>` - Template set to run instead of a template file: a directory with a `templateset.json` descriptor, or the language of a bundled set
 - `--template-path <directory>` - Directory searched for imported modules after the directory of the template (repeatable); with a template set, its files replace the files of the set with the same relative path
 - `--param <name=value>` - Parameter for the templates (repeatable)
@@ -53,6 +54,7 @@ swift-mtl generate --template-set <directory|language> [options]
 - `--single-value-collections <set|sequence>` - Whether an arrow call on a single value sees a set (`set`, the default) or a sequence (`sequence`, as in version 0.6)
 - `--container-lookup <resources|registered-objects>` - Whether `eContainer()` asks the registered resources (`resources`, the default) or only the registered model objects (`registered-objects`, as in version 0.6)
 - `-v, --verbose` - Enable verbose output
+- `--debug` - Print the traces of the template and model parsers, for diagnosing the parsers; `--verbose` reports progress without them
 
 **Template path.** Imported modules (`[import shared::Common/]`) are searched in the directory of the template and then in the `--template-path` directories, in order. A directory that does not exist is an error.
 
@@ -124,6 +126,7 @@ swift-mtl validate <templates>... [options]
 **Options:**
 
 - `-v, --verbose` - Enable verbose output
+- `--debug` - Print the trace of the template parser, for diagnosing the parser; `--verbose` reports progress without it
 
 The command prints one result per template and a summary, and exits with code 0 only if every template is valid.
 
@@ -156,6 +159,7 @@ swift-mtl parse <templates>... [options]
 - `-d, --detailed` - Show detailed information about templates
 - `--json` - Output as JSON
 - `-v, --verbose` - Enable verbose output
+- `--debug` - Print the trace of the template parser, for diagnosing the parser; `--verbose` reports progress without it
 
 **Examples:**
 

@@ -61,6 +61,13 @@ and the [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec
 - **Behaviour Options**: Templates follow the behaviour of this release by default; `--semantics legacy` and one option per behaviour select that of version 0.6 (see [Compatibility with 0.6](#compatibility-with-06))
 - **Standard Compliance**: Implements OMG MOFM2T v1.0 with compatibility for Acceleo-specific extensions
 
+### AQL Support
+- **Query Tool**: `swift-aql` evaluates AQL (Acceleo Query Language) expressions against XMI, JSON and Ecore models and prints their values
+- **Same Engine as Templates**: Expressions behave as in `swift-mtl` templates, with the same behaviour options and `--semantics` presets
+- **Root Variables**: Each root object is bound to its class name with a lower-case first letter (`company` for a `Company`), and `self` to the object that `--context` selects by `xmi:id`, fragment path or name
+- **Metamodel Discovery**: The Ecore files beside a model whose namespace URI it uses are registered automatically, so attributes have their declared types; `--metamodel` names them explicitly
+- **Scriptable Output**: Strings in double quotes, numbers and Booleans as they are, objects as `Class(name)`, collections in square brackets; errors go to standard error with a non-zero exit status
+
 ## Requirements
 
 - Swift 6.0 or later
@@ -78,7 +85,7 @@ brew tap mipalgu/tap
 brew install swift-modelling
 ```
 
-This will install `swift-ecore`, `swift-atl`, and `swift-mtl` to your system.
+This will install `swift-ecore`, `swift-atl`, `swift-mtl` and `swift-aql` to your system.
 
 ### Windows
 
@@ -91,8 +98,8 @@ the executables to your PATH.
 
 Download `swift-modelling-vX.Y.Z-wasm32-wasi.tar.gz` and its SHA256 file
 from [GitHub Releases](https://github.com/mipalgu/swift-modelling/releases).
-The archive includes `swift-ecore.wasm`, `swift-atl.wasm`, `swift-mtl.wasm`
-and their resource directories. Keep these directories beside the modules.
+The archive includes `swift-ecore.wasm`, `swift-atl.wasm`, `swift-mtl.wasm`,
+`swift-aql.wasm` and their resource directories. Keep these directories beside the modules.
 
 Extract the archive and run a module with a WASI runtime. For example, with
 the `wasmkit` runtime included in the Swift 6.4 toolchain:
@@ -120,6 +127,9 @@ swift run swift-atl --help
 
 # Run the MTL CLI
 swift run swift-mtl --help
+
+# Run the AQL CLI
+swift run swift-aql --help
 ```
 
 
@@ -134,7 +144,7 @@ swift-ecore genmodel example.ecore --base-package org.example
 swift-ecore generate --language java example.genmodel --output src-gen
 
 # One step: no generator model is left behind
-swift-atl example.ecore --language java --base-package org.example --output src-gen
+swift-atl generate example.ecore --language java --base-package org.example --output src-gen
 ```
 
 Both routes write the same 36 Java files below `src-gen/org/example/example`. Add `--model-directory` to `swift-ecore generate` to write below the model directory of the generator model together with `plugin.xml`, `MANIFEST.MF` and the other project files of an Eclipse model project. Regenerating merges into existing files: members tagged `@generated` are rewritten, members tagged `@generated NOT` and your own members are kept; `--diff` and `--force-overwrite` change that. To compile the result, `Scripts/fetch-emf-runtime.sh` downloads the EMF runtime jars and prints the class path.
@@ -177,11 +187,104 @@ swift-ecore validate data.json --verbose
 # Validate an Ecore metamodel
 swift-ecore validate metamodel.ecore
 
-# Validate with optional metamodel reference
+# Validate a model against its metamodel, including the OCL invariants of the metamodel
 swift-ecore validate instance.xmi --metamodel schema.ecore
+
+# List the abstract classes of a metamodel and the concrete classes that extend them
+swift-ecore validate metamodel.ecore --check-abstract-classes
+
+# Fail on warnings too, and keep a JSON report
+swift-ecore validate instance.xmi --metamodel schema.ecore --strict --format json --report report.json
+
+# Validate several models against the same metamodel; the command fails if any is invalid
+swift-ecore validate first.xmi second.xmi third.json --metamodel schema.ecore
 ```
 
+With several files, the findings of each file follow a `Validating: <file>` line and precede a line with its result, such as `second.xmi: invalid (2 error(s), 0 warning(s))`. A file that cannot be read counts as invalid, and a final line such as `Validated 3 files: 2 valid, 1 invalid` counts the results. With `--format json`, the report is an array with one report per file.
+
 **Supported formats:** XMI (`.xmi`), JSON (`.json`), Ecore (`.ecore`)
+
+A metamodel is checked against the constraints of Ecore. With `--metamodel`, a model is checked against the metamodel: every class and feature must be defined, values must fit the types and bounds of their features, references (also into other documents) must lead to objects of the right class, no object may be an instance of an abstract class, and every OCL invariant must hold. Problems are printed with their element and its location, such as `//@employees.0`; the command fails with exit status 1 on an error, and with `--strict` also on a warning.
+
+### Inspect Command
+
+Show the structure of a metamodel or a model.
+
+```bash
+# Packages, classes, enumerations and data types of a metamodel
+swift-ecore inspect metamodel.ecore
+
+# Every class with its attributes, references, operations and invariants,
+# its supertypes, subclasses and inherited features, and the reference graph
+swift-ecore inspect metamodel.ecore --detail full --show-supertypes --show-references
+
+# Every object of a model with its values, nested as the objects contain each other
+swift-ecore inspect model.json --metamodel schema.ecore --detail full
+
+# The same report as JSON in a file
+swift-ecore inspect metamodel.ecore --detail full --format json --output structure.json
+```
+
+### Compare Command
+
+Compare two metamodels or two models and report their differences.
+
+```bash
+# What changed between two versions of a metamodel
+swift-ecore compare legacy.ecore improved.ecore
+
+# What changed between two models, leaving out one feature everywhere and one of a class
+swift-ecore compare before.xmi after.xmi --metamodel schema.ecore --ignore modified --ignore Order.note
+
+# Whether a migration kept every object: the objects of each class in both models
+swift-ecore compare legacy.xmi migrated.xmi --metamodel legacy.ecore --metamodel improved.ecore --summary
+
+# Fail with exit status 1 if the models differ, and keep a JSON report
+swift-ecore compare expected.xmi actual.xmi --metamodel schema.ecore --exit-code --format json --output differences.json
+```
+
+Every difference is one line that starts with `+` (added), `-` (removed) or `~` (changed), followed by a summary line. For two versions of a small shop model:
+
+```text
+Comparing models: shop-v1.xmi -> shop-v1-revised.xmi
+~ object Customer 'Grace' (//@customers.1) email: "grace@example.org" -> "grace@example.com"
+~ object Customer 'Grace' (//@customers.1) orders: [] -> [Order 'A-3']
+~ object Order 'A-1' (//@orders.0) status: "PAID" -> "SHIPPED"
+~ object Item 'Milk' (//@orders.0/@items.1) quantity: 1 -> 3
+- object Order 'A-2' (//@orders.1)
++ object Order 'A-3' (//@orders.1)
+6 differences: 1 added, 1 removed, 4 changed
+```
+
+Metamodel differences read the same way, for example `~ attribute Order.status type: EString -> Status` or `+ class Product: extends NamedElement`.
+
+Metamodel elements are matched by name; a metamodel with a single root package is compared with the single root package of the other, even if it was renamed. Objects of models are matched by class and identity: the value of the identifying attribute of their class, else the value that names them, else their location. Both files must be metamodels or both models. The command succeeds whether or not the files differ, unless `--exit-code` is given.
+
+### Statistics Command
+
+Measure the size and shape of a metamodel or a model.
+
+```bash
+# Packages, classes, features, operations and invariants, inheritance depth and features per class
+swift-ecore statistics metamodel.ecore
+
+# Objects of each class, containment depth, attribute values and references,
+# and the concrete classes of the metamodel without objects
+swift-ecore statistics model.xmi --metamodel schema.ecore
+
+# The same measurements as JSON in a file
+swift-ecore statistics model.xmi --metamodel schema.ecore --format json --output statistics.json
+```
+
+For a metamodel, the classes are also listed by their number of features, inherited ones included, so a class that has grown too large stands out.
+
+### Create Command
+
+Create a model with one root object of a concrete class of a metamodel, as a starting point for editing.
+
+```bash
+swift-ecore create --metamodel schema.ecore --root-class Company --output company.xmi
+```
 
 ### Convert Command
 
@@ -199,6 +302,9 @@ swift-ecore convert input.xmi output.json --verbose
 
 # Force overwrite existing output file
 swift-ecore convert input.json output.xmi --force
+
+# Name the output file with an option, and write nothing if the model is invalid
+swift-ecore convert input.xmi --output output.json --metamodel schema.ecore --validate
 
 # Read and write the model with the classes and references of its metamodel (repeatable)
 swift-ecore convert library.xmi library.json --metamodel library.ecore
@@ -438,7 +544,25 @@ swift-atl transform Ecore2GenModel.atl --source IN=library.ecore --target OUT=li
 # Write same-document references of an XMI target as Eclipse writes XMI model files
 swift-atl transform Families2Persons.atl --source families.xmi --target persons.xmi \
   --reference-style plain
+
+# Metamodel files instead of -- @path directives, by position or as name=file.ecore
+swift-atl transform Families2Persons.atl --source families.xmi --source-metamodel Families.ecore \
+  --target persons.xmi --target-metamodel Persons=Persons.ecore
+
+# Refine a model in place, with one metamodel for source and target
+swift-atl transform Cleanup.atl --refining --source customers.xmi --target cleaned.xmi \
+  --metamodel Customer.ecore
+
+# Check the transformation against its metamodels without running it
+swift-atl transform Families2Persons.atl --validate-only \
+  --source-metamodel Families.ecore --target-metamodel Persons.ecore
 ```
+
+**Metamodels.** `--source-metamodel`, `--target-metamodel` and `--metamodel` (all repeatable) give metamodel files that take the place of the `-- @path` and `-- @nsURI` directives of their metamodels. By position they follow the order of the module header: the metamodels after `from` (or `refining`), those after `create`, and for `--metamodel` all metamodels, each name once; `name=file.ecore` binds the metamodel of that name. A `-- @path` that starts with `/` names a file in an Eclipse workspace, as Eclipse ATL writes it: `/Families2Persons/Families.ecore` is looked up in each metamodel search directory as `Families2Persons/Families.ecore` and then as `Families.ecore`, with the search directory as the project directory. Without `--metamodel-path` or `ECOREPATH`, the directory of the transformation, its parent and the current directory are searched.
+
+**Refining mode.** A module declared as `create OUT : MM refining IN : MM;`, or run with `--refining`, starts each target model as a copy of the source model in the same position of the header. A rule changes the copy of the element it matches, through the first target pattern element of the type of its source pattern element, and elements that no rule matches are kept. A rule whose `to` section starts with `drop`, as in `rule Remove { from s : MM!Node (s.weight = 0) to drop }`, deletes the element it matches, with the elements it then contains, after every other rule has run; references from the remaining elements to the deleted ones are removed. `drop` is an error outside refining mode.
+
+**Validation only.** `--validate-only` binds the metamodels, reports model element types that they do not define and bindings of features that a target class does not have, and loads the source models that are given, without running the transformation or writing targets. `--quiet` prints nothing on success.
 
 **Parameters.** `--param name=value` binds a value to a module parameter declared in the transformation with `-- @param name : Type [= default]`. The text is converted to the declared type (`String`, `Integer`, `Real`, `Boolean`); the value is everything after the first `=`, and an undeclared name, a value of the wrong type, a missing required parameter or an argument without `name=` is an error. Inside the transformation a parameter is read as `thisModule.name`.
 
@@ -482,34 +606,38 @@ swift-atl query Count.atl --metamodel Flow=Flow.ecore --source IN:Flow=order.xmi
 
 ### Query Command
 
-Inspect and analyse models with powerful query operations.
+Inspect and analyse whole models and metamodels: every query looks at every object of a model, however deeply it is contained, and every element of a metamodel.
 
 ```bash
 # Show general model information (default query)
 swift-ecore query model.xmi
 
-# Count total objects in model
+# Count all objects in the model
 swift-ecore query model.xmi --query "count"
 
-# List all available classes
-swift-ecore query model.xmi --query "list-classes"
+# List the classes of the objects with their counts, using the metamodel for supertypes
+swift-ecore query model.xmi --metamodel schema.ecore --query "list-classes"
 
-# Find objects of specific class
+# List every class of a metamodel with its supertypes
+swift-ecore query schema.ecore --query "classes"
+
+# Show the inheritance hierarchy
+swift-ecore query schema.ecore --query "hierarchy"
+
+# Find the objects of a class or of its subclasses
 swift-ecore query model.xmi --query "find Person"
 
-# Show object tree structure
+# Show the containment tree
 swift-ecore query model.xmi --query "tree"
-
-# Query with verbose output
-swift-ecore query team.xmi --query "find Team" --verbose
 ```
 
 **Available query types:**
-- `info` - Model statistics and class distribution
+- `info` - Root and total object counts and the objects of each class; for a metamodel its packages and elements
 - `count` - Total object count
-- `list-classes` - Available classes in the model
-- `find <ClassName>` - Objects matching class name with detailed properties
-- `tree` - Hierarchical view of model structure
+- `list-classes` (or `classes`) - The classes of the objects with their counts, or every class of a metamodel with its supertypes
+- `hierarchy` - The inheritance hierarchy of the classes
+- `find <ClassName>` - Objects of a class or its subclasses, with their attribute values and references
+- `tree` - The containment tree with the class, name and location of every object
 
 ### MTL (Model-to-Text) Commands
 
@@ -536,6 +664,11 @@ swift-mtl generate template.mtl \
 swift-mtl generate template.mtl \
   --model input.xmi \
   --template generateAll \
+  --output generated/
+
+# Name the template file with --template instead of as an argument
+swift-mtl generate --template template.mtl \
+  --model input.xmi \
   --output generated/
 
 # Ecore model: registered as a metamodel, and its EPackage is passed to the template
@@ -671,6 +804,40 @@ swift-mtl generate ClassGenerator.mtl \
   --model mymodel.ecore \
   --output generated-swift/
 ```
+
+### AQL Queries: `swift-aql`
+
+Evaluate AQL expressions against models, for example to try out the queries of a template or to
+check a model in a script.
+
+```bash
+# Navigate from the root object, which is bound to its class name (company for a Company)
+swift-aql evaluate --model company-data.xmi --expression "company.departments.name"
+
+# Filter, collect and aggregate
+swift-aql evaluate --model company-data.xmi \
+    --expression "company.departments.employees->select(e | e.age < 30).name"
+
+# Evaluate from an object selected by its xmi:id, fragment path or name
+swift-aql query company-model.xmi --query "self.employees" --context company1
+
+# Read the query from a file, and name the metamodel explicitly
+swift-aql query company-model.xmi --query-file queries/count.aql --metamodel Company.ecore
+
+# Expressions without a model
+swift-aql evaluate --expression "Sequence{1, 2, 3}->sum()"
+```
+
+`self` is the object that `--context` selects, or the first root object of the first model. Every
+root object is also bound to the name of its class with a lower-case first letter. Without
+`--metamodel`, the Ecore files beside a model whose namespace URI the model uses are registered as
+its metamodels. Values print on one line: strings in double quotes (`"Acme Corp"`), integers and
+reals as numbers (`1995`, `500000.0`), Booleans as `true` or `false`, model objects as their class
+and name (`Employee(Alice Smith)`), collections in square brackets and undefined values as `null`.
+A missing file, an invalid expression or a failed evaluation is reported on standard error with a
+non-zero exit status. The behaviour options of `swift-mtl` expressions (`--semantics`,
+`--collection-kinds` and the others in [Compatibility with 0.6](#compatibility-with-06)) and
+`--unset-features` apply as well.
 
 ### Real-World Examples
 
@@ -810,6 +977,7 @@ The libraries keep the API of version 0.6, and with it the behaviour of version 
 - **swift-ecore executable**: Command-line tool for validation, conversion, and code generation
 - **swift-atl executable**: Command-line tool for ATL transformation
 - **swift-mtl executable**: Command-line tool for MTL text generation
+- **swift-aql executable**: Command-line tool for evaluating AQL queries against models
 
 Besides the tools, the package offers these library products:
 - **ModellingGenerators**: the generator model pipeline and the bundled template sets for Swift, Java, C and C++

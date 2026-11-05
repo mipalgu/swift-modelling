@@ -33,6 +33,12 @@ swift-atl transform <transformation-file> [options]
 - `--input-format <xmi|json>` - Format of the source models (default: from the file extension)
 - `--output-format <xmi|json>` - Format of the target models (default: from the file extension)
 - `--metamodel-path <directory>` - Directory searched for metamodels named by `-- @path` directives (repeatable)
+- `--source-metamodel <[name=]file.ecore>` - Metamodel file for a source metamodel, matched to the metamodels after `from` (or `refining`) by order or by name (repeatable)
+- `--target-metamodel <[name=]file.ecore>` - Metamodel file for a target metamodel, matched to the metamodels after `create` in the same way (repeatable)
+- `--metamodel <[name=]file.ecore>` - Metamodel file for any metamodel of the module, such as one that source and target share; by position it follows the source metamodels and then the target metamodels, each name once (repeatable)
+- `--refining` - Refine the source model, as a module declared with `refining` does
+- `--validate-only` - Check the transformation against its metamodels and load the source models, without running it or writing targets
+- `--quiet`, `-q` - Print nothing on success; cannot be combined with `--verbose` or `--debug`
 - `--verbose` - Enable verbose output
 - `--debug` - Trace the execution
 - `--continue-after-errors` - Continue after metamodel loading errors
@@ -42,6 +48,12 @@ swift-atl transform <transformation-file> [options]
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
 
 **Module parameters.** A transformation declares a parameter in a header comment, `-- @param name : Type` or `-- @param name : Type = default`, with the types `String`, `Integer`, `Real` and `Boolean`, and reads it as `thisModule.name`. `--param name=value` supplies the value; it is converted to the declared type. A name that the module does not declare, a value of the wrong type, a required parameter without a value, and an argument that is not `name=value` are errors.
+
+**Metamodel files and directives.** A metamodel file given on the command line takes the place of the `-- @path` and `-- @nsURI` directives of its metamodel; a metamodel that two options bind to different files, a name that the module header does not declare, and a positional list whose length differs from the declared metamodels are errors. A metamodel that neither a file nor a directive binds is an error unless `--continue-after-errors` is given. A `-- @path` that starts with `/` names a file in an Eclipse workspace, such as `/Families2Persons/Families.ecore`: it is looked up in each metamodel search directory as `Families2Persons/Families.ecore` and then as `Families.ecore`, with the search directory as the project directory. Without `--metamodel-path` or the `ECOREPATH` environment variable, the search directories are the directory of the transformation, its parent and the current directory.
+
+**Refining mode.** A module declared as `create OUT : MM refining IN : MM;`, or run with `--refining`, starts each target model as a copy of the source model in the same position of the header. A rule changes the copy of the element it matches, through the first target pattern element of the type of its source pattern element; elements that no rule matches are kept. A rule whose `to` section starts with `drop`, alone or before target patterns of new elements, deletes the element it matches, with the elements it contains, once every other rule has run; references from the remaining elements to the deleted ones are removed. `drop` outside refining mode is an error, which `--validate-only` reports as well.
+
+**Validation only.** `--validate-only` reports a metamodel without classifiers, a model element type that its metamodel does not define, a binding of a feature that the class of its target element does not have, in the rules and helper contexts of the module, and a rule that uses `drop` outside refining mode. It then maps and loads the source models and maps the target models that are given. Expressions are not type-checked.
 
 **Built-in metamodels.** The Ecore metamodel (`http://www.eclipse.org/emf/2002/Ecore`) and the generator metamodel (`http://www.eclipse.org/emf/2002/GenModel`) are built in, so directives such as `-- @nsURI Ecore=http://www.eclipse.org/emf/2002/Ecore` need no metamodel file. A target that is an instance of a built-in metamodel is written in the layout of the Eclipse Modeling Framework, with references to other models as `uri#fragment` attribute values; other targets keep the usual layout.
 
@@ -58,6 +70,20 @@ swift-atl transform MyTransformation.atl \
     --source IN=input.xmi \
     --target OUT=output.xmi \
     --metamodel-path metamodels/
+
+# Metamodel files instead of -- @path directives
+swift-atl transform Families2Persons.atl \
+    --source sample-Families.xmi --source-metamodel Families.ecore \
+    --target output-Persons.xmi --target-metamodel Persons.ecore
+
+# Refine a model with one metamodel for source and target
+swift-atl transform Cleanup.atl --refining \
+    --source customers.xmi --target cleaned.xmi \
+    --metamodel Customer.ecore
+
+# Check a transformation without running it
+swift-atl transform Families2Persons.atl --validate-only \
+    --source-metamodel Families.ecore --target-metamodel Persons.ecore
 
 # Parameters for a transformation that declares them with -- @param
 swift-atl transform Library2Report.atl \

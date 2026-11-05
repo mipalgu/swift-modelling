@@ -254,6 +254,70 @@ swift-atl transform Ecore2GenModel.atl \
     --param prefix=Library
 ```
 
+### Metamodel Files
+
+A transformation names its metamodels with `-- @path` directives.
+A path that starts with `/` names a file in an Eclipse workspace,
+such as `/Families2Persons/Families.ecore` for `Families.ecore` in
+the project `Families2Persons`. swift-atl looks such a path up in
+each metamodel search directory, first with the directory as the
+workspace (`Families2Persons/Families.ecore`) and then with the
+directory as the project directory itself (`Families.ecore`).
+Without `--metamodel-path` or `ECOREPATH`, it searches the directory
+of the transformation, its parent and the current directory, so the
+metamodels of an Eclipse ATL project are found in a copy of the
+project directory.
+
+Metamodel files given on the command line take the place of the
+directives. `--source-metamodel` and `--target-metamodel` follow the
+order of the module header, and `name=file.ecore` binds the metamodel
+of that name; `--metamodel` binds any metamodel of the module, such
+as one that source and target share:
+
+```bash
+swift-atl transform Families2Persons.atl \
+    --source families.xmi --source-metamodel Families.ecore \
+    --target persons.xmi --target-metamodel Persons=Persons.ecore
+```
+
+### Refining Mode
+
+A module declared with `refining` instead of `from`, or run with
+`--refining`, refines its source model in place: each target model
+starts as a copy of the source model, the rules change the elements
+they match, and the elements that no rule matches are kept. A rule
+whose `to` section is `drop` deletes the element it matches:
+
+```atl
+rule RemoveInactive {
+    from c : Customer!Customer (not c.active)
+    to drop
+}
+```
+
+Run such a module, or one declared with `from`, in refining mode:
+
+```bash
+swift-atl transform Cleanup.atl --refining \
+    --source customers.xmi --target cleaned.xmi \
+    --metamodel Customer.ecore
+```
+
+### Checking Without Running
+
+`--validate-only` parses the transformation, binds its metamodels,
+checks the model element types and bound features of its rules and
+helpers against them, and loads the source models that are given,
+without running the transformation or writing any target. `--quiet`
+prints nothing when the command succeeds:
+
+```bash
+swift-atl transform Families2Persons.atl --validate-only \
+    --source families.xmi \
+    --source-metamodel Families.ecore \
+    --target-metamodel Persons.ecore
+```
+
 ## Other Commands
 
 Beyond `validate` and `transform`, the tool offers `parse` to
