@@ -103,9 +103,9 @@ jobs:
         run: |
           $TAG = "${{ inputs.tag || github.event.inputs.tag || github.ref_name }}"
           New-Item -ItemType Directory -Force -Path bottle
-          Copy-Item .build/release/swift-ecore.exe bottle/
-          Copy-Item .build/release/swift-atl.exe bottle/
-          Copy-Item .build/release/swift-mtl.exe bottle/
+          # The tools are those named in Scripts/tools.txt, one per line
+          Get-Content Scripts/tools.txt | Where-Object { $_ } |
+            ForEach-Object { Copy-Item ".build/release/$_.exe" bottle/ -ErrorAction Stop }
           # Resource bundles (templates, transformations, metamodels) must sit next to the executables
           Get-ChildItem .build/release -Directory -Filter *.resources |
             Where-Object { $_.Name -notmatch '(Tests|-tests)\.resources$' } |

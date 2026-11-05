@@ -13,6 +13,8 @@
 #
 #   build-directory  the release products, e.g. `.build/release`
 #   keg-directory    the keg to create, e.g. `swift-modelling/0.2.1`
+#
+# The tools are those named in `Scripts/tools.txt`, one per line.
 
 set -eu
 
@@ -23,7 +25,8 @@ fi
 
 build_directory=$1
 keg_directory=$2
-tools="swift-ecore swift-atl swift-mtl"
+scripts=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+tools=$(cat "$scripts/tools.txt")
 
 mkdir -p "$keg_directory/bin" "$keg_directory/libexec"
 

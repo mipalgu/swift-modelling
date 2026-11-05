@@ -1,6 +1,7 @@
 #!/bin/sh
 # Assemble WASI command modules with adjacent SwiftPM resource bundles.
 # Usage: Scripts/package-wasm.sh <build-directory> <package-directory>
+# The tools are those named in Scripts/tools.txt, one per line.
 set -eu
 
 if [ "$#" -ne 2 ]; then
@@ -10,8 +11,10 @@ fi
 
 build_directory=$1
 package_directory=$2
+scripts=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+tools=$(cat "$scripts/tools.txt")
 mkdir -p "$package_directory"
-for tool in swift-ecore swift-atl swift-mtl; do
+for tool in $tools; do
     cp "$build_directory/$tool.wasm" "$package_directory/"
 done
 
