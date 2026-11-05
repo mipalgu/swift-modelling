@@ -1,0 +1,43 @@
+{
+  "departments" : [
+    {
+      "eClass" : "http://example.org/enterprise#//Department",
+      "name" : "Research",
+      "teams" : [
+        {
+          "eClass" : "http://example.org/enterprise#//Team",
+          "members" : [
+            {
+              "eClass" : "http://example.org/enterprise#//Member",
+              "name" : "Ada"
+            },
+            {
+              "eClass" : "http://example.org/enterprise#//Member",
+              "mentor" : {
+                "$ref" : "//@departments.0/@teams.0/@members.0"
+              },
+              "name" : "Grace"
+            }
+          ],
+          "name" : "Compilers"
+        },
+        {
+          "eClass" : "http://example.org/enterprise#//Team",
+          "members" : [
+            {
+              "eClass" : "http://example.org/enterprise#//Member",
+              "name" : "Edgar"
+            }
+          ],
+          "name" : "Databases"
+        }
+      ]
+    },
+    {
+      "eClass" : "http://example.org/enterprise#//Department",
+      "name" : "Sales"
+    }
+  ],
+  "eClass" : "http://example.org/enterprise#//Company",
+  "name" : "Acme"
+}

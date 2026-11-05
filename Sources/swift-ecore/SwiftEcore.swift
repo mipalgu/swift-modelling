@@ -35,10 +35,14 @@ struct SwiftEcoreCommand: AsyncParsableCommand {
         subcommands: [
             InfoCommand.self,
             ValidateCommand.self,
+            InspectCommand.self,
+            CompareCommand.self,
+            StatisticsCommand.self,
+            QueryCommand.self,
             ConvertCommand.self,
+            CreateCommand.self,
             GenerateCommand.self,
             GenModelCommand.self,
-            QueryCommand.self,
         ]
     )
 }

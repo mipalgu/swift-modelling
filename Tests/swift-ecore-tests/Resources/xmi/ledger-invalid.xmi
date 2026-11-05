@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ledger:Ledger xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:ledger="http://example.org/ledger">
+  <entries number="1" payee="Bakery" kind="CREDIT" amount="-5.0"/>
+  <entries number="1" payee="someone@example.org" kind="DEBIT" amount="500.0"/>
+</ledger:Ledger>

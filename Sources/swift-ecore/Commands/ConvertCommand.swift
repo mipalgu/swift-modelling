@@ -23,7 +23,12 @@ struct ConvertCommand: AsyncParsableCommand {
         abstract: "Convert between model formats (XMI <-> JSON)",
         discussion: """
             Converts a model between XMI and JSON, inferring the formats from the file \
-            extensions unless --input-format or --output-format is given.
+            extensions unless --input-format or --output-format is given. The output file is \
+            the second argument or the value of --output. JSON is written indented, with the \
+            keys of every object in alphabetical order.
+
+            --validate checks the model as the validate command does and writes nothing if it \
+            has an error.
 
             --\(MetamodelOptions.optionName) names an Ecore metamodel of the model. \
             \(MetamodelOptions.effect)
@@ -42,9 +47,17 @@ struct ConvertCommand: AsyncParsableCommand {
     @Argument(help: "Input file path")
     var inputPath: String
 
-    /// Output file path.
-    @Argument(help: "Output file path")
-    var outputPath: String
+    /// Output file path, given as the second argument.
+    @Argument(help: "Output file path (or give it with --output)")
+    var outputArgument: String?
+
+    /// Output file path, given as an option.
+    @Option(name: .shortAndLong, help: "Output file path, instead of the second argument")
+    var output: String?
+
+    /// Whether the model is validated before it is written.
+    @Flag(help: "Validate the model, against its metamodels if given, and write nothing if it is invalid")
+    var validate = false
 
     /// Input format override.
     @Option(
@@ -76,6 +89,7 @@ struct ConvertCommand: AsyncParsableCommand {
     ///
     /// - Throws: `ConversionError` if conversion fails.
     func run() async throws {
+        let outputPath = try resolvedOutputPath()
         if verbose {
             print("Converting: \(inputPath) -> \(outputPath)")
         }
@@ -132,6 +146,9 @@ struct ConvertCommand: AsyncParsableCommand {
             options: ModelIO.LoadOptions(requiresMetamodel: false))
         let resource = loaded.resource
         var diagnostics = loaded.diagnostics
+        if validate {
+            try await check(loaded, at: inputURL, in: resourceSet ?? ResourceSet())
+        }
 
         // Save output
         let writeFormat = try Self.instanceFormat(named: outputFormatToUse) {
@@ -150,6 +167,41 @@ struct ConvertCommand: AsyncParsableCommand {
         }
 
         print("Conversion completed: \(outputPath)")
+    }
+
+    /// The output path, from the second argument or the `--output` option.
+    ///
+    /// - Returns: The path.
+    /// - Throws: ``ConversionError/outputRequired`` unless exactly one of the two is given.
+    func resolvedOutputPath() throws -> String {
+        switch (outputArgument, output) {
+        case (let path?, nil), (nil, let path?): return path
+        default: throw ConversionError.outputRequired
+        }
+    }
+
+    /// Validates a loaded model and prints what validation found.
+    ///
+    /// - Parameters:
+    ///   - loaded: The loaded model.
+    ///   - url: The location of the model.
+    ///   - resourceSet: The resource set with the registered metamodels.
+    /// - Throws: ``ConversionError/invalidModel(_:)`` if the model has an error.
+    private func check(_ loaded: ModelIO.Loaded, at url: URL, in resourceSet: ResourceSet) async throws {
+        let document = ModelDocument(
+            path: inputPath, url: url, format: loaded.format, resource: loaded.resource, resourceSet: resourceSet,
+            packages: loaded.packages, metamodels: await ModelDocument.registeredMetamodels(of: resourceSet),
+            diagnostics: loaded.diagnostics)
+        let outcome = await ModelChecker(document: document, options: ValidationOptions()).check()
+        let report = ValidationReport(
+            document: document, metamodelPaths: metamodelOptions.metamodels, strict: false,
+            findings: outcome.findings, abstractClasses: nil, constraints: outcome.constraints)
+        print(report.text(verbose: verbose), terminator: "")
+        guard report.valid else {
+            StandardOutput.flush()
+            throw ConversionError.invalidModel(report.errors)
+        }
+        if verbose { print("Validation completed successfully") }
     }
 
     /// The model instance format that a format name denotes.
