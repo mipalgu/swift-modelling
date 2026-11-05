@@ -9,7 +9,7 @@ digraph EcommerceMetamodel {
     category [label="{Category|name : EString [1]\ldescription : EString\l}" fillcolor="#f8f4e8"]
     product [label="{Product|name : EString [1]\lsku : EString [1]\lprice : EDouble\lstock : EInt\l|inv positivePrice: price \> 0\linv nonNegativeStock: stock \>= 0\l}" fillcolor="#f8f4e8"]
     customer [label="{Customer|name : EString [1]\lemail : EString [1]\l|inv validEmail: email contains @\l}" fillcolor="#e8f8f5"]
-    order [label="{Order|orderNumber : EString [1]\ldate : EString\lpaymentMethod : PaymentMethod\l|inv hasItems: items-\>notEmpty()\l}" fillcolor="#f4e8f8"]
+    order [label="{Order|orderNumber : EString [1]\ldate : EDate\lpaymentMethod : PaymentMethod [1]\l}" fillcolor="#f4e8f8"]
     item [label="{OrderItem|quantity : EInt\lunitPrice : EDouble\l|inv positiveQuantity: quantity \>= 1\l}" fillcolor="#f4e8f8"]
     payment [label="{«enumeration»\nPaymentMethod|CARD\lBANK_TRANSFER\lCASH\l}" fillcolor="#fff8e8"]
 
@@ -17,11 +17,11 @@ digraph EcommerceMetamodel {
     shop -> product [label="products *" arrowtail=diamond dir=both]
     shop -> customer [label="customers *" arrowtail=diamond dir=both]
     shop -> order [label="orders *" arrowtail=diamond dir=both]
-    order -> item [label="items *" arrowtail=diamond dir=both]
+    order -> item [label="items 1..*" arrowtail=diamond dir=both]
     category -> product [label="products * / category 1" dir=both arrowtail=open arrowhead=open style=dashed]
     customer -> order [label="orders * / customer 1" dir=both arrowtail=open arrowhead=open style=dashed]
     item -> product [label="product 1" arrowhead=open style=dashed]
-    order -> payment [label="paymentMethod" arrowhead=open style=dotted]
+    order -> payment [label="paymentMethod 1" arrowhead=open style=dotted]
 
     legendTitle [label="Shop metamodel (ECommerce.ecore)" shape=plaintext style="" fontname="Arial Bold" fontsize=14]
 }

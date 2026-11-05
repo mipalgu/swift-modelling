@@ -13,7 +13,7 @@
 
             This metamodel is the foundation for every later step: the instances conform to it, the transformation reads it and the validation enforces its rules.
 
-            @Image(source: "ecommerce-metamodel.svg", alt: "The shop metamodel: a Shop contains categories, products, customers and orders; a product belongs to a category, an order belongs to a customer and contains order items that refer to products. Products, customers, orders and order items carry OCL invariants.")
+            @Image(source: "ecommerce-metamodel.svg", alt: "The shop metamodel: a Shop contains categories, products, customers and orders; a product belongs to a category, an order belongs to a customer and contains order items that refer to products. Products, customers and order items carry OCL invariants.")
         }
 
         @Steps {
@@ -22,7 +22,7 @@
 
                 @Code(name: "ECommerce.ecore", file: workflow-01-step-01-metamodel.ecore)
 
-                A `Shop` contains categories, products, customers and orders, and an order contains its items. `Product.category` and `Category.products` are opposite references, as are `Order.customer` and `Customer.orders`, so each relationship can be navigated from both ends while the data store only one end. The OCL annotations state the business rules as invariants: prices are positive, stock is never negative, email addresses contain `@`, every order has an item and every item orders at least one unit.
+                A `Shop` contains categories, products, customers and orders, and an order contains its items. `Product.category` and `Category.products` are opposite references, as are `Order.customer` and `Customer.orders`, so each relationship can be navigated from both ends while the data store only one end. Multiplicities state the simplest rules: every order has a payment method and at least one item (`items` is `1..*`), and the date of an order is an `EDate`. The OCL annotations state the other business rules as invariants: prices are positive, stock is never negative, email addresses contain `@` and every item orders at least one unit.
             }
 
             @Step {
@@ -72,7 +72,7 @@
 
                 @Code(name: "Terminal", file: workflow-01-step-06-validate-instance.sh)
 
-                Validation with `--metamodel` checks every object against its class: feature types, multiplicities and reference targets. It also evaluates every invariant for every object it applies to: two for each of the ten products and one for each customer, order and order item, 48 checks in all. `swift-ecore inspect` then counts the objects of each class.
+                Validation with `--metamodel` checks every object against its class: feature types, multiplicities and reference targets. It also evaluates every invariant for every object it applies to: two for each of the ten products and one for each customer and order item, 40 checks in all. `swift-ecore inspect` then counts the objects of each class.
             }
 
             @Step {
@@ -96,7 +96,7 @@
 
                 @Code(name: "Terminal", file: workflow-01-step-08-validate-test-instances.sh)
 
-                The empty shop and the single-order shop are valid; the empty shop has no objects that an invariant applies to. The new shop from `swift-ecore create` lacks the name that the metamodel requires, and the invalid shop violates four invariants, each reported with the object and its location. `swift-ecore validate` then exits with status 1, so a script can stop at an invalid model.
+                Given several files, `swift-ecore validate` checks each of them in turn and ends with a count of valid and invalid files. The empty shop and the single-order shop are valid; the empty shop has no objects that an invariant applies to. The new shop from `swift-ecore create` lacks the name that the metamodel requires, and the invalid shop violates three invariants and has an order without items, each reported with the object and its location. `swift-ecore validate` then exits with status 1, so a script can stop at an invalid model.
             }
         }
     }

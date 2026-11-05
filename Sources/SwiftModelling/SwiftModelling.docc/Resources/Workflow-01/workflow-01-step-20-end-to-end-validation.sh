@@ -33,7 +33,7 @@ done
 
 # Output:
 # == shop-data.xmi
-# OCL invariants: 48 of 48 check(s) satisfied
+# OCL invariants: 40 of 40 check(s) satisfied
 # ...
 # Revenue 6815.0 agrees in the model, the report, Swift, JSON and Markdown
 # == test-instances/single-order.xmi

@@ -4,7 +4,7 @@
 swift-ecore validate shop-data.xmi --metamodel ECommerce.ecore
 
 # Output:
-# OCL invariants: 48 of 48 check(s) satisfied
+# OCL invariants: 40 of 40 check(s) satisfied
 # Validation completed successfully
 
 # Count the objects of each class.

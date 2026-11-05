@@ -7,7 +7,7 @@ swift-ecore validate Orders.ecore
 swift-ecore statistics Orders.ecore
 # Output:
 # Classes: 8
-# OCL invariants: 8
+# OCL invariants: 7
 # Classes by number of features:
 #   Order: 9 (9 declared)
 #   Product: 6 (6 declared)
@@ -28,6 +28,7 @@ swift-ecore compare LegacyOrders.ecore Orders.ecore
 # ...
 # ~ reference Order.shippingAddress type: EString -> Address
 # ...
+# ~ reference Order.items multiplicity: [0..*] -> [1..*]
 # + reference Order.customer: Customer [1..1]
 # ...
 # + reference OrderItem.product: Product [1..1]
@@ -37,4 +38,4 @@ swift-ecore compare LegacyOrders.ecore Orders.ecore
 # + class Customer
 # + class Address
 # ...
-# 46 differences: 13 added, 16 removed, 17 changed
+# 47 differences: 13 added, 16 removed, 18 changed

@@ -104,12 +104,6 @@
   </eClassifiers>
 
   <eClassifiers xsi:type="ecore:EClass" name="Order">
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
-      <details key="constraints" value="hasItems"/>
-    </eAnnotations>
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
-      <details key="hasItems" value="self.items->notEmpty()"/>
-    </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="orderId" lowerBound="1"
         eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="orderDate" lowerBound="1"
@@ -125,7 +119,7 @@
         eType="#//Address" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="payment" lowerBound="1"
         eType="#//Payment" containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="items" upperBound="-1"
+    <eStructuralFeatures xsi:type="ecore:EReference" name="items" lowerBound="1" upperBound="-1"
         eType="#//OrderItem" containment="true"/>
   </eClassifiers>
 

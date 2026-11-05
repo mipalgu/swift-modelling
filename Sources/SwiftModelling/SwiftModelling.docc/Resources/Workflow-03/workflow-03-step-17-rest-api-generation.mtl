@@ -390,9 +390,10 @@ security:
     else if attr.eType.name = 'EInt' then 'type: integer'
     else if attr.eType.name = 'EDouble' then 'type: number\nformat: double'
     else if attr.eType.name = 'EBoolean' then 'type: boolean'
+    else if attr.eType.name = 'EDate' then 'type: string\nformat: date-time'
     else if attr.eType.oclIsKindOf(EEnum) then '$ref: \'#/components/schemas/' + attr.eType.name + '\''
     else 'type: string'
-    endif endif endif endif endif
+    endif endif endif endif endif endif
 /]
 
 [comment Map a reference to an OpenAPI type of identifiers /]

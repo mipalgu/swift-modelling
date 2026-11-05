@@ -18,7 +18,7 @@ swift-ecore validate trial/migrated.xmi -m Orders.ecore
 swift-ecore compare trial/cleaned.xmi trial/migrated.xmi --summary \
     -m LegacyOrders.ecore -m Orders.ecore
 # Output:
-# OCL invariants: 31 of 31 check(s) satisfied
+# OCL invariants: 26 of 26 check(s) satisfied
 # Validation completed successfully
 # Comparing models: cleaned.xmi -> migrated.xmi
 # Objects per class:

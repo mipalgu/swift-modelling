@@ -65,23 +65,17 @@
         eType="#//Order" eOpposite="#//Order/customer"/>
   </eClassifiers>
 
-  <!-- An order of a customer: it must contain at least one item. -->
+  <!-- An order of a customer: it is paid in one way and contains at least one item. -->
   <eClassifiers xsi:type="ecore:EClass" name="Order">
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
-      <details key="constraints" value="hasItems"/>
-    </eAnnotations>
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
-      <details key="hasItems" value="self.items->notEmpty()"/>
-    </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="orderNumber" lowerBound="1"
         eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="date"
-        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="paymentMethod"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDate"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="paymentMethod" lowerBound="1"
         eType="#//PaymentMethod"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="customer" lowerBound="1"
         eType="#//Customer" eOpposite="#//Customer/orders"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="items" upperBound="-1"
+    <eStructuralFeatures xsi:type="ecore:EReference" name="items" lowerBound="1" upperBound="-1"
         eType="#//OrderItem" containment="true"/>
   </eClassifiers>
 

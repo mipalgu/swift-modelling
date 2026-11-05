@@ -32,7 +32,7 @@
 
                 @Code(name: "integration/ProjectManagement.ecore", file: workflow-03-step-02-shared-metamodel.ecore)
 
-                The `id` attributes are marked as identifiers (`iD="true"`), so tools can match objects across files. Dates are ISO 8601 text, which every format holds in the same way.
+                The `id` attributes are marked as identifiers (`iD="true"`), so tools can match objects across files. Dates are `EDate` attributes, which XMI and JSON both write as ISO 8601 text.
             }
 
             @Step {

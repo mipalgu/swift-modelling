@@ -37,10 +37,10 @@ cat > test-instances/invalid-shop.xmi <<'XMI'
   <categories xmi:id="misc" name="Miscellaneous"/>
   <products xmi:id="GIFT" name="Gift Card" sku="GIFT" price="-10.0" stock="5" category="misc"/>
   <customers xmi:id="kim" name="Kim Park" email="kim.example.com"/>
-  <orders orderNumber="T-002" customer="kim">
+  <orders orderNumber="T-002" date="2026-04-02" paymentMethod="CARD" customer="kim">
     <items quantity="0" unitPrice="10.0" product="GIFT"/>
   </orders>
-  <orders orderNumber="T-003" customer="kim"/>
+  <orders orderNumber="T-003" date="2026-04-03" paymentMethod="CARD" customer="kim"/>
 </shop:Shop>
 XMI
 

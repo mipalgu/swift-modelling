@@ -65,11 +65,12 @@
 | Containment    | nested element      | nested object        | nested array        |
 | Reference      | `href` fragment     | `$ref` fragment      | `ModelReference`    |
 | Enumeration    | literal name        | literal name         | enum (raw value)    |
-| Dates          | ISO 8601 text       | ISO 8601 text        | `String`            |
+| Dates          | ISO 8601 text       | ISO 8601 text        | ISO 8601 `String`   |
 | Identity       | `id` attribute      | `id` key             | `id` property       |
 
-Dates are `EString` attributes holding ISO 8601 text, so that every
-format keeps them exactly as written.
+Dates are `EDate` attributes. XMI and JSON write them as ISO 8601 text,
+which the generated Swift types keep as a `String`, and the REST API
+declares as a `date-time` string.
 
 ## Consequences for the Integration
 
