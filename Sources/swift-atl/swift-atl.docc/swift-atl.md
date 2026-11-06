@@ -15,6 +15,29 @@ The tool is built on the swift-atl package
 Swift implementation of the Eclipse ATL
 ([Eclipse ATL](https://eclipse.dev/atl/)) transformation language.
 
+### Features
+
+- **Eclipse ATL Compatibility**: Full syntax compatibility with Eclipse ATL transformations
+- **Complete Parser**: Full ATL and OCL syntax support
+- **XMI Serialisation**: The ATL XMI format of Eclipse, with round-trip support
+- **Execution Engine**: A complete ATL virtual machine with expression evaluation
+- **Advanced OCL**: Let expressions, tuple expressions, iterate operations and lambda expressions
+- **Helpers**: Context helpers and standalone helpers
+- **Module Parameters**: Values for `-- @param` declarations with `--param name=value`
+- **Unset Features**: Unset features read as in the Eclipse Modeling Framework, or as undefined
+  with `--unset-features undefined`
+- **Built-in Metamodels**: The Ecore and generator metamodels resolve from `-- @nsURI` directives
+  without metamodel files
+- **Reflection**: `refImmediateComposite()`, `refGetValue`, `refSetValue`, `refUnsetValue` and
+  `refInvokeOperation`, for container navigation without opposite references
+- **Code Generation**: `generate` turns Ecore models into generator models and generated code
+  with the shared pipeline
+- **Queries**: `query` evaluates ATL query units, such as one that builds a Graphviz file from a
+  model with `writeTo`, writing only inside an output directory unless told otherwise
+- **Integer Ranges**: Collection literals accept OCL integer ranges such as `Sequence{1..3}`
+- **Integer Division**: `/` divides two Integers into a Real, so `7 / 2` is `3.5`, as in OCL and
+  Eclipse ATL, and `div` gives the truncated Integer quotient
+
 ## Commands
 
 ### transform
@@ -33,6 +56,8 @@ swift-atl transform <transformation-file> [options]
 - `--input-format <xmi|json>` - Format of the source models (default: from the file extension)
 - `--output-format <xmi|json>` - Format of the target models (default: from the file extension)
 - `--metamodel-path <directory>` - Directory searched for metamodels named by `-- @path` directives (repeatable)
+- `--reference-style <encoded|plain>` - How an XMI target spells references into its own document (default `encoded`); see the output layout below
+- `--unset-features <defaults|undefined>` - How the rules read features that a model does not set (default `defaults`); see below
 - `--source-metamodel <[name=]file.ecore>` - Metamodel file for a source metamodel, matched to the metamodels after `from` (or `refining`) by order or by name (repeatable)
 - `--target-metamodel <[name=]file.ecore>` - Metamodel file for a target metamodel, matched to the metamodels after `create` in the same way (repeatable)
 - `--metamodel <[name=]file.ecore>` - Metamodel file for any metamodel of the module, such as one that source and target share; by position it follows the source metamodels and then the target metamodels, each name once (repeatable)
@@ -48,15 +73,32 @@ swift-atl transform <transformation-file> [options]
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
 
-**Module parameters.** A transformation declares a parameter in a header comment, `-- @param name : Type` or `-- @param name : Type = default`, with the types `String`, `Integer`, `Real` and `Boolean`, and reads it as `thisModule.name`. `--param name=value` supplies the value; it is converted to the declared type. A name that the module does not declare, a value of the wrong type, a required parameter without a value, and an argument that is not `name=value` are errors.
+**Module parameters.** A transformation declares a parameter in a header comment, `-- @param name : Type` or `-- @param name : Type = default`, with the types `String`, `Integer`, `Real` and `Boolean`, and reads it as `thisModule.name`. `--param name=value` supplies the value; it is converted to the declared type, and the value is everything after the first `=`. A name that the module does not declare, a value of the wrong type, a required parameter without a value, and an argument that is not `name=value` are errors.
 
 **Metamodel files and directives.** A metamodel file given on the command line takes the place of the `-- @path` and `-- @nsURI` directives of its metamodel; a metamodel that two options bind to different files, a name that the module header does not declare, and a positional list whose length differs from the declared metamodels are errors. A metamodel that neither a file nor a directive binds is an error unless `--continue-after-errors` is given. A `-- @path` that starts with `/` names a file in an Eclipse workspace, such as `/Families2Persons/Families.ecore`: it is looked up in each metamodel search directory as `Families2Persons/Families.ecore` and then as `Families.ecore`, with the search directory as the project directory. Without `--metamodel-path` or the `ECOREPATH` environment variable, the search directories are the directory of the transformation, its parent and the current directory.
 
 **Refining mode.** A module declared as `create OUT : MM refining IN : MM;`, or run with `--refining`, starts each target model as a copy of the source model in the same position of the header. A rule changes the copy of the element it matches, through the first target pattern element of the type of its source pattern element; elements that no rule matches are kept. A rule whose `to` section starts with `drop`, alone or before target patterns of new elements, deletes the element it matches, with the elements it contains, once every other rule has run; references from the remaining elements to the deleted ones are removed. `drop` outside refining mode is an error, which `--validate-only` reports as well.
 
-**Validation only.** `--validate-only` reports a metamodel without classifiers, a model element type that its metamodel does not define, a binding of a feature that the class of its target element does not have, in the rules and helper contexts of the module, and a rule that uses `drop` outside refining mode. It then maps and loads the source models and maps the target models that are given. Expressions are not type-checked.
+**Unset features.** `--unset-features defaults|undefined` chooses how the rules read features that a model does not set. With `defaults`, the default, they read as the Eclipse Modeling Framework's `eGet` reports them: an unset attribute as its declared default or the default of its data type (`false`, `0`, `0.0` or the first enumeration literal), an unset many-valued feature as an empty collection, and an unset string or reference as undefined. With `undefined`, every unset feature reads as undefined, so a guard such as `t.done = false` no longer matches a task that leaves `done` unset. `query` and `generate` accept the option too, as do `swift-ecore generate` and `swift-ecore genmodel`, for the import transformation and the templates.
 
-**Built-in metamodels.** The Ecore metamodel (`http://www.eclipse.org/emf/2002/Ecore`) and the generator metamodel (`http://www.eclipse.org/emf/2002/GenModel`) are built in, so directives such as `-- @nsURI Ecore=http://www.eclipse.org/emf/2002/Ecore` need no metamodel file. A target that is an instance of a built-in metamodel is written in the layout of the Eclipse Modeling Framework, with references to other models as `uri#fragment` attribute values; other targets keep the usual layout.
+**Integer ranges.** Collection literals accept OCL integer ranges, so `Sequence{0, 2..4}` holds `0, 2, 3, 4`. Eclipse ATL rejects them, and so does `--collection-range-syntax eclipse` (or `--semantics legacy`), with a message that names the portable alternatives. Every command that reads ATL source accepts the option: `parse`, `validate`, `analyze`, `compile`, `test`, `transform`, `query`, and `generate` for a transformation given with `--transformations`.
+
+**Integer division.** `/` divides two Integers into a Real, as in OCL and Eclipse ATL, so `7 / 2` is `3.5` and `8 / 2` is `4.0`; `div` gives the truncated Integer quotient. `--integer-division truncating` (or `--semantics legacy`) makes `/` truncate the quotient of two Integers, as version 0.6 did. `transform` and `query` run ATL source with the option, and `generate` runs a transformation given with `--transformations` with it.
+
+**Validation only.** `--validate-only` reports a metamodel without classifiers, a model element type that its metamodel does not define, a binding of a feature that the class of its target element does not have, in the rules and helper contexts of the module, and a rule that uses `drop` outside refining mode. It then maps and loads the source models and maps the target models that are given. Expressions are not type-checked. With `--quiet`, nothing is printed on success.
+
+**Built-in metamodels.** The Ecore metamodel (`http://www.eclipse.org/emf/2002/Ecore`) and the generator metamodel (`http://www.eclipse.org/emf/2002/GenModel`) are built in. A transformation names them with directives, so no metamodel file is needed:
+
+```text
+-- @nsURI Ecore=http://www.eclipse.org/emf/2002/Ecore
+-- @nsURI GenModel=http://www.eclipse.org/emf/2002/GenModel
+module Tiny;
+create OUT : GenModel from IN : Ecore;
+```
+
+**Output layout.** A target that is an instance of a built-in metamodel is written in the layout of the Eclipse Modeling Framework: references to other models are `uri#fragment` attribute values (`ecorePackage="library.ecore#/"`), with relative URIs and name-based fragments, so that the result opens unchanged in the Eclipse tooling. Other targets keep the usual layout, unless `--reference-style plain` is given: such an XMI target is then also written in the layout of the Eclipse Modeling Framework, and a reference into the same document holds the fragment alone (`peer="/0"`) rather than `#/0`, as Eclipse writes XMI model files. `encoded`, the default, keeps the usual layout. Both styles load again.
+
+**Empty targets.** A transformation whose rules match nothing still succeeds and writes each target as an empty model: an XMI document holding only the `xmi:XMI` element, or an empty JSON array.
 
 **Examples:**
 
@@ -91,6 +133,14 @@ swift-atl transform Library2Report.atl \
     --source IN=library.xmi \
     --target OUT=report.xmi \
     --param title=Catalogue --param limit=10
+
+# Write same-document references of an XMI target as Eclipse writes XMI model files
+swift-atl transform Families2Persons.atl --source families.xmi --target persons.xmi \
+    --reference-style plain
+
+# Metamodel files by name rather than by position
+swift-atl transform Families2Persons.atl --source families.xmi --source-metamodel Families.ecore \
+    --target persons.xmi --target-metamodel Persons=Persons.ecore
 ```
 
 ### query
@@ -124,9 +174,9 @@ A query unit starts with `query Name = expression;` instead of a module header, 
 
 **Input models.** A query has no `from` clause. Its metamodels are those named by its `-- @path` and `-- @nsURI` directives, followed by those given with `--metamodel`, and each is an input model of the same name. Type references such as `Flow!Step` resolve through the metamodel name, `allInstances()` collects the instances of every model of that metamodel, and `allInstancesFrom('IN')` selects the model named `IN`.
 
-**Writing files.** `writeTo(path)` writes a string in UTF-8, and `writeToWithCharset(path, charset)` in `UTF-8`, `UTF-16`, `UTF-16BE`, `UTF-16LE`, `UTF-32`, `UTF-32BE`, `UTF-32LE`, `ISO-8859-1` or `US-ASCII`. Both return `true`, replace an existing file, create missing directories and add no line break. Relative paths are resolved against the output directory. Absolute paths and paths that lead outside the output directory, through `..` or through symbolic links, are rejected with an error that names the path, unless `--allow-unrestricted-paths` is given. Transformations run by `transform` cannot write files.
+**Writing files.** `writeTo(path)` writes a string in UTF-8, and `writeToWithCharset(path, charset)` in `UTF-8`, `UTF-16`, `UTF-16BE`, `UTF-16LE`, `UTF-32`, `UTF-32BE`, `UTF-32LE`, `ISO-8859-1` or `US-ASCII`. Both return `true`, replace an existing file, create missing directories and add no line break. Relative paths are resolved against the output directory. Absolute paths and paths that lead outside the output directory, through `..` or through symbolic links, are rejected with an error that names the path, unless `--allow-unrestricted-paths` is given. Eclipse ATL resolves relative paths against the workspace or the working directory of the Java process and accepts any path; give `--allow-unrestricted-paths` only for queries you trust. Transformations run by `transform` cannot write files, so a transformation that calls `writeTo` fails.
 
-**Result.** The value of the query is printed to standard output: a string as it is, followed by a line break unless it ends with one, and any other value as ATL writes it, such as `true`, `42` or `Sequence{'a', 'b'}`. A query that ends with `writeTo` prints `true`. Eclipse ATL returns the value to the program that launched the query, and its launcher discards it.
+**Result.** The value of the query is printed to standard output: a string as it is, followed by a line break unless it ends with one, and any other value as ATL writes it, such as `true`, `42` or `Sequence{'a', 'b'}`. A query that ends with `writeTo` prints `true`. `--no-print-result` prints nothing. Messages, including the progress that `--verbose` reports, go to standard error. Eclipse ATL returns the value to the program that launched the query, and its launcher discards it.
 
 **Examples:**
 
@@ -156,7 +206,8 @@ The command is the ATL entry to the shared generation pipeline. An Ecore model i
 
 - `-l, --language <name>` - `genmodel` (default), or the name of a template set; the help lists the bundled ones, and an unknown name is rejected with every language that can be used, including the ones that `--template-path` adds
 - `-o, --output <path>` - Output directory (default: `Generated`); for `genmodel`, the directory or `.genmodel` file to write (default: beside the Ecore model)
-- `--transformations <path>` - A transformation file, or a directory holding `Ecore2GenModel.atl`, that replaces the bundled transformation
+- `--transformations <path>` - A transformation file, or a directory holding `Ecore2GenModel.atl`, that replaces the bundled transformation; the replacement receives the same parameters as the bundled one
+- `--unset-features <defaults|undefined>` - How the transformation and the templates read features that a model does not set, as for `transform`
 - `--base-package <name>`, `--prefix <[package=]name>` (repeatable), `--model-project <name>`, `--model-plugin-id <id>`, `--copyright <text>`, `--jdk-level <level>` - Settings of the generator model, as for `swift-ecore genmodel`
 - `--defaults headless|wizard`, `--root-extends-class <name>`, `--operation-reflection` / `--no-operation-reflection`, `--import-organizing` / `--no-import-organizing` - The preset of the generator model defaults and its overrides, as for `swift-ecore genmodel`; they only apply to an Ecore model
 - `--template-path <directory>` - Directory with template files that replace bundled templates (repeatable)
@@ -350,6 +401,8 @@ swift-atl compile Families2Persons.atl --output families2persons.atlc
 ```
 
 ## Environment and Configuration File
+
+The Compatibility with 0.6 section of the [SwiftModelling documentation](https://mipalgu.github.io/swift-modelling/documentation/swiftmodelling/swiftmodelling/index.html) lists every behaviour option with its default and its version 0.6 behaviour, and describes the environment variable and the configuration file in full.
 
 Without `--semantics`, the `SWIFT_MODELLING_SEMANTICS` environment variable (`standard` or `legacy`) chooses the preset, and then the `semantics` key of a configuration file. The configuration file is the first `.swift-modelling.json` in the current directory or one of its parents, up to the directory that holds `.git`; `--config` names another file and `--no-config` reads none. Its keys are the names of the behaviour options without their leading `--`, with the spellings of the command line as JSON strings, or JSON booleans for `check-let-types`, `cache-containers` and `strict-aql`; a key that does not apply to a command is ignored. A behaviour option given on the command line overrides the file, an option in the file overrides the preset, `--semantics` overrides the environment variable, and the environment variable overrides `semantics` in the file. `--let-type-mismatches` and `--unset-features` do not depend on the preset: the command line overrides the file, which overrides their defaults. An invalid value of the variable, or an unknown key or an invalid value in the file, stops the command with an error that names it.
 
