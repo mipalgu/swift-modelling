@@ -59,6 +59,8 @@ swift-aql query <file> --query-file <file.aql> [options]
 - `--collection-arguments <whole|first-element>`, `--collection-kinds <distinguished|sequences>`, `--single-value-collections <set|sequence>`, `--container-lookup <resources|registered-objects>`, `--sequence-union <concatenation|distinct>`, `--null-addition <empty-text|null>`, `--text-form <joined|bracketed>` - The behaviours of expressions, with the same meaning and defaults as for `swift-mtl`
 - `--strict-aql`, `--no-strict-aql` - Reject the expressions that Eclipse AQL rejects, such as `Sequence{'a'}->union(Set{'b'})` or `Sequence{'a'}->concat('b')`, with a type error instead of accepting them, or accept them (the default); neither preset sets it, and without either flag the `strict-aql` key of the configuration file (`true` or `false`) chooses
 
+The Compatibility with 0.6 section of the [SwiftModelling documentation](https://mipalgu.github.io/swift-modelling/documentation/swiftmodelling/swiftmodelling/index.html) lists every behaviour option with its default and its version 0.6 behaviour, and describes the `SWIFT_MODELLING_SEMANTICS` environment variable and the `.swift-modelling.json` configuration file.
+
 ## Variables
 
 Before an expression is evaluated, the tool binds these variables:
@@ -142,6 +144,9 @@ swift-aql evaluate --model data/company.xmi --metamodel metamodels/Company.ecore
 
 # Query a metamodel
 swift-aql evaluate --model Company.ecore --expression "self.eClassifiers.name"
+
+# Evaluate an expression without a model
+swift-aql evaluate --expression "Sequence{1, 2, 3}->sum()"
 ```
 
 ## Topics

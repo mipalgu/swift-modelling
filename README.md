@@ -6,68 +6,24 @@
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fmipalgu%2Fswift-modelling%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/mipalgu/swift-modelling)
 [![License](https://img.shields.io/badge/License-BSD%204--Clause%20or%20GPL%202.0+-blue.svg)](https://github.com/mipalgu/swift-modelling/blob/main/LICENCE)
 
-Command-line tools for the Swift Modelling Framework.
+Command-line tools and libraries for model-driven engineering in pure Swift.
 
-These tools aim to provide comprehensive support for the
-[Eclipse Modelling Framework (EMF)](https://eclipse.dev/emf/),
-[Atlas Transformation Language (ATL)](https://eclipse.dev/atl/),
-and the [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec/MOFM2T/) standard.
+Swift Modelling reads, checks, transforms and generates from models without Java. It supports
+the [Eclipse Modeling Framework (EMF)](https://eclipse.dev/emf/), the
+[Atlas Transformation Language (ATL)](https://eclipse.dev/atl/), the
+[OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec/MOFM2T/) standard and
+the Acceleo Query Language (AQL), and aims to stay compatible with the Eclipse tools.
 
-## Aims / Features
+## Features
 
-### ECore Support
-- **Pure Swift**: No Java/EMF dependencies, Swift 6.0+ with strict concurrency
-- **Cross-Platform**: Full support for macOS, Linux, and Windows
-- **Value Types**: Sendable structs and enums for thread safety
-- **BigInt Support**: Full arbitrary-precision integer support via swift-numerics
-- **Complete Metamodel**: EClass, EAttribute, EReference, EPackage, EEnum, EDataType
-- **Resource Infrastructure**: EMF-compliant object management and ID-based reference resolution
-- **JSON Serialisation**: Load and save JSON models with full round-trip support
-- **Bidirectional References**: Automatic opposite reference management across resources
-- **XMI Parsing**: Load .ecore metamodels and .xmi instance files
-- **Dynamic Attribute Parsing**: Arbitrary XML attributes with automatic type inference (Int, Double, Bool, String)
-- **XPath Reference Resolution**: Same-resource references with XPath-style navigation (//@feature.index)
-- **XMI Serialisation**: Write models to XMI format with full round-trip support
-- **Generator Models**: Create Eclipse-compatible `.genmodel` files from Ecore models with `swift-ecore genmodel`, driven by a bundled ATL transformation
-- **Java Generation**: Generate Java model code from a generator model with `swift-ecore generate --language java`, driven by bundled MTL templates that follow the Eclipse code generator (enumerations and classes so far)
-- **Swift Generation**: Generate Swift model code for the ECore runtime from a generator model or an Ecore model with `swift-ecore generate --language swift` or `swift-atl generate --language swift`, driven by the bundled `swift` template set
-- **C and C++ Generation**: Generate a C11 or a C++20 model API from a generator model or an Ecore model with `swift-ecore generate --language c` or `--language cpp` (also `swift-atl generate`), driven by the bundled `c` and `cpp` template sets
-- **Template Sets**: Languages are directories of templates and data files; a new language needs no Swift code
-
-### ATL Support
-- **Eclipse ATL Compatibility**: Full syntax compatibility with Eclipse ATL transformations
-- **Complete Parser**: Full ATL/OCL syntax support (96/96 tests passing)
-- **XMI Serialisation**: Eclipse ATL XMI format support (134/134 round-trip tests passing)
-- **Execution Engine**: Complete ATL virtual machine with expression evaluation
-- **Advanced OCL**: Let expressions, tuple expressions, iterate operations, lambda expressions
-- **Helper Functions**: Context and standalone helper functions
-- **Module Parameters**: Values for `-- @param` declarations with `swift-atl transform --param name=value`
-- **Unset Features**: Unset features read as in the Eclipse Modeling Framework (an attribute as its default, a many-valued feature as an empty collection); `--unset-features undefined` reads them as undefined instead
-- **Built-in Metamodels**: The Ecore and generator metamodels resolve from `-- @nsURI` directives without metamodel files
-- **Reflection**: `refImmediateComposite()`, `refGetValue`, `refSetValue`, `refUnsetValue` and `refInvokeOperation` for container navigation without opposite references
-- **Code Generation**: `swift-atl generate` turns Ecore models into generator models and generated code with the shared pipeline
-- **Queries**: `swift-atl query` evaluates ATL query units, such as one that builds a Graphviz file from a model with `writeTo`, writing only inside an output directory unless told otherwise
-- **Integer Ranges**: Collection literals accept OCL integer ranges such as `Sequence{1..3}`; `--collection-range-syntax eclipse` or `--semantics legacy` rejects them as Eclipse ATL and version 0.6 do (see [Compatibility with 0.6](#compatibility-with-06))
-- **Integer Division**: `/` divides two Integers into a Real, so `7 / 2` is `3.5`, as in OCL and Eclipse ATL; `--integer-division truncating` or `--semantics legacy` truncates the quotient as version 0.6 did, and `div` always does
-
-### MOFM2T Support
-- **MTL Parser**: Parse MTL templates from text files following the OMG MOFM2T v1.0 specification
-- **MTL Runtime**: Execute templates with high performance using Swift's concurrent execution model
-- **Model Loading**: Load models from XMI and JSON formats for transformation
-- **Expression Language**: Full AQL (Acceleo Query Language) integration for expressions
-- **Advanced Features**: File blocks, protected areas, queries, macros, control flow
-- **CLI Tool**: Generate, parse, and validate MTL templates from the command line, with template search paths, parameters and merge or diff handling of existing files
-- **Unset Features**: Templates read unset features as in the Eclipse Modeling Framework, or as undefined with `swift-mtl generate --unset-features undefined`
-- **Typed Let Blocks**: A value that does not conform to the declared type of a `let` variable is an error, or, with `--let-type-mismatches skip`, skips the block with a warning, as in Acceleo 3
-- **Behaviour Options**: Templates follow the behaviour of this release by default; `--semantics legacy` and one option per behaviour select that of version 0.6 (see [Compatibility with 0.6](#compatibility-with-06))
-- **Standard Compliance**: Implements OMG MOFM2T v1.0 with compatibility for Acceleo-specific extensions
-
-### AQL Support
-- **Query Tool**: `swift-aql` evaluates AQL (Acceleo Query Language) expressions against XMI, JSON and Ecore models and prints their values
-- **Same Engine as Templates**: Expressions behave as in `swift-mtl` templates, with the same behaviour options and `--semantics` presets
-- **Root Variables**: Each root object is bound to its class name with a lower-case first letter (`company` for a `Company`), and `self` to the object that `--context` selects by `xmi:id`, fragment path or name
-- **Metamodel Discovery**: The Ecore files beside a model whose namespace URI it uses are registered automatically, so attributes have their declared types; `--metamodel` names them explicitly
-- **Scriptable Output**: Strings in double quotes, numbers and Booleans as they are, objects as `Class(name)`, collections in square brackets; errors go to standard error with a non-zero exit status
+- **swift-ecore**: validate, inspect, compare, measure, query, create and convert Ecore
+  metamodels and models in XMI and JSON, including their OCL invariants
+- **Code generation**: Eclipse-compatible generator models (`.genmodel`) and model code in Java,
+  Swift, C and C++, from template sets that a new language can join without Swift code
+- **swift-atl**: run, check and analyse ATL transformations and queries written for Eclipse ATL
+- **swift-mtl**: generate text from MTL templates and template sets, merging with existing files
+- **swift-aql**: evaluate AQL expressions against models, interactively or in scripts
+- **Cross-platform**: macOS, Linux, Windows and WebAssembly
 
 ## Requirements
 
@@ -78,67 +34,66 @@ and the [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec
 
 ### Homebrew (macOS / Linux)
 
-You can install the suite of modelling tools using [Homebrew](https://brew.sh)
-on macOS or Linux:
-
 ```bash
 brew tap mipalgu/tap
 brew install swift-modelling
 ```
 
-This will install `swift-ecore`, `swift-atl`, `swift-mtl` and `swift-aql` to your system.
+This installs `swift-ecore`, `swift-atl`, `swift-mtl` and `swift-aql`.
 
 ### Windows
 
-Pre-built Windows binaries are available from the
-[GitHub Releases](https://github.com/mipalgu/swift-modelling/releases) page.
-Download `swift-modelling-vX.Y.Z-windows-x86_64.zip`, extract it, and add
-the executables to your PATH.
+Download `swift-modelling-vX.Y.Z-windows-x86_64.zip` from
+[GitHub Releases](https://github.com/mipalgu/swift-modelling/releases), extract it, and add the
+executables to your PATH.
 
 ### WebAssembly (WASI)
 
-Download `swift-modelling-vX.Y.Z-wasm32-wasi.tar.gz` and its SHA256 file
-from [GitHub Releases](https://github.com/mipalgu/swift-modelling/releases).
-The archive includes `swift-ecore.wasm`, `swift-atl.wasm`, `swift-mtl.wasm`,
-`swift-aql.wasm` and their resource directories. Keep these directories beside the modules.
-
-Extract the archive and run a module with a WASI runtime. For example, with
-the `wasmkit` runtime included in the Swift 6.4 toolchain:
+Download `swift-modelling-vX.Y.Z-wasm32-wasi.tar.gz` and its SHA256 file from
+[GitHub Releases](https://github.com/mipalgu/swift-modelling/releases). The archive holds
+`swift-ecore.wasm`, `swift-atl.wasm`, `swift-mtl.wasm`, `swift-aql.wasm` and their resource
+directories; keep these directories beside the modules. Run a module with a WASI runtime, such as
+the `wasmkit` runtime of the Swift 6.4 toolchain:
 
 ```bash
 cd swift-modelling-vX.Y.Z-wasm32-wasi
 wasmkit run --stack-size 67108864 --env TMPDIR=. --dir . swift-ecore.wasm --help
 ```
 
-The `--dir .` option grants access to the extracted resources and any models
-in that directory. `TMPDIR=.` also keeps generation scratch files within
-that accessible directory. Grant access to additional directories when needed.
+`--dir .` grants access to the extracted resources and to the models in that directory, and
+`TMPDIR=.` keeps generation scratch files there. Grant access to other directories as needed.
 
-## Building
+## Building from Source
 
 ```bash
-# Build all CLI tools
 swift build
-
-# Run the ECore CLI
 swift run swift-ecore --help
-
-# Run the ATL CLI
-swift run swift-atl --help
-
-# Run the MTL CLI
-swift run swift-mtl --help
-
-# Run the AQL CLI
-swift run swift-aql --help
 ```
 
+## Quick Start
 
-## From Ecore to a Programming Language
+### swift-ecore
+
+```bash
+# Validate a model against its metamodel, including the OCL invariants of the metamodel
+swift-ecore validate instance.xmi --metamodel schema.ecore
+
+# Convert a model from XMI to JSON, with the classes and references of its metamodel
+swift-ecore convert library.xmi library.json --metamodel library.ecore
+
+# Show every class of a metamodel with its features
+swift-ecore inspect metamodel.ecore --detail full
+
+# Report what changed between two versions of a metamodel
+swift-ecore compare legacy.ecore improved.ecore
+
+# Find the objects of a class or of its subclasses
+swift-ecore query model.xmi --query "find Person"
+```
+
+### From Ecore to a Programming Language
 
 <!-- from-ecore-to-language:begin -->
-Turn an Ecore model into an EMF generator model (`.genmodel`) and into a language such as Java that compiles against the EMF runtime.
-
 ```bash
 # Two steps: write example.genmodel, then generate Java from it
 swift-ecore genmodel example.ecore --base-package org.example
@@ -146,884 +101,77 @@ swift-ecore generate --language java example.genmodel --output src-gen
 
 # One step: no generator model is left behind
 swift-atl generate example.ecore --language java --base-package org.example --output src-gen
+
+# Swift (the default language), C or C++ from an Ecore model
+swift-ecore generate model/library.ecore --output Sources/Library/
+swift-ecore generate model/library.ecore --language c --output c-src/
 ```
-
-Both routes write the same 36 Java files below `src-gen/org/example/example`. Add `--model-directory` to `swift-ecore generate` to write below the model directory of the generator model together with `plugin.xml`, `MANIFEST.MF` and the other project files of an Eclipse model project. Regenerating merges into existing files: members tagged `@generated` are rewritten, members tagged `@generated NOT` and your own members are kept; `--diff` and `--force-overwrite` change that. To compile the result, `Scripts/fetch-emf-runtime.sh` downloads the EMF runtime jars and prints the class path.
-
-The `--base-package` argument is optional, but best practice for languages such as Java that organise their packages hierarchically.
-
-`--defaults headless|wizard`, `--root-extends-class`, `--operation-reflection`, `--import-organizing` and `--code-style eclipse|emf` choose which of Eclipse's default behaviours the output follows.
-
-The [documentation](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/convertingecoretojava/index.html) lists every option and the files written, and [Matching Eclipse](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/matchingeclipse/index.html) explains precisely how the output relates to the Eclipse generator.
 <!-- from-ecore-to-language:end -->
 
-## Usage
-
-The `swift-ecore` command-line tool provides comprehensive Eclipse Modelling Framework functionality for Swift. All commands except `info` support the `-v, --verbose` flag for detailed output, and every command supports `--help` for usage information.
-
-### Basic Information
+### swift-atl
 
 ```bash
-# Show version and available commands
-swift-ecore info
-
-# Get help for any command
-swift-ecore <command> --help
-```
-
-### Validate Command
-
-Validate models and metamodels for structural correctness and compliance.
-
-```bash
-# Validate an XMI model file
-swift-ecore validate model.xmi
-
-# Validate with verbose output
-swift-ecore validate model.xmi --verbose
-
-# Validate a JSON model
-swift-ecore validate data.json --verbose
-
-# Validate an Ecore metamodel
-swift-ecore validate metamodel.ecore
-
-# Validate a model against its metamodel, including the OCL invariants of the metamodel
-swift-ecore validate instance.xmi --metamodel schema.ecore
-
-# List the abstract classes of a metamodel and the concrete classes that extend them
-swift-ecore validate metamodel.ecore --check-abstract-classes
-
-# Fail on warnings too, and keep a JSON report
-swift-ecore validate instance.xmi --metamodel schema.ecore --strict --format json --report report.json
-
-# Validate several models against the same metamodel; the command fails if any is invalid
-swift-ecore validate first.xmi second.xmi third.json --metamodel schema.ecore
-
-# Also report required attributes that are not set, even when their type has a default
-swift-ecore validate instance.xmi --metamodel schema.ecore --require-explicit-values
-```
-
-With several files, the findings of each file follow a `Validating: <file>` line and precede a line with its result, such as `second.xmi: invalid (2 error(s), 0 warning(s))`. A file that cannot be read counts as invalid, and a final line such as `Validated 3 files: 2 valid, 1 invalid` counts the results. With `--format json`, the report is an array with one report per file.
-
-**Supported formats:** XMI (`.xmi`), JSON (`.json`), Ecore (`.ecore`)
-
-A metamodel is checked against the constraints of Ecore. With `--metamodel`, a model is checked against the metamodel: every class and feature must be defined, values must fit the types and bounds of their features, references (also into other documents) must lead to objects of the right class, no object may be an instance of an abstract class, and every OCL invariant must hold. As in the Eclipse Modeling Framework, a required attribute that is not set counts as set to its default when its type has one, such as the first literal of an enumeration or 0 for an integer; `--require-explicit-values` reports such attributes too, which helps with hand-written or migrated models. Problems are printed with their element and its location, such as `//@employees.0`; the command fails with exit status 1 on an error, and with `--strict` also on a warning.
-
-### Inspect Command
-
-Show the structure of a metamodel or a model.
-
-```bash
-# Packages, classes, enumerations and data types of a metamodel
-swift-ecore inspect metamodel.ecore
-
-# Every class with its attributes, references, operations and invariants,
-# its supertypes, subclasses and inherited features, and the reference graph
-swift-ecore inspect metamodel.ecore --detail full --show-supertypes --show-references
-
-# Every object of a model with its values, nested as the objects contain each other
-swift-ecore inspect model.json --metamodel schema.ecore --detail full
-
-# The same report as JSON in a file
-swift-ecore inspect metamodel.ecore --detail full --format json --output structure.json
-```
-
-### Compare Command
-
-Compare two metamodels or two models and report their differences.
-
-```bash
-# What changed between two versions of a metamodel
-swift-ecore compare legacy.ecore improved.ecore
-
-# What changed between two models, leaving out one feature everywhere and one of a class
-swift-ecore compare before.xmi after.xmi --metamodel schema.ecore --ignore modified --ignore Order.note
-
-# Whether a migration kept every object: the objects of each class in both models
-swift-ecore compare legacy.xmi migrated.xmi --metamodel legacy.ecore --metamodel improved.ecore --summary
-
-# Fail with exit status 1 if the models differ, and keep a JSON report
-swift-ecore compare expected.xmi actual.xmi --metamodel schema.ecore --exit-code --format json --output differences.json
-```
-
-Every difference is one line that starts with `+` (added), `-` (removed) or `~` (changed), followed by a summary line. For two versions of a small shop model:
-
-```text
-Comparing models: shop-v1.xmi -> shop-v1-revised.xmi
-~ object Customer 'Grace' (//@customers.1) email: "grace@example.org" -> "grace@example.com"
-~ object Customer 'Grace' (//@customers.1) orders: [] -> [Order 'A-3']
-~ object Order 'A-1' (//@orders.0) status: "PAID" -> "SHIPPED"
-~ object Item 'Milk' (//@orders.0/@items.1) quantity: 1 -> 3
-- object Order 'A-2' (//@orders.1)
-+ object Order 'A-3' (//@orders.1)
-6 differences: 1 added, 1 removed, 4 changed
-```
-
-Metamodel differences read the same way, for example `~ attribute Order.status type: EString -> Status` or `+ class Product: extends NamedElement`.
-
-Metamodel elements are matched by name; a metamodel with a single root package is compared with the single root package of the other, even if it was renamed. Objects of models are matched by class and identity: the value of the identifying attribute of their class, else the value that names them, else their location. Both files must be metamodels or both models. The command succeeds whether or not the files differ, unless `--exit-code` is given.
-
-### Statistics Command
-
-Measure the size and shape of a metamodel or a model.
-
-```bash
-# Packages, classes, features, operations and invariants, inheritance depth and features per class
-swift-ecore statistics metamodel.ecore
-
-# Objects of each class, containment depth, attribute values and references,
-# and the concrete classes of the metamodel without objects
-swift-ecore statistics model.xmi --metamodel schema.ecore
-
-# The same measurements as JSON in a file
-swift-ecore statistics model.xmi --metamodel schema.ecore --format json --output statistics.json
-```
-
-For a metamodel, the classes are also listed by their number of features, inherited ones included, so a class that has grown too large stands out.
-
-### Create Command
-
-Create a model with one root object of a concrete class of a metamodel, as a starting point for editing.
-
-```bash
-swift-ecore create --metamodel schema.ecore --root-class Company --output company.xmi
-```
-
-### Convert Command
-
-Convert models between XMI and JSON, and metamodels between Ecore (`.ecore`) and JSON, while preserving their structure and data integrity.
-
-```bash
-# Convert XMI to JSON
-swift-ecore convert model.xmi output.json
-
-# Convert JSON to XMI
-swift-ecore convert data.json output.xmi
-
-# Convert with verbose progress information
-swift-ecore convert input.xmi output.json --verbose
-
-# Force overwrite existing output file
-swift-ecore convert input.json output.xmi --force
-
-# Name the output file with an option, and write nothing if the model is invalid
-swift-ecore convert input.xmi --output output.json --metamodel schema.ecore --validate
-
-# Read and write the model with the classes and references of its metamodel (repeatable)
-swift-ecore convert library.xmi library.json --metamodel library.ecore
-
-# Write same-document references as Eclipse writes XMI model files (//@classifiers.0)
-swift-ecore convert library.json library.xmi --metamodel library.ecore --reference-style plain
-
-# Example: Convert team model from XMI to JSON
-swift-ecore convert Tests/ECoreTests/Resources/xmi/team.xmi team.json --verbose
-
-# Convert a metamodel to JSON and back
-swift-ecore convert shop.ecore shop.json
-swift-ecore convert shop.json shop-copy.ecore
-```
-
-**Metamodel conversion.** A `.ecore` metamodel is written as a JSON metamodel, and a JSON file whose roots are Ecore packages is read as a metamodel, whatever its name, and can be written as `.ecore`. Every construct of the metamodel is kept, including enumerations, opposites, supertypes and annotations. A metamodel cannot be written as an XMI model, nor a model as `.ecore`; either is reported as an error and nothing is written. `--validate` checks a metamodel against the constraints of Ecore before it is written.
-
-**Metamodels that refer to other files.** References to other metamodel files keep their file names: a `shop.json` converted from a `shop.ecore` whose classes extend those of `base.ecore` still refers to `base.ecore#//Named`, and `swift-ecore` reads such references in either format. To convert a set of metamodels that refer to each other, convert every file into the same directory and then replace the extension in the references:
-
-```bash
-swift-ecore convert base.ecore base.json
-swift-ecore convert shop.ecore shop.json
-sed -i.bak 's/base\.ecore#/base.json#/g' shop.json
-```
-
-**Metamodels.** `-m, --metamodel file.ecore` (repeatable) registers the metamodel of the model, so it is read with the classes and data types the metamodel defines and written with package-qualified classes and typed references. Without a metamodel, classes are inferred from the document.
-
-**Round-trip compatibility:** With the metamodel of the model, XMI ↔ JSON conversions keep cross-references, containment relationships and all data types.
-
-**Warnings.** Whatever a conversion cannot keep, such as a class that no metamodel defines or a reference that cannot be written as a fragment, is reported once on standard error as a line starting with `warning:`. When the model was converted without `--metamodel`, the warnings are followed by a `hint:` line suggesting it. Warnings do not change the exit status, and the completion message stays on standard output.
-
-**Reference style.** `--reference-style encoded|plain` chooses how an XMI output spells references to objects of the same document. With `encoded`, the default, the output keeps its usual layout and the fragment keeps its leading `#` (`#//@classifiers.0`). With `plain`, the output is written in the layout of the Eclipse Modeling Framework, with references as attribute values holding the fragment alone (`type="cls:DataType //@classifiers.0"`), as Eclipse writes XMI model files. Both styles load again.
-
-**Metamodel-aware JSON:** JSON output gives each object a package-qualified `eClass`, and references between objects are written as `{"$ref": ...}` objects. When loading JSON, classes and references are resolved against the metamodels in use, including for `swift-mtl --model model.json`.
-
-### Generate Command
-
-Generate source code in several programming languages from Ecore metamodels or generator models.
-
-```bash
-# Generate Swift code (default language), through the bundled swift template set
-swift-ecore generate metamodel.ecore --output generated/
-
-# Generate C++ code
-swift-ecore generate metamodel.ecore --language cpp --output cpp-code/
-
-# Generate C code
-swift-ecore generate schema.ecore --language c --output c-src/ --verbose
-
-# Example: Generate Swift classes from organisation metamodel
-swift-ecore generate Tests/ECoreTests/Resources/xmi/organisation.ecore \
-  --output generated/ --language swift --verbose
-```
-
-**Languages:**
-- `swift` - Swift model code for the ECore runtime, written by the bundled template set (see [Generating Swift](#generating-swift))
-- `java` - Java model code for the Eclipse Modeling Framework runtime, written by the bundled template set (see [Generating Java from a Generator Model](#generating-java-from-a-generator-model))
-- `c` - a C11 model API with a header and a source file for each package, written by the bundled template set (see [Generating C and C++](#generating-c-and-c))
-- `cpp` - a C++20 model API with a header for each class, written by the bundled template set (see [Generating C and C++](#generating-c-and-c))
-
-**Input formats:** Ecore metamodels (`.ecore`) and generator models (`.genmodel`)
-
-Every language is generated by a template set from a generator model or an Ecore model through the shared template pipeline; see [Generating Swift](#generating-swift), [Generating C and C++](#generating-c-and-c) and [Generating Java from a Generator Model](#generating-java-from-a-generator-model).
-
-`swift-ecore generate --help` lists the bundled template set languages; a language that a `--template-path` directory adds is accepted but not listed there, and an unknown language is reported together with every language that can be used, including those additions.
-
-### GenModel Command
-
-Create a generator model (`.genmodel`) from one or more Ecore models, as the Eclipse Ecore importer does. The result is the starting point for generating model code, and it opens unchanged in the Eclipse tooling.
-
-```bash
-# Write library.genmodel beside library.ecore
-swift-ecore genmodel model/library.ecore --base-package org.example
-
-# Choose the output, project, plug-in identifier, copyright and compliance level
-swift-ecore genmodel model/library.ecore --output gen/library.genmodel \
-  --model-project org.example.library --model-plugin-id org.example.library \
-  --copyright "Copyright 2026 Example Pty Ltd" --jdk-level 17.0 --verbose
-
-# Set the prefix of the root package, or of one named package
-swift-ecore genmodel model/company.ecore --prefix Company --prefix projects=Proj
-
-# Keep the settings of an existing generator model while following changes to the Ecore model
-swift-ecore genmodel model/library.ecore --reload model/library.genmodel
-```
-
-**Options:**
-- `--base-package` - the base package of the root packages
-- `--prefix` - a package prefix: `Name` for the root package, or `package=Name` for one package (repeatable)
-- `--model-project` - the name of the model project
-- `--model-plugin-id` - the plug-in identifier of the model project
-- `--model-directory` - the source directory of the model project
-- `--copyright` - the copyright text
-- `--jdk-level` - the compliance level of the generated code (default `17.0`; any level the generator model supports)
-- `--defaults` - `headless` (the default) or `wizard`: the preset of operation reflection, root class and import organising (see below)
-- `--root-extends-class` - the class that generated root objects extend, overriding the preset
-- `--operation-reflection` / `--no-operation-reflection` - whether generated models include operation reflection, overriding the preset
-- `--import-organizing` / `--no-import-organizing` - whether generated code organises its imports, overriding the preset
-- `--reload` - an existing generator model whose settings are kept
-- `-o, --output` - the generator model to write (default: beside the first Ecore model, named after it)
-- `-v, --verbose` - show progress and a summary
-
-**Defaults.** A new generator model gets the settings of the Ecore importer: importer identifier, compliance level `17.0`, model directory `/<project>/src`, model plug-in identifier derived from the project, model name taken from the generator model file, and no copyright fields. Each package gets a prefix (its name with the first letter in upper case unless given), disposable provider factories, the XML resource kind when it uses extended metadata, and the load-initialisation settings that suit its size. Classes, features, enumerations, data types, operations and parameters get the settings that the importer derives from the Ecore model. References to the Ecore model are written in the layout Eclipse uses, for example `ecoreFeature="ecore:EAttribute library.ecore#//Book/title"`.
-
-**Preset.** Operation reflection, the root class and import organising follow the headless generator of the Eclipse tools (`org.eclipse.emf.codegen.ecore.Generator -ecore2GenModel`) unless you ask otherwise: they keep the defaults of the generator metamodel (no operation reflection, `org.eclipse.emf.ecore.impl.EObjectImpl` as the root class, no import organising), so none of the three is written to the generator model. `--defaults wizard` gives the settings that the interactive New EMF Generator Model wizard writes instead: `operationReflection="true"`, `rootExtendsClass="org.eclipse.emf.ecore.impl.MinimalEObjectImpl$Container"` and `importOrganizing="true"`. `--root-extends-class`, `--operation-reflection` and `--import-organizing` (or their `--no-` forms) override single settings of either preset, whatever their order on the command line. The presets are defined in the bundled transformation `Ecore2GenModel.atl` (the `defaults` parameter and the `...Override` parameters), so a replacement transformation can define its own. The same options exist on `swift-ecore generate` (for an Ecore model given for a template language) and on `swift-atl generate`; they do not apply to a generator model that is generated from directly.
-
-**Project name.** The project is the `--model-project` option if given. Otherwise, when the Ecore model lives in a directory named `model`, the project is the name of that directory's parent (the Eclipse layout `<project>/model/<name>.ecore`); in any other case it is the name of the root package.
-
-**Reloading.** With `--reload`, every setting of the existing generator model is kept for the elements that still exist, matched by name, while new Ecore elements get the defaults and removed ones are dropped. Options given on the command line override the existing settings. The compliance level of the existing model is kept unless `--jdk-level` is given, and operation reflection, the root class and import organising are kept unless `--defaults` or the corresponding flag is given.
-
-**Several models.** Several Ecore models can be given; each contributes its root packages to one generator model, which refers to the models by relative paths.
-
-### Generating Swift
-
-Generate Swift model code for the ECore runtime from a generator model (`.genmodel`) or an Ecore model, with the templates of the bundled `swift` template set. Both inputs work with `swift-ecore generate` and `swift-atl generate`; an Ecore model is imported into a temporary generator model first.
-
-```bash
-# Generate from an Ecore model; Swift is the default language of swift-ecore generate
-swift-ecore generate model/library.ecore --output Sources/Library/
-
-# Generate from a generator model
-swift-ecore generate --language swift model/library.genmodel --output Sources/Library/
-
-# The same through the ATL tool
-swift-atl generate model/library.ecore --language swift --output Sources/Library/
-```
-
-The set writes one file for every class, enumeration and data type, and a package description and a factory for every package, below a directory for each package. A class that is abstract, an interface or extended by other classes is a protocol; a class with instances is a `final class` that keeps its values under a lock, so that it is sendable without `@unchecked`. Names that are Swift keywords, such as `guard`, `Type` or `default`, are quoted with backticks. Existing files are merged with the generated code: a member tagged `// @generated` is regenerated, a member tagged `// @generated NOT` or without the tag is kept. Generated files import `ECore` and `EMFBase` and compile against the `ECore` product of swift-ecore. See the `SwiftGeneration` article of the `ModellingGenerators` documentation for the details.
-
-### Generating C and C++
-
-Generate a C11 or a C++20 model API from a generator model (`.genmodel`) or an Ecore model, with the templates of the bundled `c` and `cpp` template sets. Both inputs work with `swift-ecore generate` and `swift-atl generate`.
-
-```bash
-# A C11 API: one header and one source file for each package
-swift-ecore generate model/library.ecore --language c --output c-src/
-
-# A C++20 API: one header for each class, enumeration and data type
-swift-ecore generate model/library.ecore --language cpp --output cpp-src/
-
-# The same through the ATL tool
-swift-atl generate model/library.ecore --language c --output c-src/
-```
-
-The `c` set writes a `struct` for each class that has instances, with `Class_create` and `Class_destroy`, typed accessors, an `enum` for each enumeration, descriptors with the class and feature names for reflection, and the support header `EObject.h`. Containment references own their targets. Compile the output with `cc -std=c11 -I c-src` (the output directory is the include path).
-
-The `cpp` set writes a class for each class that has instances (an abstract base class for each abstract class or interface), an `enum class` for each enumeration, `std::vector` for many-valued features, `std::shared_ptr` for containment and `std::weak_ptr` for other references, a factory and a package description for each package, and the support header `EObject.hpp`. Everything is header-only; compile with `c++ -std=c++20 -I cpp-src`.
-
-Names that are keywords of the language, or that would hide a standard type or a generated name, get a trailing underscore. Documentation comes from the model as Doxygen comments. Existing files are merged with the generated code: a member tagged `// @generated` is regenerated, a member tagged `// @generated NOT` or without the tag is kept. See the `CGeneration` and `CppGeneration` articles of the `ModellingGenerators` documentation for the details.
-
-### Generating Java from a Generator Model
-
-Generate Java model code from a generator model (`.genmodel`), with the templates of the bundled `java` template set. The generated code follows the output of the Eclipse Modeling Framework code generator for the default options, including its `@generated` tags, so that files can be merged with hand-written code and, where the Eclipse tooling is in use, with Eclipse's own output.
-
-```bash
-# Write the packages of the model below the output directory
-swift-ecore generate --language java model/library.genmodel --output src-gen/
-
-# Start from an Ecore model; a temporary generator model with the importer defaults is used
-swift-ecore generate --language java model/library.ecore --output src-gen/
-
-# Write below the model directory of the generator model (src-gen/library/src/org/example/...)
-swift-ecore generate --language java model/library.genmodel -o src-gen --model-directory
-
-# Replace bundled templates, keep a copy of what would change, or replace everything
-swift-ecore generate --language java model/library.genmodel -o src-gen --template-path my-templates
-swift-ecore generate --language java model/library.genmodel -o src-gen --diff
-swift-ecore generate --language java model/library.genmodel -o src-gen --force-overwrite
-```
-
-**Options:**
-- `-l, --language` - `java`, `swift`, `c`, `cpp`, or the name of any other template set
-- `-o, --output` - the directory to write below (default: the current directory)
-- `--template-path` - a directory whose template files replace bundled files of the same name (repeatable; later directories win)
-- `--force-overwrite` - replace existing files without merging
-- `--diff` - write the generated text of an existing file beside it as `.<name>.new` and leave the file alone
-- `--model-directory` - write below the model directory of the generator model
-- `--code-style <style>` - the layout of the generated text, one of the styles of the template set (`java`: `eclipse`, the default, or `emf`); rejected for sets that offer none, such as `swift`, `c` and `cpp`
-- `-v, --verbose` - show every progress report; without it a progress bar appears on an interactive terminal
-
-**Code styles.** The Java template set offers two layouts, named in its descriptor as data. `eclipse` (the default) indents with tabs and writes the opening brace at the end of the preceding line, which is what the Eclipse generator leaves in a workspace with the default Java formatter preferences. `emf` indents with two spaces and writes the opening brace on its own line, as the sources in the Eclipse Modeling Framework repository do. The two styles differ only in white space, token for token, and the blank lines are the same in both. An unknown name is rejected with the styles that exist. The conversion runs on the generated text before it is merged with an existing file, so after changing the style of an existing tree every generated member is in the new style, and only a member that you marked `@generated NOT`, or wrote yourself, keeps the layout you gave it. Only files that match the patterns of the style (`*.java`) are converted; the project files are not. A template set declares its own styles in `templateset.json` (see the documentation of template sets).
-
-**Imports.** When the generator model does not organise its imports (`importOrganizing` unset or false, the headless default), the factory implementation, switch, adapter factory and validator import the interface package of the model with one wildcard import (`import org.example.library.*;`), as the Eclipse generator writes it. When the generator model organises its imports (`importOrganizing="true"`, as `--defaults wizard` or `--import-organizing` ask), every file instead imports the types it uses by name, sorted within groups for `java`, `javax`, `org`, `com` and any other top-level package, with a blank line between groups, as the organise-imports pass of Eclipse leaves them.
-
-**Existing files.** A file that exists is treated in this order: `--force-overwrite` replaces it; otherwise `--diff` writes the new text beside it; otherwise the generated members are merged with the file. In a merge, a member whose documentation comment carries `@generated` is regenerated, a member marked `@generated NOT` is kept as it is, and members without the tag (your own) are kept. Imports that you added stay. Only Java files are merged; the project files of a model (below) follow their own rules.
-
-**Current coverage.** The Java template set writes the package interface and implementation (with loaded initialisation, literals interface, operation reflection, nested packages and annotations; no generic metamodels), the factory interface and implementation, the XML processor and the resource factory and resource of packages that ask for them, the validator (for packages with constraints), the interface (unless the class names an existing Java interface) and implementation class (unless the class is an interface) of every class, one file for every enumeration (the full `EnumClass` template for compliance level 5.0 and higher, `typeSafeEnumCompatible` honoured), the switch and adapter factory, and, when the output location includes the source directory, the plugin class, plugin properties, build properties, bundle manifest and plugin descriptor of the model project. The `Class` template covers fields, default value constants, accessors with notification, containment and bidirectional references with their inverse methods, many-valued features with the list classes the Eclipse generator chooses, unsettable features, boolean flags (`booleanFlagsField`), group delegation to feature maps, map features and map entry classes, operations with bodies from the `body` annotation, `eGet`/`eSet`/`eUnset`/`eIsSet`, `eBaseStructuralFeatureID`, `eInvoke` (`operationReflection`), minimal or complete reflective methods, and `toString`. It does not cover generic type parameters, compliance levels below 5.0, reflective, dynamic or virtual feature delegation, array accessors, packed enumeration flags, setting delegates, invariant operations with validation delegates, `suppressInterfaces` and the Google Web Toolkit platform.
-
-**Checking the output.** Two optional checks run when their environment variable is set. `EMF_REFERENCE_ROOT` names a checkout of the Eclipse Modeling Framework; the generated enumeration, interfaces and implementation classes of its extended library example are then compared with the committed sources (`EMFJavaClassParityTests` lists the differences caused by manual edits of those sources). `EMF_RUNTIME_CLASSPATH` names the EMF runtime jars; the generated Java is then compiled with `javac`. `Scripts/fetch-emf-runtime.sh [directory]` downloads the jars from Maven Central and prints the class path:
-
-```bash
-export EMF_RUNTIME_CLASSPATH="$(Scripts/fetch-emf-runtime.sh)"
-swift test --filter JavaCompileTests
-```
-
-### Template Sets
-
-A template set is a directory named after a language, containing a descriptor (`templateset.json`), Model-to-Text modules and optional data models. The bundled sets live in `Sources/ModellingGenerators/Templates/<language>/`. The descriptor names the main module and template, and can declare progress totals, output layout and code styles. Language rules live in the templates and data; the Swift libraries provide the engines, generator model, services and pipeline.
-
-To try another language, put its directory below `my-templates` and pass that directory to the generator:
-
-```text
-my-templates/
-    outline/
-        templateset.json
-        main.mtl
-```
-
-```bash
-swift-ecore generate --language outline model/library.genmodel -o out --template-path my-templates
-```
-
-A file in a template path replaces the bundled file of the same relative name. Later paths take precedence, so individual modules can be customised without copying the whole set.
-
-A set can share modules with other sets: the optional `imports` list of its descriptor names directories relative to the set, such as `"imports": ["../expressions"]`, and a module of the set then imports `expressions/c.mtl` as `[import expressions::c/]`. `swift-mtl generate --template-set <directory|language>` runs any template set on the models given with `--model`.
-
-The [Template Sets article](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/templatesets/index.html) is the reference for descriptors, code styles, merge declarations, data models and services. [Java Generation](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/javageneration/index.html) describes the bundled Java modules and project files.
-
-### Generating with ATL: `swift-atl generate`
-
-`swift-atl generate` is the ATL entry to the same pipeline. An Ecore model is first transformed into a generator model by the bundled ATL transformation `Ecore2GenModel.atl`; a template language then turns the generator model into source files. The input is an Ecore model or a generator model.
-
-```bash
-# Create library.genmodel beside library.ecore (the language genmodel stops after the transformation)
-swift-atl generate model/library.ecore --language genmodel --base-package org.example
-
-# Generate Java from an Ecore model in one step (no generator model is left behind)
-swift-atl generate model/library.ecore --language java --base-package org.example -o src-gen/
-
-# Generate from an existing generator model, with customised templates and a copy of what would change
-swift-atl generate model/library.genmodel --language java --template-path my-templates --diff -o src-gen/
-
-# Replace the bundled transformation with a file, or with a directory that holds Ecore2GenModel.atl
-swift-atl generate model/library.ecore --language genmodel --transformations my-atl/
-```
-
-**Languages.** `--language` takes `genmodel` (the default) or the name of any template set: the bundled ones (`java`) and the sets that `--template-path` directories add. `swift-atl generate --help` lists the bundled languages (a language that a `--template-path` directory adds is accepted but not listed there), and an unknown name is rejected with every language that can be used, including those additions. There are no other languages.
-
-**Options.** `--base-package`, `--prefix`, `--model-project`, `--model-plugin-id`, `--copyright`, `--jdk-level`, `--defaults`, `--root-extends-class`, `--operation-reflection` and `--import-organizing` (with their `--no-` forms) mirror `swift-ecore genmodel`. `--template-path` (repeatable), `--force-overwrite`, `--diff`, `--model-directory` and `--code-style` mirror `swift-ecore generate` (`--code-style` is rejected for the language `genmodel`). `-o, --output` is the output directory (default `Generated`); for the language `genmodel` it is the directory or the `.genmodel` file to write, and the default is beside the Ecore model. `--transformations` replaces the bundled transformation with a transformation file or a directory holding `Ecore2GenModel.atl`; the replacement receives the same parameters as the bundled one. A progress bar with counts appears on an interactive terminal; `-v` prints one line for every file.
-
-### ATL Transformations: `swift-atl transform`
-
-```bash
-# Positional source and target, as before
+# Run a transformation
 swift-atl transform Families2Persons.atl --source families.xmi --target persons.xmi
 
-# Values for the parameters a transformation declares with -- @param (repeatable)
-swift-atl transform Ecore2GenModel.atl --source IN=library.ecore --target OUT=library.genmodel \
-  --param basePackage=org.example --param prefix=Library
-
-# Write same-document references of an XMI target as Eclipse writes XMI model files
-swift-atl transform Families2Persons.atl --source families.xmi --target persons.xmi \
-  --reference-style plain
-
-# Metamodel files instead of -- @path directives, by position or as name=file.ecore
-swift-atl transform Families2Persons.atl --source families.xmi --source-metamodel Families.ecore \
-  --target persons.xmi --target-metamodel Persons=Persons.ecore
-
-# Refine a model in place, with one metamodel for source and target
-swift-atl transform Cleanup.atl --refining --source customers.xmi --target cleaned.xmi \
-  --metamodel Customer.ecore
-
-# Check the transformation against its metamodels without running it
+# Check a transformation against its metamodels without running it
 swift-atl transform Families2Persons.atl --validate-only \
   --source-metamodel Families.ecore --target-metamodel Persons.ecore
-```
 
-**Metamodels.** `--source-metamodel`, `--target-metamodel` and `--metamodel` (all repeatable) give metamodel files that take the place of the `-- @path` and `-- @nsURI` directives of their metamodels. By position they follow the order of the module header: the metamodels after `from` (or `refining`), those after `create`, and for `--metamodel` all metamodels, each name once; `name=file.ecore` binds the metamodel of that name. A `-- @path` that starts with `/` names a file in an Eclipse workspace, as Eclipse ATL writes it: `/Families2Persons/Families.ecore` is looked up in each metamodel search directory as `Families2Persons/Families.ecore` and then as `Families.ecore`, with the search directory as the project directory. Without `--metamodel-path` or `ECOREPATH`, the directory of the transformation, its parent and the current directory are searched.
-
-**Refining mode.** A module declared as `create OUT : MM refining IN : MM;`, or run with `--refining`, starts each target model as a copy of the source model in the same position of the header. A rule changes the copy of the element it matches, through the first target pattern element of the type of its source pattern element, and elements that no rule matches are kept. A rule whose `to` section starts with `drop`, as in `rule Remove { from s : MM!Node (s.weight = 0) to drop }`, deletes the element it matches, with the elements it then contains, after every other rule has run; references from the remaining elements to the deleted ones are removed. `drop` is an error outside refining mode.
-
-**Validation only.** `--validate-only` binds the metamodels, reports model element types that they do not define and bindings of features that a target class does not have, and loads the source models that are given, without running the transformation or writing targets. `--quiet` prints nothing on success.
-
-**Parameters.** `--param name=value` binds a value to a module parameter declared in the transformation with `-- @param name : Type [= default]`. The text is converted to the declared type (`String`, `Integer`, `Real`, `Boolean`); the value is everything after the first `=`, and an undeclared name, a value of the wrong type, a missing required parameter or an argument without `name=` is an error. Inside the transformation a parameter is read as `thisModule.name`.
-
-**Unset features.** `--unset-features defaults|undefined` chooses how the rules read features that a model does not set. With `defaults`, the default, they read as the Eclipse Modeling Framework's `eGet` reports them: an unset attribute as its declared default or the default of its data type (`false`, `0`, `0.0` or the first enumeration literal), an unset many-valued feature as an empty collection, and an unset string or reference as undefined. With `undefined`, every unset feature reads as undefined, so a guard such as `t.done = false` no longer matches a task that leaves `done` unset. `swift-atl generate`, `swift-ecore generate` and `swift-ecore genmodel` accept the option too, for the import transformation and the templates.
-
-**Integer ranges.** Collection literals accept OCL integer ranges, so `Sequence{0, 2..4}` holds `0, 2, 3, 4`. Eclipse ATL rejects them, and so does `--collection-range-syntax eclipse` (or `--semantics legacy`), with a message that names the portable alternatives. Every `swift-atl` command that reads ATL source accepts the option: `parse`, `validate`, `analyze`, `compile`, `test`, `transform`, `query`, and `generate` for a transformation given with `--transformations`.
-
-**Integer division.** `/` divides two Integers into a Real, as in OCL and Eclipse ATL, so `7 / 2` is `3.5` and `8 / 2` is `4.0`; `div` gives the truncated Integer quotient. `--integer-division truncating` (or `--semantics legacy`) makes `/` truncate the quotient of two Integers, as version 0.6 did. `transform` and `query` run ATL source with the option, and `generate` runs a transformation given with `--transformations` with it.
-
-**Built-in metamodels.** The Ecore metamodel (`http://www.eclipse.org/emf/2002/Ecore`) and the generator metamodel (`http://www.eclipse.org/emf/2002/GenModel`) are built in. A transformation names them with directives, so no metamodel file is needed:
-
-```text
--- @nsURI Ecore=http://www.eclipse.org/emf/2002/Ecore
--- @nsURI GenModel=http://www.eclipse.org/emf/2002/GenModel
-module Tiny;
-create OUT : GenModel from IN : Ecore;
-```
-
-**Output layout.** A target that is an instance of a built-in metamodel is written in the layout of the Eclipse Modeling Framework: references to other models are `uri#fragment` attribute values (`ecorePackage="library.ecore#/"`), with relative URIs and name-based fragments, so that the result opens unchanged in the Eclipse tooling. Other targets are written as before, unless `--reference-style plain` is given: such an XMI target is then also written in the layout of the Eclipse Modeling Framework, and a reference into the same document holds the fragment alone (`peer="/0"`) rather than `#/0`, as Eclipse writes XMI model files. `encoded`, the default, keeps the usual layout. Both styles load again.
-
-**Empty targets.** A transformation whose rules match nothing still succeeds and writes each target as an empty model: an XMI document holding only the `xmi:XMI` element, or an empty JSON array.
-
-### ATL Queries: `swift-atl query`
-
-An ATL query unit starts with `query Name = expression;` instead of a module header and contains only helpers besides its query. `swift-atl query` evaluates it over its input models and prints its value; `transform` rejects a query unit, and `query` rejects a module.
-
-```bash
-# Write the dot file that the query builds, below graphs/
+# Evaluate a query that writes a dot file below graphs/
 swift-atl query Flow2Dot.atl --source order.xmi --output-directory graphs
-
-# Print the value of a query that does not write a file, and keep it
-swift-atl query FlowText.atl --source Flow=order.xmi > order.txt
-
-# Name the model IN, of the metamodel Flow given on the command line
-swift-atl query Count.atl --metamodel Flow=Flow.ecore --source IN:Flow=order.xmi --param offset=10
 ```
 
-**Input models.** A query has no `from` clause. Its metamodels are named by `-- @path` and `-- @nsURI` directives or given with `--metamodel NAME=file.ecore` (a bare `--metamodel file.ecore` uses the name of the package), and each metamodel is an input model of the same name. `--source path` binds the models in the order of their metamodels, `--source Name=path` binds a model by metamodel name, and `--source IN:Name=path` names the model `IN`, for `allInstancesFrom('IN')`, and binds it to the metamodel `Name`. `--param`, `--input-format`, `--metamodel-path` and `--unset-features` work as for `transform`.
-
-**Writing files.** A query can write a string to a file with `writeTo(path)`, or with `writeToWithCharset(path, charset)` in another character encoding; both return `true`, replace an existing file, create missing directories and add no line break. Relative paths are resolved against the output directory, which is the current directory unless `--output-directory` names another. Absolute paths and paths that lead outside the output directory, through `..` or through symbolic links, are rejected with an error that names the path, unless `--allow-unrestricted-paths` is given. Eclipse ATL resolves relative paths against the workspace or the working directory of the Java process and accepts any path; give `--allow-unrestricted-paths` only for queries you trust. `swift-atl transform` does not enable file output, so a transformation that calls `writeTo` fails.
-
-**Result.** Eclipse ATL returns the value of a query to the program that launched it and its launcher discards it. `swift-atl query` prints it to standard output: a string as it is, followed by a line break unless it ends with one, and any other value as ATL writes it, such as `true`, `42` or `Sequence{'a', 'b'}`. A query that ends with `writeTo` therefore prints `true`. `--no-print-result` prints nothing. Messages, including `--verbose` progress, go to standard error.
-
-### Query Command
-
-Inspect and analyse whole models and metamodels: every query looks at every object of a model, however deeply it is contained, and every element of a metamodel.
+### swift-mtl
 
 ```bash
-# Show general model information (default query)
-swift-ecore query model.xmi
+# Generate text from a template and a model
+swift-mtl generate template.mtl --model input.xmi --output generated/
 
-# Count all objects in the model
-swift-ecore query model.xmi --query "count"
-
-# List the classes of the objects with their counts, using the metamodel for supertypes
-swift-ecore query model.xmi --metamodel schema.ecore --query "list-classes"
-
-# List every class of a metamodel with its supertypes
-swift-ecore query schema.ecore --query "classes"
-
-# Show the inheritance hierarchy
-swift-ecore query schema.ecore --query "hierarchy"
-
-# Find the objects of a class or of its subclasses
-swift-ecore query model.xmi --query "find Person"
-
-# Show the containment tree
-swift-ecore query model.xmi --query "tree"
-```
-
-**Available query types:**
-- `info` - Root and total object counts and the objects of each class; for a metamodel its packages and elements
-- `count` - Total object count
-- `list-classes` (or `classes`) - The classes of the objects with their counts, or every class of a metamodel with its supertypes
-- `hierarchy` - The inheritance hierarchy of the classes
-- `find <ClassName>` - Objects of a class or its subclasses, with their attribute values and references
-- `tree` - The containment tree with the class, name and location of every object
-
-### MTL (Model-to-Text) Commands
-
-Generate text from models using MTL templates following the OMG MOFM2T (MOF Model-to-Text Transformation) standard.
-
-#### Generate Command
-
-```bash
-# Basic generation from template
-swift-mtl generate template.mtl --output generated/
-
-# Generate with input models
-swift-mtl generate template.mtl \
-  --model input.xmi \
-  --output generated/
-
-# Generate with multiple models
-swift-mtl generate template.mtl \
-  --model families.xmi \
-  --model departments.xmi \
-  --output generated/
-
-# Specify main template explicitly
-swift-mtl generate template.mtl \
-  --model input.xmi \
-  --template generateAll \
-  --output generated/
-
-# Name the template file with --template instead of as an argument
-swift-mtl generate --template template.mtl \
-  --model input.xmi \
-  --output generated/
-
-# Ecore model: registered as a metamodel, and its EPackage is passed to the template
-swift-mtl generate ecore2dot.mtl \
-  --model library.ecore \
-  --output generated/
-
-# Register a metamodel only, and pass just the instance model to the template
-swift-mtl generate template.mtl \
-  --metamodel library.ecore \
-  --model books.xmi \
-  --output generated/
-
-# Import modules from extra directories, and pass parameters to the templates
-swift-mtl generate template.mtl \
-  --model input.xmi \
-  --template-path shared/templates \
-  --param package=org.example --param verbose=true \
-  --output generated/
-
-# Run a template set instead of a single template: a directory with a templateset.json,
-# or the language of a bundled set, in the code style of your choice
+# Run a template set instead of a single template
 swift-mtl generate --template-set my-set/ --model input.xmi --output generated/
-swift-mtl generate --template-set my-set/ --model input.xmi --code-style tabs --output generated/
 
-# Keep existing files and write the new text beside them as .<name>.new, or replace them all
-swift-mtl generate template.mtl --model input.xmi --diff --output generated/
-swift-mtl generate template.mtl --model input.xmi --force-overwrite --output generated/
-
-# Verbose generation with statistics
-swift-mtl generate template.mtl \
-  --model input.xmi \
-  --output generated/ \
-  --verbose
-```
-
-**Template path.** `--template-path <dir>` (repeatable) adds directories in which `[import ...]` looks for modules, after the directory of the template itself. A directory that does not exist is an error.
-
-**Template sets.** `--template-set <directory|language>` runs a template set instead of a template file; the two are mutually exclusive. A directory must hold a `templateset.json` descriptor; a plain name is the language of a bundled set. The main template of the set receives the root objects of the models in command line order, and the data models of the set are available through `templateData('name')`. With a template set, a file in a `--template-path` directory replaces the file of the set with the same relative path, and `--code-style <style>` chooses one of the code styles that the descriptor declares; `--template` does not apply, as the descriptor names the main template.
-
-**Parameters.** `--param name=value` (repeatable) is available to every template as the bare variable `[name/]` and through two services: `parameter('name')` returns the value (`null` if it was not given) and `hasParameter('name')` tells whether it was given. A name must be an identifier that is not an MTL or AQL reserved keyword. A value is a boolean when it reads `true` or `false`, an integer when it is a whole number, and a string otherwise, so `[if (parameter('verbose'))]` and `[parameter('count') + 1/]` work. The value is everything after the first `=`, and a later argument replaces an earlier one of the same name.
-
-**Unset features.** `--unset-features defaults|undefined` chooses how templates read features that a model does not set. With `defaults`, the default, `[c.count/]` writes `0` for an unset integer, as the Eclipse Modeling Framework and Acceleo do; with `undefined` it writes nothing, because every unset feature reads as undefined.
-
-**Typed let blocks.** `--let-type-mismatches error|skip` chooses what happens when a typed `let`, such as `[let n : Integer = c.name]...[/let]`, receives a value that does not conform to the declared type. With `error`, the default, the generation stops with an error that names the variable and both types. With `skip`, the `let` block is skipped and the generation continues, as Acceleo 3 treats a typed `let` as a type test, and a line such as `warning: line 4, column 1: Variable 'n' of type Integer cannot hold a value of type String, so the let block is skipped` is written to standard error; a mismatch that recurs, for instance in a loop, is reported once. `null` conforms to every type. The option has no effect with `--no-check-let-types`, which binds `let` values unchecked, as version 0.6 did. `swift-ecore generate` and `swift-atl generate` accept the option too, for the templates.
-
-**Behaviours.** The templates and their expressions follow the behaviour of this release. `--semantics legacy` selects that of version 0.6, and `--block-line-breaks`, `--collection-parameters`, `--[no-]check-let-types`, `--[no-]cache-containers`, `--collection-arguments`, `--collection-kinds`, `--single-value-collections`, `--container-lookup`, `--sequence-union`, `--null-addition` and `--text-form` select one behaviour each, overriding the preset; see [Compatibility with 0.6](#compatibility-with-06). `--strict-aql` makes the expressions reject what Eclipse AQL rejects, such as a union of a sequence with a set or a single value passed to `concat`, `sub` or `union`, and `--no-strict-aql` overrides a configuration file that sets `strict-aql`; `swift-aql` and the OCL invariants of `swift-ecore validate` accept it too. `swift-ecore generate` and `swift-atl generate` accept the same options, for the templates.
-
-**Existing files.** A file that exists is merged with the generated text when the module declares a merge, and replaced otherwise. `--force-overwrite` always replaces it. `--diff` keeps it and writes the generated text beside it as `.<name>.new`; `--force-overwrite` wins when both are given.
-
-**Input formats:** MTL templates (`.mtl`), XMI models (`.xmi`), JSON models (`.json`), Ecore metamodels (`.ecore`)
-
-**Ecore roles:** `--model X.ecore` registers the metamodel and passes its root `EPackage` to the
-main template, in command line order, like any other model. `--metamodel X.ecore` (repeatable)
-only registers the metamodel, so that instance models can be parsed against it without the
-`EPackage` becoming a template argument. Navigating the features of a native `EPackage` inside a
-template requires a swift-ecore release with reflective metamodel objects.
-
-#### Parse Command
-
-Display MTL template structure for inspection and debugging.
-
-```bash
-# Parse and show template structure
-swift-mtl parse template.mtl
-
-# Parse multiple templates
-swift-mtl parse template1.mtl template2.mtl
-
-# Detailed template information
-swift-mtl parse template.mtl --detailed
-
-# JSON output for programmatic use
-swift-mtl parse template.mtl --json
-```
-
-#### Validate Command
-
-Validate MTL template syntax and structure.
-
-```bash
-# Validate single template
+# Check the syntax of templates
 swift-mtl validate template.mtl
-
-# Validate multiple templates
-swift-mtl validate *.mtl
-
-# Verbose validation with module details
-swift-mtl validate template.mtl --verbose
 ```
 
-#### MTL Template Example
-
-Create a file `hello.mtl`:
-
-```mtl
-[module HelloWorld('http://example.com')]
-
-[template main()]
-Hello, World!
-This is a simple MTL template.
-[/template]
-```
-
-Then generate:
-
-```bash
-swift-mtl generate hello.mtl --output /tmp/output/
-cat /tmp/output/stdout
-```
-
-#### Code Generation Example
-
-```mtl
-[module ClassGenerator('http://www.eclipse.org/emf/2002/Ecore')]
-
-[template generateClass(c : EClass)]
-[file (c.name + '.swift', 'overwrite', 'UTF-8')]
-// Generated from [c.name/]
-class [c.name/] {
-[for (attr in c.eAttributes) separator('\n')]
-    var [attr.name/]: [attr.eType.name/]
-[/for]
-}
-[/file]
-[/template]
-```
-
-Generate Swift code from an Ecore model:
-
-```bash
-swift-mtl generate ClassGenerator.mtl \
-  --model mymodel.ecore \
-  --output generated-swift/
-```
-
-### AQL Queries: `swift-aql`
-
-Evaluate AQL expressions against models, for example to try out the queries of a template or to
-check a model in a script.
+### swift-aql
 
 ```bash
 # Navigate from the root object, which is bound to its class name (company for a Company)
 swift-aql evaluate --model company-data.xmi --expression "company.departments.name"
 
-# Filter, collect and aggregate
-swift-aql evaluate --model company-data.xmi \
-    --expression "company.departments.employees->select(e | e.age < 30).name"
-
 # Evaluate from an object selected by its xmi:id, fragment path or name
 swift-aql query company-model.xmi --query "self.employees" --context company1
-
-# Read the query from a file, and name the metamodel explicitly
-swift-aql query company-model.xmi --query-file queries/count.aql --metamodel Company.ecore
-
-# Expressions without a model
-swift-aql evaluate --expression "Sequence{1, 2, 3}->sum()"
 ```
 
-`self` is the object that `--context` selects, or the first root object of the first model. Every
-root object is also bound to the name of its class with a lower-case first letter. Without
-`--metamodel`, the Ecore files beside a model whose namespace URI the model uses are registered as
-its metamodels. Values print on one line: strings in double quotes (`"Acme Corp"`), integers and
-reals as numbers (`1995`, `500000.0`), Booleans as `true` or `false`, model objects as their class
-and name (`Employee(Alice Smith)`), collections in square brackets and undefined values as `null`.
-A missing file, an invalid expression or a failed evaluation is reported on standard error with a
-non-zero exit status. The behaviour options of `swift-mtl` expressions (`--semantics`,
-`--collection-kinds` and the others in [Compatibility with 0.6](#compatibility-with-06)) and
-`--unset-features` apply as well.
+## Documentation
 
-### Real-World Examples
+The [Swift Modelling documentation](https://mipalgu.github.io/swift-modelling/) describes every
+command and option, and the [tutorials](https://mipalgu.github.io/swift-modelling/tutorials/tutorials/index.html)
+introduce each tool step by step.
 
-**Complete workflow example:**
-```bash
-# 1. Validate a metamodel
-swift-ecore validate organisation.ecore --verbose
-
-# 2. Validate an instance against metamodel
-swift-ecore validate company.xmi --metamodel organisation.ecore
-
-# 3. Convert to JSON for web APIs
-swift-ecore convert company.xmi company.json --verbose
-
-# 4. Query the model for analysis
-swift-ecore query company.xmi --query "find Employee" --verbose
-
-# 5. Generate Swift code from metamodel
-swift-ecore generate organisation.ecore --output swift-gen/ --verbose
-
-# 6. Convert back to XMI from JSON
-swift-ecore convert company.json company-copy.xmi --force
-```
-
-**Batch processing example:**
-```bash
-# Validate all XMI files in a directory
-for file in models/*.xmi; do
-  echo "Validating $file..."
-  swift-ecore validate "$file" --verbose
-done
-
-# Convert all XMI files to JSON
-for file in models/*.xmi; do
-  json_file="${file%.xmi}.json"
-  swift-ecore convert "$file" "$json_file" --force
-done
-```
-
-### Integration Tips
-
-**Scripting:** All commands return appropriate exit codes (0 for success, non-zero for errors) for use in scripts and CI/CD pipelines.
-
-**Large files:** Use `--verbose` to monitor progress on large models.
-
-**Cross-platform:** All functionality works identically on macOS, Linux, and Windows.
-
-**PyEcore compatibility:** JSON output is compatible with PyEcore for cross-language workflows.
-
-## Compatibility with 0.6
-
-The tools behave as described in this README by default. Each behaviour that changed since version 0.6 has an option, and `--semantics legacy` selects the behaviour of version 0.6 for all of them at once. An option given on the command line overrides the preset, whatever the order of the options, so `--semantics legacy --block-line-breaks acceleo` behaves as version 0.6 apart from the line breaks. `--semantics standard` is the default.
-
-| Behaviour | Default | Option | 0.6 behaviour | Commands |
-| :-- | :-- | :-- | :-- | :-- |
-| Line break after a block written on one line, such as `[if (c)][helper()/][/if]` | dropped when the line is empty once the block has run, as in Acceleo 4 (`acceleo`) | `--block-line-breaks acceleo\|kept` | `kept` | templates |
-| Collections passed to collection-typed parameters, such as `Sequence(String)` | any collection whose elements conform, including many-valued features and a single object, with overloads chosen by element types (`conforming`) | `--collection-parameters conforming\|exact` | `exact` | templates |
-| Declared types of `let` variables | checked, and a mismatch handled as `--let-type-mismatches` says | `--check-let-types`, `--no-check-let-types` | `--no-check-let-types` | templates |
-| Container lookups during a run | cached, so models may change during a run only through services that declare that they modify models | `--cache-containers`, `--no-cache-containers` | `--no-cache-containers` | templates |
-| A collection added by `append`, `prepend`, `including` and `insertAt` | added whole, so `Sequence{'a'}->append(Sequence{'b', 'c'})` has two elements (`whole`) | `--collection-arguments whole\|first-element` | `first-element` | templates |
-| Kinds of collections | sequences, ordered sets, sets and bags keep their kinds, and sets do not repeat elements (`distinguished`) | `--collection-kinds distinguished\|sequences` | `sequences` | templates |
-| Arrow calls on a single value, such as `'a'->including('a')` | the value is a set, giving `Set{'a'}` (`set`) | `--single-value-collections set\|sequence` | `sequence` | templates |
-| `union` of a sequence or a bag, such as `Sequence{'a', 'b'}->union(Sequence{'b'})` | keeps repeated elements, as in Eclipse AQL (`concatenation`) | `--sequence-union concatenation\|distinct` | `distinct`: leaves them out | templates |
-| `+` with a null operand, such as `null + 'x'` | null counts as empty text, giving `'x'` (`empty-text`) | `--null-addition empty-text\|null` | `null`: the result is null | templates |
-| The text of a collection, from `toString()` or `+` with a string | the texts of the elements joined, `'ab'` for `Sequence{'a', 'b'}` (`joined`) | `--text-form joined\|bracketed` | `bracketed`: `'[a, b]'` | templates |
-| `eContainer()` and the services that depend on it | the registered resources are asked, so containers of nested metamodel contents are found (`resources`) | `--container-lookup resources\|registered-objects` | `registered-objects` | templates |
-| Integer ranges in ATL collection literals, such as `Sequence{1..3}` | accepted, as in OCL (`ocl`) | `--collection-range-syntax ocl\|eclipse` | `eclipse`: rejected | ATL source |
-| `/` with two Integer operands in ATL, such as `7 / 2` | a Real, `3.5`, as in OCL and Eclipse ATL (`real`) | `--integer-division real\|truncating` | `truncating`: the Integer `3` | ATL source |
-| Containers of objects that another model of the run holds in a containment reference | found, as each model answers for the objects of any model (`any-resource`) | `--container-scope any-resource\|this-resource` | `this-resource`: each model answers only for its own objects | models |
-
-The options for templates apply to `swift-mtl generate`, `swift-ecore generate` and `swift-atl generate`. The options for ATL source apply to `swift-atl parse`, `validate`, `analyze`, `compile`, `test`, `transform` and `query`, and to `swift-atl generate` for a transformation given with `--transformations`. `--container-scope` is accepted by every command that accepts `--semantics`, and applies to the models that `swift-mtl generate`, `swift-ecore generate`, `swift-atl generate`, `transform` and `query` load. `--unset-features` and `--let-type-mismatches` have the same defaults in both presets, `defaults` and `error`. No command writes ATL modules as XMI, so the encoding of ranges in ATL XMI has no option here.
-
-### Choosing the semantics from the environment
-
-Without `--semantics`, the `SWIFT_MODELLING_SEMANTICS` environment variable chooses the preset for every command that accepts `--semantics`. Its values are `standard` and `legacy`; an empty value counts as unset, and any other value stops the command with an error that names the variable, the value and the accepted values.
-
-```bash
-# Run every tool of this shell session as version 0.6 did
-export SWIFT_MODELLING_SEMANTICS=legacy
-swift-mtl generate template.mtl --model input.xmi --output generated/
-```
-
-### Configuration file
-
-A configuration file keeps the behaviours of a project with the project. A command that accepts `--semantics` reads the first file named `.swift-modelling.json` that it finds in the current directory or one of its parent directories, up to and including the first directory that contains `.git`, which is the root of the repository. `--config <file>` reads exactly the named file instead, and `--no-config` reads none; the two cannot be combined.
-
-The file holds a JSON object. Its keys are `semantics` (`standard` or `legacy`) and the names of the behaviour options without their leading `--`: `block-line-breaks`, `collection-parameters`, `check-let-types`, `cache-containers`, `collection-arguments`, `collection-kinds`, `single-value-collections`, `container-lookup`, `sequence-union`, `null-addition`, `text-form`, `collection-range-syntax`, `integer-division`, `container-scope`, `let-type-mismatches`, `unset-features` and `strict-aql`. Each value is the spelling of the option on the command line as a JSON string, except for `check-let-types`, `cache-containers` and `strict-aql`, which take `true` or `false`. A key that does not apply to a command, such as `block-line-breaks` for `swift-atl parse`, is ignored. An unknown key, a value of the wrong JSON type or spelling, text that is not JSON, or JSON that is not an object stops the command with an error that names the file and, where it applies, the key, the value and the accepted values.
-
-```json
-{
-  "semantics": "legacy",
-  "block-line-breaks": "acceleo",
-  "check-let-types": true,
-  "container-scope": "any-resource",
-  "let-type-mismatches": "skip"
-}
-```
-
-With this file, the commands behave as version 0.6, apart from the line breaks after one-line blocks, the checked `let` types and the container scope, and skip typed `let` blocks of another type with a warning.
-
-Each behaviour comes from the first of these sources that sets it:
-
-| Precedence | Source | Example |
-|--|--|--|
-| 1 (highest) | A behaviour option on the command line | `--block-line-breaks kept` |
-| 2 | The same option in the configuration file | `"block-line-breaks": "kept"` |
-| 3 | `--semantics` on the command line | `--semantics legacy` |
-| 4 | The `SWIFT_MODELLING_SEMANTICS` environment variable | `SWIFT_MODELLING_SEMANTICS=legacy` |
-| 5 | `semantics` in the configuration file | `"semantics": "legacy"` |
-| 6 (lowest) | The built-in default | `standard` |
-
-Sources 3 to 6 choose the preset, and the preset chooses each behaviour that sources 1 and 2 leave open, including the container scope: `any-resource` for `standard` and `this-resource` for `legacy`. `--let-type-mismatches` and `--unset-features` do not depend on the preset: the command line overrides the configuration file, which overrides their defaults, `error` and `defaults`. Without a configuration file and without the environment variable, every command behaves as with `--semantics standard`.
-
-### Libraries
-
-The libraries keep the API of version 0.6, and with it the behaviour of version 0.6:
-
-- `GenerationOptions`, `GenerationStep`, `TransformationStep` and `GenModelImportOptions` created with the initialisers of version 0.6 carry `MTLOptions.legacy` or `ATLOptions.legacy`. These initialisers are deprecated in favour of initialisers that take `mtlOptions:` or `atlOptions:`; pass `.legacy` there to keep the behaviour of version 0.6, or `.standard` for the behaviour of this release. The options are held in the new properties `mtlOptions` and `atlOptions`, and `unsetFeatureReads` of `GenerationOptions` and `GenerationStep` is part of `mtlOptions`.
-- The functions of `GenerationPipeline` called without options use the options of version 0.6.
-- `GenerationStep.Result` and `GenerationResult` also report the warnings of the templates, such as `let` blocks skipped with `MTLLetTypeMismatches.skip`.
-- `ModellingCommandLine` offers the option groups `SemanticsOptions`, `MTLSemanticsOptions` and `ATLSemanticsOptions` for other command-line tools. `SemanticsOptions.settings(environment:currentDirectory:)` combines the command line, the environment variable and the configuration file into `SemanticsSettings`, which the option groups take in `mtlOptions(settings:)`, `atlOptions(settings:)` and `apply(to:settings:)`; `ModellingConfiguration` reads and finds configuration files.
-- `GenerationOptions` and `GenModelImportOptions` have a `containerLookupScope`, which the generation pipelines give the resource sets they create. It is `nil` by default, which leaves the resource sets without a configured scope, as before.
-
-## Project Status
-
-### CLI Tools 🚧
-
-- [x] Validate command - Validate models and metamodels for correctness
-- [x] Convert command - Convert between XMI and JSON formats  
-- [x] Query command - Query models with info, count, find, list-classes, and tree operations
-- [x] Generate command - Generate code in Swift, Java, C and C++ from Ecore and generator models
-- [x] GenModel command - Create generator models from Ecore models
-- [x] Generate command for template sets - Generate Java (and any added template set) from generator models and Ecore models, also through `swift-atl generate`
-
-## Architecture
-
-**Swift Modelling** consists of:
-- **ECore module**: Core library implementing the Ecore metamodel
-- **ATL module**: Complete ATL parser and execution engine
-- **MTL module**: MTL parser, runtime, and generation engine
-- **swift-ecore executable**: Command-line tool for validation, conversion, and code generation
-- **swift-atl executable**: Command-line tool for ATL transformation
-- **swift-mtl executable**: Command-line tool for MTL text generation
-- **swift-aql executable**: Command-line tool for evaluating AQL queries against models
-
-Besides the tools, the package offers these library products:
-- **ModellingGenerators**: the generator model pipeline and the bundled template sets for Swift, Java, C and C++
-- **ModellingPipeline**: steps for running ATL transformations and MTL generations on models in memory, a locator for template sets in the resource directories of other packages, and a pipeline that loads, transforms, generates from and saves models in sequence
-- **ModellingCommandLine**: the option groups that the tools share, such as `--param`, `--template-path`, `--metamodel`, `--code-style` and `--semantics`, and a parser for families of `name=value` options, for command-line tools of other packages
-
-All types are value types (structs) for thread safety, with ID-based reference resolution for bidirectional relationships.
-Resources provide EMF-compliant object ownership and cross-reference resolution using actor-based concurrency.
+- [swift-ecore](https://mipalgu.github.io/swift-modelling/documentation/swift_ecore/index.html):
+  metamodels and models
+- [swift-atl](https://mipalgu.github.io/swift-modelling/documentation/swift_atl/index.html):
+  ATL transformations, queries and generation
+- [swift-mtl](https://mipalgu.github.io/swift-modelling/documentation/swift_mtl/index.html):
+  MTL templates and template sets
+- [swift-aql](https://mipalgu.github.io/swift-modelling/documentation/swift_aql/index.html):
+  AQL queries
+- [SwiftModelling](https://mipalgu.github.io/swift-modelling/documentation/swiftmodelling/swiftmodelling/index.html):
+  architecture, interoperability, and compatibility with earlier releases
+- [ModellingGenerators](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/index.html):
+  generator models, template sets, and [converting Ecore to Java](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/convertingecoretojava/index.html)
+- [ModellingPipeline](https://mipalgu.github.io/swift-modelling/documentation/modellingpipeline/index.html)
+  and [ModellingCommandLine](https://mipalgu.github.io/swift-modelling/documentation/modellingcommandline/index.html):
+  libraries for other packages and tools
 
 ## Licence
 
 See the details in the LICENCE file.
 
-## Compatibility
-
-Swift Modelling aims for 100% round-trip compatibility with:
-- [emf4cpp](https://github.com/catedrasaes-umu/emf4cpp) - C++ EMF implementation
-- [pyecore](https://github.com/pyecore/pyecore) - Python EMF implementation
-
 ## References
-
-This implementation is based on the following standards and technologies:
 
 - [Eclipse Modeling Framework (EMF)](https://eclipse.dev/emf/) - The reference EMF implementation
 - [Eclipse ATL (Atlas Transformation Language)](https://eclipse.dev/atl/) - The reference ATL implementation

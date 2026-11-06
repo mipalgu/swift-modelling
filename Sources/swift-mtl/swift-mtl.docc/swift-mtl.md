@@ -16,6 +16,25 @@ The tool is built on the swift-mtl package
 Swift implementation of the MTL template language used by Eclipse
 Acceleo ([Eclipse Acceleo](https://eclipse.dev/acceleo/)).
 
+### Features
+
+- **MTL Parser**: Parses MTL templates from text files following the OMG MOFM2T v1.0 specification
+- **MTL Runtime**: Executes templates with high performance using the concurrent execution model
+  of Swift
+- **Model Loading**: Loads models in XMI and JSON formats, and Ecore metamodels
+- **Expression Language**: Full integration of AQL (Acceleo Query Language) for expressions
+- **Advanced Features**: File blocks, protected areas, queries, macros and control flow
+- **Command Line**: Generates, parses and validates MTL templates, with template search paths,
+  parameters, template sets, and merge or diff handling of existing files
+- **Unset Features**: Templates read unset features as in the Eclipse Modeling Framework, or as
+  undefined with `--unset-features undefined`
+- **Typed Let Blocks**: A value that does not conform to the declared type of a `let` variable is
+  an error, or, with `--let-type-mismatches skip`, skips the block with a warning, as in Acceleo 3
+- **Behaviour Options**: Templates follow the behaviour of this release by default;
+  `--semantics legacy` and one option per behaviour select that of version 0.6
+- **Standard Compliance**: Implements OMG MOFM2T v1.0 with compatibility for Acceleo-specific
+  extensions
+
 ## Commands
 
 ### generate
@@ -30,7 +49,7 @@ swift-mtl generate --template-set <directory|language> [options]
 
 **Options:**
 
-- `--model <path>` - Input model (XMI, JSON or Ecore); repeat for several models. The root object of each model is passed to the main template in command line order. An Ecore file is also registered as a metamodel and its package is passed as an argument.
+- `--model <path>` - Input model (XMI `.xmi`, JSON `.json` or Ecore `.ecore`); repeat for several models. The root object of each model is passed to the main template in command line order. An Ecore file is also registered as a metamodel and its package is passed as an argument.
 - `--metamodel <path>` - Ecore metamodel to register without passing it to the template (repeatable)
 - `-o, --output <path>` - Output directory for generated files (default: the current directory)
 - `-t, --template <name|file.mtl>` - Main template to run (default: the template marked `@main`, otherwise the first); a value that ends in `.mtl` names the template file instead, when no template file argument is given
@@ -77,15 +96,19 @@ same=[parameter('package')/]
 [/template]
 ```
 
-**Metamodels.** `--metamodel` registers an Ecore file so that an instance model can be parsed against it, without passing its `EPackage` to the template. An Ecore file given with `--model` is registered as well, and its `EPackage` is also passed to the main template as an argument.
+**Metamodels.** `--metamodel` registers an Ecore file so that an instance model can be parsed against it, without passing its `EPackage` to the template. An Ecore file given with `--model` is registered as well, and its `EPackage` is also passed to the main template as an argument, in command line order, like any other model. Navigating the features of a native `EPackage` inside a template requires a swift-ecore release with reflective metamodel objects.
+
+**Unset features.** `--unset-features defaults|undefined` chooses how templates read features that a model does not set. With `defaults`, the default, `[c.count/]` writes `0` for an unset integer, as the Eclipse Modeling Framework and Acceleo do; with `undefined` it writes nothing, because every unset feature reads as undefined.
 
 **Existing files.** A file that exists is merged with the generated text when the module declares a merge, and replaced otherwise. `--force-overwrite` always replaces it. `--diff` keeps it and writes the generated text beside it; `--force-overwrite` wins when both are given.
 
 **Text outside file blocks.** Text that the templates write outside their `[file]` blocks is saved as `stdout` in the output directory. Nothing is saved when that text is only white space, such as the line breaks between file blocks, and a `stdout` file that a `[file]` block of the same run wrote is kept. `--print-standard-output` prints the text on standard output instead, before the completion message, and saves no `stdout` file.
 
-**Typed let blocks.** A `let` variable may declare a type, as in `[let n : Integer = c.size]...[/let]`. By default a value that does not conform to that type stops the generation with an error that names the variable and both types; `null` conforms to every type. The OMG MOFM2T specification and Acceleo 3 treat a typed `let` as a type test instead. `--let-type-mismatches skip` follows them: the `let` block is skipped, the generation continues, and a warning that names the variable, its declared type and the type of the value is written to standard error, once for each distinct mismatch. With `--no-check-let-types`, values are bound unchecked and the option has no effect.
+**Typed let blocks.** A `let` variable may declare a type, as in `[let n : Integer = c.size]...[/let]`. By default a value that does not conform to that type stops the generation with an error that names the variable and both types; `null` conforms to every type. The OMG MOFM2T specification and Acceleo 3 treat a typed `let` as a type test instead. `--let-type-mismatches skip` follows them: the `let` block is skipped, the generation continues, and a warning that names the variable, its declared type and the type of the value is written to standard error, such as `warning: line 4, column 1: Variable 'n' of type Integer cannot hold a value of type String, so the let block is skipped`. A mismatch that recurs, for instance in a loop, is reported once. With `--no-check-let-types`, values are bound unchecked, as version 0.6 did, and the option has no effect. `swift-ecore generate` and `swift-atl generate` accept the option too, for their templates.
 
-**Compatibility with 0.6.** The templates follow the behaviour of this release. `--semantics legacy` gives every behaviour that changed since version 0.6 its earlier form: one-line blocks keep their line breaks, collection types are matched exactly, `let` types are not checked, containers are looked up every time, and the expressions add the first element of a collection argument, treat every collection as a sequence, see a single value as a sequence and find containers among the registered objects only. Each option above overrides the preset, whatever the order, so `--semantics legacy --block-line-breaks acceleo` behaves as version 0.6 apart from the line breaks.
+**Strict AQL.** `--strict-aql` makes the expressions reject what Eclipse AQL rejects, such as a union of a sequence with a set or a single value passed to `concat`, `sub` or `union`, and `--no-strict-aql` overrides a configuration file that sets `strict-aql`. `swift-aql`, `swift-ecore generate`, `swift-atl generate` and the OCL invariants of `swift-ecore validate` accept the option too.
+
+**Compatibility with 0.6.** The templates follow the behaviour of this release. `--semantics legacy` gives every behaviour that changed since version 0.6 its earlier form: one-line blocks keep their line breaks, collection types are matched exactly, `let` types are not checked, containers are looked up every time, and the expressions add the first element of a collection argument, treat every collection as a sequence, see a single value as a sequence and find containers among the registered objects only. Each option above overrides the preset, whatever the order, so `--semantics legacy --block-line-breaks acceleo` behaves as version 0.6 apart from the line breaks. `swift-ecore generate` and `swift-atl generate` accept the same options, for their templates. The Compatibility with 0.6 section of the [SwiftModelling documentation](https://mipalgu.github.io/swift-modelling/documentation/swiftmodelling/swiftmodelling/index.html) lists every behaviour option with its default and its version 0.6 behaviour, and describes the environment variable and the configuration file in full.
 
 **Environment and configuration file.** Without `--semantics`, the `SWIFT_MODELLING_SEMANTICS` environment variable (`standard` or `legacy`) chooses the preset, and then the `semantics` key of a configuration file. The configuration file is the first `.swift-modelling.json` in the current directory or one of its parents, up to the directory that holds `.git`; `--config` names another file and `--no-config` reads none. Its keys are the names of the behaviour options without their leading `--`, with the spellings of the command line as JSON strings, or JSON booleans for `check-let-types`, `cache-containers` and `strict-aql`; a key that does not apply to a command is ignored. A behaviour option given on the command line overrides the file, an option in the file overrides the preset, `--semantics` overrides the environment variable, and the environment variable overrides `semantics` in the file. `--let-type-mismatches` and `--unset-features` do not depend on the preset: the command line overrides the file, which overrides their defaults. An invalid value of the variable, or an unknown key or an invalid value in the file, stops the command with an error that names it. For example, this file gives the behaviour of version 0.6 apart from the line breaks and the containers:
 
@@ -120,6 +143,19 @@ swift-mtl generate ecore2dot.mtl --model library.ecore --output generated/
 
 # A template set, from its directory, in one of its code styles
 swift-mtl generate --template-set report-set/ --model input.xmi --output generated/ --code-style tabs
+
+# Several models, passed to the main template in command line order
+swift-mtl generate template.mtl --model families.xmi --model departments.xmi --output generated/
+
+# Name the main template, or name the template file with --template instead of as an argument
+swift-mtl generate template.mtl --model input.xmi --template generateAll --output generated/
+swift-mtl generate --template template.mtl --model input.xmi --output generated/
+
+# Register a metamodel only, and pass just the instance model to the template
+swift-mtl generate template.mtl --metamodel library.ecore --model books.xmi --output generated/
+
+# Replace existing files instead of merging, with progress and statistics
+swift-mtl generate template.mtl --model input.xmi --force-overwrite --output generated/ --verbose
 ```
 
 ### validate
@@ -232,6 +268,49 @@ done
 ```
 
 ## Template Syntax Reference
+
+### A First Template
+
+A template that writes no `[file]` block, saved as `hello.mtl`:
+
+```mtl
+[module HelloWorld('http://example.com')]
+
+[template main()]
+Hello, World!
+This is a simple MTL template.
+[/template]
+```
+
+Its text is saved as `stdout` in the output directory:
+
+```bash
+swift-mtl generate hello.mtl --output /tmp/output/
+cat /tmp/output/stdout
+```
+
+### Generating from an Ecore Model
+
+A template whose main template receives the `EClass` objects of an Ecore model:
+
+```mtl
+[module ClassGenerator('http://www.eclipse.org/emf/2002/Ecore')]
+
+[template generateClass(c : EClass)]
+[file (c.name + '.swift', 'overwrite', 'UTF-8')]
+// Generated from [c.name/]
+class [c.name/] {
+[for (attr in c.eAttributes) separator('\n')]
+    var [attr.name/]: [attr.eType.name/]
+[/for]
+}
+[/file]
+[/template]
+```
+
+```bash
+swift-mtl generate ClassGenerator.mtl --model mymodel.ecore --output generated-swift/
+```
 
 ### Module Declaration
 
