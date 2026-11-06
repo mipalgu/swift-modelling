@@ -222,6 +222,64 @@ struct SemanticsOptionsTests {
         #expect(!legacy.result.succeeded)
     }
 
+    /// A module whose output shows what a call written with a dot does on a collection.
+    private static let dotCallProbe = """
+        [module Probe('http://www.eclipse.org/emf/2002/Ecore')]
+
+        [template public main(p : ecore::EPackage)]
+        [file ('result.txt', 'overwrite', 'UTF-8')]
+        dots=[Sequence{'ab', 'c'}.size()->sep(',')/]
+        [/file]
+        [/template]
+        """
+
+    /// A module with a dot call whose elements lack the service that the collection has.
+    private static let dotCallWarningProbe = """
+        [module Probe('http://www.eclipse.org/emf/2002/Ecore')]
+
+        [template public main(p : ecore::EPackage)]
+        [file ('result.txt', 'overwrite', 'UTF-8')]
+        sizes=[Sequence{1, 2}.size()/]
+        [/file]
+        [/template]
+        """
+
+    /// Options that choose what a dot call on a collection does, with the output they give.
+    static let dotCallCases: [(arguments: [String], expected: String)] = [
+        ([], "dots=2,1\n"),
+        (["--dot-calls", "collection"], "dots=2\n"),
+        (["--semantics", "legacy"], "dots=2\n"),
+        (["--semantics", "legacy", "--dot-calls", "each-element"], "dots=2,1\n"),
+    ]
+
+    @Test(
+        "applies a dot call on a collection to each element unless --dot-calls or the preset say otherwise",
+        arguments: dotCallCases.indices, Mode.allCases)
+    @MainActor
+    func dotCalls(index: Int, mode: Mode) async throws {
+        let (arguments, expected) = Self.dotCallCases[index]
+        let (result, text) = try await generate(Self.dotCallProbe, mode: mode, ["--no-config"] + arguments)
+
+        #expect(result.succeeded, "\(arguments): \(result.stdout)\(result.stderr)")
+        #expect(text == expected, "\(arguments)")
+    }
+
+    @Test("warns on standard error about a dot call that probably meant the collection", arguments: Mode.allCases)
+    @MainActor
+    func dotCallWarning(mode: Mode) async throws {
+        let (result, text) = try await generate(Self.dotCallWarningProbe, mode: mode, ["--no-config"])
+        let collection = try await generate(
+            Self.dotCallWarningProbe, mode: mode, ["--no-config", "--dot-calls", "collection"])
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+        #expect(text == "sizes=\n")
+        #expect(result.stderr.contains("warning: line 5, column 8: "), "\(result.stderr)")
+        #expect(result.stderr.contains("->size()"), "\(result.stderr)")
+        #expect(collection.result.succeeded, "\(collection.result.stderr)")
+        #expect(collection.text == "sizes=2\n")
+        #expect(!collection.result.stderr.contains("warning"), "\(collection.result.stderr)")
+    }
+
     @Test("lets an option override the preset whatever their order", arguments: Mode.allCases)
     @MainActor
     func precedence(mode: Mode) async throws {
@@ -237,7 +295,7 @@ struct SemanticsOptionsTests {
 
     @Test("rejects values that are not modes", arguments: [
         "--semantics", "--block-line-breaks", "--collection-parameters", "--collection-arguments",
-        "--collection-kinds", "--single-value-collections", "--container-lookup",
+        "--collection-kinds", "--single-value-collections", "--container-lookup", "--dot-calls",
     ])
     @MainActor
     func rejectsUnknownValues(option: String) async throws {
@@ -260,6 +318,7 @@ struct SemanticsOptionsTests {
             "--collection-kinds <distinguished|sequences>", "--single-value-collections <set|sequence>",
             "--container-lookup <resources|registered-objects>", "--sequence-union <concatenation|distinct>",
             "--null-addition <empty-text|null>", "--text-form <joined|bracketed>", "--strict-aql", "version 0.6",
+            "--dot-calls <each-element|collection>",
         ] {
             #expect(result.stdout.contains(text), "\(text)")
         }

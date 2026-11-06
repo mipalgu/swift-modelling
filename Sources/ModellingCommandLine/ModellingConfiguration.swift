@@ -70,6 +70,7 @@ public struct ModellingConfiguration: Sendable, Equatable {
         MTLSemanticsOptions.OptionName.sequenceUnion,
         MTLSemanticsOptions.OptionName.nullAddition,
         MTLSemanticsOptions.OptionName.textForm,
+        MTLSemanticsOptions.OptionName.dotCalls,
         ATLSemanticsOptions.OptionName.collectionRangeSyntax,
         ATLSemanticsOptions.OptionName.integerDivision,
         SemanticsOptions.OptionName.containerScope,
@@ -117,6 +118,9 @@ public struct ModellingConfiguration: Sendable, Equatable {
 
     /// The text of a value, as `toString()` gives it (`text-form`).
     public var textForm: AQLTextForm?
+
+    /// What a call written with a dot does when its receiver is a collection (`dot-calls`).
+    public var dotCalls: AQLDotCalls?
 
     /// Whether ATL collection literals accept integer ranges (`collection-range-syntax`).
     public var collectionRangeSyntax: ATLCollectionRangeSyntax?
@@ -198,6 +202,7 @@ public struct ModellingConfiguration: Sendable, Equatable {
         sequenceUnion = try reader.value(of: MTLSemanticsOptions.OptionName.sequenceUnion)
         nullAddition = try reader.value(of: MTLSemanticsOptions.OptionName.nullAddition)
         textForm = try reader.value(of: MTLSemanticsOptions.OptionName.textForm)
+        dotCalls = try reader.value(of: MTLSemanticsOptions.OptionName.dotCalls)
         collectionRangeSyntax = try reader.value(of: ATLSemanticsOptions.OptionName.collectionRangeSyntax)
         integerDivision = try reader.value(of: ATLSemanticsOptions.OptionName.integerDivision)
         containerLookupScope = try reader.value(of: SemanticsOptions.OptionName.containerScope)

@@ -168,6 +168,43 @@ struct SemanticsOptionTests {
         }
     }
 
+    @Test("parses each dot call mode", arguments: AQLDotCalls.allCases, SemanticsPreset.allCases)
+    func dotCalls(mode: AQLDotCalls, preset: SemanticsPreset) throws {
+        let options = try MTLSemanticsOptions.parse(["--dot-calls", mode.rawValue])
+        #expect(options.mtlOptions(preset: preset).aql.dotCalls == mode)
+        #expect(options.aqlOptions(preset: preset).dotCalls == mode)
+    }
+
+    @Test("takes the dot calls of each preset unless given")
+    func dotCallsFollowPreset() throws {
+        let options = try MTLSemanticsOptions.parse([])
+        #expect(options.aqlOptions(preset: .standard).dotCalls == .eachElement)
+        #expect(options.aqlOptions(preset: .legacy).dotCalls == .collection)
+        #expect(options.mtlOptions(preset: .legacy).aql.dotCalls == .collection)
+    }
+
+    @Test("names the dot call option and its values, and describes it")
+    func dotCallNames() {
+        #expect(MTLSemanticsOptions.OptionName.dotCalls == "dot-calls")
+        #expect(MTLSemanticsOptions.valueList(AQLDotCalls.self) == "each-element|collection")
+        #expect(MTLSemanticsOptions.discussion(reader: "the templates").contains("--dot-calls"))
+    }
+
+    @Test("rejects a value that is not a dot call mode", arguments: ["sometimes", "each", "Collection"])
+    func rejectsUnknownDotCalls(value: String) {
+        #expect(throws: (any Error).self) {
+            try MTLSemanticsOptions.parse(["--dot-calls", value])
+        }
+    }
+
+    @Test("changes only the dot calls when the option is given")
+    func overridesDotCallsOnly() throws {
+        let options = try MTLSemanticsOptions.parse(["--dot-calls", "each-element"])
+        var expected = MTLOptions.legacy
+        expected.aql.dotCalls = .eachElement
+        #expect(options.mtlOptions(preset: .legacy) == expected)
+    }
+
     @Test("changes only the behaviour that an option names")
     func overridesOneBehaviour() throws {
         let options = try MTLSemanticsOptions.parse(["--block-line-breaks", "acceleo"])

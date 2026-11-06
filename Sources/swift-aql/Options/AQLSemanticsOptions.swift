@@ -81,6 +81,12 @@ struct AQLSemanticsOptions: ParsableArguments, Sendable {
             valueName: MTLSemanticsOptions.valueList(AQLTextForm.self)))
     var textForm: AQLTextForm?
 
+    /// What a call written with a dot does when its receiver is a collection.
+    @Option(
+        name: .customLong(OptionName.dotCalls),
+        help: MTLSemanticsOptions.dotCallsHelp)
+    var dotCalls: AQLDotCalls?
+
     /// Whether expressions reject the arguments that Eclipse AQL rejects.
     ///
     /// `--strict-aql` turns strict mode on and `--no-strict-aql` turns it off, whatever the
@@ -110,6 +116,7 @@ struct AQLSemanticsOptions: ParsableArguments, Sendable {
         options.sequenceUnion = sequenceUnion
         options.nullAddition = nullAddition
         options.textForm = textForm
+        options.dotCalls = dotCalls
         options.strictAQL = strictAQL
         return options.aqlOptions(settings: settings)
     }

@@ -33,6 +33,16 @@ final class ExpressionEvaluator {
     /// The formatter whose labels identify objects by name.
     let formatter = ResultFormatter()
 
+    /// The distinct warnings of the last evaluation, in the order in which they were reported.
+    ///
+    /// The warnings are those that the execution context reports while evaluating an
+    /// expression, such as a call written with a dot on a collection whose elements lack the
+    /// service that the collection has. Each evaluation starts without warnings, and the
+    /// warnings remain available when an evaluation fails.
+    var warnings: [SourceDiagnostic] {
+        context.diagnostics.filter { $0.severity == .warning }
+    }
+
     /// Creates an evaluator.
     ///
     /// - Parameters:
@@ -157,6 +167,7 @@ final class ExpressionEvaluator {
         for binding in bindings(self: selfObject) {
             context.setVariable(binding.name, value: binding.value)
         }
+        context.clearDiagnostics()
         do {
             return try await expression.evaluate(in: context)
         } catch let error as LocalizedError {

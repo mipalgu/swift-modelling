@@ -56,7 +56,7 @@ swift-aql query <file> --query-file <file.aql> [options]
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`) for every behaviour option below; an option that is given overrides it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models that it holds in containment references
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
-- `--collection-arguments <whole|first-element>`, `--collection-kinds <distinguished|sequences>`, `--single-value-collections <set|sequence>`, `--container-lookup <resources|registered-objects>`, `--sequence-union <concatenation|distinct>`, `--null-addition <empty-text|null>`, `--text-form <joined|bracketed>` - The behaviours of expressions, with the same meaning and defaults as for `swift-mtl`
+- `--collection-arguments <whole|first-element>`, `--collection-kinds <distinguished|sequences>`, `--single-value-collections <set|sequence>`, `--container-lookup <resources|registered-objects>`, `--sequence-union <concatenation|distinct>`, `--null-addition <empty-text|null>`, `--text-form <joined|bracketed>`, `--dot-calls <each-element|collection>` - The behaviours of expressions, with the same meaning and defaults as for `swift-mtl`
 - `--strict-aql`, `--no-strict-aql` - Reject the expressions that Eclipse AQL rejects, such as `Sequence{'a'}->union(Set{'b'})` or `Sequence{'a'}->concat('b')`, with a type error instead of accepting them, or accept them (the default); neither preset sets it, and without either flag the `strict-aql` key of the configuration file (`true` or `false`) chooses
 
 The Compatibility with 0.6 section of the [SwiftModelling documentation](https://mipalgu.github.io/swift-modelling/documentation/swiftmodelling/swiftmodelling/index.html) lists every behaviour option with its default and its version 0.6 behaviour, and describes the `SWIFT_MODELLING_SEMANTICS` environment variable and the `.swift-modelling.json` configuration file.
@@ -119,7 +119,11 @@ editors of the Eclipse Modeling Framework.
 A command exits with status 0 when the expression has been evaluated.
 A missing file, an invalid expression, an unknown variable or a failed
 operation is reported on standard error, and the command exits with a
-non-zero status, so scripts can rely on `set -e`.
+non-zero status, so scripts can rely on `set -e`. Warnings are printed on
+standard error as `warning: line <line>, column <column>: <message>` and do
+not change the exit status: for example, `Sequence{1, 2}.size()` applies
+`size` to each integer and warns that `Sequence{1, 2}->size()` calls the
+`size` of the collection.
 
 ## Examples
 

@@ -4,6 +4,8 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import AQL
+import EMFBase
 import Foundation
 import Testing
 
@@ -27,6 +29,22 @@ struct EvaluationRunTests {
         let context = EvaluationRun(
             models: [model], source: .text("self.name"), options: try options(["--no-config", "--context", "Kiosk"]))
         #expect(ResultFormatter().format(try await context.value(environment: [:], currentDirectory: directory)) == "\"Kiosk\"")
+    }
+
+    @Test("A run reports the warnings of its evaluation, and none without them")
+    func warnings() async throws {
+        let directory = FileManager.default.temporaryDirectory
+        var reported: [[SourceDiagnostic]] = []
+        let warned = EvaluationRun(models: [], source: .text("Sequence{1, 2}.size()"), options: try options(["--no-config"]))
+        _ = try await warned.value(environment: [:], currentDirectory: directory) { reported.append($0) }
+        #expect(reported.count == 1)
+        #expect(reported.first?.map(\.code) == [AQLDiagnosticCode.dotCallOnElements])
+
+        reported = []
+        let quiet = EvaluationRun(
+            models: [], source: .text("Sequence{1, 2}.size()"), options: try options(["--no-config", "--dot-calls", "collection"]))
+        _ = try await quiet.value(environment: [:], currentDirectory: directory) { reported.append($0) }
+        #expect(reported.isEmpty)
     }
 
     @Test("A run reads the preset from a configuration file")

@@ -171,7 +171,7 @@ struct SemanticsOptionsTests {
             "--collection-parameters <conforming|exact>", "--check-let-types/--no-check-let-types",
             "--cache-containers/--no-cache-containers", "--collection-arguments <whole|first-element>",
             "--collection-kinds <distinguished|sequences>", "--single-value-collections <set|sequence>",
-            "--container-lookup <resources|registered-objects>",
+            "--container-lookup <resources|registered-objects>", "--dot-calls <each-element|collection>",
         ] {
             #expect(result.stdout.contains(text), "\(text)")
         }

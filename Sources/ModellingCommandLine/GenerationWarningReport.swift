@@ -7,11 +7,12 @@
 import EMFBase
 import Foundation
 
-/// Reports the warnings of a template run on standard error.
+/// Reports the warnings of a template run or of an expression evaluation on standard error.
 ///
 /// Each distinct warning is written once, as a line that starts with
 /// ``ConversionWarningReport/warningPrefix``, followed by the line and column of the construct
 /// that caused it when they are known. Results and completion messages stay on standard output.
+/// Warnings do not change the exit status of a command.
 public enum GenerationWarningReport {
     /// The lines that report the warnings of a template run.
     ///

@@ -217,6 +217,7 @@ struct SemanticsOptionsTests {
             "--container-lookup <resources|registered-objects>", "--collection-range-syntax <ocl|eclipse>",
             "--integer-division <real|truncating>", "--sequence-union <concatenation|distinct>",
             "--null-addition <empty-text|null>", "--text-form <joined|bracketed>", "--strict-aql",
+            "--dot-calls <each-element|collection>",
         ] {
             #expect(result.stdout.contains(text), "\(text)")
         }

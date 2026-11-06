@@ -44,7 +44,7 @@ enum Level: Int, CaseIterable, Sendable {
 /// A behaviour whose value can come from every level.
 enum Behaviour: CaseIterable, Sendable {
     case blockLineBreaks, checksLetTypes, collectionArguments, collectionRangeSyntax, integerDivision, containerScope
-    case sequenceUnion, nullAddition, textForm
+    case sequenceUnion, nullAddition, textForm, dotCalls
 
     /// The command-line arguments that select the standard or the legacy value.
     func flag(legacy: Bool) -> [String] {
@@ -65,6 +65,8 @@ enum Behaviour: CaseIterable, Sendable {
             return ["--\(MTLSemanticsOptions.OptionName.nullAddition)", legacy ? "null" : "empty-text"]
         case .textForm:
             return ["--\(MTLSemanticsOptions.OptionName.textForm)", legacy ? "bracketed" : "joined"]
+        case .dotCalls:
+            return ["--\(MTLSemanticsOptions.OptionName.dotCalls)", legacy ? "collection" : "each-element"]
         case .containerScope:
             return ["--\(SemanticsOptions.OptionName.containerScope)", legacy ? "this-resource" : "any-resource"]
         }
@@ -81,6 +83,7 @@ enum Behaviour: CaseIterable, Sendable {
         case .sequenceUnion: configuration.sequenceUnion = legacy ? .distinct : .concatenation
         case .nullAddition: configuration.nullAddition = legacy ? .null : .emptyText
         case .textForm: configuration.textForm = legacy ? .bracketed : .joined
+        case .dotCalls: configuration.dotCalls = legacy ? .collection : .eachElement
         case .containerScope: configuration.containerLookupScope = legacy ? .thisResource : .anyResource
         }
     }
@@ -99,6 +102,10 @@ enum Behaviour: CaseIterable, Sendable {
         case .sequenceUnion: return command.mtl.aqlOptions(settings: settings).sequenceUnion == .distinct
         case .nullAddition: return command.mtl.aqlOptions(settings: settings).nullAddition == .null
         case .textForm: return command.mtl.aqlOptions(settings: settings).textForm == .bracketed
+        case .dotCalls:
+            let aql = command.mtl.aqlOptions(settings: settings)
+            #expect(command.mtl.mtlOptions(settings: settings).aql == aql)
+            return aql.dotCalls == .collection
         case .containerScope: return settings.containerLookupScope == .thisResource
         }
     }

@@ -11,7 +11,7 @@
 
     @Section(title: "Navigation and Type Operations") {
         @ContentAndMedia {
-            OCL provides operators for navigating model relationships and working with types. Navigation uses `.` for attributes and `->` for collections.
+            OCL provides operators for navigating model relationships and working with types. Navigation uses `.` for attributes and references, and `->` calls collection operations.
 
             Type operations like `oclIsTypeOf`, `oclIsKindOf`, and `oclAsType` enable runtime type checking and casting.
         }
@@ -30,7 +30,7 @@
 
                 @Code(name: "OrganisationTransform.atl", file: atl-05-step-02-navigation.atl)
 
-                Navigate through relationships using `.` for single-valued references and `->` for collections.
+                Navigate through relationships using `.`, which also reaches a many-valued reference such as `self.employees`, and call collection operations such as `collect` and `size` with `->`.
             }
 
             @Step {
@@ -98,10 +98,10 @@
             What is the difference between `.` and `->` in OCL navigation?
 
             @Choice(isCorrect: true) {
-                `.` is for single values; `->` is for collections
+                `.` navigates features; `->` calls collection operations
 
                 @Justification(reaction: "Correct!") {
-                    Use `.` to navigate single-valued attributes and references (e.g., `employee.department`). Use `->` to navigate and operate on collections (e.g., `department->collect(e | e.name)`).
+                    Use `.` to navigate attributes and references, whether single-valued (e.g., `employee.department`) or many-valued (e.g., `department.employees`). Use `->` to call collection operations (e.g., `department.employees->collect(e | e.name)`).
                 }
             }
 
@@ -109,7 +109,7 @@
                 `.` is faster than `->`
 
                 @Justification(reaction: "Not quite!") {
-                    Performance isn't the distinguishing factor. They serve different purposes based on cardinality.
+                    Performance isn't the distinguishing factor. They serve different purposes: navigating features and calling collection operations.
                 }
             }
 

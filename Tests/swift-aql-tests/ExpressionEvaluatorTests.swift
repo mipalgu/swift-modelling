@@ -26,6 +26,19 @@ struct ExpressionEvaluatorTests {
         return formatter.format(try await evaluator.evaluate(expression, self: selfObject))
     }
 
+    @Test("An evaluation keeps the warnings of its expression and forgets those of earlier ones")
+    func warnings() async throws {
+        let evaluator = try await shopEvaluator()
+        #expect(evaluator.warnings.isEmpty)
+        #expect(formatter.format(try await evaluator.evaluate("Sequence{1, 2}.size()")) == "[]")
+        let warning = try #require(evaluator.warnings.first)
+        #expect(evaluator.warnings.count == 1)
+        #expect(warning.severity == .warning)
+        #expect(warning.code == AQLDiagnosticCode.dotCallOnElements)
+        _ = try await evaluator.evaluate("Sequence{1, 2}->size()")
+        #expect(evaluator.warnings.isEmpty)
+    }
+
     @Test("Variable names are class names with a lower-case first letter")
     func variableNames() {
         #expect(ExpressionEvaluator.variableName(ofClass: "Company") == "company")

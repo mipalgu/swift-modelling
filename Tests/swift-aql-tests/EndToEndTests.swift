@@ -201,3 +201,108 @@ struct ExpressionFormTests {
         #expect(run.output == "[\"2\", \"true\", \"=[a]\"]\n", "\(run.output)")
     }
 }
+
+/// Tests for `--dot-calls`, which chooses what a call written with a dot does on a collection,
+/// and for the warnings about such calls.
+@Suite("swift-aql dot calls")
+struct DotCallTests {
+    /// The expression whose value the option changes.
+    static let expression = "Sequence{'a', 'b'}.size()"
+
+    /// Each set of options, with the value of ``expression`` that they give.
+    static let cases: [(arguments: [String], value: String)] = [
+        ([], "[1, 1]\n"),
+        (["--dot-calls", "each-element"], "[1, 1]\n"),
+        (["--dot-calls", "collection"], "2\n"),
+        (["--semantics", "legacy"], "2\n"),
+        (["--semantics", "legacy", "--dot-calls", "each-element"], "[1, 1]\n"),
+        (["--semantics", "standard", "--dot-calls", "collection"], "2\n"),
+    ]
+
+    @Test("applies a dot call on a collection to each element unless told otherwise", arguments: cases.indices)
+    func option(index: Int) async throws {
+        let (arguments, value) = Self.cases[index]
+        let run = try await runSwiftAQL(["evaluate", "--no-config", "-e", Self.expression] + arguments)
+
+        #expect(run.succeeded, "\(arguments): \(run.error)")
+        #expect(run.output == value, "\(arguments)")
+    }
+
+    @Test("gives the size of the collection with an arrow call whatever the options", arguments: [
+        [], ["--dot-calls", "collection"], ["--semantics", "legacy"],
+    ])
+    func arrow(arguments: [String]) async throws {
+        let run = try await runSwiftAQL(["evaluate", "--no-config", "-e", "Sequence{'a', 'b'}->size()"] + arguments)
+
+        #expect(run.succeeded, "\(arguments): \(run.error)")
+        #expect(run.output == "2\n", "\(arguments)")
+    }
+
+    @Test("follows the environment and the dot-calls key of the configuration file")
+    func configuration() async throws {
+        let directory = try Fixture.temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(
+            at: directory.appendingPathComponent(".git"), withIntermediateDirectories: true)
+        try #"{ "dot-calls": "collection" }"#.write(
+            to: directory.appendingPathComponent(".swift-modelling.json"), atomically: true, encoding: .utf8)
+
+        let fromFile = try await runSwiftAQL(["evaluate", "-e", Self.expression], in: directory)
+        let overridden = try await runSwiftAQL(
+            ["evaluate", "-e", Self.expression, "--dot-calls", "each-element"], in: directory)
+        let fromEnvironment = try await runSwiftAQL(
+            ["evaluate", "--no-config", "-e", Self.expression], environment: ["SWIFT_MODELLING_SEMANTICS": "legacy"])
+
+        #expect(fromFile.output == "2\n", "\(fromFile.error)")
+        #expect(overridden.output == "[1, 1]\n", "\(overridden.error)")
+        #expect(fromEnvironment.output == "2\n", "\(fromEnvironment.error)")
+    }
+
+    @Test("warns on standard error when the elements lack the service of the collection, and succeeds")
+    func warning() async throws {
+        for command in [
+            ["evaluate", "-e", "Sequence{1, 2}.size()"],
+            ["query", try Fixture.shop(Fixture.shopModel).path, "Sequence{1, 2}.size()"],
+        ] {
+            let run = try await runSwiftAQL(command + ["--no-config"])
+
+            #expect(run.succeeded, "\(command): \(run.error)")
+            #expect(run.output == "[]\n", "\(command)")
+            let lines = run.error.split(separator: "\n", omittingEmptySubsequences: true)
+            #expect(lines.count == 1, "\(command): \(run.error)")
+            #expect(run.error.hasPrefix("warning: line 1, column "), "\(command): \(run.error)")
+            #expect(run.error.contains("->size()"), "\(command): \(run.error)")
+        }
+    }
+
+    @Test("does not warn about an arrow call, a call on single values or dot calls on the collection", arguments: [
+        (["-e", "Sequence{1, 2}->size()"], "2\n"),
+        (["-e", "Sequence{'a', 'bc'}.size()"], "[1, 2]\n"),
+        (["-e", "Sequence{1, 2}.size()", "--dot-calls", "collection"], "2\n"),
+        (["-e", "Sequence{1, 2}.size()", "--semantics", "legacy"], "2\n"),
+    ])
+    func noWarning(arguments: [String], value: String) async throws {
+        let run = try await runSwiftAQL(["evaluate", "--no-config"] + arguments)
+
+        #expect(run.succeeded, "\(arguments): \(run.error)")
+        #expect(run.output == value, "\(arguments)")
+        #expect(run.error.isEmpty, "\(arguments): \(run.error)")
+    }
+
+    @Test("reports the warning before failing in strict mode")
+    func strictWarning() async throws {
+        let run = try await runSwiftAQL(["evaluate", "--no-config", "--strict-aql", "-e", "Sequence{1, 2}.size()"])
+
+        #expect(!run.succeeded)
+        #expect(run.error.contains("warning: "), "\(run.error)")
+    }
+
+    @Test("describes --dot-calls in the help of both commands")
+    func help() async throws {
+        for command in ["evaluate", "query"] {
+            let run = try await runSwiftAQL([command, "--help"])
+
+            #expect(run.output.contains("--dot-calls <each-element|collection>"), "\(command)")
+        }
+    }
+}

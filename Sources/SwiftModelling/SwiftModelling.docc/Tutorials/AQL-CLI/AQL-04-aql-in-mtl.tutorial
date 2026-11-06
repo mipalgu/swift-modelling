@@ -249,7 +249,7 @@
         }
 
         @MultipleChoice {
-            What happens when you use `[for (item : Type | collection.select(x | x.property > 5))]` in an MTL template?
+            What happens when you use `[for (item : Type | collection->select(x | x.property > 5))]` in an MTL template?
 
             @Choice(isCorrect: true) {
                 It iterates over only the collection elements where property > 5

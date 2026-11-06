@@ -37,16 +37,24 @@ struct EvaluationRun: Sendable {
 
     /// Evaluates the expression.
     ///
+    /// The warnings of the evaluation, such as a call written with a dot on a collection whose
+    /// elements lack the service that the collection has, are passed to `report` once the
+    /// expression has been evaluated, and also when its evaluation fails. They do not make the
+    /// evaluation fail.
+    ///
     /// - Parameters:
     ///   - environment: The environment variables from which the preset may come.
     ///   - currentDirectory: The directory from which the configuration file is found.
+    ///   - report: What receives the warnings of the evaluation, if there are any; by default
+    ///     ``GenerationWarningReport/write(_:)``, which writes them to standard error.
     /// - Returns: The value of the expression, or `nil` for null.
     /// - Throws: ``SwiftAQLError`` if the expression cannot be read, parsed or evaluated, or
     ///   its context object cannot be found, and the errors of the settings and of loading.
     @MainActor
     func value(
         environment: [String: String] = ProcessInfo.processInfo.environment,
-        currentDirectory: URL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true)
+        currentDirectory: URL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true),
+        reportingWarningsTo report: @MainActor ([SourceDiagnostic]) -> Void = GenerationWarningReport.write
     ) async throws -> (any EcoreValue)? {
         let text = try source.text()
         let settings = try options.semanticsOptions.settings(
@@ -56,11 +64,17 @@ struct EvaluationRun: Sendable {
         let evaluator = await ExpressionEvaluator(
             models: loaded, options: options.aqlSemanticsOptions.aqlOptions(settings: settings),
             unsetFeatureReads: options.unsetFeatureOptions.unsetFeatures(settings: settings))
+        defer {
+            let warnings = evaluator.warnings
+            if !warnings.isEmpty { report(warnings) }
+        }
         guard let key = options.context else { return try await evaluator.evaluate(text) }
         return try await evaluator.evaluate(text, self: try await evaluator.contextObject(for: key))
     }
 
     /// Evaluates the expression and returns the text that the command prints.
+    ///
+    /// The warnings of the evaluation are written to standard error.
     ///
     /// - Returns: The value of the expression, formatted by ``ResultFormatter``.
     /// - Throws: The errors of ``value(environment:currentDirectory:)``.
