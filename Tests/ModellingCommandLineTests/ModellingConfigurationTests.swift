@@ -140,7 +140,7 @@ struct ModellingConfigurationTests {
                 "semantics", "block-line-breaks", "collection-parameters", "check-let-types",
                 "cache-containers", "collection-arguments", "collection-kinds", "single-value-collections",
                 "container-lookup", "sequence-union", "null-addition", "text-form", "dot-calls",
-                "collection-range-syntax", "integer-division", "container-scope", "let-type-mismatches", "unset-features", "strict-aql",
+                "collection-range-syntax", "integer-division", "bag-representation", "container-scope", "let-type-mismatches", "unset-features", "strict-aql",
             ])
     }
 
@@ -176,6 +176,7 @@ struct ModellingConfigurationTests {
               "dot-calls": "collection",
               "collection-range-syntax": "eclipse",
               "integer-division": "truncating",
+              "bag-representation": "sequence",
               "container-scope": "this-resource",
               "let-type-mismatches": "skip",
               "unset-features": "undefined",
@@ -198,6 +199,7 @@ struct ModellingConfigurationTests {
         #expect(configuration.dotCalls == .collection)
         #expect(configuration.collectionRangeSyntax == .eclipse)
         #expect(configuration.integerDivision == .truncating)
+        #expect(configuration.bagRepresentation == .sequence)
         #expect(configuration.containerLookupScope == .thisResource)
         #expect(configuration.letTypeMismatches == .skip)
         #expect(configuration.unsetFeatures == .undefined)
@@ -310,6 +312,7 @@ struct ModellingConfigurationTests {
             (#"{ "cache-containers": 0 }"#, "cache-containers"),
             (#"{ "strict-aql": "true" }"#, "strict-aql"),
             (#"{ "dot-calls": false }"#, "dot-calls"),
+            (#"{ "bag-representation": 2 }"#, "bag-representation"),
             (#"{ "unset-features": { "mode": "undefined" } }"#, "unset-features"),
         ])
     func wrongType(text: String, key: String) {
@@ -333,6 +336,7 @@ struct ModellingConfigurationTests {
             (#"{ "container-scope": "everywhere" }"#, "container-scope", "everywhere", ["any-resource", "this-resource"]),
             (#"{ "collection-range-syntax": "sometimes" }"#, "collection-range-syntax", "sometimes", ["ocl", "eclipse"]),
             (#"{ "integer-division": "rounding" }"#, "integer-division", "rounding", ["real", "truncating"]),
+            (#"{ "bag-representation": "set" }"#, "bag-representation", "set", ["bag", "sequence"]),
             (#"{ "sequence-union": "all" }"#, "sequence-union", "all", ["concatenation", "distinct"]),
             (#"{ "null-addition": "zero" }"#, "null-addition", "zero", ["empty-text", "null"]),
             (#"{ "text-form": "quoted" }"#, "text-form", "quoted", ["joined", "bracketed"]),

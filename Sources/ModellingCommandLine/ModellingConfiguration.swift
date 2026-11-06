@@ -73,6 +73,7 @@ public struct ModellingConfiguration: Sendable, Equatable {
         MTLSemanticsOptions.OptionName.dotCalls,
         ATLSemanticsOptions.OptionName.collectionRangeSyntax,
         ATLSemanticsOptions.OptionName.integerDivision,
+        ATLSemanticsOptions.OptionName.bagRepresentation,
         SemanticsOptions.OptionName.containerScope,
         LetTypeMismatchOptions.optionName,
         UnsetFeatureOptions.optionName,
@@ -127,6 +128,9 @@ public struct ModellingConfiguration: Sendable, Equatable {
 
     /// What the ATL `/` operator yields for two Integers (`integer-division`).
     public var integerDivision: ATLIntegerDivision?
+
+    /// What a Bag value is when ATL expressions evaluate (`bag-representation`).
+    public var bagRepresentation: ATLBagRepresentation?
 
     /// The objects whose containers a model answers for (`container-scope`).
     public var containerLookupScope: ContainerLookupScope?
@@ -205,6 +209,7 @@ public struct ModellingConfiguration: Sendable, Equatable {
         dotCalls = try reader.value(of: MTLSemanticsOptions.OptionName.dotCalls)
         collectionRangeSyntax = try reader.value(of: ATLSemanticsOptions.OptionName.collectionRangeSyntax)
         integerDivision = try reader.value(of: ATLSemanticsOptions.OptionName.integerDivision)
+        bagRepresentation = try reader.value(of: ATLSemanticsOptions.OptionName.bagRepresentation)
         containerLookupScope = try reader.value(of: SemanticsOptions.OptionName.containerScope)
         letTypeMismatches = try reader.value(of: LetTypeMismatchOptions.optionName)
         unsetFeatures = try reader.value(of: UnsetFeatureOptions.optionName)
