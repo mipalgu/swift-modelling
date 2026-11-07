@@ -5,6 +5,7 @@
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
 import ECore
+import EMFBase
 import Foundation
 
 /// Loads the Ecore metamodels named on a command line and registers them with a resource set.
@@ -94,22 +95,31 @@ public enum MetamodelRegistration {
     public static func loadPackages(
         at path: String, options: EcoreLoadOptions = EcoreLoadOptions(), debug: Bool = false
     ) async throws -> [EPackage] {
-        try await load(at: path, options: options, debug: debug).packages
+        let loaded = try await load(at: path, options: options, debug: debug)
+        FileDiagnosticReport.write(loaded.diagnostics, file: path)
+        guard !loaded.packages.isEmpty else { throw XMIError.noRootObject }
+        return loaded.packages
     }
 
     /// Loads every root package of a metamodel file with the URIs under which it registers them.
+    ///
+    /// The diagnostics of reading the file are returned for the caller to report.
     ///
     /// - Parameters:
     ///   - path: The path to the metamodel file.
     ///   - options: The options with which the file is read.
     ///   - debug: Whether the parser prints its trace of an Ecore document to standard output.
-    /// - Returns: The root packages in document order, and the URI under which each package
-    ///   that is registered is registered: its namespace URI or, for a package without one in
-    ///   a format such as KM3, its name.
-    /// - Throws: As ``loadPackages(at:options:debug:)``.
+    /// - Returns: The root packages in document order, which are none if the file has none; the
+    ///   URI under which each package that is registered is registered: its namespace URI or,
+    ///   for a package without one in a format such as KM3, its name; and the diagnostics of
+    ///   reading the file.
+    /// - Throws: ``MetamodelRegistrationError/fileNotFound(_:)`` if the file does not exist, or
+    ///   the error of the reader if the file cannot be loaded.
     private static func load(
         at path: String, options: EcoreLoadOptions, debug: Bool
-    ) async throws -> (packages: [EPackage], registrations: [(uri: String, package: EPackage)]) {
+    ) async throws -> (
+        packages: [EPackage], registrations: [(uri: String, package: EPackage)], diagnostics: [SourceDiagnostic]
+    ) {
         guard FileManager.default.fileExists(atPath: path) else {
             throw MetamodelRegistrationError.fileNotFound(path)
         }
@@ -122,8 +132,7 @@ public enum MetamodelRegistration {
         }
         let packages = try await ModelIO.registerMetamodels(at: [url], in: resourceSet, options: options)
         let uri = URIReference.canonicalise(url.absoluteString)
-        FileDiagnosticReport.write(await resourceSet.getResource(uri: uri)?.loadDiagnostics ?? [], file: path)
-        guard !packages.isEmpty else { throw XMIError.noRootObject }
+        let diagnostics = await resourceSet.getResource(uri: uri)?.loadDiagnostics ?? []
         let identifiers = Set(packages.map(\.id))
         var registrations: [(uri: String, package: EPackage)] = []
         for registered in await resourceSet.getMetamodelURIs().sorted() {
@@ -134,7 +143,7 @@ public enum MetamodelRegistration {
         }
         let order = Dictionary(packages.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })
         registrations.sort { (order[$0.package.id] ?? 0, $0.uri) < (order[$1.package.id] ?? 0, $1.uri) }
-        return (packages, registrations)
+        return (packages, registrations, diagnostics)
     }
 
     /// Whether a metamodel file is read as an Ecore document, whose reader can print a trace.
@@ -158,8 +167,8 @@ public enum MetamodelRegistration {
     /// Loads a metamodel and registers it with a resource set.
     ///
     /// Every root package of the file is registered, as
-    /// ``registerMetamodels(at:into:announcement:verbose:debug:options:)`` registers them,
-    /// and the first is returned.
+    /// ``registerMetamodels(at:into:announcement:verbose:debug:options:diagnosticOutput:)``
+    /// registers them, and the first is returned.
     ///
     /// - Parameters:
     ///   - path: The path to the metamodel file.
@@ -196,7 +205,9 @@ public enum MetamodelRegistration {
     /// URI is loaded with the others, so that their references to it resolve. It is not
     /// registered if it comes from an Ecore or JSON document; one from a format without
     /// namespaces, such as KM3, is registered under its name, as the ATL tool chain does. A
-    /// warning on standard error reports either.
+    /// warning reports either. The diagnostics of reading the file, such as these warnings,
+    /// are written with ``FileDiagnosticReport`` through `diagnosticOutput`, which writes them to
+    /// standard error unless the caller supplies another writer.
     ///
     /// Verbose output names the file and each registered package. The trace of the XMI parser
     /// is a separate debugging aid that only `debug` turns on.
@@ -208,6 +219,8 @@ public enum MetamodelRegistration {
     ///   - verbose: Whether to print progress to standard output.
     ///   - debug: Whether the parser prints its trace of the metamodel document to standard output.
     ///   - options: The options with which the file is read (default options).
+    ///   - diagnosticOutput: The writer that receives the report of the diagnostics of reading
+    ///     the file, if there are any (standard error by default).
     /// - Returns: The root packages of the file, in document order.
     /// - Throws: ``MetamodelRegistrationError/fileNotFound(_:)`` if the file does not exist, or
     ///   the error of the reader if the file cannot be loaded.
@@ -219,7 +232,8 @@ public enum MetamodelRegistration {
         announcement: String = defaultAnnouncement,
         verbose: Bool = false,
         debug: Bool = false,
-        options: EcoreLoadOptions = EcoreLoadOptions()
+        options: EcoreLoadOptions = EcoreLoadOptions(),
+        diagnosticOutput: (String) -> Void = FileDiagnosticReport.writeToStandardError
     ) async throws -> [EPackage] {
         guard FileManager.default.fileExists(atPath: path) else {
             throw MetamodelRegistrationError.fileNotFound(path)
@@ -228,6 +242,8 @@ public enum MetamodelRegistration {
             print("\(announcement): \(path)")
         }
         let loaded = try await load(at: path, options: options, debug: debug)
+        FileDiagnosticReport.write(loaded.diagnostics, file: path, to: diagnosticOutput)
+        guard !loaded.packages.isEmpty else { throw XMIError.noRootObject }
         for (uri, package) in loaded.registrations {
             await resourceSet.registerMetamodel(package, uri: uri)
             if verbose {
@@ -240,7 +256,8 @@ public enum MetamodelRegistration {
     /// Loads Ecore metamodels and registers them with a new resource set.
     ///
     /// Every root package of each file is registered, as
-    /// ``registerMetamodels(at:into:announcement:verbose:debug:options:)`` registers them.
+    /// ``registerMetamodels(at:into:announcement:verbose:debug:options:diagnosticOutput:)``
+    /// registers them.
     ///
     /// - Parameters:
     ///   - paths: The paths to the `.ecore` files, in command line order.
@@ -248,8 +265,9 @@ public enum MetamodelRegistration {
     ///   - debug: Whether the parser prints its trace of each metamodel document to standard output.
     ///   - options: The options with which the files are read (default options).
     /// - Returns: The resource set with every metamodel registered.
-    /// - Throws: The error of ``registerMetamodels(at:into:announcement:verbose:debug:options:)`` for the
-    ///   first file that cannot be registered.
+    /// - Throws: The error of
+    ///   ``registerMetamodels(at:into:announcement:verbose:debug:options:diagnosticOutput:)``
+    ///   for the first file that cannot be registered.
     @MainActor
     public static func resourceSet(
         registering paths: [String], verbose: Bool = false, debug: Bool = false,

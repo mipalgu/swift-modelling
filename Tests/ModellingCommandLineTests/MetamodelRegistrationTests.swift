@@ -236,10 +236,23 @@ struct MetamodelRegistrationTests {
     @MainActor
     func noWarnings() async throws {
         let path = try Self.write(Self.twoRoots)
-        let errors = try await StandardOutputCapture.captureError {
-            try await MetamodelRegistration.registerMetamodels(at: path, into: ResourceSet())
-        }
+        var errors = ""
+        try await MetamodelRegistration.registerMetamodels(at: path, into: ResourceSet()) { errors += $0 }
         #expect(errors.isEmpty, "\(errors)")
+    }
+
+    @Test("writes the warnings of a metamodel through the writer it is given")
+    @MainActor
+    func warningsThroughWriter() async throws {
+        let path = try Self.write(Self.withoutNamespace)
+        var errors = ""
+        let output = try await StandardOutputCapture.captureError {
+            try await MetamodelRegistration.registerMetamodels(at: path, into: ResourceSet()) { errors += $0 }
+        }
+        #expect(errors.hasPrefix("warning: \(path): "), "\(errors)")
+        #expect(errors.contains("'Primitives'"), "\(errors)")
+        #expect(errors.hasSuffix("\n"), "\(errors)")
+        #expect(!output.contains("warning: \(path): "), "\(output)")
     }
 }
 

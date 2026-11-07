@@ -56,9 +56,33 @@ public enum FileDiagnosticReport {
     ///   - diagnostics: The diagnostics, in the order in which they were reported.
     ///   - file: The file as the user named it, or `nil` to name the document of each diagnostic.
     public static func write(_ diagnostics: [SourceDiagnostic], file: String? = nil) {
+        write(diagnostics, file: file, to: writeToStandardError)
+    }
+
+    /// Writes the diagnostics of reading a file through a writer.
+    ///
+    /// The writer receives the lines of ``lines(for:file:)`` as one text, each line ending in
+    /// a newline. It is not called if there is no warning or error to report.
+    ///
+    /// - Parameters:
+    ///   - diagnostics: The diagnostics, in the order in which they were reported.
+    ///   - file: The file as the user named it, or `nil` to name the document of each diagnostic.
+    ///   - output: The writer that receives the text of the report, such as
+    ///     ``writeToStandardError(_:)``.
+    public static func write(_ diagnostics: [SourceDiagnostic], file: String? = nil, to output: (String) -> Void) {
         let lines = lines(for: diagnostics, file: file)
         guard !lines.isEmpty else { return }
-        FileHandle.standardError.write(Data((lines.joined(separator: "\n") + "\n").utf8))
+        output(lines.joined(separator: "\n") + "\n")
+    }
+
+    /// Writes text to standard error.
+    ///
+    /// This is the writer through which the diagnostics of reading a file are reported, unless
+    /// a caller supplies another one.
+    ///
+    /// - Parameter text: The text to write, unchanged.
+    public static func writeToStandardError(_ text: String) {
+        FileHandle.standardError.write(Data(text.utf8))
     }
 
     /// The text that starts the line of a diagnostic of a severity.
