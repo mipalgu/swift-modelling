@@ -29,8 +29,8 @@ struct LoadedModel: Sendable {
 /// The metamodels are those given with `--metamodel`, or, if none is given, those that
 /// ``MetamodelDiscovery`` finds beside the models. Every metamodel is registered with one
 /// resource set before the models are read, so the models are read with the classes and data
-/// types it defines. A model may be an Ecore file itself, in which case its package is both
-/// registered and queried.
+/// types it defines. A model may be a metamodel file itself, such as an Ecore or a KM3 file, in
+/// which case its first root package is both registered and queried.
 @MainActor
 struct ModelLoader {
     /// The paths of the metamodels given on the command line.
@@ -39,14 +39,19 @@ struct ModelLoader {
     /// The settings of the run, which choose the container lookup scope of the resources.
     let settings: SemanticsSettings
 
+    /// The options with which metamodels are read, such as those of KM3.
+    let metamodelOptions: EcoreLoadOptions
+
     /// Creates a loader.
     ///
     /// - Parameters:
     ///   - metamodels: The paths of the metamodels given on the command line, if any.
     ///   - settings: The settings of the run.
-    init(metamodels: [String], settings: SemanticsSettings) {
+    ///   - metamodelOptions: The options with which metamodels are read (default options).
+    init(metamodels: [String], settings: SemanticsSettings, metamodelOptions: EcoreLoadOptions = EcoreLoadOptions()) {
         self.metamodels = metamodels
         self.settings = settings
+        self.metamodelOptions = metamodelOptions
     }
 
     /// The metamodels with which the models are read.
@@ -57,7 +62,7 @@ struct ModelLoader {
     /// - Throws: ``SwiftAQLError/ambiguousMetamodels(_:_:)`` if discovery cannot choose.
     func effectiveMetamodels(for models: [String]) throws -> [String] {
         guard metamodels.isEmpty else { return metamodels }
-        return try MetamodelDiscovery().metamodels(for: models.filter { !MetamodelRegistration.isEcoreFile($0) })
+        return try MetamodelDiscovery().metamodels(for: models.filter { !MetamodelRegistration.isMetamodelFile($0) })
     }
 
     /// Loads models.
@@ -72,18 +77,19 @@ struct ModelLoader {
         }
         let resourceSet = settings.makeResourceSet()
         for metamodel in try effectiveMetamodels(for: models) {
-            try await MetamodelRegistration.registerMetamodel(at: metamodel, into: resourceSet)
+            try await MetamodelRegistration.registerMetamodel(at: metamodel, into: resourceSet, options: metamodelOptions)
         }
         var loaded: [LoadedModel] = []
         for path in models {
             let url = URL(fileURLWithPath: path)
             let resource: Resource
-            if MetamodelRegistration.isEcoreFile(path) {
-                let package = try await MetamodelRegistration.registerMetamodel(at: path, into: resourceSet)
+            if MetamodelRegistration.isMetamodelFile(path) {
+                let package = try await MetamodelRegistration.registerMetamodel(
+                    at: path, into: resourceSet, options: metamodelOptions)
                 resource = await resourceSet.createResource(uri: url.absoluteString)
                 await resource.add(package)
             } else {
-                let format = ModelFileFormat.instanceFormat(of: url)
+                let format = try ModelFileFormat.detectedInstanceFormat(of: url)
                 resource = try await ModelIO.load(
                     url: url, format: format, resourceSet: resourceSet,
                     options: ModelIO.LoadOptions(requiresMetamodel: false)

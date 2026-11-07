@@ -73,10 +73,13 @@ swift-atl transform <transformation-file> [options]
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax`, `--integer-division` and `--bag-representation` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--encoding <name>` - The character encoding of the ATL source, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8); the `encoding` key of the configuration file names it too
 
 **Module parameters.** A transformation declares a parameter in a header comment, `-- @param name : Type` or `-- @param name : Type = default`, with the types `String`, `Integer`, `Real` and `Boolean`, and reads it as `thisModule.name`. `--param name=value` supplies the value; it is converted to the declared type, and the value is everything after the first `=`. A name that the module does not declare, a value of the wrong type, a required parameter without a value, and an argument that is not `name=value` are errors.
 
-**Metamodel files and directives.** A metamodel file given on the command line takes the place of the `-- @path` and `-- @nsURI` directives of its metamodel; a metamodel that two options bind to different files, a name that the module header does not declare, and a positional list whose length differs from the declared metamodels are errors. A metamodel that neither a file nor a directive binds is an error unless `--continue-after-errors` is given. A `-- @path` that starts with `/` names a file in an Eclipse workspace, such as `/Families2Persons/Families.ecore`: it is looked up in each metamodel search directory as `Families2Persons/Families.ecore` and then as `Families.ecore`, with the search directory as the project directory. Without `--metamodel-path` or the `ECOREPATH` environment variable, the search directories are the directory of the transformation, its parent and the current directory.
+**Metamodel files and directives.** A metamodel file given on the command line takes the place of the `-- @path` and `-- @nsURI` directives of its metamodel; a metamodel that two options bind to different files, a name that the module header does not declare, and a positional list whose length differs from the declared metamodels are errors. A metamodel that neither a file nor a directive binds is an error unless `--continue-after-errors` is given. A `-- @path` that starts with `/` names a file in an Eclipse workspace, such as `/Families2Persons/Families.ecore`: it is looked up in each metamodel search directory as `Families2Persons/Families.ecore` and then as `Families.ecore`, with the search directory as the project directory. Without `--metamodel-path` or the `ECOREPATH` environment variable, the search directories are the directory of the transformation, its parent and the current directory. A metamodel file, an Ecore, JSON or KM3 file, binds its first root package. A root package without a namespace URI or prefix is loaded, as in the Eclipse Modeling Framework, with a warning on standard error that names the file and the package. `--km3-primitives <ecore|declared>` chooses whether the data types that a KM3 metamodel declares are the built-in Ecore data types of the same meaning (`ecore`, the default) or data types of their own package (`declared`); `transform` and `query` take the option, and the `km3-primitives` key of the configuration file chooses it too.
+
+**Source encoding.** The transformation is read as UTF-8. A file that is not valid UTF-8 is read as ISO-8859-1 instead, with a warning on standard error that names the file and the line and column of the first byte that is not UTF-8, such as `warning: Families2Persons.atl: line 3, column 12: The text is not valid UTF-8 and was read as ISO-8859-1`. `--encoding` names the encoding instead (`UTF-8`, `UTF-16`, `UTF-16BE`, `UTF-16LE`, `ISO-8859-1`, `windows-1252` or `US-ASCII`, or an alias such as `latin1`); the file is then read in that encoding alone, and a file that is not valid in it is an error. Every command that reads ATL source takes the option. A model given with `--source` whose extension is not `xmi`, `json` or `ecore` is read in the format of its contents, XMI or JSON, unless `--input-format` names one.
 
 **Refining mode.** A module declared as `create OUT : MM refining IN : MM;`, or run with `--refining`, starts each target model as a copy of the source model in the same position of the header. A rule changes the copy of the element it matches, through the first target pattern element of the type of its source pattern element; elements that no rule matches are kept. A rule whose `to` section starts with `drop`, alone or before target patterns of new elements, deletes the element it matches, with the elements it contains, once every other rule has run; references from the remaining elements to the deleted ones are removed. `drop` outside refining mode is an error, which `--validate-only` reports as well.
 
@@ -175,6 +178,7 @@ A query unit starts with `query Name = expression;` instead of a module header, 
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax`, `--integer-division` and `--bag-representation` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--encoding <name>` - The character encoding of the ATL source, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8); the `encoding` key of the configuration file names it too
 
 **Input models.** A query has no `from` clause. Its metamodels are those named by its `-- @path` and `-- @nsURI` directives, followed by those given with `--metamodel`, and each is an input model of the same name. Type references such as `Flow!Step` resolve through the metamodel name, `allInstances()` collects the instances of every model of that metamodel, and `allInstancesFrom('IN')` selects the model named `IN`.
 
@@ -273,6 +277,7 @@ swift-atl parse [<atl-files> ...] [options]
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax`, `--integer-division` and `--bag-representation` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--encoding <name>` - The character encoding of the ATL source, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8); the `encoding` key of the configuration file names it too
 
 **Examples:**
 
@@ -306,6 +311,7 @@ swift-atl validate [<atl-files> ...] [options]
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax`, `--integer-division` and `--bag-representation` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--encoding <name>` - The character encoding of the ATL source, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8); the `encoding` key of the configuration file names it too
 
 **Examples:**
 
@@ -343,6 +349,7 @@ swift-atl test [<atl-files> ...] [options]
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax`, `--integer-division` and `--bag-representation` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--encoding <name>` - The character encoding of the ATL source, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8); the `encoding` key of the configuration file names it too
 
 **Examples:**
 
@@ -373,6 +380,7 @@ swift-atl analyze [<atl-files> ...] [options]
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax`, `--integer-division` and `--bag-representation` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--encoding <name>` - The character encoding of the ATL source, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8); the `encoding` key of the configuration file names it too
 
 **Examples:**
 
@@ -403,6 +411,7 @@ The command parses the transformation and names the compiled module, which defau
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax`, `--integer-division` and `--bag-representation` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--encoding <name>` - The character encoding of the ATL source, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8); the `encoding` key of the configuration file names it too
 
 **Example:**
 

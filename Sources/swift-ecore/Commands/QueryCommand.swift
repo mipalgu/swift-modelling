@@ -48,6 +48,9 @@ struct QueryCommand: AsyncParsableCommand {
     /// The metamodels of the model.
     @OptionGroup var metamodelOptions: MetamodelOptions
 
+    /// How the data types of a KM3 metamodel are read.
+    @OptionGroup var km3Options: KM3Options
+
     /// Enable verbose output.
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose: Bool = false
@@ -65,7 +68,8 @@ struct QueryCommand: AsyncParsableCommand {
         }
         let document: ModelDocument
         do {
-            document = try await ModelDocument.load(path: inputPath, metamodelOptions: metamodelOptions, verbose: verbose)
+            document = try await ModelDocument.load(path: inputPath, metamodelOptions: metamodelOptions, verbose: verbose,
+            km3Options: km3Options.readOptions)
         } catch DocumentError.fileNotFound(let path) {
             throw QueryError.fileNotFound(path)
         } catch DocumentError.unsupportedFormat(let format) {

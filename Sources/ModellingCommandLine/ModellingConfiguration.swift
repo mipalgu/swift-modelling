@@ -7,6 +7,7 @@
 import AQL
 import ATL
 import ECore
+import EMFBase
 import Foundation
 import MTL
 
@@ -26,8 +27,9 @@ import MTL
 /// ```
 ///
 /// The values are the spellings of the options on the command line, as JSON strings, except
-/// for `check-let-types`, `cache-containers` and `strict-aql`, which take JSON booleans. ``keys`` lists the
-/// accepted keys.
+/// for `check-let-types`, `cache-containers` and `strict-aql`, which take JSON booleans. The
+/// `encoding` of source files is the name or an alias of one of the supported encodings, as for
+/// `--encoding`. ``keys`` lists the accepted keys.
 ///
 /// A command reads the file named ``fileName`` that ``discover(from:)`` finds from the current
 /// directory, or the file that `--config` names (see ``SemanticsOptions``). An option given on
@@ -55,8 +57,8 @@ public struct ModellingConfiguration: Sendable, Equatable {
     /// The keys that a configuration file accepts.
     ///
     /// The keys are the long names of the options that ``SemanticsOptions``,
-    /// ``MTLSemanticsOptions``, ``ATLSemanticsOptions``, ``LetTypeMismatchOptions`` and
-    /// ``UnsetFeatureOptions`` define.
+    /// ``MTLSemanticsOptions``, ``ATLSemanticsOptions``, ``LetTypeMismatchOptions``,
+    /// ``UnsetFeatureOptions``, ``SourceEncodingOptions`` and ``KM3Options`` define.
     public static let keys: [String] = [
         SemanticsOptions.OptionName.semantics,
         MTLSemanticsOptions.OptionName.blockLineBreaks,
@@ -78,6 +80,8 @@ public struct ModellingConfiguration: Sendable, Equatable {
         LetTypeMismatchOptions.optionName,
         UnsetFeatureOptions.optionName,
         MTLSemanticsOptions.OptionName.strictAQL,
+        SourceEncodingOptions.optionName,
+        KM3Options.optionName,
     ]
 
     /// The file that the settings were read from, or `nil` if they were not read from a file.
@@ -144,6 +148,12 @@ public struct ModellingConfiguration: Sendable, Equatable {
     /// Whether expressions reject what Eclipse AQL rejects (`strict-aql`).
     public var strictAQL: Bool?
 
+    /// The character encoding of source files (`encoding`).
+    public var encoding: TextEncoding?
+
+    /// How the data types of KM3 metamodels are read (`km3-primitives`).
+    public var km3PrimitiveTypes: KM3PrimitiveTypeMapping?
+
     /// Creates settings that set nothing, as when no configuration file is read.
     public init() {}
 
@@ -177,7 +187,8 @@ public struct ModellingConfiguration: Sendable, Equatable {
     ///   ``ModellingConfigurationError/unknownKey(_:path:)`` for a key that is not one of
     ///   ``keys``, ``ModellingConfigurationError/wrongType(key:expected:path:)`` for a value of
     ///   the wrong JSON type, and ``ModellingConfigurationError/invalidValue(_:key:accepted:path:)``
-    ///   for a string that is not one of the spellings of its option.
+    ///   for a string that is not one of the spellings of its option or, for `encoding`, not
+    ///   the name of a supported encoding.
     public init(data: Data, url: URL) throws(ModellingConfigurationError) {
         let path = url.path
         let document: JSONValue
@@ -214,6 +225,8 @@ public struct ModellingConfiguration: Sendable, Equatable {
         letTypeMismatches = try reader.value(of: LetTypeMismatchOptions.optionName)
         unsetFeatures = try reader.value(of: UnsetFeatureOptions.optionName)
         strictAQL = try reader.flag(MTLSemanticsOptions.OptionName.strictAQL)
+        encoding = try reader.encoding(SourceEncodingOptions.optionName)
+        km3PrimitiveTypes = try reader.value(of: KM3Options.optionName)
     }
 
     /// Finds the configuration file that applies to a directory.
@@ -379,6 +392,23 @@ private struct Reader {
             throw .invalidValue(text, key: key, accepted: Value.allCases.map(\.rawValue), path: path)
         }
         return value
+    }
+
+    /// Reads the value of a key that names a character encoding.
+    ///
+    /// - Parameter key: The key.
+    /// - Returns: The encoding, or `nil` if the key is absent.
+    /// - Throws: ``ModellingConfigurationError`` if the value is not a string, or not the name or
+    ///   an alias of a supported encoding.
+    func encoding(_ key: String) throws(ModellingConfigurationError) -> TextEncoding? {
+        guard let found = object[key] else { return nil }
+        guard case .string(let text) = found else {
+            throw .wrongType(key: key, expected: .string, path: path)
+        }
+        guard let encoding = TextEncoding(name: text) else {
+            throw .invalidValue(text, key: key, accepted: TextEncoding.allCases.map(\.name), path: path)
+        }
+        return encoding
     }
 
     /// Reads the value of a key that takes a boolean.

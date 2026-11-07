@@ -22,11 +22,18 @@ public enum GenerationWarningReport {
         var lines: [String] = []
         var seen = Set<String>()
         for warning in warnings {
-            let location = warning.range.map { "line \($0.start.line), column \($0.start.column): " } ?? ""
-            let line = ConversionWarningReport.warningPrefix + location + warning.message
+            let line = ConversionWarningReport.warningPrefix + location(of: warning) + warning.message
             if seen.insert(line).inserted { lines.append(line) }
         }
         return lines
+    }
+
+    /// The line and column at which a warning starts, as they precede its message.
+    ///
+    /// - Parameter warning: The warning.
+    /// - Returns: For example `line 3, column 7: `, or an empty text if the place is not known.
+    static func location(of warning: SourceDiagnostic) -> String {
+        warning.range.map { "line \($0.start.line), column \($0.start.column): " } ?? ""
     }
 
     /// Writes the warnings of a template run to standard error.

@@ -17,8 +17,8 @@ import OrderedCollections
 /// Loads a model from a file using the appropriate parser.
 ///
 /// The model is read in the format that the explicit format names or, without one, in the
-/// format that the file extension names, as ``ModelFileFormat/instanceFormat(of:explicit:)``
-/// chooses it. Classes that the registered metamodels do not define are read from the
+/// format that the file extension or else the contents of the file name, as
+/// ``ModelFileFormat/detectedInstanceFormat(of:explicit:)`` chooses it. Classes that the registered metamodels do not define are read from the
 /// document itself. Provides verbose output when requested, displaying the number of objects
 /// loaded.
 ///
@@ -31,7 +31,8 @@ import OrderedCollections
 ///   - verbose: Whether to print verbose output.
 ///   - debug: Whether to enable debug mode for parsers.
 /// - Returns: The loaded resource containing the model.
-/// - Throws: `TransformationError.modelFileNotFound` if the file doesn't exist.
+/// - Throws: `TransformationError.modelFileNotFound` if the file doesn't exist, and
+///   `ModelFormatError.undetectableFormat(_:)` if its format cannot be determined.
 func loadModel(
     from path: String,
     resourceSet: ResourceSet? = nil,
@@ -46,7 +47,7 @@ func loadModel(
         throw TransformationError.modelFileNotFound(path)
     }
 
-    let format = ModelFileFormat.instanceFormat(of: url, explicit: explicitFormat)
+    let format = try ModelFileFormat.detectedInstanceFormat(of: url, explicit: explicitFormat)
 
     if verbose {
         if let explicit = explicitFormat {

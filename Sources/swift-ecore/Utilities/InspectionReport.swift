@@ -214,7 +214,8 @@ struct ModelReport: Codable, Sendable, Equatable {
     /// The number of objects of each class, in alphabetical order.
     var classes: [ClassCount]
 
-    /// The namespace URIs of the metamodels that the model was read with.
+    /// The namespace URIs of the metamodels that the model was read with, or the names of
+    /// those registered under their names, as packages of KM3 metamodels are.
     var metamodels: [String]
 
     /// The containment tree of the objects, for full detail.

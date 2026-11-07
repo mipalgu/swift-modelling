@@ -56,11 +56,13 @@ struct EvaluationRun: Sendable {
         currentDirectory: URL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true),
         reportingWarningsTo report: @MainActor ([SourceDiagnostic]) -> Void = GenerationWarningReport.write
     ) async throws -> (any EcoreValue)? {
-        let text = try source.text()
         let settings = try options.semanticsOptions.settings(
             environment: environment, currentDirectory: currentDirectory)
-        let loaded = try await ModelLoader(metamodels: options.metamodelOptions.metamodels, settings: settings)
-            .load(models)
+        let text = try source.text(encoding: options.encodingOptions.encoding(settings: settings))
+        let loaded = try await ModelLoader(
+            metamodels: options.metamodelOptions.metamodels, settings: settings,
+            metamodelOptions: options.km3Options.ecoreLoadOptions(settings: settings)
+        ).load(models)
         let evaluator = await ExpressionEvaluator(
             models: loaded, options: options.aqlSemanticsOptions.aqlOptions(settings: settings),
             unsetFeatureReads: options.unsetFeatureOptions.unsetFeatures(settings: settings))

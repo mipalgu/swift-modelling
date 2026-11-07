@@ -28,9 +28,12 @@ public struct MetamodelOptions: ParsableArguments, Sendable {
 
     /// What the option does, as a paragraph for the help of the option and of a command.
     public static let effect = """
-        The metamodel is registered under its namespace URI, so the model is read with the \
-        classes and data types it defines and written with package-qualified classes and typed \
-        references. Without a metamodel, classes are inferred from the document.
+        The metamodel is an Ecore, JSON or KM3 file. Every root package of the metamodel is \
+        registered under its namespace URI, so the model is read with the classes and data types \
+        it defines and written with package-qualified classes and typed references. A root \
+        package without a namespace URI is loaded with a warning; it is registered under its \
+        name if it comes from KM3, which has no namespaces. Without a metamodel, classes are \
+        inferred from the document.
         """
 
     /// The paths of the Ecore metamodel files, in command line order.
@@ -56,12 +59,17 @@ public struct MetamodelOptions: ParsableArguments, Sendable {
     /// - Parameters:
     ///   - verbose: Whether to print progress to standard output.
     ///   - debug: Whether the parser prints its trace of each metamodel document to standard output.
+    ///   - options: The options with which the metamodels are read, such as those of KM3
+    ///     (default options).
     /// - Returns: A resource set with every metamodel registered, or `nil` if none was given.
     /// - Throws: ``MetamodelRegistrationError/fileNotFound(_:)`` if a file does not exist, or
     ///   the error of the parser if a file cannot be loaded.
     @MainActor
-    public func resourceSet(verbose: Bool = false, debug: Bool = false) async throws -> ResourceSet? {
+    public func resourceSet(
+        verbose: Bool = false, debug: Bool = false, options: EcoreLoadOptions = EcoreLoadOptions()
+    ) async throws -> ResourceSet? {
         guard isGiven else { return nil }
-        return try await MetamodelRegistration.resourceSet(registering: metamodels, verbose: verbose, debug: debug)
+        return try await MetamodelRegistration.resourceSet(
+            registering: metamodels, verbose: verbose, debug: debug, options: options)
     }
 }

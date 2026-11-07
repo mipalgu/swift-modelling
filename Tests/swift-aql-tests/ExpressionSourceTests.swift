@@ -4,7 +4,9 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import EMFBase
 import Foundation
+import ModellingCommandLine
 import Testing
 
 @testable import swift_aql
@@ -40,6 +42,28 @@ struct ExpressionSourceTests {
     func missingFile() {
         #expect(throws: SwiftAQLError.expressionFileNotFound("missing.aql")) {
             try ExpressionSource.file("missing.aql").text()
+        }
+    }
+
+    @Test("A file that is not UTF-8 is read as ISO-8859-1")
+    func latin1File() throws {
+        let directory = try Fixture.temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appendingPathComponent("query.aql")
+        let expression = "self.name = 'Café'\n"
+        try Data(expression.unicodeScalars.map { UInt8($0.value) }).write(to: url)
+        #expect(try ExpressionSource.file(url.path).text() == expression)
+        #expect(try ExpressionSource.file(url.path).text(encoding: .isoLatin1) == expression)
+        #expect(try ExpressionSource.file(url.path).text(encoding: .windows1252) == expression)
+        #expect(throws: SourceFileError.malformed(path: url.path, encoding: .utf8)) {
+            try ExpressionSource.file(url.path).text(encoding: .utf8)
+        }
+    }
+
+    @Test("A missing file is reported whatever the encoding")
+    func missingFileWithEncoding() {
+        #expect(throws: SwiftAQLError.expressionFileNotFound("missing.aql")) {
+            try ExpressionSource.file("missing.aql").text(encoding: .isoLatin1)
         }
     }
 

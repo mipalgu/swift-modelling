@@ -16,7 +16,7 @@ import ModellingCommandLine
 /// The parse command processes ATL source files and provides detailed information
 /// about their structure, including modules, rules, helpers, and expressions.
 /// It validates syntax and provides comprehensive parsing diagnostics.
-struct ParseCommand: AsyncParsableCommand {
+struct ParseCommand: AsyncParsableCommand, ATLSourceReading {
     static let configuration = CommandConfiguration(
         commandName: "parse",
         abstract: "Parse and analyze ATL transformation files",
@@ -26,6 +26,8 @@ struct ParseCommand: AsyncParsableCommand {
             diagnostics about modules, rules, helpers, and expressions.
 
             \(ATLSemanticsOptions.discussion(reader: "the transformations"))
+
+            \(SourceEncodingOptions.discussion(reader: "the transformations"))
 
             \(SemanticsOptions.discussion())
 
@@ -70,6 +72,9 @@ struct ParseCommand: AsyncParsableCommand {
     /// The preset of the behaviours, standard or that of version 0.6.
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
+
+    /// The character encoding of the ATL source.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
 
     /// The behaviours of the ATL source that the command line, the environment and the
     /// configuration file select.
@@ -151,7 +156,7 @@ struct ParseCommand: AsyncParsableCommand {
             throw ValidationError("File not found: \(filePath)")
         }
 
-        let atlSource = try String(contentsOfFile: filePath, encoding: .utf8)
+        let atlSource = try readATLSource(at: filePath)
 
         if verbose {
             print("  Source size: \(atlSource.count) characters")

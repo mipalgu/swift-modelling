@@ -196,26 +196,28 @@ struct TransformMetamodelOptions: ParsableArguments {
 
     /// Binds the metamodels of a module to the files given on the command line.
     ///
-    /// Each file is loaded once, and every model alias whose metamodel it binds receives its root
-    /// package. When `requiresAll` is `true`, every other metamodel must already be bound by a
-    /// directive to a package that defines classifiers.
+    /// Each file is loaded once, and every model alias whose metamodel it binds receives its first
+    /// root package; a root package without a namespace URI is reported on standard error. When
+    /// `requiresAll` is `true`, every other metamodel must already be bound by a directive to a
+    /// package that defines classifiers.
     ///
     /// - Parameters:
     ///   - module: The parsed module.
     ///   - requiresAll: Whether a metamodel that remains without a package is an error.
     ///   - verbose: Whether to print each binding.
+    ///   - options: The options with which the metamodel files are read, such as those of KM3
+    ///     (default options).
     /// - Returns: The module with its metamodels bound.
     /// - Throws: The errors of ``files(for:)``, ``MetamodelRegistrationError/fileNotFound(_:)``
     ///   if a file does not exist, the error of the parser if a file cannot be loaded, and
     ///   ``TransformationError/unboundMetamodel(_:)`` for a metamodel without a package.
-    func bind(_ module: ATLModule, requiresAll: Bool, verbose: Bool) async throws -> ATLModule {
+    func bind(
+        _ module: ATLModule, requiresAll: Bool, verbose: Bool, options: EcoreLoadOptions = EcoreLoadOptions()
+    ) async throws -> ATLModule {
         let files = try files(for: module)
         var packages: [String: EPackage] = [:]
         for path in OrderedSet(files.values) {
-            guard FileManager.default.fileExists(atPath: path) else {
-                throw MetamodelRegistrationError.fileNotFound(path)
-            }
-            packages[path] = try await EPackage(url: URL(fileURLWithPath: path))
+            packages[path] = try await MetamodelRegistration.loadPackages(at: path, options: options).first
         }
         if verbose {
             for (name, path) in files {

@@ -51,11 +51,13 @@ swift-aql query <file> --query-file <file.aql> [options]
 ### Options of both commands
 
 - `--context <id-or-name>` - The object to bind to `self` (see below)
-- `-m, --metamodel <file.ecore>` - An Ecore metamodel of the models (repeatable); without it, the metamodels beside the models are found automatically
+- `-m, --metamodel <file.ecore>` - An Ecore, JSON or KM3 metamodel of the models (repeatable); without it, the metamodels beside the models are found automatically
+- `--km3-primitives <ecore|declared>` - Whether the data types that a KM3 metamodel declares, such as `String` or `Integer`, are the built-in Ecore data types of the same meaning (`ecore`, the default) or data types of their own package (`declared`); the `km3-primitives` key of the configuration file chooses it too
 - `--unset-features <defaults|undefined>` - Whether unset features read as their defaults (`defaults`, the default, as in the Eclipse Modeling Framework) or as undefined
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`) for every behaviour option below; an option that is given overrides it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models that it holds in containment references
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--encoding <name>` - The character encoding of an expression or query file, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8); the `encoding` key of the configuration file names it too, and a file that is not valid in the encoding named is an error
 - `--collection-arguments <whole|first-element>`, `--collection-kinds <distinguished|sequences>`, `--single-value-collections <set|sequence>`, `--container-lookup <resources|registered-objects>`, `--sequence-union <concatenation|distinct>`, `--null-addition <empty-text|null>`, `--text-form <joined|bracketed>`, `--dot-calls <each-element|collection>` - The behaviours of expressions, with the same meaning and defaults as for `swift-mtl`
 - `--strict-aql`, `--no-strict-aql` - Reject the expressions that Eclipse AQL rejects, such as `Sequence{'a'}->union(Set{'b'})` or `Sequence{'a'}->concat('b')`, with a type error instead of accepting them, or accept them (the default); neither preset sets it, and without either flag the `strict-aql` key of the configuration file (`true` or `false`) chooses
 
@@ -85,16 +87,27 @@ is reported as an error.
 ## Metamodels
 
 A model refers to its metamodels by their namespace URIs. Without
-`--metamodel`, the tool registers each Ecore file in the directory of
-a model whose namespace URI the model uses, so that the attributes of
+`--metamodel`, the tool registers each metamodel file in the directory
+of a model, whether an Ecore, a JSON or a KM3 file, whose namespace URI
+the model uses, so that the attributes of
 the model have the types that the metamodel declares: a `budget` of
 type `EDouble` is the real number `500000.0`, not a string. If several
 Ecore files beside a model declare the same namespace URI, the tool
 asks you to choose one with `--metamodel`. With `--metamodel`, only
-the metamodels given are registered.
+the metamodels given are registered, each with every root package that
+has a namespace URI. A root package without one is loaded with a
+warning on standard error, but not registered. KM3 has no namespace
+URIs, so each root package of a KM3 metamodel is registered under its
+name instead, and a model refers to it by a namespace declaration with
+that name, such as `xmlns:Library="Library"`.
 
-An Ecore file can itself be given as the model, so that its package
-can be queried, as in `self.eClassifiers.name`.
+A model is read as XMI or JSON by its extension, `xmi` or `json`, and
+a file with any other extension in the format of its contents. A file
+whose contents are neither XML nor JSON is reported with the supported
+formats.
+
+An Ecore or KM3 file can itself be given as the model, so that its
+first package can be queried, as in `self.eClassifiers.name`.
 
 ## Output
 

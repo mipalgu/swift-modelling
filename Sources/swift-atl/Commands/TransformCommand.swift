@@ -18,7 +18,7 @@ import OrderedCollections
 /// The transform command executes ATL model-to-model transformations using
 /// compiled transformation modules, processing source models to produce
 /// target models according to transformation rules.
-struct TransformCommand: AsyncParsableCommand {
+struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
     static let configuration = CommandConfiguration(
         commandName: "transform",
         abstract: "Execute model transformations",
@@ -115,6 +115,8 @@ struct TransformCommand: AsyncParsableCommand {
             \(UnsetFeatureOptions.discussion(reader: "the rules of the transformation"))
 
             \(ATLSemanticsOptions.discussion(reader: "the transformation"))
+
+            \(SourceEncodingOptions.discussion(reader: "the transformation"))
 
             \(SemanticsOptions.discussion())
             """
@@ -246,6 +248,12 @@ struct TransformCommand: AsyncParsableCommand {
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
 
+    /// The character encoding of the ATL source.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// How the data types of a KM3 metamodel are read.
+    @OptionGroup var km3Options: KM3Options
+
     /// Checks that the command line does not ask for both quiet and verbose output.
     ///
     /// - Throws: A validation error if `--quiet` is given with `--verbose` or `--debug`.
@@ -286,7 +294,7 @@ struct TransformCommand: AsyncParsableCommand {
                 print("\n=== Loading Transformation Module ===")
             }
 
-            let atlSource = try String(contentsOfFile: transformation, encoding: .utf8)
+            let atlSource = try readATLSource(at: transformation)
             let parser = ATLParser(options: atlOptions, enableDebugging: debug)
             let parsed = try await parser.parseContent(
                 atlSource,
@@ -295,7 +303,8 @@ struct TransformCommand: AsyncParsableCommand {
                 continueAfterErrors: continueAfterErrors || metamodelFiles.isGiven,
                 metamodelRegistry: try await builtInMetamodelRegistry())
             var module = try await metamodelFiles.bind(
-                parsed, requiresAll: metamodelFiles.isGiven && !continueAfterErrors, verbose: verbose)
+                parsed, requiresAll: metamodelFiles.isGiven && !continueAfterErrors, verbose: verbose,
+                options: km3Options.ecoreLoadOptions(settings: settings))
             if refining && !module.isRefining {
                 module = module.refining()
             }

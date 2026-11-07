@@ -19,7 +19,7 @@ import OrderedCollections
 /// instead of a module header, over its input models. It prints the value of the query and
 /// lets the query write files with `writeTo` and `writeToWithCharset`, confined to an output
 /// directory unless unrestricted paths are allowed explicitly.
-struct QueryCommand: AsyncParsableCommand {
+struct QueryCommand: AsyncParsableCommand, ATLSourceReading {
 
     /// The separator between a model name and its metamodel name in a `--source` argument.
     static let metamodelSeparator: Character = ":"
@@ -67,6 +67,8 @@ struct QueryCommand: AsyncParsableCommand {
             \(UnsetFeatureOptions.discussion(reader: "the query"))
 
             \(ATLSemanticsOptions.discussion(reader: "the query"))
+
+            \(SourceEncodingOptions.discussion(reader: "the query"))
 
             \(SemanticsOptions.discussion())
             """
@@ -148,6 +150,12 @@ struct QueryCommand: AsyncParsableCommand {
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
 
+    /// The character encoding of the ATL source.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// How the data types of a KM3 metamodel are read.
+    @OptionGroup var km3Options: KM3Options
+
     func run() async throws {
         let settings = try semanticsOptions.settings()
         do {
@@ -173,7 +181,7 @@ struct QueryCommand: AsyncParsableCommand {
         let searchPaths = metamodelSearchPaths(for: query, explicit: metamodelPath)
         let atlOptions = atlSemanticsOptions.atlOptions(settings: settings)
         let unit = try await ATLParser(options: atlOptions, enableDebugging: debug).parseContent(
-            String(contentsOfFile: query, encoding: .utf8),
+            readATLSource(at: query),
             filename: URL(fileURLWithPath: query).path,
             searchPaths: searchPaths,
             continueAfterErrors: false,
@@ -184,7 +192,7 @@ struct QueryCommand: AsyncParsableCommand {
             )
         }
         let parameterValues = try unit.parameterValues(fromText: parseParameters(param))
-        let packages = try await metamodelPackages()
+        let packages = try await metamodelPackages(options: km3Options.ecoreLoadOptions(settings: settings))
 
         var metamodelNames = Array(unit.sourceMetamodels.keys)
         for name in packages.keys where !metamodelNames.contains(name) {
@@ -234,16 +242,21 @@ struct QueryCommand: AsyncParsableCommand {
 
     /// Loads the metamodels given with `--metamodel`.
     ///
+    /// Each file binds its first root package.
+    ///
+    /// - Parameter options: The options with which the files are read, such as those of KM3.
     /// - Returns: The packages indexed by the metamodel name they are bound to, in command line order.
     /// - Throws: An error if a file cannot be loaded.
-    private func metamodelPackages() async throws -> OrderedDictionary<String, EPackage> {
+    private func metamodelPackages(options: EcoreLoadOptions) async throws -> OrderedDictionary<String, EPackage> {
         var packages: OrderedDictionary<String, EPackage> = [:]
         for argument in metamodel {
             let (name, path) = Self.split(argument)
             guard FileManager.default.fileExists(atPath: path) else {
                 throw TransformationError.modelFileNotFound(path)
             }
-            let package = try await EPackage(url: URL(fileURLWithPath: path))
+            guard let package = try await MetamodelRegistration.loadPackages(at: path, options: options).first else {
+                continue
+            }
             packages[name ?? package.name] = package
         }
         return packages

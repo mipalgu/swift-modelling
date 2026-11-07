@@ -60,6 +60,9 @@ struct CompareCommand: AsyncParsableCommand {
     /// The metamodels of the models.
     @OptionGroup var metamodelOptions: MetamodelOptions
 
+    /// How the data types of a KM3 metamodel are read.
+    @OptionGroup var km3Options: KM3Options
+
     /// Whether to show the counts only.
     @Flag(
         name: .customLong(ComparisonVocabulary.summaryOption),
@@ -107,8 +110,10 @@ struct CompareCommand: AsyncParsableCommand {
             print("Original: \(originalPath)")
             print("Revised: \(revisedPath)")
         }
-        let original = try await ModelDocument.load(path: originalPath, metamodelOptions: metamodelOptions, verbose: verbose)
-        let revised = try await ModelDocument.load(path: revisedPath, metamodelOptions: metamodelOptions, verbose: verbose)
+        let original = try await ModelDocument.load(path: originalPath, metamodelOptions: metamodelOptions, verbose: verbose,
+            km3Options: km3Options.readOptions)
+        let revised = try await ModelDocument.load(path: revisedPath, metamodelOptions: metamodelOptions, verbose: verbose,
+            km3Options: km3Options.readOptions)
         try checkKinds(original.format, revised.format)
         let report = await compare(original, revised)
         withExtendedLifetime((original, revised)) {}

@@ -15,7 +15,7 @@ import ModellingCommandLine
 /// The test command runs comprehensive tests on ATL transformation files,
 /// including parsing tests, validation tests, and transformation execution tests.
 /// It can test individual files or entire directories of ATL transformations.
-struct TestCommand: AsyncParsableCommand {
+struct TestCommand: AsyncParsableCommand, ATLSourceReading {
     static let configuration = CommandConfiguration(
         commandName: "test",
         abstract: "Test ATL transformation files",
@@ -25,6 +25,8 @@ struct TestCommand: AsyncParsableCommand {
             or entire directories of ATL transformations.
 
             \(ATLSemanticsOptions.discussion(reader: "the transformations"))
+
+            \(SourceEncodingOptions.discussion(reader: "the transformations"))
 
             \(SemanticsOptions.discussion())
 
@@ -84,6 +86,9 @@ struct TestCommand: AsyncParsableCommand {
     /// The preset of the behaviours, standard or that of version 0.6.
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
+
+    /// The character encoding of the ATL source.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
 
     /// The behaviours of the ATL source that the command line, the environment and the
     /// configuration file select.
@@ -264,7 +269,7 @@ struct TestCommand: AsyncParsableCommand {
         }
 
         // Test 1: Parse the ATL file
-        let atlSource = try String(contentsOfFile: filePath, encoding: .utf8)
+        let atlSource = try readATLSource(at: filePath)
         let parser = ATLParser(options: atlOptions)
         let module = try await parser.parseContent(
             atlSource, filename: URL(fileURLWithPath: filePath).lastPathComponent)

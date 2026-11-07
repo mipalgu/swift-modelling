@@ -67,6 +67,9 @@ struct ValidateCommand: AsyncParsableCommand {
     /// The metamodels that the model is validated against.
     @OptionGroup var metamodelOptions: MetamodelOptions
 
+    /// How the data types of a KM3 metamodel are read.
+    @OptionGroup var km3Options: KM3Options
+
     /// Whether abstract classes are checked explicitly.
     @Flag(help: "List the abstract classes of a metamodel and whether concrete classes extend them, or check that no object of a model is an instance of one")
     var checkAbstractClasses = false
@@ -223,7 +226,7 @@ struct ValidateCommand: AsyncParsableCommand {
         do {
             return try await ModelDocument.load(
                 path: inputPath, metamodelOptions: metamodelOptions, requiresMetamodel: metamodelOptions.isGiven,
-                verbose: verbose)
+                verbose: verbose, km3Options: km3Options.readOptions)
         } catch DocumentError.fileNotFound(let path) {
             throw ValidationError.fileNotFound(path)
         } catch DocumentError.unsupportedFormat(let format) {

@@ -50,7 +50,8 @@ swift-mtl generate --template-set <directory|language> [options]
 **Options:**
 
 - `--model <path>` - Input model (XMI `.xmi`, JSON `.json` or Ecore `.ecore`); repeat for several models. The root object of each model is passed to the main template in command line order. An Ecore file is also registered as a metamodel and its package is passed as an argument.
-- `--metamodel <path>` - Ecore metamodel to register without passing it to the template (repeatable)
+- `--metamodel <path>` - Ecore, JSON or KM3 metamodel to register without passing it to the template (repeatable)
+- `--km3-primitives <ecore|declared>` - Whether the data types that a KM3 metamodel declares are the built-in Ecore data types of the same meaning (`ecore`, the default) or data types of their own package (`declared`); the `km3-primitives` key of the configuration file chooses it too
 - `-o, --output <path>` - Output directory for generated files (default: the current directory)
 - `-t, --template <name|file.mtl>` - Main template to run (default: the template marked `@main`, otherwise the first); a value that ends in `.mtl` names the template file instead, when no template file argument is given
 - `--template-set <directory|language>` - Template set to run instead of a template file: a directory with a `templateset.json` descriptor, or the language of a bundled set
@@ -65,6 +66,7 @@ swift-mtl generate --template-set <directory|language> [options]
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`) for every option below; an option below that is given overrides it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--encoding <name>` - The character encoding of the template file and the modules it imports, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8); the `encoding` key of the configuration file names it too
 - `--block-line-breaks <acceleo|kept>` - Whether the line break after a block written on one line is dropped when the line is empty once the block has run (`acceleo`, the default, as in Acceleo 4) or always written (`kept`, as in version 0.6)
 - `--collection-parameters <conforming|exact>` - Whether any collection whose elements conform, a many-valued feature or a single object conforms to a collection-typed parameter (`conforming`, the default) or collection types are matched as in version 0.6 (`exact`)
 - `--check-let-types`, `--no-check-let-types` - Whether typed `let` blocks check their values (the default) or bind them unchecked, as in version 0.6
@@ -83,6 +85,8 @@ swift-mtl generate --template-set <directory|language> [options]
 
 **Template path.** Imported modules (`[import shared::Common/]`) are searched in the directory of the template and then in the `--template-path` directories, in order. A directory that does not exist is an error.
 
+**Encoding.** The template file and the modules it imports are read as UTF-8. A file that is not valid UTF-8 is read as ISO-8859-1 instead, with a warning on standard error that names the file and the line and column of its first byte that is not UTF-8. `--encoding` names the encoding of the files instead (`UTF-8`, `UTF-16`, `UTF-16BE`, `UTF-16LE`, `ISO-8859-1`, `windows-1252` or `US-ASCII`, or an alias such as `latin1`); they are then read in that encoding alone, and a file that is not valid in it is an error. The encoding applies to a template file; the templates of a template set are read as UTF-8, with the same fallback.
+
 **Template sets.** `--template-set` runs a template set instead of a single template file; give one or the other. A path names a directory that holds a `templateset.json` descriptor, and a plain name is the language of a bundled set. The main template of the set, named by its descriptor, receives the root objects of the models in command line order, and the data models of the set are available through `templateData('name')`. The modules that the descriptor lists under `imports` are copied beside the set, so that its modules import them by qualified name. `--code-style` chooses one of the code styles of the set; `--template` does not apply to a set.
 
 **Parameters.** Every `--param name=value` is available to the templates in three ways: as the bare variable `[name/]`, through `parameter('name')`, which returns the value or `null`, and through `hasParameter('name')`, which tells whether it was given. The value is a boolean for `true` and `false`, an integer for a whole number, and a string otherwise. The value is everything after the first `=`, and a later argument replaces an earlier one of the same name. A name must be an identifier (a letter or underscore followed by letters, digits or underscores) that is not an MTL or AQL reserved keyword; an invalid name, a reserved keyword, or an argument without a name or without `=` is rejected with an error before generation starts.
@@ -97,7 +101,7 @@ same=[parameter('package')/]
 [/template]
 ```
 
-**Metamodels.** `--metamodel` registers an Ecore file so that an instance model can be parsed against it, without passing its `EPackage` to the template. An Ecore file given with `--model` is registered as well, and its `EPackage` is also passed to the main template as an argument, in command line order, like any other model. Navigating the features of a native `EPackage` inside a template requires a swift-ecore release with reflective metamodel objects.
+**Metamodels.** `--metamodel` registers an Ecore file so that an instance model can be parsed against it, without passing its `EPackage` to the template. Every root package of the file is registered under its namespace URI; a root package without a namespace URI is loaded, as in the Eclipse Modeling Framework, with a warning on standard error, but not registered. A KM3 file has no namespace URIs, so each of its root packages is registered under its name, which a template names in its module declaration, as in `[module Pages('Library')]`. An Ecore or KM3 file given with `--model` is registered as well, and its first root `EPackage` is also passed to the main template as an argument, in command line order, like any other model. A model whose extension is not `xmi`, `json` or `ecore` is read in the format of its contents, XMI or JSON. Navigating the features of a native `EPackage` inside a template requires a swift-ecore release with reflective metamodel objects.
 
 **Unset features.** `--unset-features defaults|undefined` chooses how templates read features that a model does not set. With `defaults`, the default, `[c.count/]` writes `0` for an unset integer, as the Eclipse Modeling Framework and Acceleo do; with `undefined` it writes nothing, because every unset feature reads as undefined.
 
@@ -173,6 +177,7 @@ swift-mtl validate <templates>... [options]
 
 - `-v, --verbose` - Enable verbose output
 - `--debug` - Print the trace of the template parser, for diagnosing the parser; `--verbose` reports progress without it
+- `--encoding <name>` - The character encoding of the templates and the modules they import, as for `generate`; `validate` reads no configuration file, so only this option chooses it
 
 The command prints one result per template and a summary, and exits with code 0 only if every template is valid.
 
@@ -206,6 +211,7 @@ swift-mtl parse <templates>... [options]
 - `--json` - Output as JSON
 - `-v, --verbose` - Enable verbose output
 - `--debug` - Print the trace of the template parser, for diagnosing the parser; `--verbose` reports progress without it
+- `--encoding <name>` - The character encoding of the templates and the modules they import, as for `generate`; `parse` reads no configuration file, so only this option chooses it
 
 **Examples:**
 

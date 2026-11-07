@@ -29,6 +29,9 @@ struct CreateCommand: AsyncParsableCommand {
     /// The metamodels that define the root class.
     @OptionGroup var metamodelOptions: MetamodelOptions
 
+    /// How the data types of a KM3 metamodel are read.
+    @OptionGroup var km3Options: KM3Options
+
     /// The name of the class of the root object.
     @Option(help: "The class of the root object")
     var rootClass: String
@@ -71,7 +74,8 @@ struct CreateCommand: AsyncParsableCommand {
         guard let format = ModelFormat(fileExtension: formatName), format != .ecore else {
             throw CreationError.unsupportedFormat(formatName)
         }
-        let resourceSet = try await metamodelOptions.resourceSet(verbose: verbose) ?? ResourceSet()
+        let resourceSet =
+            try await metamodelOptions.resourceSet(verbose: verbose, options: km3Options.ecoreLoadOptions) ?? ResourceSet()
         let catalogue = MetamodelCatalogue(roots: await ModelDocument.registeredMetamodels(of: resourceSet))
         guard let eClass = catalogue.classes.first(where: { $0.name == rootClass }) else {
             let concrete = catalogue.classes.filter { !$0.isAbstract && !$0.isInterface }.map(\.name)

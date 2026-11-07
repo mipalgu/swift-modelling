@@ -71,6 +71,9 @@ struct InspectCommand: AsyncParsableCommand {
     /// The metamodels of the model.
     @OptionGroup var metamodelOptions: MetamodelOptions
 
+    /// How the data types of a KM3 metamodel are read.
+    @OptionGroup var km3Options: KM3Options
+
     /// Enable verbose output.
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose = false
@@ -83,7 +86,8 @@ struct InspectCommand: AsyncParsableCommand {
     ///   encoder or the file system.
     func run() async throws {
         if verbose { print("Inspecting: \(inputPath)") }
-        let document = try await ModelDocument.load(path: inputPath, metamodelOptions: metamodelOptions, verbose: verbose)
+        let document = try await ModelDocument.load(path: inputPath, metamodelOptions: metamodelOptions, verbose: verbose,
+            km3Options: km3Options.readOptions)
         let options = InspectionOptions(
             detail: detail, showAttributes: showAttributes, showReferences: showReferences, showSupertypes: showSupertypes)
         let report = await Inspector.inspect(document, options: options)

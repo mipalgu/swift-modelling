@@ -15,7 +15,7 @@ import ModellingCommandLine
 /// The validate command performs comprehensive validation of ATL transformation files,
 /// including syntax checking, semantic analysis, type checking, and metamodel compatibility
 /// verification. It provides detailed validation reports with errors and warnings.
-struct ValidateCommand: AsyncParsableCommand {
+struct ValidateCommand: AsyncParsableCommand, ATLSourceReading {
     static let configuration = CommandConfiguration(
         commandName: "validate",
         abstract: "Validate ATL transformation files",
@@ -25,6 +25,8 @@ struct ValidateCommand: AsyncParsableCommand {
             Provides detailed validation reports with warnings and errors.
 
             \(ATLSemanticsOptions.discussion(reader: "the transformations"))
+
+            \(SourceEncodingOptions.discussion(reader: "the transformations"))
 
             \(SemanticsOptions.discussion())
 
@@ -92,6 +94,9 @@ struct ValidateCommand: AsyncParsableCommand {
     /// The preset of the behaviours, standard or that of version 0.6.
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
+
+    /// The character encoding of the ATL source.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
 
     /// The behaviours of the ATL source that the command line, the environment and the
     /// configuration file select.
@@ -206,7 +211,7 @@ struct ValidateCommand: AsyncParsableCommand {
         }
 
         do {
-            let atlSource = try String(contentsOfFile: filePath, encoding: .utf8)
+            let atlSource = try readATLSource(at: filePath)
 
             // Build search paths similar to other commands
             var searchPaths: [String] = []

@@ -43,6 +43,38 @@ Swift implementation of the Eclipse Modeling Framework
 - **Template Sets**: Languages are directories of templates and data files, so a new language
   needs no Swift code
 
+### Files and Metamodels
+
+`inspect`, `validate`, `compare`, `statistics` and `query` read XMI (`.xmi`), JSON (`.json`),
+Ecore (`.ecore`) and KM3 (`.km3`) files by their extension. A file with any other extension, or none, is read in the
+format of its contents, so a model saved as `shop.model` is read as XMI if it holds XML and as JSON
+if it holds JSON. A file whose contents are neither is rejected with an error that lists the
+supported formats, such as `Unsupported format: txt (supported: xmi, json, ecore, ...)`.
+
+A metamodel file may hold several root packages, and may be in any metamodel format, such as an
+Ecore, a JSON or a KM3 file.
+`--metamodel` registers every root package of the file under its namespace URI, so a model may hold instances of the classes of any of them. As in the
+Eclipse Modeling Framework, a root package need not declare a namespace URI or prefix: it is then
+loaded with an empty one, so that the other packages of the file can refer to its classifiers, but it
+is not registered, and a warning on standard error names the file and the package:
+
+```
+warning: Library.ecore: The package 'Types' has no 'nsURI' and is not registered under a namespace
+```
+
+The same warning appears when such a metamodel is the file that a command reads. It does not
+change the exit status; `validate` reports the missing namespace URI as an error of the constraint
+`WellFormedNsURI`, as before.
+
+KM3, the textual metamodel notation of the ATL tool chain, has no namespace URIs. Each root package
+of a KM3 metamodel is therefore registered under its name, with a warning, and a model refers to it
+by a namespace declaration with that name, such as `xmlns:Library="Library"`. A syntax error in a
+KM3 file is reported on standard error as a line that starts with `error:`, with its line and
+column. `--km3-primitives <ecore|declared>`, which every command that reads metamodels accepts,
+chooses how the data types that a KM3 metamodel declares are read: as the built-in Ecore data types
+of the same meaning, such as `EString` for `String` (`ecore`, the default), or as data types of
+their own package, as the KM32EMF transformation makes them (`declared`).
+
 ## Commands
 
 Every command except `info` accepts `-v, --verbose` for detailed output, and every command
@@ -50,7 +82,7 @@ accepts `--help`; `swift-ecore <command> --help` describes the options of a comm
 
 ### convert
 
-Convert models between XMI and JSON, and metamodels between Ecore and JSON.
+Convert models between XMI and JSON, and metamodels between Ecore, JSON and KM3.
 
 ```bash
 swift-ecore convert <input-file> <output-file> [options]
@@ -62,9 +94,12 @@ swift-ecore convert <input-file> --output <output-file> [options]
 - `-o, --output <file>` - The output file, instead of the second argument
 - `--validate` - Check the model or metamodel as `validate` does, and write nothing if it has an
   error
-- `--input-format <xmi|json|ecore>` - Input format (inferred from the extension if not specified)
-- `--output-format <xmi|json|ecore>` - Output format (inferred from the extension if not specified)
-- `-m, --metamodel <file.ecore>` - An Ecore metamodel of the model (can be given several times)
+- `--input-format <xmi|json|ecore|km3>` - Input format (inferred from the extension if not specified)
+- `--output-format <xmi|json|ecore|km3>` - Output format (inferred from the extension if not specified)
+- `-m, --metamodel <file.ecore>` - An Ecore, JSON or KM3 metamodel of the model (can be given several
+  times)
+- `--km3-primitives <ecore|declared>` - How the data types of a KM3 metamodel are read (default
+  `ecore`; see Files and Metamodels above)
 - `--reference-style <encoded|plain>` - How an XMI output spells references into itself
   (default `encoded`)
 - `--force` - Overwrite the output file if it exists
@@ -90,8 +125,11 @@ metaclass in `eClass`, contained elements are nested, and references are `{"$ref
 with the name-based fragments of Ecore (`//Book/author`). A JSON file whose roots are Ecore
 packages is read as a metamodel, whatever its name, and can be written as `.ecore`. Enumerations,
 opposites, supertypes, annotations and every other construct of the metamodel are kept. A
-metamodel cannot be written as an XMI model, nor a model as `.ecore`: the command fails with an
-error that names the formats that suit the input, and writes nothing.
+metamodel can also be read from and written as KM3 (`.km3`); what KM3 cannot express, such as
+annotations and default values, is reported on standard error as a warning when a metamodel is
+written as KM3, and namespace URIs are not written. A metamodel cannot be written as an XMI model, nor a model as `.ecore`
+or `.km3`: the command fails with an error that names the formats that suit the input, and writes
+nothing.
 
 References to other metamodel files keep their file names. A `shop.json` converted from a
 `shop.ecore` whose classes extend classes of `base.ecore` still refers to `base.ecore#//Named`,
@@ -158,7 +196,8 @@ swift-ecore validate <file>... [options]
 - `--report <file>` - Write the report to a file instead of standard output
 - `-v, --verbose` - Show the root objects that were read, and every satisfied OCL invariant
 
-The supported formats are XMI (`.xmi`), JSON (`.json`) and Ecore (`.ecore`). A metamodel (`.ecore`)
+The supported formats are XMI (`.xmi`), JSON (`.json`) and Ecore (`.ecore`); a file with another
+extension is read in the format of its contents. A metamodel (`.ecore`)
 is checked against the constraints of Ecore, such as well-formed names,
 consistent bounds and opposites, and acyclic inheritance. A model is checked for references into
 other documents that name no object. With a metamodel, a model is also checked against it: every
@@ -555,7 +594,8 @@ Query the whole of a model or a metamodel.
 swift-ecore query <file> [options]
 ```
 
-The file is an XMI (`.xmi`), JSON (`.json`) or Ecore (`.ecore`) file, chosen by its extension.
+The file is an XMI (`.xmi`), JSON (`.json`) or Ecore (`.ecore`) file, chosen by its extension or,
+for any other extension, by its contents.
 Every query looks at the whole document: every object of a model, however deeply it is contained,
 and every element of a metamodel.
 

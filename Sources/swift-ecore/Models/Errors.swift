@@ -34,7 +34,7 @@ enum ValidationError: Error, LocalizedError {
         case .fileNotFound(let path):
             return "File not found: \(path)"
         case .unsupportedFormat(let format):
-            return "Unsupported format: \(format)"
+            return DocumentError.unsupportedFormatDescription(format)
         case .parsingFailed(let format, let details):
             return "Failed to parse \(format): \(details)"
         case .failed(let errors, let warnings, let strict):
@@ -159,7 +159,7 @@ enum QueryError: Error, LocalizedError {
         case .fileNotFound(let path):
             return "File not found: \(path)"
         case .unsupportedFormat(let format):
-            return "Unsupported format: \(format)"
+            return DocumentError.unsupportedFormatDescription(format)
         case .invalidQuery(let details):
             return "Invalid query: \(details)"
         case .unsupportedQuery(let query):

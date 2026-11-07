@@ -35,7 +35,7 @@ Besides the four tools, this package offers these library products:
 
 - **ModellingGenerators**: the generator model pipeline and the bundled template sets for Swift, Java, C and C++
 - **ModellingPipeline**: steps for running ATL transformations and MTL generations on models in memory, a locator for template sets in the resource directories of other packages, and a pipeline that loads, transforms, generates from and saves models in sequence
-- **ModellingCommandLine**: the option groups that the tools share, such as `--param`, `--template-path`, `--metamodel`, `--code-style` and `--semantics`, and a parser for families of `name=value` options, for command-line tools of other packages
+- **ModellingCommandLine**: the option groups that the tools share, such as `--param`, `--template-path`, `--metamodel`, `--code-style`, `--encoding` and `--semantics`, and a parser for families of `name=value` options, for command-line tools of other packages
 
 All model types are value types (structs) for thread safety, with ID-based reference resolution for bidirectional relationships. Resources provide object ownership and cross-reference resolution as in the Eclipse Modeling Framework, using actor-based concurrency.
 
@@ -99,7 +99,7 @@ swift-mtl generate template.mtl --model input.xmi --output generated/
 
 A configuration file keeps the behaviours of a project with the project. A command that accepts `--semantics` reads the first file named `.swift-modelling.json` that it finds in the current directory or one of its parent directories, up to and including the first directory that contains `.git`, which is the root of the repository. `--config <file>` reads exactly the named file instead, and `--no-config` reads none; the two cannot be combined.
 
-The file holds a JSON object. Its keys are `semantics` (`standard` or `legacy`) and the names of the behaviour options without their leading `--`: `block-line-breaks`, `collection-parameters`, `check-let-types`, `cache-containers`, `collection-arguments`, `collection-kinds`, `single-value-collections`, `container-lookup`, `sequence-union`, `null-addition`, `text-form`, `dot-calls`, `collection-range-syntax`, `integer-division`, `bag-representation`, `container-scope`, `let-type-mismatches`, `unset-features` and `strict-aql`. Each value is the spelling of the option on the command line as a JSON string, except for `check-let-types`, `cache-containers` and `strict-aql`, which take `true` or `false`. A key that does not apply to a command, such as `block-line-breaks` for `swift-atl parse`, is ignored. An unknown key, a value of the wrong JSON type or spelling, text that is not JSON, or JSON that is not an object stops the command with an error that names the file and, where it applies, the key, the value and the accepted values.
+The file holds a JSON object. Its keys are `semantics` (`standard` or `legacy`) and the names of the behaviour options without their leading `--`: `block-line-breaks`, `collection-parameters`, `check-let-types`, `cache-containers`, `collection-arguments`, `collection-kinds`, `single-value-collections`, `container-lookup`, `sequence-union`, `null-addition`, `text-form`, `dot-calls`, `collection-range-syntax`, `integer-division`, `bag-representation`, `container-scope`, `let-type-mismatches`, `unset-features` and `strict-aql`, `encoding` for the character encoding of source files (see Source File Encodings below), and `km3-primitives` for the data types of KM3 metamodels (see Metamodels in KM3 below). Each value is the spelling of the option on the command line as a JSON string, except for `check-let-types`, `cache-containers` and `strict-aql`, which take `true` or `false`, and `encoding`, which takes the name or an alias of a supported encoding, such as `"ISO-8859-1"` or `"latin1"`. `km3-primitives` takes `"ecore"` or `"declared"`. A key that does not apply to a command, such as `block-line-breaks` for `swift-atl parse`, is ignored. An unknown key, a value of the wrong JSON type or spelling, text that is not JSON, or JSON that is not an object stops the command with an error that names the file and, where it applies, the key, the value and the accepted values.
 
 ```json
 {
@@ -124,7 +124,41 @@ Each behaviour comes from the first of these sources that sets it:
 | 5 | `semantics` in the configuration file | `"semantics": "legacy"` |
 | 6 (lowest) | The built-in default | `standard` |
 
-Sources 3 to 6 choose the preset, and the preset chooses each behaviour that sources 1 and 2 leave open, including the container scope: `any-resource` for `standard` and `this-resource` for `legacy`. `--let-type-mismatches` and `--unset-features` do not depend on the preset: the command line overrides the configuration file, which overrides their defaults, `error` and `defaults`. Without a configuration file and without the environment variable, every command behaves as with `--semantics standard`.
+Sources 3 to 6 choose the preset, and the preset chooses each behaviour that sources 1 and 2 leave open, including the container scope: `any-resource` for `standard` and `this-resource` for `legacy`. `--let-type-mismatches`, `--unset-features`, `--encoding` and `--km3-primitives` do not depend on the preset: the command line overrides the configuration file, which overrides their defaults, `error`, `defaults` and reading UTF-8 with a fallback to ISO-8859-1. Without a configuration file and without the environment variable, every command behaves as with `--semantics standard`.
+
+#### Source File Encodings
+
+ATL transformations and queries, MTL templates with the modules they import, and AQL expression files are read as UTF-8. A file that is not valid UTF-8 is read as ISO-8859-1 instead, which accepts every byte, so that sources written with older tools still load, and a warning on standard error names the file and the line and column of the first byte that is not UTF-8:
+
+```
+warning: Families2Persons.atl: line 3, column 12: The text is not valid UTF-8 and was read as ISO-8859-1
+```
+
+`--encoding <name>` names the encoding of the source files instead. The supported encodings are `UTF-8`, `UTF-16`, `UTF-16BE`, `UTF-16LE`, `ISO-8859-1`, `windows-1252` and `US-ASCII`, each also by its registered aliases, such as `latin1` or `cp1252`, in any case. With an explicit encoding, every source file is read in that encoding alone, without a warning, and a file that is not valid in it stops the command with an error that names the file and the encoding. The `encoding` key of the configuration file names the encoding as well, and `--encoding` overrides it. A file that is valid UTF-8 reads exactly as before.
+
+| Tool | Commands that take `--encoding` | Source files |
+|--|--|--|
+| `swift-atl` | `parse`, `validate`, `analyze`, `compile`, `test`, `transform`, `query` | the ATL transformations and queries |
+| `swift-mtl` | `generate` (with a template file), `parse`, `validate` | the template file and the modules it imports |
+| `swift-aql` | `evaluate`, `query` | an expression or query file |
+
+`swift-mtl parse` and `validate` read no configuration file, so only `--encoding` applies to them. Models and metamodels are XML or JSON documents, whose encoding follows from the document itself, and have no such option.
+
+#### Warnings of Reading Metamodels
+
+As in the Eclipse Modeling Framework, a root package of a metamodel need not declare a namespace URI or prefix. Such a package is loaded with an empty one, and the commands that read the metamodel write a warning to standard error that names the file and the package:
+
+```
+warning: Library.ecore: The package 'Types' has no 'nsURI' and is not registered under a namespace
+```
+
+The warning does not change the exit status. `swift-ecore validate` still reports a missing namespace URI as an error of the constraint `WellFormedNsURI`. Errors of reading a metamodel that do not stop the command, such as a syntax error in a KM3 metamodel, are written to standard error in the same way, starting with `error:`.
+
+#### Metamodels in KM3
+
+Wherever a metamodel is accepted, with `--metamodel`, `--source-metamodel` or `--target-metamodel`, or as a metamodel that a command reads, it may be in any metamodel format that swift-ecore reads, such as an Ecore file (`.ecore`), a JSON metamodel (`.json`) or a KM3 file (`.km3`), the textual metamodel notation of the ATL tool chain. KM3 has no namespace URIs, so each root package of a KM3 metamodel is registered under its name, as the ATL tool chain does, with a warning on standard error, and a model refers to it by a namespace declaration with that name, such as `xmlns:Library="Library"`. `swift-aql` finds such a metamodel beside a model as it finds Ecore and JSON metamodels.
+
+`--km3-primitives` chooses how the data types that a KM3 metamodel declares are read. With `ecore`, the default, a data type named after a primitive type, such as `String` or `Integer`, stands for the built-in Ecore data type, such as `EString` or `EInt`, so models of the metamodel read and write their values as with an Ecore metamodel. With `declared`, every declared data type becomes a data type of its package, as in the KM32EMF transformation of the ATL tool chain. The `km3-primitives` key of the configuration file chooses it as well; the commands of `swift-ecore` read no configuration file, so only the option applies to them. `swift-ecore convert` converts a metamodel between KM3, Ecore and JSON in either direction.
 
 #### Libraries
 
@@ -135,6 +169,7 @@ The libraries keep the API of version 0.6, and with it the behaviour of version 
 - `GenerationStep.Result` and `GenerationResult` also report the warnings of the templates, such as `let` blocks skipped with `MTLLetTypeMismatches.skip`.
 - `ModellingCommandLine` offers the option groups `SemanticsOptions`, `MTLSemanticsOptions` and `ATLSemanticsOptions` for other command-line tools. `SemanticsOptions.settings(environment:currentDirectory:)` combines the command line, the environment variable and the configuration file into `SemanticsSettings`, which the option groups take in `mtlOptions(settings:)`, `atlOptions(settings:)` and `apply(to:settings:)`; `ModellingConfiguration` reads and finds configuration files.
 - `GenerationOptions` and `GenModelImportOptions` have a `containerLookupScope`, which the generation pipelines give the resource sets they create. It is `nil` by default, which leaves the resource sets without a configured scope.
+- `ModellingCommandLine` offers `SourceEncodingOptions` for `--encoding`, `SourceFile` to read a source file in the chosen encoding, and `FileDiagnosticReport` to write the warnings and errors of reading a file to standard error. `MetamodelRegistration.registerMetamodels(at:into:announcement:verbose:debug:options:)` registers every root package of a metamodel file in any metamodel format, as `--metamodel` does, and `KM3Options` offers `--km3-primitives`, and `ModelFileFormat.detectedInstanceFormat(of:explicit:)` chooses the format in which a model is read, from its contents when its extension names no format.
 
 ## Topics
 

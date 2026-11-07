@@ -11,9 +11,9 @@ import ModellingCommandLine
 
 /// The command line options that every command of swift-aql shares.
 ///
-/// They name the metamodels of the models, select the object bound to `self`, and choose how
-/// expressions behave and how unset features read, with the same options and defaults as the
-/// other tools of the package.
+/// They name the metamodels of the models, select the object bound to `self`, choose how
+/// expressions behave and how unset features read, and name the encoding of an expression
+/// file, with the same options and defaults as the other tools of the package.
 struct EvaluationOptions: ParsableArguments, Sendable {
     /// The object bound to `self`, by identifier, fragment path or name.
     @Option(
@@ -33,6 +33,9 @@ struct EvaluationOptions: ParsableArguments, Sendable {
     /// The metamodels of the models.
     @OptionGroup var metamodelOptions: MetamodelOptions
 
+    /// How the data types of a KM3 metamodel are read.
+    @OptionGroup var km3Options: KM3Options
+
     /// How expressions read features that a model does not set.
     @OptionGroup(title: "Evaluation")
     var unsetFeatureOptions: UnsetFeatureOptions
@@ -44,6 +47,9 @@ struct EvaluationOptions: ParsableArguments, Sendable {
     /// The preset of the behaviours, standard or that of version 0.6, and the configuration file.
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
+
+    /// The character encoding of an expression file.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
 
     /// Creates the options with nothing given.
     init() {}

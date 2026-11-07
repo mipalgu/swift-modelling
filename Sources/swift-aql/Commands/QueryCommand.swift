@@ -31,6 +31,8 @@ struct QueryCommand: AsyncParsableCommand {
               swift-aql query company.xmi --query "self.employees" --context company1
               swift-aql query company.xmi --query-file queries/all-employees.aql
 
+            \(SourceEncodingOptions.discussion(reader: "a query file"))
+
             \(SemanticsOptions.discussion())
             """
     )

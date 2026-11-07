@@ -9,6 +9,7 @@
 import ArgumentParser
 import Foundation
 import MTL
+import ModellingCommandLine
 
 /// Command for parsing and displaying MTL template structure.
 ///
@@ -39,6 +40,11 @@ struct ParseCommand: AsyncParsableCommand {
 
                 # Trace the template parser
                 swift-mtl parse template.mtl --debug
+
+                # Templates written in Latin-1
+                swift-mtl parse template.mtl --encoding ISO-8859-1
+
+            \(SourceEncodingOptions.discussion(reader: "the templates and the modules they import", configurable: false))
             """
     )
 
@@ -57,9 +63,12 @@ struct ParseCommand: AsyncParsableCommand {
     /// Whether the template parser traces its work.
     @OptionGroup var debugOptions: DebugOptions
 
+    /// The character encoding of the templates.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
     @MainActor
     func run() async throws {
-        let parser = MTLParser(enableDebugging: debugOptions.debug)
+        let parser = MTLParser(enableDebugging: debugOptions.debug, encoding: encodingOptions.explicitEncoding)
 
         for templatePath in templates {
             if verbose {
@@ -73,7 +82,7 @@ struct ParseCommand: AsyncParsableCommand {
             }
 
             do {
-                let module = try await parser.parse(templateURL)
+                let module = try await parser.parseReportingWarnings(templateURL)
 
                 if json {
                     printJSON(module, path: templatePath)

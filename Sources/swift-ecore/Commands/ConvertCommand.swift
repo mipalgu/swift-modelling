@@ -31,8 +31,11 @@ struct ConvertCommand: AsyncParsableCommand {
             alphabetical order.
 
             A JSON file whose roots are Ecore packages is a metamodel, whatever its name. A \
-            metamodel is written as .ecore or as JSON, and a model as XMI or JSON, so a \
-            metamodel cannot be written as an XMI model, nor a model as .ecore. References to \
+            metamodel is written as .ecore, as JSON or as KM3 (.km3), and a model as XMI or JSON, \
+            so a metamodel cannot be written as an XMI model, nor a model as .ecore. A KM3 \
+            metamodel is read as --\(KM3Options.optionName) says, and what KM3 cannot express, \
+            such as annotations and default values, is reported when a metamodel is written as \
+            KM3; namespace URIs are not written. References to \
             other metamodel files keep their file names, so a converted metamodel still refers \
             to the .ecore or JSON files it referred to, and swift-ecore reads either format. To convert a set of \
             metamodels that refer to each other, convert every file into the same directory, \
@@ -92,6 +95,9 @@ struct ConvertCommand: AsyncParsableCommand {
     /// The metamodels of the model.
     @OptionGroup var metamodelOptions: MetamodelOptions
 
+    /// How the data types of a KM3 metamodel are read.
+    @OptionGroup var km3Options: KM3Options
+
     /// How an XMI output spells references into itself.
     @OptionGroup var referenceStyleOptions: ReferenceStyleOptions
 
@@ -149,7 +155,8 @@ struct ConvertCommand: AsyncParsableCommand {
         }
 
         // Register metamodels, if any, for both reading and writing
-        let resourceSet = try await metamodelOptions.resourceSet(verbose: verbose)
+        let resourceSet = try await metamodelOptions.resourceSet(
+            verbose: verbose, options: km3Options.ecoreLoadOptions)
 
         // Load input, collecting what the parser could not keep
         let readFormat = try Self.format(named: inputFormatToUse) {
@@ -161,7 +168,8 @@ struct ConvertCommand: AsyncParsableCommand {
         if verbose { print("Reading \(readFormat.description)...") }
         let loaded = try await ModelIO.load(
             url: inputURL, format: readFormat, resourceSet: resourceSet ?? ResourceSet(),
-            options: ModelIO.LoadOptions(requiresMetamodel: false))
+            options: ModelIO.LoadOptions(requiresMetamodel: false, ecoreLoadOptions: km3Options.ecoreLoadOptions))
+        FileDiagnosticReport.write(await loaded.resource.loadDiagnostics, file: inputPath)
         let resource = loaded.resource
         var diagnostics = loaded.diagnostics
         try Self.checkOutput(writeFormat, isMetamodel: !loaded.packages.isEmpty, input: inputURL.lastPathComponent)
@@ -221,10 +229,27 @@ struct ConvertCommand: AsyncParsableCommand {
     }
 
     /// The formats in which a metamodel is read and written.
-    static let metamodelFormats: [ModelFormat] = [.ecore, .json]
+    ///
+    /// They are Ecore and JSON, followed by every other format whose built-in handler may hold
+    /// a metamodel, such as KM3.
+    static let metamodelFormats: [ModelFormat] = formats([.ecore, .json]) { $0 != .model }
 
     /// The formats in which a model is read and written.
-    static let modelFormats: [ModelFormat] = [.xmi, .json]
+    ///
+    /// They are XMI and JSON, followed by every other format whose built-in handler may hold
+    /// a model.
+    static let modelFormats: [ModelFormat] = formats([.xmi, .json]) { $0 != .metamodel }
+
+    /// The formats whose built-in handlers have a role, the preferred ones first.
+    ///
+    /// - Parameters:
+    ///   - preferred: The formats that come first, in order.
+    ///   - accepts: Whether the role of a handler qualifies its format.
+    /// - Returns: The preferred formats, followed by the other qualifying formats.
+    private static func formats(_ preferred: [ModelFormat], where accepts: (ModelFormatRole) -> Bool) -> [ModelFormat] {
+        let others = ModelFormatRegistry.builtInHandlers.filter { accepts($0.role) }.compactMap(\.format)
+        return preferred + others.filter { !preferred.contains($0) }
+    }
 
     /// The format that a format name denotes.
     ///

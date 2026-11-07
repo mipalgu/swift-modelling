@@ -59,6 +59,8 @@ struct GenerateCommand: AsyncParsableCommand {
 
             \(MTLSemanticsOptions.discussion(reader: "the templates"))
 
+            \(SourceEncodingOptions.discussion(reader: "the template file and the modules it imports"))
+
             \(SemanticsOptions.discussion())
 
             Examples:
@@ -217,6 +219,12 @@ struct GenerateCommand: AsyncParsableCommand {
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
 
+    /// The character encoding of the template file and the modules it imports.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// How the data types of a KM3 metamodel are read.
+    @OptionGroup var km3Options: KM3Options
+
     /// The behaviours of the templates that the command line and the settings of a run select.
     ///
     /// - Parameter settings: The preset, configuration file and container scope of the run.
@@ -334,10 +342,12 @@ struct GenerateCommand: AsyncParsableCommand {
 
         let searchURLs = try templatePathOptions.directories()
         let parameters = try parameterOptions.services
-        let parser = MTLParser(enableDebugging: debugOptions.debug, searchPaths: searchURLs)
+        let parser = MTLParser(
+            enableDebugging: debugOptions.debug, searchPaths: searchURLs,
+            encoding: encodingOptions.encoding(settings: settings))
         let mtlModule: MTLModule
         do {
-            mtlModule = try await parser.parse(templateURL)
+            mtlModule = try await parser.parseReportingWarnings(templateURL)
         } catch {
             throw ValidationError.parseFailed(templateFile, error.localizedDescription)
         }
@@ -488,10 +498,11 @@ struct GenerateCommand: AsyncParsableCommand {
 
     /// Registers the metamodels and loads the models given on the command line.
     ///
-    /// An Ecore file given with `--model` is registered as a metamodel and its package is passed
-    /// to the template. Every other model is read as JSON if its extension is `json`, and as XMI
-    /// otherwise; a JSON model is read without the registered metamodels. Every resource set
-    /// that receives a model has the container lookup scope of the settings as its default.
+    /// A metamodel file given with `--model`, such as an Ecore or a KM3 file, is registered as a
+    /// metamodel and its first root package is passed to the template. Every other model is read as JSON if its extension is `json`, as XMI if
+    /// it is `xmi`, and otherwise in the format of its contents; a JSON model is read without
+    /// the registered metamodels. Every resource set that receives a model has the container
+    /// lookup scope of the settings as its default.
     ///
     /// - Parameter settings: The settings of the run, whose container lookup scope applies.
     /// - Returns: The models, the arguments of the main template and the resource set.
@@ -507,18 +518,19 @@ struct GenerateCommand: AsyncParsableCommand {
                 print("\n=== Loading Models ===")
             }
 
-            // First pass: register metamodels (--metamodel files and .ecore --model files)
+            // First pass: register metamodels (--metamodel files and metamodel --model files)
+            let metamodelOptions = km3Options.ecoreLoadOptions(settings: settings)
             for metamodelPath in metamodel {
                 try await MetamodelRegistration.registerMetamodel(
                     at: metamodelPath, into: resourceSet,
                     announcement: MetamodelRole.registeredOnly.announcement, verbose: verbose,
-                    debug: debugOptions.debug)
+                    debug: debugOptions.debug, options: metamodelOptions)
             }
-            for (index, modelPath) in model.enumerated() where MetamodelRegistration.isEcoreFile(modelPath) {
+            for (index, modelPath) in model.enumerated() where MetamodelRegistration.isMetamodelFile(modelPath) {
                 let package = try await MetamodelRegistration.registerMetamodel(
                     at: modelPath, into: resourceSet,
                     announcement: MetamodelRole.registeredAndInput.announcement, verbose: verbose,
-                    debug: debugOptions.debug)
+                    debug: debugOptions.debug, options: metamodelOptions)
                 let modelURL = URL(fileURLWithPath: modelPath)
                 let resource = await resourceSet.createResource(uri: modelURL.absoluteString)
                 await resource.add(package)
@@ -526,15 +538,15 @@ struct GenerateCommand: AsyncParsableCommand {
                 rootObjectsByModel[index] = await resource.getRootObjects()
             }
 
-            // Second pass: load instance models (non-ecore files)
+            // Second pass: load instance models (files that are not metamodels)
             for (index, modelPath) in model.enumerated() {
                 let modelURL = URL(fileURLWithPath: modelPath)
-                guard !MetamodelRegistration.isEcoreFile(modelPath) else { continue }
+                guard !MetamodelRegistration.isMetamodelFile(modelPath) else { continue }
                 guard FileManager.default.fileExists(atPath: modelPath) else {
                     throw ValidationError.fileNotFound(modelPath)
                 }
 
-                let format = ModelFileFormat.instanceFormat(of: modelURL)
+                let format = try ModelFileFormat.detectedInstanceFormat(of: modelURL)
 
                 if verbose {
                     print("Loading input model \(index + 1): \(modelPath) (format: \(format.rawValue))")

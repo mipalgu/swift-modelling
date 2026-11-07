@@ -175,7 +175,7 @@ enum Inspector {
         }
         var report = ModelReport(
             rootObjects: objects.roots.count, objects: objects.entries.count, classes: classes,
-            metamodels: document.metamodels.map(\.nsURI))
+            metamodels: document.metamodels.map { $0.nsURI.isEmpty ? $0.name : $0.nsURI })
         if options.includesEverything {
             var tree: [ObjectReport] = []
             for entry in objects.entries where entry.container == nil {
