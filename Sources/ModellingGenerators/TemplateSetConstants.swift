@@ -32,6 +32,17 @@ public enum TemplateSetConstants {
     /// The prefix of the model alias under which each data model is registered.
     public static let dataModelAliasPrefix = "DATA_"
 
+    /// The prefix of the model alias under which each Ecore model of a generation is registered,
+    /// followed by its position.
+    public static let ecoreModelAliasPrefix = "ECORE_"
+
+    /// The model alias under which an exported model is registered.
+    public static let modelAlias = "MODEL"
+
+    /// The name of the global variable that holds the name of an exported model: the name of
+    /// its file without the extension.
+    public static let modelNameVariable = "modelName"
+
     /// The redirection pattern written for `--diff`: the generated text of an existing file goes beside it.
     public static let diffRedirectionPattern = ".{0}.new"
 

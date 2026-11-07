@@ -153,8 +153,8 @@ struct QueryCommand: AsyncParsableCommand, ATLSourceReading {
     /// The character encoding of the ATL source.
     @OptionGroup var encodingOptions: SourceEncodingOptions
 
-    /// How the data types of a KM3 metamodel are read.
-    @OptionGroup var km3Options: KM3Options
+    /// How metamodels in KM3 and in grammar formats are read.
+    @OptionGroup var formatOptions: MetamodelFormatOptions
 
     func run() async throws {
         let settings = try semanticsOptions.settings()
@@ -192,7 +192,7 @@ struct QueryCommand: AsyncParsableCommand, ATLSourceReading {
             )
         }
         let parameterValues = try unit.parameterValues(fromText: parseParameters(param))
-        let packages = try await metamodelPackages(options: km3Options.ecoreLoadOptions(settings: settings))
+        let packages = try await metamodelPackages(options: formatOptions.ecoreLoadOptions(settings: settings))
 
         var metamodelNames = Array(unit.sourceMetamodels.keys)
         for name in packages.keys where !metamodelNames.contains(name) {

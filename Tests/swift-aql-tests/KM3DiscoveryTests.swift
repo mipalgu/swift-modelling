@@ -63,29 +63,29 @@ struct KM3DiscoveryTests {
     }
 
     @Test("The namespaces of KM3 and JSON metamodels are found")
-    func namespaces() throws {
+    func namespaces() async throws {
         let directory = try Self.directory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let json = directory.appendingPathComponent("shop.json")
         try Self.jsonMetamodel.write(to: json, atomically: true, encoding: .utf8)
         let discovery = MetamodelDiscovery()
         #expect(
-            discovery.namespaces(ofMetamodelAt: directory.appendingPathComponent("Library.km3"))
+            await discovery.namespaces(ofMetamodelAt: directory.appendingPathComponent("Library.km3"))
                 == [.init(uri: "Library", isName: true)])
-        #expect(discovery.namespaces(ofMetamodelAt: json) == [.init(uri: "urn:example:shop", isName: false)])
+        #expect(await discovery.namespaces(ofMetamodelAt: json) == [.init(uri: "urn:example:shop", isName: false)])
         #expect(discovery.namespaceURIs(declaredInJSON: Data(#"[{"eClass": "urn:x#//A"}]"#.utf8)).isEmpty)
         #expect(
-            discovery.metamodelFiles(in: directory).map(\.lastPathComponent) == ["Library.km3", "shop.json"])
+            await discovery.metamodelFiles(in: directory).map(\.lastPathComponent) == ["Library.km3", "shop.json"])
     }
 
     @Test("A KM3 metamodel beside a model is found and registered under its name")
-    func discoversKM3() throws {
+    func discoversKM3() async throws {
         let directory = try Self.directory()
         defer { try? FileManager.default.removeItem(at: directory) }
         try "<x name=\"Library\"/>".write(to: directory.appendingPathComponent("other.xmi"), atomically: true, encoding: .utf8)
         let discovery = MetamodelDiscovery()
-        let found = try discovery.metamodels(for: [directory.appendingPathComponent("book.xmi").path])
-        let unrelated = try discovery.metamodels(for: [directory.appendingPathComponent("other.xmi").path])
+        let found = try await discovery.metamodels(for: [directory.appendingPathComponent("book.xmi").path])
+        let unrelated = try await discovery.metamodels(for: [directory.appendingPathComponent("other.xmi").path])
         #expect(found.map { URL(fileURLWithPath: $0).lastPathComponent } == ["Library.km3"])
         #expect(unrelated.isEmpty)
     }

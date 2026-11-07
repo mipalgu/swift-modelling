@@ -1,0 +1,111 @@
+[comment encoding = UTF-8 /]
+[**
+ * The TLA+ module of a model and its TLC configuration.
+ *
+ * The module extends the module of the package of the model and defines the identifiers of the objects of every class,
+ * the values of the data types that the export does not interpret, and the object store of the model. Its
+ * specification has the model as its only state. The configuration fixes the constants of the module of the package to
+ * these definitions and lists the invariants for TLC to check: the structure of the metamodel and every translated
+ * invariant.
+ **/]
+[module TLAModel('http://www.eclipse.org/emf/2002/Ecore')/]
+[import verification::VerificationQueries/]
+[import TLANames/]
+
+[**
+ * The complete text of the module of a model.
+ **/]
+[template public modelModule(p : EPackage, root : EObject, name : String)]
+[let objects : Sequence(EObject) = root.modelObjects()]
+[moduleStart(name)/]
+\* TLA+ module of a model of the Ecore package [p.name/] ([p.nsURI/]).
+\*
+\* The specification Spec has the model as its only state. The configuration of this module fixes the constants of the
+\* module [p.moduleName()/] to the definitions below and lists the invariants for TLC to check: the structural invariants
+\* ([structuralInvariants()->sep(', ')/]) hold exactly if the model satisfies the structure of the
+\* metamodel, and each translated invariant holds exactly if the model satisfies it. Every object is identified by the
+\* name of its class and its position in the model, and values of uninterpreted data types are their text.
+EXTENDS [p.moduleName()/], TLC
+
+\* The identifiers of the direct instances of each concrete class.
+[for (c : EClass | p.concreteClasses())]
+[instanceName(idsName(c))/] == {[objects->select(o | o.eClass().name = c.name)->collect(o | quoted(identity(objects, o)))->sep(', ')/]}
+[/for]
+[for (t : String | p.uninterpretedTypes())]
+
+\* The values of the data type [t/] in the model.
+[instanceName(valuesName(t))/] == {[p.uninterpretedValues(objects, t)->sep(', ')/]}
+[/for]
+
+\* The record of every object of the model.
+[instanceStore()/] ==
+[objects->collect(o | p.objectEntry(objects, o))->sep('    ', '\n    @@ ', '')/]
+
+\* The model is the only state.
+Init == [store()/] = [instanceStore()/]
+Next == UNCHANGED [store()/]
+Spec == Init /\ ['[][Next]_' + store()/]
+
+[moduleEnd()/]
+[/let]
+[/template]
+
+[**
+ * The TLC configuration of the module of a model.
+ **/]
+[template public modelConfiguration(p : EPackage, root : EObject, name : String)]
+\* TLC configuration of the module [name/]: the constants of the module [p.moduleName()/] are fixed to the model,
+\* and TLC checks the structure of the metamodel and every translated invariant in the only state, the model.
+CONSTANTS
+[for (c : EClass | p.concreteClasses())]
+    [idsName(c)/] <- [instanceName(idsName(c))/]
+[/for]
+[for (t : String | p.uninterpretedTypes())]
+    [valuesName(t)/] <- [instanceName(valuesName(t))/]
+[/for]
+    [nullValue()/] = [nullValue()/]
+
+SPECIFICATION Spec
+
+INVARIANTS
+[for (n : String | structuralInvariants())]
+    [n/]
+[/for]
+[for (c : EClass | p.classes())]
+[for (n : String | p.translatedInvariants(c, target()))]
+    [invariantName(c, n)/]
+[/for]
+[/for]
+[/template]
+
+[**
+ * The identifier of an object: the name of its class followed by its position in the model.
+ **/]
+[query public identity(objects : Sequence(EObject), o : EObject) : String = o.eClass().name + objects->indexOf(o).toString()/]
+
+[**
+ * The entry of an object in the object store of a model: its identifier mapped to the record of its values.
+ **/]
+[query public objectEntry(p : EPackage, objects : Sequence(EObject), o : EObject) : String = '(' + quoted(identity(objects, o)) + ' :> ' + p.recordValue(objects, o) + ')'/]
+
+[**
+ * The record of the values of an object, with a field for each exported feature of its class, inherited features first.
+ **/]
+[query public recordValue(p : EPackage, objects : Sequence(EObject), o : EObject) : String = if p.classOf(o).allExportedFeatures()->isEmpty() then '<<>>' else p.classOf(o).allExportedFeatures()->collect(f | '        ' + fieldName(f) + ' |-> ' + p.valueText(objects, o, f))->sep('[\n', ',\n', '\n    ]') endif/]
+
+[**
+ * The value of a feature of an object: the set of its values if the feature is many-valued, and otherwise its value, or
+ * Null if the value is absent.
+ **/]
+[query public valueText(p : EPackage, objects : Sequence(EObject), o : EObject, f : EStructuralFeature) : String = let values : Sequence(OclAny) = o.valuesOf(f) in if f.isMany() then '{' + values->collect(v | p.singleText(objects, f, v))->sep(', ') + '}' else if values->isEmpty() then nullValue() else p.singleText(objects, f, values->first()) endif endif/]
+
+[**
+ * The TLA+ text of a single value of a feature.
+ **/]
+[query public singleText(p : EPackage, objects : Sequence(EObject), f : EStructuralFeature, v : OclAny) : String = if f.valueKind() = 'object' then quoted(identity(objects, v)) else if f.valueKind() = 'integer' then v.toString() else if f.valueKind() = 'boolean' then (if v then 'TRUE' else 'FALSE' endif) else if f.valueKind() = 'enumeration' then literalText(f.eType, f.eType.eLiterals->select(l | l.name = v.toString() or l.literal = v.toString())->first().name) else quoted(v.toString()) endif endif endif endif/]
+
+[**
+ * The texts of the values of a data type that the export does not interpret, in the order of their first occurrence in a
+ * model.
+ **/]
+[query public uninterpretedValues(p : EPackage, objects : Sequence(EObject), t : String) : Sequence(String) = objects->collect(o | p.classOf(o).allExportedFeatures()->select(f | f.valueKind() = 'uninterpreted' and f.eType.name = t)->collect(f | o.valuesOf(f)))->flatten()->collect(v | quoted(v.toString()))->asOrderedSet()->asSequence()/]

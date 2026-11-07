@@ -1,0 +1,44 @@
+[comment encoding = UTF-8 /]
+[**
+ * The main module of the TLA+ template set.
+ *
+ * It writes a TLA+ module for each root package of a generator model, and for a model of such a package a TLA+ module
+ * that extends the module of the package and has the model as its only state, together with the TLC configuration
+ * that checks it.
+ **/]
+[module generate('http://www.eclipse.org/emf/2002/GenModel', 'http://www.eclipse.org/emf/2002/Ecore')/]
+[import verification::VerificationQueries/]
+[import TLANames/]
+[import TLAMetamodel/]
+[import TLAModel/]
+
+[**
+ * Writes the module of each root package of a generator model.
+ **/]
+[template public generate(genModel : GenModel)]
+[for (p : OclAny | genModel.allGenPackages()->collect(g | g.ecorePackage))]
+[file (p.moduleName() + '.tla', false, 'UTF-8')][p.metamodelModule()/][/file]
+[/for]
+[/template]
+
+[**
+ * Writes the module of a model and its TLC configuration, named after the model file.
+ **/]
+[template public generateModel(p : EPackage, root : EObject)]
+[file (instanceModuleName(modelName) + '.tla', false, 'UTF-8')][p.modelModule(root, instanceModuleName(modelName))/][/file]
+[file (instanceModuleName(modelName) + '.cfg', false, 'UTF-8')][p.modelConfiguration(root, instanceModuleName(modelName))/][/file]
+[/template]
+
+[**
+ * Writes the number of files that the main template writes: one for each package.
+ **/]
+[template public fileCount(genModel : GenModel)]
+[file ('count', false, 'UTF-8')][genModel.allGenPackages()->size()/][/file]
+[/template]
+
+[**
+ * Writes the number of files that the model template writes for a model: a module and its TLC configuration.
+ **/]
+[template public modelFileCount(p : EPackage, root : EObject)]
+[file ('count', false, 'UTF-8')]2[/file]
+[/template]

@@ -1,0 +1,87 @@
+[comment encoding = UTF-8 /]
+[**
+ * The Lean module of a model.
+ *
+ * The module imports the module of the package of the model and defines the model as the list of its objects, each
+ * identified by its position in the model. The theorem 'wellFormed' elaborates exactly if the model satisfies the
+ * multiplicities, opposite references and containment of the metamodel, and each theorem named after an invariant
+ * elaborates exactly if the model satisfies the invariant; 'decide' proves them by evaluation, and reports each one
+ * that does not hold.
+ **/]
+[module LeanModel('http://www.eclipse.org/emf/2002/Ecore')/]
+[import verification::VerificationQueries/]
+[import LeanNames/]
+
+[**
+ * The complete text of the module of a model.
+ **/]
+[template public modelModule(p : EPackage, root : EObject, name : String)]
+[let objects : Sequence(EObject) = root.modelObjects()]
+import [p.moduleName()/]
+
+/-!
+# Lean 4 module of a model of the Ecore package [p.name/] ([p.nsURI/])
+
+The model lists every object with its identifier, which is its position in the model; the comment before each object
+names it by its class and identifier. The theorem `wellFormed` holds exactly if the model satisfies the multiplicities,
+opposite references and containment of the metamodel, and each theorem `<Class>_<Invariant>_holds` holds exactly if
+the model satisfies the invariant. `decide` proves each theorem by evaluation; Lean reports every theorem that does
+not hold as an error at its position.
+
+Unset optional values are `none` or empty lists. A required value that the model leaves unset is written with the
+comment 'unset': a reference as the identifier 0, which no object has, so that `wellFormed` fails, and an attribute as
+the default value of its type (0, false, the first literal of an enumeration, or the empty string). Values of data
+types that the export does not interpret are their serialised text.
+-/
+
+namespace [name/]
+
+open [p.moduleName()/]
+
+/-- The objects of the model. -/
+def model : [p.moduleName()/].Model := {
+  objects := ['['/]
+[objects->collect(o | p.entry(objects, o))->sep(',\n')/]
+  ]
+}
+
+/-- The model satisfies the multiplicities, opposite references and containment of the metamodel. -/
+theorem wellFormed : WellFormed model := by decide
+[for (c : EClass | p.classes())]
+[for (n : String | p.translatedInvariants(c, target()))]
+
+/-- The model satisfies the invariant [n/] of [c.name/]. -/
+theorem [id(invariantIdentifier(c, n) + '_holds')/] : [id(c.name)/].[id(n)/] model := by decide
+[/for]
+[/for]
+
+end [name/]
+[/let]
+[/template]
+
+[**
+ * The name of an object in comments: the name of its class followed by its identifier.
+ **/]
+[query public objectName(objects : Sequence(EObject), o : EObject) : String = o.eClass().name + objects->indexOf(o).toString()/]
+
+[**
+ * The entry of an object in the list of objects of a model: a comment naming the object, then its identifier and the
+ * values of its features.
+ **/]
+[query public entry(p : EPackage, objects : Sequence(EObject), o : EObject) : String = '    -- ' + objectName(objects, o) + '\n    (' + objects->indexOf(o).toString() + ', .' + constructorName(p.classOf(o)) + ' {' + (if p.classOf(o).allExportedFeatures()->isEmpty() then '' else ' ' + p.classOf(o).allExportedFeatures()->collect(f | id(f.name) + ' := ' + p.fieldValue(objects, o, f))->sep(', ') + ' ' endif) + '})'/]
+
+[**
+ * The value of a field of an object: a list for a many-valued feature, an optional value for an optional feature, and
+ * a plain value for a required feature.
+ **/]
+[query public fieldValue(p : EPackage, objects : Sequence(EObject), o : EObject, f : EStructuralFeature) : String = let values : Sequence(OclAny) = o.valuesOf(f) in if f.isMany() then '[' + values->collect(v | p.valueText(objects, f, v))->sep(', ') + ']' else if values->isEmpty() then (if f.isRequiredSingle() then f.unsetValue() else 'none' endif) else (if f.isRequiredSingle() then p.valueText(objects, f, values->first()) else 'some ' + p.valueText(objects, f, values->first()) endif) endif endif/]
+
+[**
+ * The value of a required single-valued feature that a model leaves unset, marked by a comment.
+ **/]
+[query public unsetValue(f : EStructuralFeature) : String = (if f.valueKind() = 'object' or f.valueKind() = 'integer' then '0' else if f.valueKind() = 'boolean' then 'false' else if f.valueKind() = 'enumeration' then literalId(f.eType, f.eType.eLiterals->first().name) else '""' endif endif endif) + ' /- unset -/'/]
+
+[**
+ * The Lean text of a value of a feature; negative integers are parenthesised so that they can follow 'some'.
+ **/]
+[query public valueText(p : EPackage, objects : Sequence(EObject), f : EStructuralFeature, v : OclAny) : String = if f.valueKind() = 'object' then objects->indexOf(v).toString() else if f.valueKind() = 'integer' then (if v < 0 then '(' + v.toString() + ')' else v.toString() endif) else if f.valueKind() = 'boolean' then (if v then 'true' else 'false' endif) else if f.valueKind() = 'enumeration' then literalId(f.eType, f.eType.eLiterals->select(l | l.name = v.toString() or l.literal = v.toString())->first().name) else v.toString().verificationString(target()) endif endif endif endif/]

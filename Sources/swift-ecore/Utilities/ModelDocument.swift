@@ -7,14 +7,18 @@
 import ECore
 import Foundation
 import ModellingCommandLine
+import MultiLevel
 
 /// A model or metamodel that a command has read.
 ///
-/// An Ecore file (`.ecore`) or a KM3 file (`.km3`) is read as a metamodel, whose root packages
-/// are available as ``packages``. An XMI (`.xmi`) or JSON (`.json`) file is read as a model. A file with another
-/// extension is read in the format of its contents. The metamodels named with `--metamodel` are
+/// A file in a metamodel format, such as Ecore (`.ecore`), KM3 (`.km3`) or Emfatic (`.emf`), is
+/// read as a metamodel, whose root packages are available as ``packages``. An XMI (`.xmi`) or
+/// JSON (`.json`) file is read as a model, unless its contents are in a format that the format
+/// registry recognises, such as an EMOF metamodel or a UML model. A file with another extension
+/// is read in the format of its contents. The metamodels named with `--metamodel` are
 /// registered with the resource set of the document before it is read, so the objects of a
-/// model are instances of the classes those metamodels define.
+/// model are instances of the classes those metamodels define, and the Complete OCL documents
+/// named with `--ocl` constrain them.
 struct ModelDocument: Sendable {
     /// The path of the file as given on the command line.
     let path: String
@@ -40,6 +44,13 @@ struct ModelDocument: Sendable {
     /// What the parser could not keep, such as classes that no metamodel defines.
     let diagnostics: ConversionDiagnostics
 
+    /// The multi-level model that the file holds, if it is a MetaDepth document or an XMI or
+    /// JSON document of the linguistic instances of a multi-level model.
+    var deepModel: DeepModel? = nil
+
+    /// Whether the file holds a multi-level model.
+    var isDeepModel: Bool { deepModel != nil }
+
     /// Whether the file is a metamodel rather than a model.
     var isMetamodel: Bool { !packages.isEmpty }
 
@@ -58,14 +69,16 @@ struct ModelDocument: Sendable {
     var fileName: String { url.lastPathComponent }
 
     /// The name of the format, as the commands show it.
-    var formatName: String { format == .ecore ? ModelVocabulary.ecoreFormatName : format.rawValue.uppercased() }
+    var formatName: String { format == .ecore ? ModelVocabulary.ecoreFormatName : format.description }
 
     /// Reads a model or metamodel file.
     ///
-    /// The format follows from the file extension or, for an extension that names no format,
-    /// from the contents of the file. The metamodels of `metamodelOptions` are registered
-    /// first; a JSON model must then use their classes only. The warnings of reading the file,
-    /// such as a root package without a namespace URI, are written to standard error.
+    /// The format registry chooses the format from the file extension and the contents of the
+    /// file (see `MetamodelRegistration.documentHandler(at:registry:)`). The metamodels of
+    /// `metamodelOptions` are registered first and constrained by the Complete OCL documents;
+    /// a JSON model must then use their classes only. Without metamodels, the documents
+    /// constrain the file itself if it is a metamodel. The warnings of reading the file, such
+    /// as a root package without a namespace URI, are written to standard error.
     ///
     /// - Parameters:
     ///   - path: The path of the file.
@@ -73,35 +86,49 @@ struct ModelDocument: Sendable {
     ///   - requiresMetamodel: Whether the classes of a JSON model must be defined by a registered
     ///     metamodel, or `nil` to require them whenever a metamodel was given.
     ///   - verbose: Whether to report the metamodels as they are loaded.
-    ///   - km3Options: How the data types of a KM3 metamodel are read (default
-    ///     `KM3ReadOptions.standard`).
+    ///   - ecoreLoadOptions: How metamodels are read, such as the data types of KM3 and the
+    ///     packages of grammar imports (default options).
+    ///   - completeOCL: The paths of the Complete OCL documents that constrain the metamodels.
     /// - Returns: The document.
     /// - Throws: ``DocumentError`` if the file does not exist or its format cannot be
-    ///   determined, or the error of a metamodel or of the parser.
+    ///   determined, `MetamodelRegistrationError` if a Complete OCL document does not exist or
+    ///   has nothing to constrain, or the error of a metamodel or of the parser.
     static func load(
         path: String,
         metamodelOptions: MetamodelOptions,
         requiresMetamodel: Bool? = nil,
         verbose: Bool = false,
-        km3Options: KM3ReadOptions = .standard
+        ecoreLoadOptions: EcoreLoadOptions = EcoreLoadOptions(),
+        completeOCL: [String] = []
     ) async throws -> ModelDocument {
         guard FileManager.default.fileExists(atPath: path) else {
             throw DocumentError.fileNotFound(path)
         }
         let url = URL(fileURLWithPath: path)
-        guard let format = ModelFormat.detect(url: url) ?? (try? ModelFormat.detect(contentsOf: url)) else {
+        await MultiLevelSupport.registerFormats()
+        guard let format = await MetamodelRegistration.documentHandler(at: path)?.format else {
             throw DocumentError.unsupportedFormat(url.pathExtension)
         }
-        let ecoreLoadOptions = EcoreLoadOptions(km3Options: km3Options)
-        let resourceSet = try await metamodelOptions.resourceSet(verbose: verbose, options: ecoreLoadOptions)
-            ?? ResourceSet()
+        let resourceSet = try await metamodelOptions.resourceSet(
+            applying: completeOCL, verbose: verbose, options: ecoreLoadOptions) ?? ResourceSet()
         let metamodels = await registeredMetamodels(of: resourceSet)
+        let linguistic = format != .metadepth && MultiLevelSupport.holdsLinguisticInstances(url)
+        if linguistic { await MultiLevelSupport.registerLinguisticMetamodel(in: resourceSet) }
         let options = ModelIO.LoadOptions(requiresMetamodel: requiresMetamodel, ecoreLoadOptions: ecoreLoadOptions)
         let loaded = try await ModelIO.load(url: url, format: format, resourceSet: resourceSet, options: options)
         FileDiagnosticReport.write(await loaded.resource.loadDiagnostics, file: path)
-        return ModelDocument(
+        var packages = loaded.packages
+        if !completeOCL.isEmpty && !metamodelOptions.isGiven {
+            packages = try await MetamodelRegistration.applyCompleteOCL(
+                completeOCL, to: packages.isEmpty ? [] : [loaded.resource], in: resourceSet, verbose: verbose)
+        }
+        var document = ModelDocument(
             path: path, url: url, format: loaded.format, resource: loaded.resource, resourceSet: resourceSet,
-            packages: loaded.packages, metamodels: metamodels, diagnostics: loaded.diagnostics)
+            packages: packages, metamodels: metamodels, diagnostics: loaded.diagnostics)
+        if loaded.format == .metadepth || linguistic {
+            document.deepModel = await MultiLevelSupport.deepModel(in: loaded.resource)
+        }
+        return document
     }
 
     /// The root packages registered with a resource set, without the nested packages.

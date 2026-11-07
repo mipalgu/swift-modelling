@@ -64,6 +64,127 @@ public enum MetamodelRegistration {
         return ModelFormatRegistry.builtInHandlers.first { $0.fileExtensions.contains(fileExtension) }
     }
 
+    /// Reports whether a file holds a document in a format that holds only metamodels.
+    ///
+    /// Unlike ``isMetamodelFile(_:)``, the registry examines the contents of the file as well
+    /// as its extension, as `ModelFormatRegistry.handler(for:contents:)` does, so that an EMOF
+    /// metamodel in an `.xmi` file counts as a metamodel while an XMI model does not. A file
+    /// whose extension names no format counts only if a format that recognises its documents
+    /// by a distinctive start, such as KM3, recognises it.
+    ///
+    /// - Parameters:
+    ///   - path: The path of the file.
+    ///   - registry: The registry that provides the format handlers (default
+    ///     `ModelFormatRegistry.shared`).
+    /// - Returns: `true` if the handler of the document has the role `ModelFormatRole.metamodel`.
+    public static func holdsMetamodel(at path: String, registry: ModelFormatRegistry = .shared) async -> Bool {
+        await metamodelCandidateHandler(at: path, registry: registry).map { $0.role == .metamodel } ?? false
+    }
+
+    /// Reports whether a file holds a document in a format that may hold a metamodel.
+    ///
+    /// The file is examined as ``holdsMetamodel(at:registry:)`` examines it, and counts if
+    /// the handler of the document does not have the role `ModelFormatRole.model`, such as
+    /// the handler of Ecore, JSON, KM3 or EMOF.
+    ///
+    /// - Parameters:
+    ///   - path: The path of the file.
+    ///   - registry: The registry that provides the format handlers (default
+    ///     `ModelFormatRegistry.shared`).
+    /// - Returns: `true` if the document may hold a metamodel.
+    public static func mayHoldMetamodel(at path: String, registry: ModelFormatRegistry = .shared) async -> Bool {
+        await metamodelCandidateHandler(at: path, registry: registry).map { $0.role != .model } ?? false
+    }
+
+    /// The handler that the registry chooses for a file from its extension and contents.
+    ///
+    /// The start of the file is read and given to `ModelFormatRegistry.handler(for:contents:)`,
+    /// so that a format that recognises its documents, such as EMOF or UML, takes precedence
+    /// over a generic format that merely claims the extension, such as XMI. A file that cannot
+    /// be read is judged by its extension alone.
+    ///
+    /// - Parameters:
+    ///   - path: The path of the file.
+    ///   - registry: The registry that provides the format handlers (default
+    ///     `ModelFormatRegistry.shared`).
+    /// - Returns: The handler, or `nil` if neither the extension nor the contents name a format.
+    public static func documentHandler(
+        at path: String, registry: ModelFormatRegistry = .shared
+    ) async -> (any ModelFormatHandler)? {
+        let url = URL(fileURLWithPath: path)
+        guard let prefix = documentPrefix(of: url) else { return await registry.handler(for: url) }
+        return await registry.handler(for: url, contents: prefix)
+    }
+
+    /// The handler of a file that may name it a metamodel.
+    ///
+    /// A file whose extension names a format is examined as ``documentHandler(at:registry:)``
+    /// examines it. A file whose extension names none is recognised only by a format with a
+    /// priority above `ModelFormatPriority.generic`, so that an XML or JSON file with an
+    /// unknown extension is still read as a model.
+    ///
+    /// - Parameters:
+    ///   - path: The path of the file.
+    ///   - registry: The registry that provides the format handlers.
+    /// - Returns: The handler, or `nil` if the file is in no format that may name it a metamodel.
+    private static func metamodelCandidateHandler(
+        at path: String, registry: ModelFormatRegistry
+    ) async -> (any ModelFormatHandler)? {
+        let url = URL(fileURLWithPath: path)
+        if await registry.handler(for: url) != nil { return await documentHandler(at: path, registry: registry) }
+        guard let prefix = documentPrefix(of: url), let recognised = await registry.handler(recognising: prefix),
+            recognised.priority > .generic
+        else { return nil }
+        return recognised
+    }
+
+    /// The start of a file, as much as the registry examines to recognise a format.
+    ///
+    /// - Parameter url: The location of the file.
+    /// - Returns: The first bytes of the file, or `nil` if it cannot be read.
+    private static func documentPrefix(of url: URL) -> Data? {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+        defer { try? handle.close() }
+        return try? handle.read(upToCount: ModelFormatRegistry.recognitionPrefixLength) ?? Data()
+    }
+
+    /// Names formats in prose, for messages that list the formats of the registry.
+    ///
+    /// Each format is named by its file extension, followed by its prose name in parentheses
+    /// where the two differ in more than case, such as `emf (Emfatic)`.
+    ///
+    /// - Parameter formats: The formats, in the order in which they are listed.
+    /// - Returns: The names, separated by commas, such as `ecore, json, km3, emf (Emfatic)`.
+    public static func formatList(_ formats: [ModelFormat]) -> String {
+        formats.map { format in
+            format.description.lowercased() == format.rawValue ? format.rawValue : "\(format.rawValue) (\(format.description))"
+        }.joined(separator: ", ")
+    }
+
+    /// The formats whose built-in handlers can write documents and whose role suits a document.
+    ///
+    /// - Parameters:
+    ///   - preferred: The formats that come first, in order, if they qualify.
+    ///   - accepts: Whether the role of a handler qualifies its format.
+    /// - Returns: The preferred formats, followed by the other qualifying formats in the order
+    ///   of the registry.
+    public static func writableFormats(
+        preferring preferred: [ModelFormat], where accepts: (ModelFormatRole) -> Bool
+    ) -> [ModelFormat] {
+        let qualifying = ModelFormatRegistry.builtInHandlers
+            .filter { $0 is any WritableModelFormatHandler && accepts($0.role) }
+            .compactMap(\.format)
+        return preferred.filter(qualifying.contains) + qualifying.filter { !preferred.contains($0) }
+    }
+
+    /// Reports whether the built-in handler of a format can write documents.
+    ///
+    /// - Parameter format: The format.
+    /// - Returns: `false` for a format that is only read, such as Langium, Xtext or SDF3.
+    public static func isWritable(_ format: ModelFormat) -> Bool {
+        ModelFormatRegistry.builtInHandlers.contains { $0.format == format && $0 is any WritableModelFormatHandler }
+    }
+
     /// The line that reports a registered metamodel in verbose output.
     ///
     /// - Parameters:
@@ -111,15 +232,13 @@ public enum MetamodelRegistration {
     ///   - debug: Whether the parser prints its trace of an Ecore document to standard output.
     /// - Returns: The root packages in document order, which are none if the file has none; the
     ///   URI under which each package that is registered is registered: its namespace URI or,
-    ///   for a package without one in a format such as KM3, its name; and the diagnostics of
-    ///   reading the file.
+    ///   for a package without one in a format such as KM3, its name; the resource that holds
+    ///   the packages; and the diagnostics of reading the file.
     /// - Throws: ``MetamodelRegistrationError/fileNotFound(_:)`` if the file does not exist, or
     ///   the error of the reader if the file cannot be loaded.
     private static func load(
         at path: String, options: EcoreLoadOptions, debug: Bool
-    ) async throws -> (
-        packages: [EPackage], registrations: [(uri: String, package: EPackage)], diagnostics: [SourceDiagnostic]
-    ) {
+    ) async throws -> LoadedMetamodel {
         guard FileManager.default.fileExists(atPath: path) else {
             throw MetamodelRegistrationError.fileNotFound(path)
         }
@@ -132,7 +251,8 @@ public enum MetamodelRegistration {
         }
         let packages = try await ModelIO.registerMetamodels(at: [url], in: resourceSet, options: options)
         let uri = URIReference.canonicalise(url.absoluteString)
-        let diagnostics = await resourceSet.getResource(uri: uri)?.loadDiagnostics ?? []
+        let resource = await resourceSet.getResource(uri: uri)
+        let diagnostics = await resource?.loadDiagnostics ?? []
         let identifiers = Set(packages.map(\.id))
         var registrations: [(uri: String, package: EPackage)] = []
         for registered in await resourceSet.getMetamodelURIs().sorted() {
@@ -143,21 +263,43 @@ public enum MetamodelRegistration {
         }
         let order = Dictionary(packages.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })
         registrations.sort { (order[$0.package.id] ?? 0, $0.uri) < (order[$1.package.id] ?? 0, $1.uri) }
-        return (packages, registrations, diagnostics)
+        return LoadedMetamodel(
+            packages: packages, registrations: registrations, resource: resource, resourceSet: resourceSet,
+            diagnostics: diagnostics)
+    }
+
+    /// A metamodel file as ``load(at:options:debug:)`` loads it.
+    private struct LoadedMetamodel {
+        /// The root packages, in document order.
+        let packages: [EPackage]
+
+        /// The URI under which each package is registered, with the package.
+        let registrations: [(uri: String, package: EPackage)]
+
+        /// The resource that holds the packages, if the reader kept one.
+        let resource: Resource?
+
+        /// The resource set that read the file and holds the resource.
+        let resourceSet: ResourceSet
+
+        /// The diagnostics of reading the file, in the order in which they were reported.
+        let diagnostics: [SourceDiagnostic]
     }
 
     /// Whether a metamodel file is read as an Ecore document, whose reader can print a trace.
     ///
+    /// The registry chooses the format from the extension and the contents of the file (see
+    /// ``documentHandler(at:registry:)``), so an EMOF metamodel in an `.xmi` file is not read
+    /// as an Ecore document.
+    ///
     /// - Parameter url: The location of the file.
-    /// - Returns: `true` unless the extension or, without a known extension, the contents of
-    ///   the file name another metamodel format, such as KM3.
+    /// - Returns: `true` unless the extension or the contents of the file name another
+    ///   metamodel format, such as KM3 or EMOF, or a model format whose documents are converted
+    ///   into metamodels, such as UML.
     private static func readsAsEcore(_ url: URL) async -> Bool {
-        let registry = ModelFormatRegistry.shared
-        var handler = await registry.handler(for: url)
-        if handler == nil, let data = try? Data(contentsOf: url) {
-            handler = await registry.handler(recognising: data)
-        }
-        guard let handler, handler.role != .model else { return true }
+        guard let handler = await documentHandler(at: url.path) else { return true }
+        if handler is any MetamodelConvertingModelFormatHandler { return false }
+        guard handler.role != .model else { return true }
         switch handler.format {
         case .xmi?, .json?, .ecore?: return true
         default: return false
@@ -238,6 +380,30 @@ public enum MetamodelRegistration {
         guard FileManager.default.fileExists(atPath: path) else {
             throw MetamodelRegistrationError.fileNotFound(path)
         }
+        return try await register(
+            at: path, into: resourceSet, announcement: announcement, verbose: verbose, debug: debug, options: options,
+            diagnosticOutput: diagnosticOutput
+        ).packages
+    }
+
+    /// Loads a metamodel and registers each of its root packages with a resource set.
+    ///
+    /// - Parameters:
+    ///   - path: The path to the metamodel file, which exists.
+    ///   - resourceSet: The resource set in which to register the metamodel.
+    ///   - announcement: The text that introduces the path in verbose output.
+    ///   - verbose: Whether to print progress to standard output.
+    ///   - debug: Whether the parser prints its trace of the metamodel document to standard output.
+    ///   - options: The options with which the file is read.
+    ///   - diagnosticOutput: The writer that receives the report of the diagnostics of reading
+    ///     the file, if there are any.
+    /// - Returns: The loaded metamodel.
+    /// - Throws: The error of the reader if the file cannot be loaded or has no root package.
+    @MainActor
+    private static func register(
+        at path: String, into resourceSet: ResourceSet, announcement: String, verbose: Bool, debug: Bool,
+        options: EcoreLoadOptions, diagnosticOutput: (String) -> Void
+    ) async throws -> LoadedMetamodel {
         if verbose {
             print("\(announcement): \(path)")
         }
@@ -250,7 +416,7 @@ public enum MetamodelRegistration {
                 print(registeredMessage(for: package, uri: uri))
             }
         }
-        return loaded.packages
+        return loaded
     }
 
     /// Loads Ecore metamodels and registers them with a new resource set.
@@ -273,11 +439,107 @@ public enum MetamodelRegistration {
         registering paths: [String], verbose: Bool = false, debug: Bool = false,
         options: EcoreLoadOptions = EcoreLoadOptions()
     ) async throws -> ResourceSet {
+        try await resourceSet(
+            registering: paths, applying: [], verbose: verbose, debug: debug, options: options)
+    }
+
+    /// Loads metamodels, registers them with a new resource set and constrains them with
+    /// Complete OCL documents.
+    ///
+    /// Every root package of each file is registered, as
+    /// ``registerMetamodels(at:into:announcement:verbose:debug:options:diagnosticOutput:)``
+    /// registers them. Then each Complete OCL document is applied, in order, to the metamodels
+    /// together, as ``applyCompleteOCL(_:to:in:verbose:diagnosticOutput:)`` describes, so that
+    /// the registered packages carry the constraints of the documents.
+    ///
+    /// - Parameters:
+    ///   - paths: The paths to the metamodel files, in command line order.
+    ///   - documents: The paths to the Complete OCL documents (`.ocl`), in command line order.
+    ///   - verbose: Whether to print progress to standard output.
+    ///   - debug: Whether the parser prints its trace of each metamodel document to standard output.
+    ///   - options: The options with which the files are read (default options).
+    /// - Returns: The resource set with every metamodel registered.
+    /// - Throws: The error of
+    ///   ``registerMetamodels(at:into:announcement:verbose:debug:options:diagnosticOutput:)``
+    ///   for the first file that cannot be registered, and the errors of
+    ///   ``applyCompleteOCL(_:to:in:verbose:diagnosticOutput:)``.
+    @MainActor
+    public static func resourceSet(
+        registering paths: [String], applying documents: [String], verbose: Bool = false, debug: Bool = false,
+        options: EcoreLoadOptions = EcoreLoadOptions()
+    ) async throws -> ResourceSet {
         let resourceSet = ResourceSet()
+        var loaded: [LoadedMetamodel] = []
         for path in paths {
-            try await registerMetamodels(at: path, into: resourceSet, verbose: verbose, debug: debug, options: options)
+            guard FileManager.default.fileExists(atPath: path) else {
+                throw MetamodelRegistrationError.fileNotFound(path)
+            }
+            loaded.append(
+                try await register(
+                    at: path, into: resourceSet, announcement: defaultAnnouncement, verbose: verbose, debug: debug,
+                    options: options, diagnosticOutput: FileDiagnosticReport.writeToStandardError))
         }
+        if !documents.isEmpty {
+            try await applyCompleteOCL(documents, to: loaded.compactMap(\.resource), in: resourceSet, verbose: verbose)
+        }
+        withExtendedLifetime(loaded) {}
         return resourceSet
+    }
+
+    /// Constrains loaded metamodels with Complete OCL documents.
+    ///
+    /// Each document is applied in turn, as `ModelIO.applyCompleteOCL(at:to:in:options:)`
+    /// applies it: its invariants, pre- and postconditions, definitions and derivations are
+    /// added to the classes and features of the metamodels as OCL annotations, the constrained
+    /// packages replace the root packages of the resources, and every registration of a
+    /// replaced package with the resource set refers to the constrained package instead. What
+    /// a document cannot express or apply, such as a context that no metamodel declares, is
+    /// written with ``FileDiagnosticReport`` through `diagnosticOutput`, which writes it to
+    /// standard error unless the caller supplies another writer, and does not make the command
+    /// fail.
+    ///
+    /// - Parameters:
+    ///   - documents: The paths to the Complete OCL documents, in the order in which they apply.
+    ///   - resources: The resources of the metamodels, in the order in which contexts are looked up.
+    ///   - resourceSet: The resource set with which the metamodels are registered.
+    ///   - verbose: Whether to report each document and the number of constraints it added.
+    ///   - diagnosticOutput: The writer that receives the report of the diagnostics of applying
+    ///     each document, if there are any (standard error by default).
+    /// - Returns: The constrained root packages after the last document, in the order of the
+    ///   resources.
+    /// - Throws: ``MetamodelRegistrationError/fileNotFound(_:)`` if a document does not exist,
+    ///   ``MetamodelRegistrationError/nothingToConstrain(_:)`` if there is no metamodel, and the
+    ///   errors of `ModelIO.applyCompleteOCL(at:to:in:options:)`.
+    @discardableResult
+    public static func applyCompleteOCL(
+        _ documents: [String], to resources: [Resource], in resourceSet: ResourceSet, verbose: Bool = false,
+        diagnosticOutput: (String) -> Void = FileDiagnosticReport.writeToStandardError
+    ) async throws -> [EPackage] {
+        var packages: [EPackage] = []
+        for path in documents {
+            guard FileManager.default.fileExists(atPath: path) else {
+                throw MetamodelRegistrationError.fileNotFound(path)
+            }
+            guard !resources.isEmpty else { throw MetamodelRegistrationError.nothingToConstrain(path) }
+            let applied = try await ModelIO.applyCompleteOCL(
+                at: URL(fileURLWithPath: path), to: resources, in: resourceSet)
+            FileDiagnosticReport.write(applied.diagnostics, file: path, to: diagnosticOutput)
+            if verbose {
+                print(appliedMessage(count: applied.appliedCount, document: path))
+            }
+            packages = applied.packages
+        }
+        return packages
+    }
+
+    /// The line that reports an applied Complete OCL document in verbose output.
+    ///
+    /// - Parameters:
+    ///   - count: The number of specifications that the document added.
+    ///   - document: The path of the document.
+    /// - Returns: The line, naming the document and the number.
+    public static func appliedMessage(count: Int, document: String) -> String {
+        "  ✓ Applied \(count) Complete OCL specification(s) from \(document)"
     }
 
     /// Registers loaded metamodel packages with a resource set.
@@ -296,17 +558,24 @@ public enum MetamodelRegistration {
 }
 
 /// An error that occurs while registering a metamodel named on the command line.
-public enum MetamodelRegistrationError: Error, CustomStringConvertible, LocalizedError {
+public enum MetamodelRegistrationError: Error, Equatable, CustomStringConvertible, LocalizedError {
     /// The metamodel file does not exist.
     ///
     /// The associated value is the path as given on the command line.
     case fileNotFound(String)
 
-    /// A description of the error, naming the path that was not found.
+    /// A Complete OCL document was given, but no metamodel to constrain.
+    ///
+    /// The associated value is the path of the document as given on the command line.
+    case nothingToConstrain(String)
+
+    /// A description of the error, naming the path concerned.
     public var description: String {
         switch self {
         case .fileNotFound(let path):
             return "File not found: \(path)"
+        case .nothingToConstrain(let path):
+            return "No metamodel to constrain with \(path): give the metamodel with --\(MetamodelOptions.optionName)"
         }
     }
 

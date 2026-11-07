@@ -1,0 +1,367 @@
+[comment encoding = UTF-8 /]
+[**
+ * The Lean module of a package.
+ *
+ * Every enumeration becomes an inductive type with one constructor per literal, and every data type that the export
+ * does not interpret becomes an abbreviation of String, holding the serialised text of its values. Every concrete class
+ * becomes a structure with a field for each exported feature, inherited features first, and the closed sum type 'Obj'
+ * has one constructor per concrete class. Every class has a membership test and every exported feature an accessor,
+ * defined over the constructors of the concrete classes that conform to it, which covers abstract classes and several
+ * supertypes. A model is a list of objects with their identifiers. 'WellFormed' states the multiplicities, opposite
+ * references and containment of the metamodel, and every translatable invariant becomes a proposition. All of them are
+ * decidable, so that a model can be checked by evaluation.
+ **/]
+[module LeanMetamodel('http://www.eclipse.org/emf/2002/Ecore')/]
+[import verification::VerificationQueries/]
+[import LeanNames/]
+
+[**
+ * The complete text of the module of a package.
+ **/]
+[template public metamodelModule(p : EPackage)]
+[p.metamodelHeader()/]
+
+namespace [p.moduleName()/]
+
+/-- The identifier of an object of a model. -/
+abbrev ObjectId := Nat
+[for (e : EEnum | p.enumerations())]
+
+/-- The literals of the enumeration [e.name/]. -/
+inductive [id(e.name)/] where
+[for (l : EEnumLiteral | e.eLiterals)]
+  | [id(l.name)/]
+[/for]
+  deriving DecidableEq, Repr
+[/for]
+[for (t : String | p.uninterpretedTypes())]
+
+/-- Values of the data type [t/], which the export represents by their serialised text. -/
+abbrev [id(t)/] := String
+[/for]
+[for (c : EClass | p.concreteClasses())]
+
+/-- The values of the features of an object of the class [c.name/]. -/
+structure [id(c.name)/][if (c.allExportedFeatures()->notEmpty())] where[/if]
+[for (f : EStructuralFeature | c.allExportedFeatures())]
+  [id(f.name)/] : [f.fieldType()/]
+[/for]
+  deriving DecidableEq, Repr
+[/for]
+
+/-- An object of a model: the values of its features, tagged with its class. -/
+inductive Obj where
+[for (c : EClass | p.concreteClasses())]
+  | [constructorName(c)/] (value : [id(c.name)/])
+[/for]
+  deriving DecidableEq, Repr
+[for (c : EClass | p.classes())]
+
+/-- Whether an object is an instance of the class [c.name/], directly or through a subclass. -/
+def [membership(c)/] : Obj → Bool[p.membershipBody(c)/]
+[/for]
+[for (c : EClass | p.classes())]
+[for (f : EStructuralFeature | c.exportedFeatures())]
+
+/-- The [if (f.isMany())]values[else]value[/if] of the feature [f.name/] of an object of the class [c.name/]. -/
+def [accessor(c, f)/] : Obj → [f.accessorType()/][p.accessorBody(c, f)/]
+[/for]
+[/for]
+
+/-- A model: its objects, each with its identifier. -/
+structure Model where
+  objects : List (ObjectId × Obj)
+
+/-- The object of a model with an identifier, if there is one. -/
+def Model.get? (m : Model) (o : ObjectId) : Option Obj :=
+  m.objects.lookup o
+
+/-- The value of a single-valued feature of an object, absent if the object or the value is absent. -/
+def Model.one {α : Type} (m : Model) (f : Obj → Option α) (o : Option ObjectId) : Option α :=
+  (o.bind m.get?).bind f
+
+/-- The values of a many-valued feature of an object, empty if the object is absent. -/
+def Model.many {α : Type} (m : Model) (f : Obj → List α) (o : Option ObjectId) : List α :=
+  match o.bind m.get? with
+  | some x => f x
+  | none => ['['/]]
+
+/-- The values of a single-valued feature of several objects, skipping absent values. -/
+def Model.oneAll {α : Type} (m : Model) (f : Obj → Option α) (os : List ObjectId) : List α :=
+  os.filterMap fun o => m.one f (some o)
+
+/-- The values of a many-valued feature of several objects, concatenated. -/
+def Model.manyAll {α : Type} (m : Model) (f : Obj → List α) (os : List ObjectId) : List α :=
+  os.flatMap fun o => m.many f (some o)
+
+/-- Whether an object is present and passes a membership test. -/
+def Model.isKindOf (m : Model) (p : Obj → Bool) (o : Option ObjectId) : Bool :=
+  match o.bind m.get? with
+  | some x => p x
+  | none => false
+
+/-- The identifiers of the objects of a model that pass a membership test, in model order. -/
+def Model.instancesOf (m : Model) (p : Obj → Bool) : List ObjectId :=
+  (m.objects.filter fun e => p e.2).map Prod.fst
+
+/-- Whether two values are present and equal. -/
+def optEq {α : Type} ['['/]BEq α] : Option α → Option α → Bool
+  | some a, some b => a == b
+  | _, _ => false
+
+/-- Whether two values are present and different. -/
+def optNe {α : Type} ['['/]BEq α] : Option α → Option α → Bool
+  | some a, some b => a != b
+  | _, _ => false
+
+/-- Whether two integers are present and the first is less than the second. -/
+def optLt : Option Int → Option Int → Bool
+  | some a, some b => decide (a < b)
+  | _, _ => false
+
+/-- Whether two integers are present and the first is at most the second. -/
+def optLe : Option Int → Option Int → Bool
+  | some a, some b => decide (a ≤ b)
+  | _, _ => false
+
+/-- Whether two integers are present and the first is greater than the second. -/
+def optGt : Option Int → Option Int → Bool
+  | some a, some b => decide (a > b)
+  | _, _ => false
+
+/-- Whether two integers are present and the first is at least the second. -/
+def optGe : Option Int → Option Int → Bool
+  | some a, some b => decide (a ≥ b)
+  | _, _ => false
+
+/-- The sum of two integers, absent if either is absent. -/
+def optAdd : Option Int → Option Int → Option Int
+  | some a, some b => some (a + b)
+  | _, _ => none
+
+/-- The difference of two integers, absent if either is absent. -/
+def optSub : Option Int → Option Int → Option Int
+  | some a, some b => some (a - b)
+  | _, _ => none
+
+/-- The product of two integers, absent if either is absent. -/
+def optMul : Option Int → Option Int → Option Int
+  | some a, some b => some (a * b)
+  | _, _ => none
+
+/-- The quotient of two integers rounded towards zero, as OCL 'div' computes it; absent if either is absent or the
+divisor is zero. -/
+def optDiv : Option Int → Option Int → Option Int
+  | some a, some b => if b = 0 then none else some (a.tdiv b)
+  | _, _ => none
+
+/-- The remainder of the division of two integers rounded towards zero, as OCL 'mod' computes it; absent if either is
+absent or the divisor is zero. -/
+def optMod : Option Int → Option Int → Option Int
+  | some a, some b => if b = 0 then none else some (a.tmod b)
+  | _, _ => none
+
+/-- The negation of an integer, absent if it is absent. -/
+def optNeg : Option Int → Option Int
+  | some a => some (-a)
+  | none => none
+
+/-- Whether a value is present and in a list. -/
+def optContains {α : Type} ['['/]BEq α] (l : List α) : Option α → Bool
+  | some a => l.contains a
+  | none => false
+
+/-- Whether the values of a list are pairwise different. -/
+def allDistinct {α : Type} ['['/]BEq α] : List α → Bool
+  | ['['/]] => true
+  | a :: rest => !rest.contains a && allDistinct rest
+
+/-- Whether a number of values lies within a lower bound and an optional upper bound. -/
+def withinBounds (n lower : Nat) (upper : Option Nat) : Bool :=
+  decide (lower ≤ n) && upper.all fun u => decide (n ≤ u)
+
+/-- Whether every object that passes the test of an owner class has at most one value of a single-valued reference,
+which identifies an object of the target class, and has a value if the reference is required. -/
+def Model.singleReferenceOk (m : Model) (owner target : Obj → Bool) (f : Obj → Option ObjectId) (required : Bool) :
+    Bool :=
+  m.objects.all fun e => !owner e.2 || match f e.2 with
+    | some t => m.isKindOf target (some t)
+    | none => !required
+
+/-- Whether every object that passes the test of an owner class has values of a many-valued reference that identify
+distinct objects of the target class, and as many as the bounds allow. -/
+def Model.manyReferenceOk (m : Model) (owner target : Obj → Bool) (f : Obj → List ObjectId) (lower : Nat)
+    (upper : Option Nat) : Bool :=
+  m.objects.all fun e => !owner e.2 ||
+    ((f e.2).all (fun t => m.isKindOf target (some t)) && allDistinct (f e.2) &&
+      withinBounds (f e.2).length lower upper)
+
+/-- Whether every object that passes the test of an owner class has as many values of a many-valued attribute as the
+bounds allow. -/
+def Model.manyAttributeOk {α : Type} (m : Model) (owner : Obj → Bool) (f : Obj → List α) (lower : Nat)
+    (upper : Option Nat) : Bool :=
+  m.objects.all fun e => !owner e.2 || withinBounds (f e.2).length lower upper
+
+/-- Whether every object that a reference of an object identifies refers back to that object through the opposite
+reference. -/
+def Model.oppositeOk (m : Model) (f g : Obj → List ObjectId) : Bool :=
+  m.objects.all fun e => (f e.2).all fun t => (m.many g (some t)).contains e.1
+
+/-- The identifiers of the objects that an object contains. -/
+def Obj.contents [p.contentsDefinition()/]
+
+/-- The identifiers of the objects that are contained, directly or indirectly, in objects, up to a depth that the
+fuel bounds. -/
+def Model.descendants (m : Model) : Nat → List ObjectId → List ObjectId
+  | 0, _ => ['['/]]
+  | n + 1, os =>
+    let children := m.manyAll Obj.contents os
+    children ++ m.descendants n children
+
+/-- Whether every object has at most one container and does not contain itself; containment cycles are no longer
+than the number of objects. -/
+def Model.containmentOk (m : Model) : Bool :=
+  allDistinct (m.objects.flatMap fun e => e.2.contents) &&
+    m.objects.all fun e => !(m.descendants m.objects.length ['['/]e.1]).contains e.1
+
+/-- Whether a model is well formed: its identifiers are distinct, its references identify objects of their classes
+and respect the multiplicities and opposites of the metamodel, the many-valued attributes respect their bounds, and
+its containment is a forest. -/
+@['['/]reducible] def WellFormed (m : Model) : Prop :=
+  [Sequence{'(m.objects.map Prod.fst).Nodup'}->union(p.wellFormedChecks())->union(Sequence{'m.containmentOk = true'})->sep(' ∧\n  ')/]
+[for (c : EClass | p.classes())]
+[for (n : String | p.translatedInvariants(c, target()))]
+
+/-- The invariant [n/] of [c.name/]: [p.verificationInvariantBody(c, n).lines()->sep(' ')/] -/
+@['['/]reducible] def [p.invariantName(c, n)/] (m : Model) : Prop :=
+  [p.verificationFormula(c, n, target())/]
+[/for]
+[/for]
+
+/-- All translated invariants. -/
+@['['/]reducible] def Invariants (m : Model) : Prop :=
+  [p.invariantConjunction()/]
+
+end [p.moduleName()/]
+[/template]
+
+[**
+ * The comment that opens the module of a package, listing what the module does not express.
+ **/]
+[template public metamodelHeader(p : EPackage)]
+/-!
+# Lean 4 module of the Ecore package [p.name/] ([p.nsURI/])
+
+Every concrete class is a structure with a field for each feature, inherited features first, and an object of a model
+is a value of the sum type `Obj`, with one constructor per concrete class. Each class has a membership test
+`Obj.is<Class>`, which holds for the objects of its subclasses too, and each feature an accessor
+`Obj.<Class>_<feature>`. A model lists its objects with their identifiers. `WellFormed` states the multiplicities,
+opposite references and containment of the metamodel, and each translated invariant is a proposition over a model.
+All of them are decidable, so that `decide` checks a model by evaluation.
+
+Objects form a closed sum type rather than structures that implement a type class. A model is then a plain list with
+decidable equality, membership in abstract classes and in several supertypes is a total function over the
+constructors, and every proposition reduces by evaluation. A type class would leave the set of classes open, so that
+the objects of a model would need an existential package, which has neither decidable equality nor a case analysis
+that `decide` can evaluate.
+
+Not exported:
+[if (p.omittedOperations()->notEmpty())]
+- operations: [p.omittedOperations()->sep(', ')/]
+[/if]
+[if (p.omittedFeatures()->notEmpty())]
+- derived and volatile features: [p.omittedFeatures()->sep(', ')/]
+[/if]
+- whether many-valued features are ordered or unique: their values are lists in model order, and only references
+  must be free of repetitions
+[if (p.uninterpretedTypes()->notEmpty())]
+- the structure of values of the data types [p.uninterpretedTypes()->sep(', ')/]: they are their serialised text
+[/if]
+[if (p.eSubpackages->notEmpty())]
+- nested packages: [p.eSubpackages->collect(s | s.name)->sep(', ')/]
+[/if]
+[if (p.untranslatedInvariants(target())->notEmpty())]
+- invariants outside the translatable subset of OCL:
+[for (u : String | p.untranslatedInvariants(target()))]
+  - [u/]
+[/for]
+[/if]
+
+Integers are unbounded. A comparison involving an absent value is false, as an OCL invariant over an invalid value is
+not satisfied. Strings only support equality.
+-/
+[/template]
+
+[**
+ * The concrete classes of a package, in declaration order.
+ **/]
+[query public concreteClasses(p : EPackage) : Sequence(EClass) = p.classes()->select(c | c.isConcrete())/]
+
+[**
+ * Whether some concrete class of a package does not conform to a class, so that a case analysis over the objects
+ * needs a default case.
+ **/]
+[query public needsDefaultCase(p : EPackage, c : EClass) : Boolean = p.concreteConforming(c)->size() < p.concreteClasses()->size()/]
+
+[**
+ * The body of the membership test of a class: true for the constructors of the concrete classes that conform to it.
+ **/]
+[query public membershipBody(p : EPackage, c : EClass) : String = if p.concreteConforming(c)->isEmpty() then ' := fun _ => false' else '\n  | ' + p.concreteConforming(c)->collect(x | '.' + constructorName(x) + ' _')->sep(' | ') + ' => true' + (if p.needsDefaultCase(c) then '\n  | _ => false' else '' endif) endif/]
+
+[**
+ * The value that an accessor returns for objects without the feature: nothing, or the empty list.
+ **/]
+[query public absentValue(f : EStructuralFeature) : String = if f.isMany() then '[]' else 'none' endif/]
+
+[**
+ * The value that an accessor returns for an object 'v' of a class with the feature.
+ **/]
+[query public presentValue(f : EStructuralFeature) : String = if f.isRequiredSingle() then 'some v.' + id(f.name) else 'v.' + id(f.name) endif/]
+
+[**
+ * The body of the accessor of a feature that a class declares: one case for each concrete class that conforms to it.
+ **/]
+[query public accessorBody(p : EPackage, c : EClass, f : EStructuralFeature) : String = if p.concreteConforming(c)->isEmpty() then ' := fun _ => ' + f.absentValue() else p.concreteConforming(c)->collect(x | '\n  | .' + constructorName(x) + ' v => ' + f.presentValue())->sep('') + (if p.needsDefaultCase(c) then '\n  | _ => ' + f.absentValue() else '' endif) endif/]
+
+[**
+ * The names of the data types of exported features that the export does not interpret.
+ **/]
+[query public uninterpretedTypes(p : EPackage) : Sequence(String) = p.classes()->collect(c | c.exportedFeatures())->flatten()->select(f | f.valueKind() = 'uninterpreted')->collect(f | f.eType.name)->asOrderedSet()->asSequence()/]
+
+[**
+ * The parameter and body of the function that lists the objects an object contains.
+ **/]
+[query public contentsDefinition(p : EPackage) : String = let terms : Sequence(String) = p.containmentOwners()->collect(c | c.exportedFeatures()->select(f | f.isContainmentReference())->collect(f | if f.isMany() then accessor(c, f) + ' o' else '(' + accessor(c, f) + ' o).toList' endif))->flatten() in if terms->isEmpty() then '(_ : Obj) : List ObjectId := []' else '(o : Obj) : List ObjectId :=\n  ' + terms->sep(' ++ ') endif/]
+
+[**
+ * The conditions of well-formedness that the exported features of the classes of a package impose.
+ **/]
+[query public wellFormedChecks(p : EPackage) : Sequence(String) = p.classes()->collect(c | c.exportedFeatures()->collect(f | p.featureChecks(c, f)))->flatten()/]
+
+[**
+ * The conditions of well-formedness that an exported feature declared by a class imposes: the classes and
+ * multiplicities of the values of a reference, the bounds of a many-valued attribute, and an opposite reference, which
+ * is written for the first feature of the pair.
+ **/]
+[query public featureChecks(p : EPackage, c : EClass, f : EStructuralFeature) : Sequence(String) = (if f.isReference() then Sequence{p.referenceCheck(c, f)} else if f.hasCardinalityBounds() then Sequence{'m.manyAttributeOk ' + membership(c) + ' ' + accessor(c, f) + ' ' + f.lowerBound.toString() + ' ' + f.upperBoundText() + ' = true'} else Sequence{} endif endif)->union(if p.writesOpposite(c, f) then p.oppositeChecks(c, f) else Sequence{} endif)/]
+
+[**
+ * The condition on the values of a reference declared by a class.
+ **/]
+[query public referenceCheck(p : EPackage, c : EClass, f : EStructuralFeature) : String = if f.isMany() then 'm.manyReferenceOk ' + membership(c) + ' ' + p.targetMembership(f) + ' ' + accessor(c, f) + ' ' + f.lowerBound.toString() + ' ' + f.upperBoundText() + ' = true' else 'm.singleReferenceOk ' + membership(c) + ' ' + p.targetMembership(f) + ' ' + accessor(c, f) + ' ' + (if f.isRequiredSingle() then 'true' else 'false' endif) + ' = true' endif/]
+
+[**
+ * The conditions that relate a reference declared by a class to its opposite, in both directions.
+ **/]
+[query public oppositeChecks(p : EPackage, c : EClass, f : EStructuralFeature) : Sequence(String) = let there : String = listAccessor(c, f) in let back : String = listAccessor(p.oppositeOwner(f), f.eOpposite) in Sequence{'m.oppositeOk ' + there + ' ' + back + ' = true', 'm.oppositeOk ' + back + ' ' + there + ' = true'}/]
+
+[**
+ * The name of the proposition of an invariant: the class followed by the name of the invariant.
+ **/]
+[query public invariantName(p : EPackage, c : EClass, n : String) : String = id(c.name) + '.' + id(n)/]
+
+[**
+ * The conjunction of the propositions of all translated invariants of a package applied to a model 'm', or True if
+ * there are none.
+ **/]
+[query public invariantConjunction(p : EPackage) : String = let names : Sequence(String) = p.classes()->collect(c | p.translatedInvariants(c, target())->collect(n | p.invariantName(c, n) + ' m'))->flatten() in if names->isEmpty() then 'True' else names->sep(' ∧\n  ') endif/]

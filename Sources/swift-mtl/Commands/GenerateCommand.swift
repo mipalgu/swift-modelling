@@ -6,6 +6,7 @@
 //  Copyright © 2025 Rene Hexel. All rights reserved.
 //
 
+import AQL
 import ArgumentParser
 import ECore
 import EMFBase
@@ -222,8 +223,11 @@ struct GenerateCommand: AsyncParsableCommand {
     /// The character encoding of the template file and the modules it imports.
     @OptionGroup var encodingOptions: SourceEncodingOptions
 
-    /// How the data types of a KM3 metamodel are read.
-    @OptionGroup var km3Options: KM3Options
+    /// How metamodels in KM3 and in grammar formats are read.
+    @OptionGroup var formatOptions: MetamodelFormatOptions
+
+    /// The level whose deep view presents each multi-level model.
+    @OptionGroup var deepViewOptions: DeepViewOptions
 
     /// The behaviours of the templates that the command line and the settings of a run select.
     ///
@@ -393,7 +397,7 @@ struct GenerateCommand: AsyncParsableCommand {
             basePath: output, options: generatorOptions, standardOutput: .capture)
         let generator = MTLGenerator(
             module: mtlModule, generationStrategy: strategy, options: mtlOptions(settings: settings),
-            serviceProviders: [parameters])
+            serviceProviders: [parameters] + inputs.services)
         parameters.bind(to: generator)
 
         do {
@@ -494,6 +498,9 @@ struct GenerateCommand: AsyncParsableCommand {
 
         /// The resource set with the registered metamodels.
         var resourceSet: ResourceSet
+
+        /// The services of the deep views that replace multi-level models, if any.
+        var services: [any AQLServiceProvider] = []
     }
 
     /// Registers the metamodels and loads the models given on the command line.
@@ -519,14 +526,19 @@ struct GenerateCommand: AsyncParsableCommand {
             }
 
             // First pass: register metamodels (--metamodel files and metamodel --model files)
-            let metamodelOptions = km3Options.ecoreLoadOptions(settings: settings)
+            let metamodelOptions = formatOptions.ecoreLoadOptions(settings: settings)
+            await MultiLevelSupport.registerFormats()
+            var metamodelModels = Set<Int>()
+            for (index, modelPath) in model.enumerated() where await MetamodelRegistration.holdsMetamodel(at: modelPath) {
+                metamodelModels.insert(index)
+            }
             for metamodelPath in metamodel {
                 try await MetamodelRegistration.registerMetamodel(
                     at: metamodelPath, into: resourceSet,
                     announcement: MetamodelRole.registeredOnly.announcement, verbose: verbose,
                     debug: debugOptions.debug, options: metamodelOptions)
             }
-            for (index, modelPath) in model.enumerated() where MetamodelRegistration.isMetamodelFile(modelPath) {
+            for (index, modelPath) in model.enumerated() where metamodelModels.contains(index) {
                 let package = try await MetamodelRegistration.registerMetamodel(
                     at: modelPath, into: resourceSet,
                     announcement: MetamodelRole.registeredAndInput.announcement, verbose: verbose,
@@ -541,22 +553,33 @@ struct GenerateCommand: AsyncParsableCommand {
             // Second pass: load instance models (files that are not metamodels)
             for (index, modelPath) in model.enumerated() {
                 let modelURL = URL(fileURLWithPath: modelPath)
-                guard !MetamodelRegistration.isMetamodelFile(modelPath) else { continue }
+                guard !metamodelModels.contains(index) else { continue }
                 guard FileManager.default.fileExists(atPath: modelPath) else {
                     throw ValidationError.fileNotFound(modelPath)
                 }
 
                 let format = try ModelFileFormat.detectedInstanceFormat(of: modelURL)
+                if format != .metadepth, MultiLevelSupport.holdsLinguisticInstances(modelURL) {
+                    await MultiLevelSupport.registerLinguisticMetamodel(in: resourceSet)
+                }
 
                 if verbose {
                     print("Loading input model \(index + 1): \(modelPath) (format: \(format.rawValue))")
                 }
 
                 let options = ModelIO.LoadOptions(requiresMetamodel: false, enableDebugging: debugOptions.debug)
-                let resource = try await ModelIO.load(
+                var resource = try await ModelIO.load(
                     url: modelURL, format: format,
                     resourceSet: format == .json ? settings.makeResourceSet() : resourceSet, options: options
                 ).resource
+                var isDeepView = false
+                if let level = deepViewOptions.level,
+                    let views = try await MultiLevelSupport.views(of: resource, level: level, in: resourceSet)
+                {
+                    resource = views.view.resource
+                    inputs.services.append(views.services)
+                    isDeepView = true
+                }
 
                 // Use filename without extension as model name
                 let modelName = modelURL.deletingPathExtension().lastPathComponent
@@ -564,7 +587,9 @@ struct GenerateCommand: AsyncParsableCommand {
                     print("  ! Model name '\(modelName)' is already in use: replacing the earlier model")
                 }
                 inputs.models[modelName] = resource
-                rootObjectsByModel[index] = await resource.getRootObjects()
+                // A deep view passes its first clabject, as a model passes its root object
+                let roots = await resource.getRootObjects()
+                rootObjectsByModel[index] = isDeepView ? Array(roots.prefix(1)) : roots
 
                 if verbose {
                     let count = await resource.count()

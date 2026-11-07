@@ -1,0 +1,13 @@
+{
+  "name": "tla",
+  "summary": "TLA+ modules and TLC configurations for the model checking of metamodels and their models",
+  "mainModule": "generate",
+  "mainTemplate": "generate",
+  "fileCountTemplate": "fileCount",
+  "modelTemplate": "generateModel",
+  "modelFileCountTemplate": "modelFileCount",
+  "imports": ["../verification"],
+  "options": {
+    "lineDelimiter": "\n"
+  }
+}

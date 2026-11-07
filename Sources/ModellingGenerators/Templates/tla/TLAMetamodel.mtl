@@ -1,0 +1,205 @@
+[comment encoding = UTF-8 /]
+[**
+ * The TLA+ module of a package.
+ *
+ * The state of the module is the object store obj, which maps the identifier of every object to a record of the values
+ * of its features. Every concrete class has a constant set of identifiers for its direct instances, and every class is
+ * the union of the sets of its concrete subclasses, which also covers classes with several supertypes. Enumerations
+ * are sets of strings, and data types that the export does not interpret are constant sets. TypeOK, Multiplicities,
+ * Opposites and Containment state the structure of the metamodel, and every translatable invariant is a definition.
+ **/]
+[module TLAMetamodel('http://www.eclipse.org/emf/2002/Ecore')/]
+[import verification::VerificationQueries/]
+[import TLANames/]
+
+[**
+ * The complete text of the module of a package.
+ **/]
+[template public metamodelModule(p : EPackage)]
+[moduleStart(p.moduleName())/]
+[p.metamodelHeader()/]
+EXTENDS Integers, FiniteSets
+[if (p.concreteClasses()->notEmpty())]
+
+\* The identifiers of the direct instances of each concrete class.
+CONSTANTS
+[p.concreteClasses()->collect(c | '    ' + idsName(c))->sep(',\n')/]
+[/if]
+
+\* The value of a single-valued feature that is absent; it identifies no object.
+CONSTANT [nullValue()/]
+[for (t : String | p.uninterpretedTypes())]
+
+\* The values of the data type [t/], which the export does not interpret.
+CONSTANT [valuesName(t)/]
+[/for]
+
+\* The object store: the record of the values of the features of every object, by identifier.
+VARIABLE [store()/]
+
+\* Each class is the set of the identifiers of its instances, including the instances of its subclasses.
+[for (c : EClass | p.classes())]
+[id(c.name)/] == [p.instanceSet(c)/]
+[/for]
+
+\* The identifiers of all objects.
+[objectSet()/] == [unionOf(p.concreteClasses()->collect(c | idsName(c)))/]
+[for (e : EEnum | p.enumerations())]
+
+\* The literals of the enumeration [e.name/].
+[id(e.name)/] == {[e.eLiterals->collect(l | literalText(e, l.name))->sep(', ')/]}
+[/for]
+
+\* Objects of different classes have different identifiers, and Null identifies no object.
+ASSUME [p.disjointIdentifiers()/]
+ASSUME [nullValue()/] \notin [objectSet()/]
+[for (c : EClass | p.concreteClasses())]
+
+\* The records of the direct instances of [c.name/], with a field for each feature.
+[recordName(c)/] == [c.recordType()/]
+[/for]
+
+\* Every object is a record of the values of the features of its class.
+TypeOK ==
+    /\ DOMAIN [store()/] = [objectSet()/]
+[for (c : EClass | p.concreteClasses())]
+    /\ \A o \in [idsName(c)/] : [objOf('o')/] \in [recordName(c)/]
+[/for]
+
+\* The bounds of the number of values of many-valued features.
+[if (p.classes()->exists(c | c.exportedFeatures()->exists(f | f.hasCardinalityBounds())))]
+Multiplicities ==
+[for (c : EClass | p.classes())]
+[for (f : EStructuralFeature | c.exportedFeatures()->select(f | f.hasCardinalityBounds()))]
+[if (f.lowerBound > 0)]
+    /\ \A o \in [id(c.name)/] : Cardinality([fieldOf('o', f)/]) >= [f.lowerBound/]
+[/if]
+[if (f.upperBound > 1)]
+    /\ \A o \in [id(c.name)/] : Cardinality([fieldOf('o', f)/]) =< [f.upperBound/]
+[/if]
+[/for]
+[/for]
+[else]
+Multiplicities == TRUE
+[/if]
+
+\* Opposite references relate the same objects in both directions.
+[if (p.classes()->exists(c | c.exportedFeatures()->exists(f | p.writesOpposite(c, f))))]
+Opposites ==
+[for (c : EClass | p.classes())]
+[for (f : EStructuralFeature | c.exportedFeatures()->select(f | p.writesOpposite(c, f)))]
+    /\ \A a \in [id(c.name)/], b \in [id(p.oppositeOwner(f).name)/] : ([f.holds('a', 'b')/]) <=> ([f.eOpposite.holds('b', 'a')/])
+[/for]
+[/for]
+[else]
+Opposites == TRUE
+[/if]
+
+\* The objects that an object contains directly.
+[if (p.containmentOwners()->isEmpty())]
+Contents(o) == {}
+[else]
+Contents(o) ==
+    UNION {
+[p.containmentTerms()->collect(t | '        ' + t)->sep(',\n')/]
+    }
+[/if]
+
+\* Every object has at most one container and does not contain itself, directly or not. Below(o, seen) is the set of
+\* the objects that o contains, directly or not, apart from those in seen.
+Containment ==
+    LET RECURSIVE Below(_, _)
+        Below(o, seen) ==
+            LET next == Contents(o) \ seen
+            IN next \cup UNION {Below(x, seen \cup next) : x \in next}
+    IN /\ \A o \in [objectSet()/] : Cardinality({c \in [objectSet()/] : o \in Contents(c)}) =< 1
+       /\ \A o \in [objectSet()/] : o \notin Below(o, {})
+[for (c : EClass | p.classes())]
+[for (n : String | p.translatedInvariants(c, target()))]
+
+\* The invariant [n/] of [c.name/]: [p.verificationInvariantBody(c, n).lines()->sep(' ')/]
+[invariantName(c, n)/] ==
+    [p.verificationFormula(c, n, target())/]
+[/for]
+[/for]
+
+\* All translated invariants.
+[if (p.classes()->exists(c | p.translatedInvariants(c, target())->notEmpty()))]
+Invariants ==
+[for (c : EClass | p.classes())]
+[for (n : String | p.translatedInvariants(c, target()))]
+    /\ [invariantName(c, n)/]
+[/for]
+[/for]
+[else]
+Invariants == TRUE
+[/if]
+
+\* The structure of the metamodel.
+WellFormed == [structuralInvariants()->sep(' /\\ ')/]
+
+[moduleEnd()/]
+[/template]
+
+[**
+ * The comment that opens the module of a package, listing what the module does not express.
+ **/]
+[template public metamodelHeader(p : EPackage)]
+\* TLA+ module of the Ecore package [p.name/] ([p.nsURI/]).
+\*
+\* The variable obj is the object store: it maps the identifier of every object to a record of the values of its
+\* features. Each concrete class has a constant set of identifiers for its direct instances, and each class is the set
+\* of the identifiers of all its instances. TypeOK, Multiplicities, Opposites and Containment state the structure of
+\* the metamodel, and WellFormed combines them; each translated invariant is a definition, and Invariants combines them.
+\*
+\* SANY parses the module, but TLC cannot check it by itself: its sets of identifiers are constants, and Int and STRING
+\* are infinite. The module of a model extends it and has the model as its only state, and its configuration fixes the
+\* constants, so that TLC checks the model. The export is structural: the store never changes, and behavioural models
+\* such as state machines are outside its scope.
+\*
+\* Not exported:
+[if (p.omittedOperations()->notEmpty())]
+\*  - operations: [p.omittedOperations()->sep(', ')/]
+[/if]
+[if (p.omittedFeatures()->notEmpty())]
+\*  - derived and volatile features: [p.omittedFeatures()->sep(', ')/]
+[/if]
+\*  - the order and repetition of the values of many-valued features: fields are sets
+[if (p.uninterpretedTypes()->notEmpty())]
+\*  - the structure of values of the data types [p.uninterpretedTypes()->sep(', ')/]: they are uninterpreted constants
+[/if]
+[if (p.eSubpackages->notEmpty())]
+\*  - nested packages: [p.eSubpackages->collect(s | s.name)->sep(', ')/]
+[/if]
+[if (p.untranslatedInvariants(target())->notEmpty())]
+\*  - invariants outside the translatable subset of OCL:
+[for (u : String | p.untranslatedInvariants(target()))]
+\*    - [u/]
+[/for]
+[/if]
+\*
+\* An absent single value is Null. Integers are unbounded, and strings only support equality. An invariant that
+\* navigates through an absent value does not hold, as in OCL.
+[/template]
+
+[**
+ * The set of the identifiers of the instances of a class: the union of the sets of its concrete conforming classes.
+ **/]
+[query public instanceSet(p : EPackage, c : EClass) : String = unionOf(p.concreteConforming(c)->collect(x | idsName(x)))/]
+
+[**
+ * The formula that the sets of identifiers of the concrete classes of a package are pairwise disjoint.
+ **/]
+[query public disjointIdentifiers(p : EPackage) : String = 'LET ids == <<' + p.concreteClasses()->collect(c | idsName(c))->sep(', ') + '>>\n       IN \\A i, j \\in DOMAIN ids : i # j => ids[i] \\cap ids[j] = {}'/]
+
+[**
+ * The set of the records of the direct instances of a class, with a field for each exported feature, inherited
+ * features first; a class without features has the empty record only.
+ **/]
+[query public recordType(c : EClass) : String = if c.allExportedFeatures()->isEmpty() then '{<<>>}' else c.allExportedFeatures()->collect(f | '    ' + fieldName(f) + ': ' + f.fieldType())->sep('[\n', ',\n', '\n]') endif/]
+
+[**
+ * The terms of the union of the contents of an object o: for each containment reference, the set of its values if o
+ * is an instance of the class that declares it.
+ **/]
+[query public containmentTerms(p : EPackage) : Sequence(String) = p.containmentOwners()->collect(c | c.exportedFeatures()->select(f | f.isContainmentReference())->collect(f | 'IF o \\in ' + id(c.name) + ' THEN ' + f.valueSet('o') + ' ELSE {}'))->flatten()/]

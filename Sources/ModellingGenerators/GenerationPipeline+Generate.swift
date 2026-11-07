@@ -69,12 +69,13 @@ extension GenerationPipeline {
             GenModelServices(context: context), TemplateDataServices(roots: data.roots),
             OutputLayoutServices(
                 includesSourceRoot: includesSourceRoot(descriptor: templateSet.descriptor, options: options)),
+            VerificationServices(),
         ]
         var models: [String: Resource] = [TemplateSetConstants.genModelAlias: document.resource]
         models.merge(data.models) { _, data in data }
         for (index, package) in document.foreignPackages.sorted(by: { $0.key.path < $1.key.path }).enumerated() {
             if let resource = await resourceSet.getResource(uri: package.key.absoluteString) {
-                models["ECORE_\(index)"] = resource
+                models[TemplateSetConstants.ecoreModelAliasPrefix + String(index)] = resource
             }
         }
         let total = try await TemplateRun.expectedFileCount(

@@ -1,0 +1,253 @@
+[comment encoding = UTF-8 /]
+[**
+ * The Event-B context and machine of a package.
+ *
+ * The context declares the carrier set of all objects, carrier sets for enumerations, partitioned by their literals,
+ * and carrier sets for strings and for the data types that the export does not interpret, whose values only support
+ * equality.
+ *
+ * The machine sees the context. Its variables are the population of every class, a subset of the objects, and every
+ * exported feature, a relation from the population of its class. Its invariants place every class within its
+ * supertypes, make an abstract class or interface the union of its direct subclasses, separate classes that cannot
+ * share objects, state the types and multiplicities of the features, opposite references as converse relations, that
+ * every object has at most one container and is not contained in itself, and every translated invariant of the
+ * classes. Its initialisation chooses populations and values that satisfy all invariants at once, so that its
+ * feasibility proof obligation is the consistency of the metamodel.
+ **/]
+[module EventBMetamodel('http://www.eclipse.org/emf/2002/Ecore')/]
+[import verification::VerificationQueries/]
+[import EventBNames/]
+
+[**
+ * The complete text of the context of a package.
+ **/]
+[template public metamodelContext(p : EPackage)]
+[p.contextHeader()/]
+context [p.contextName()/]
+sets
+  [objectSet()/]
+[if (p.hasStrings())]
+  [stringSet()/]
+[/if]
+[for (e : EEnum | p.enumerations())]
+  [id(e.name)/]
+[/for]
+[for (t : String | p.uninterpretedTypes())]
+  [id(t)/]
+[/for]
+[if (p.contextConstants()->notEmpty())]
+constants
+[for (k : String | p.contextConstants())]
+  [k/]
+[/for]
+[/if]
+axioms
+  @[objectSet()/]_finite: finite([objectSet()/])
+[for (e : EEnum | p.enumerations())]
+  @[id(e.name)/]_literals: partition([id(e.name)/], [e.eLiterals->collect(l | '{' + literalId(e, l.name) + '}')->sep(', ')/])
+[/for]
+end
+[/template]
+
+[**
+ * The comment that opens the context of a package, listing what the context does not express.
+ **/]
+[template public contextHeader(p : EPackage)]
+/*
+ * Event-B context of the Ecore package [p.name/] ([p.nsURI/]), in CamilleX notation.
+ *
+ * Rodin compiles this file into the context [p.contextName()/] once it is in an Event-B project with the CamilleX
+ * plug-in installed.
+ *
+ * The carrier set [objectSet()/] holds all objects that can exist, and enumerations are carrier sets partitioned by
+ * their literals. The machine [p.machineName()/] sees this context and declares the population of every class and
+ * every feature as variables, since objects come and go.
+ *
+ * Not exported:
+[if (p.omittedOperations()->notEmpty())]
+ *  - operations: [p.omittedOperations()->sep(', ')/]
+[/if]
+[if (p.omittedFeatures()->notEmpty())]
+ *  - derived and volatile features: [p.omittedFeatures()->sep(', ')/]
+[/if]
+ *  - the order and repetition of the values of many-valued features: features are relations
+[if (p.hasStrings())]
+ *  - the structure of strings: they are elements of the carrier set [stringSet()/] that only support equality
+[/if]
+[if (p.uninterpretedTypes()->notEmpty())]
+ *  - the structure of values of the data types [p.uninterpretedTypes()->sep(', ')/]: they are elements of carrier sets
+[/if]
+[if (p.eSubpackages->notEmpty())]
+ *  - nested packages: [p.eSubpackages->collect(s | s.name)->sep(', ')/]
+[/if]
+ *
+ * Integers are mathematical integers without bounds. Event-B carrier sets are not empty, so there is at least one
+ * possible object, which need not belong to any class.
+ */
+[/template]
+
+[**
+ * The complete text of the machine of a package.
+ **/]
+[template public metamodelMachine(p : EPackage)]
+[p.machineHeader()/]
+machine [p.machineName()/]
+sees [p.contextName()/]
+[p.machineBody()/]
+events
+  event INITIALISATION
+[if (p.variableIds()->notEmpty())]
+  then
+    @init: [p.variableIds()->sep(', ')/] :∣
+      [p.machineInvariants(true)->collect(s | conjunct(s))->sep(' ∧\n')/]
+[/if]
+  end
+end
+[/template]
+
+[**
+ * The comment that opens the machine of a package, listing the invariants that the machine does not express.
+ **/]
+[template public machineHeader(p : EPackage)]
+/*
+ * Event-B machine of the Ecore package [p.name/] ([p.nsURI/]), in CamilleX notation.
+ *
+ * Rodin compiles this file into the machine [p.machineName()/] once it is in an Event-B project with the CamilleX
+ * plug-in installed, beside the file of the context [p.contextName()/].
+ *
+ * The variables are the population of every class and every feature. The invariants place every class within its
+ * supertypes, make an abstract class or interface the union of its direct subclasses, separate classes that cannot
+ * share objects, and state the types and multiplicities of the features, opposite references as converse relations,
+ * that every object has at most one container and is not contained in itself, and every translated invariant,
+ * labelled with its class and name and commented with its OCL text. The INITIALISATION chooses any populations and
+ * values that satisfy all invariants, so its invariant proof obligations hold trivially, and its feasibility proof
+ * obligation INITIALISATION/init/FIS states that the metamodel is consistent: some instance satisfies all invariants.
+ * The empty instance does unless an invariant requires objects, so a stronger check adds such a requirement, for
+ * example in a refinement, or animates the machine.
+ *
+ * Features that cannot change are variables too, since their domain is the population of their class; events that a
+ * refinement adds must keep their values for existing objects.
+[if (p.untranslatedInvariants(target())->notEmpty())]
+ *
+ * Not exported:
+ *  - invariants outside the translatable subset of OCL:
+[for (u : String | p.untranslatedInvariants(target()))]
+ *    - [u/]
+[/for]
+[/if]
+ */
+[/template]
+
+[**
+ * The variables and invariants of the machine of a package, which the machines of its models share.
+ **/]
+[template public machineBody(p : EPackage)]
+[if (p.variableIds()->notEmpty())]
+variables
+[for (v : String | p.variableIds())]
+  [v/]
+[/for]
+[/if]
+[let labels : Sequence(String) = p.invariantLabels()]
+[if (labels->notEmpty())]
+[let predicates : Sequence(String) = p.machineInvariants(false)]
+[let comments : Sequence(String) = p.invariantComments()]
+invariants
+[for (l : String | labels)]
+  [comments->at(labels->indexOf(l))/]@[l/]: [predicates->at(labels->indexOf(l))/]
+[/for]
+[/let]
+[/let]
+[/if]
+[/let]
+[/template]
+
+[comment Context queries /]
+
+[**
+ * Whether a package has features whose values are strings.
+ **/]
+[query public hasStrings(p : EPackage) : Boolean = p.classes()->exists(c | c.exportedFeatures()->exists(f | f.valueKind() = 'string'))/]
+
+[**
+ * The names of the data types of exported features that the export does not interpret.
+ **/]
+[query public uninterpretedTypes(p : EPackage) : Sequence(String) = p.classes()->collect(c | c.exportedFeatures())->flatten()->select(f | f.valueKind() = 'uninterpreted')->collect(f | f.eType.name)->asOrderedSet()->asSequence()/]
+
+[**
+ * The constants of the context of a package: the literals of its enumerations.
+ **/]
+[query public contextConstants(p : EPackage) : Sequence(String) = p.enumerations()->collect(e | e.eLiterals->collect(l | literalId(e, l.name)))->flatten()/]
+
+[**
+ * The sets that the population of a class is a subset of: the intersection of the populations of its supertypes, or
+ * the set of all objects.
+ **/]
+[query public supersets(c : EClass, primed : Boolean) : String = if c.eSuperTypes->isEmpty() then objectSet() else c.eSuperTypes->collect(s | id(s.name) + prime(primed))->sep(' ∩ ') endif/]
+
+[**
+ * The union of the populations of the direct subclasses of a class, or the empty set if it has none.
+ **/]
+[query public subclassUnion(p : EPackage, c : EClass, primed : Boolean) : String = if p.directSubclasses(c)->isEmpty() then '∅' else p.directSubclasses(c)->collect(x | id(x.name) + prime(primed))->sep(' ∪ ') endif/]
+
+[**
+ * The labels of the invariants on the populations of the classes of a package, in the order of classPredicates.
+ **/]
+[query public classLabels(p : EPackage) : Sequence(String) = p.classes()->collect(c | id(c.name) + '_type')->concat(p.classes()->reject(c | c.isConcrete())->collect(c | id(c.name) + '_abstract'))->concat(p.disjointPairs()->collect(pair | id(pair.tokenize(' ')->first()) + '_' + id(pair.tokenize(' ')->last()) + '_disjoint'))/]
+
+[**
+ * The invariants on the populations of the classes of a package: every class is within its supertypes, an abstract
+ * class or interface is the union of its direct subclasses, and classes that cannot share objects are disjoint.
+ **/]
+[query public classPredicates(p : EPackage, primed : Boolean) : Sequence(String) = p.classes()->collect(c | c.classRef(primed) + ' ⊆ ' + c.supersets(primed))->concat(p.classes()->reject(c | c.isConcrete())->collect(c | c.classRef(primed) + ' = ' + p.subclassUnion(c, primed)))->concat(p.disjointPairs()->collect(pair | id(pair.tokenize(' ')->first()) + prime(primed) + ' ∩ ' + id(pair.tokenize(' ')->last()) + prime(primed) + ' = ∅'))/]
+
+[**
+ * The pairs of classes whose disjointness the context states, as text such as 'Library Named': the root classes and
+ * the direct subclasses of each class that cannot share objects. The disjointness of other classes follows from these.
+ **/]
+[query public disjointPairs(p : EPackage) : Sequence(String) = p.disjointPairsAmong(p.rootClasses())->concat(p.classes()->collect(c | p.disjointPairsAmong(p.directSubclasses(c)))->flatten())->asOrderedSet()->asSequence()/]
+
+[**
+ * The pairs of classes of a sequence that cannot share objects, each pair in the order of the sequence.
+ **/]
+[query public disjointPairsAmong(p : EPackage, cs : Sequence(EClass)) : Sequence(String) = cs->collect(a | cs->select(b | cs->indexOf(b) > cs->indexOf(a) and not p.canOverlap(a, b))->collect(b | a.name + ' ' + b.name))->flatten()/]
+
+[comment Machine queries /]
+
+[**
+ * The labels of the invariants of the machine of a package, in the order of machineInvariants.
+ **/]
+[query public invariantLabels(p : EPackage) : Sequence(String) = p.classLabels()->concat(p.classes()->collect(c | c.variableFeatures()->collect(f | c.featureLabels(f))->flatten())->flatten()->concat(p.oppositeFeatures()->collect(f | p.oppositeDeclarer(f).featureId(f) + '_opposite'))->concat(if p.containmentRefs(false)->isEmpty() then Sequence{} else Sequence{'containment_single_container', 'containment_acyclic'} endif)->concat(p.classes()->collect(c | p.translatedInvariants(c, target())->collect(n | invariantIdentifier(c, n)))->flatten()))/]
+
+[**
+ * The invariants of the machine of a package: the types and bounds of the variables, the opposite references, the
+ * containment and the translated invariants. In the predicate of an initialisation, the variables are primed.
+ **/]
+[query public machineInvariants(p : EPackage, primed : Boolean) : Sequence(String) = p.classPredicates(primed)->concat(p.classes()->collect(c | c.variableFeatures()->collect(f | c.featurePredicates(f, primed))->flatten())->flatten()->concat(p.oppositeFeatures()->collect(f | p.oppositeDeclarer(f).featureRef(f, primed) + ' = ' + p.oppositeOwner(f).featureRef(f.eOpposite, primed) + '∼'))->concat(p.containmentPredicates(primed))->concat(p.classes()->collect(c | p.translatedInvariants(c, target())->collect(n | p.verificationFormula(c, n, target(), primed)))->flatten()))/]
+
+[**
+ * The comments of the invariants of the machine of a package, in the order of machineInvariants: the OCL text of each
+ * translated invariant as a CamilleX comment followed by a space, and nothing for the others.
+ **/]
+[query public invariantComments(p : EPackage) : Sequence(String) = p.classLabels()->collect(l | '')->concat(p.classes()->collect(c | c.variableFeatures()->collect(f | c.featureLabels(f)->collect(l | '')))->flatten()->concat(p.oppositeFeatures()->collect(f | ''))->concat(p.containmentPredicates(false)->collect(s | ''))->concat(p.classes()->collect(c | p.translatedInvariants(c, target())->collect(n | p.verificationInvariantBody(c, n).verificationString(target()) + ' '))->flatten()))/]
+
+[**
+ * The exported references of a package that write a pair of opposite references, each pair once.
+ **/]
+[query public oppositeFeatures(p : EPackage) : Sequence(EStructuralFeature) = p.classes()->collect(c | c.exportedFeatures()->select(f | p.writesOpposite(c, f) and f.eOpposite.isExported()))->flatten()/]
+
+[**
+ * The class of a package that declares a feature.
+ **/]
+[query public oppositeDeclarer(p : EPackage, f : EStructuralFeature) : OclAny = p.classes()->select(c | c.exportedFeatures()->includes(f))->first()/]
+
+[**
+ * The containment references of a package as they appear in a formula.
+ **/]
+[query public containmentRefs(p : EPackage, primed : Boolean) : Sequence(String) = p.containmentOwners()->collect(c | c.exportedFeatures()->select(f | f.isContainmentReference())->collect(f | c.featureRef(f, primed)))->flatten()/]
+
+[**
+ * The predicates that state that every object has at most one container and is not contained in itself, directly or
+ * indirectly: no non-empty set of objects is contained in itself.
+ **/]
+[query public containmentPredicates(p : EPackage, primed : Boolean) : Sequence(String) = let contents : String = '(' + p.containmentRefs(primed)->sep(' ∪ ') + ')' in if p.containmentRefs(primed)->isEmpty() then Sequence{} else Sequence{contents + '∼ ∈ ' + objectSet() + ' ⇸ ' + objectSet(), '∀s·s ⊆ ' + objectSet() + ' ∧ s ⊆ ' + contents + '[s] ⇒ s = ∅'} endif/]

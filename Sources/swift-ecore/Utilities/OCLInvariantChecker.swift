@@ -9,6 +9,7 @@ import ECore
 import EMFBase
 import Foundation
 import ModellingGenerators
+import OCL
 
 /// An OCL invariant that a metamodel declares for a class.
 struct OCLInvariant: Sendable, Equatable {
@@ -68,6 +69,10 @@ struct ConstraintCheck: Codable, Sendable, Equatable {
 
         /// The invariant cannot be parsed or evaluated.
         case failed
+
+        /// The invariant uses an OCL construct that has no counterpart in AQL, so it is not
+        /// evaluated.
+        case untranslated
     }
 
     /// The name of the invariant.
@@ -91,9 +96,14 @@ struct ConstraintCheck: Codable, Sendable, Equatable {
 
 /// Evaluates the OCL invariants of a metamodel for every object of a model.
 ///
-/// Invariants are written in the subset of OCL that the AQL evaluator shares with OCL, including
-/// implicit iterators such as `accounts->isUnique(accountNumber)` and enumeration literals such
-/// as `AccountType::SAVINGS`. OCL's `String::indexOf`, which AQL does not offer, is added.
+/// Each invariant, whether the metamodel declares it or a Complete OCL document adds it, is
+/// translated from OCL into AQL by `OCLToAQLTranslator`, which rewrites the constructs whose
+/// meaning differs between the two languages, such as an explicit `self` inside an iteration,
+/// the division of two integers and two-segment enumeration literals such as
+/// `AccountType::SAVINGS`, and the AQL evaluator checks the translation. An invariant that uses
+/// a construct without a counterpart in AQL, such as `iterate`, is reported as
+/// ``ConstraintCheck/Outcome/untranslated`` instead of being evaluated. Text that is not OCL is
+/// evaluated as AQL, as before. OCL's `String::indexOf`, which AQL does not offer, is added.
 @MainActor
 struct OCLInvariantChecker {
     /// The model to check.
@@ -119,6 +129,7 @@ struct OCLInvariantChecker {
         }.filter { !$0.1.isEmpty }
         guard !pending.isEmpty else { return [] }
         let context = await makeContext()
+        let translator = OCLToAQLTranslator(packages: document.describingPackages)
         let progress = GenerationProgressBar(verbose: false)
         var parsed: [String: Result<any AQLExpression, ParseFailure>] = [:]
         var checks: [ConstraintCheck] = []
@@ -126,7 +137,7 @@ struct OCLInvariantChecker {
             progress.show(GenerationProgressUpdate(message: OCLVocabulary.progressMessage, completed: index, total: pending.count))
             for invariant in invariants {
                 let key = invariant.context + "." + invariant.name
-                let expression = parsed[key] ?? Self.parse(invariant.expression)
+                let expression = parsed[key] ?? Self.parse(invariant.expression, translator: translator)
                 parsed[key] = expression
                 checks.append(await evaluate(invariant, expression, for: entry, in: context))
             }
@@ -135,13 +146,39 @@ struct OCLInvariantChecker {
         return checks
     }
 
-    /// Why an expression could not be parsed.
+    /// Why an expression could not be parsed or translated.
     struct ParseFailure: Error {
-        /// The message of the parser.
+        /// The message of the parser or the translator.
         let message: String
+
+        /// Whether the expression is OCL that has no translation into AQL, rather than text
+        /// that cannot be parsed.
+        var isUntranslatable = false
     }
 
-    /// Parses the expression of an invariant.
+    /// Translates the OCL expression of an invariant into AQL and parses the translation.
+    ///
+    /// An expression that is not valid OCL is parsed as AQL, as it was before invariants were
+    /// translated, so that invariants written in AQL keep working.
+    ///
+    /// - Parameters:
+    ///   - source: The OCL text of the invariant.
+    ///   - translator: The translator, which knows the packages of the metamodels.
+    /// - Returns: The parsed AQL expression, or why there is none.
+    static func parse(_ source: String, translator: OCLToAQLTranslator) -> Result<any AQLExpression, ParseFailure> {
+        let translation = translator.translate(source)
+        if let aql = translation.aql, case .success(let expression) = parse(aql) {
+            return .success(expression)
+        }
+        let untranslatable = translation.diagnostics.filter { $0.code == OCLDiagnosticCode.untranslatable }
+        guard untranslatable.isEmpty else {
+            return .failure(
+                ParseFailure(message: untranslatable.map(\.message).joined(separator: "; "), isUntranslatable: true))
+        }
+        return parse(source)
+    }
+
+    /// Parses an AQL expression.
     private static func parse(_ source: String) -> Result<any AQLExpression, ParseFailure> {
         let result = AQLParser().parse(source)
         guard let expression = result.expression, result.diagnostics.allSatisfy({ $0.severity != .error }) else {
@@ -170,6 +207,7 @@ struct OCLInvariantChecker {
             location: entry.location, outcome: .failed)
         switch expression {
         case .failure(let failure):
+            if failure.isUntranslatable { check.outcome = .untranslated }
             check.detail = failure.message
         case .success(let expression):
             context.setVariable(OCLVocabulary.selfVariable, value: entry.object)

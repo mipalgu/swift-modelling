@@ -1,0 +1,96 @@
+[comment encoding = UTF-8 /]
+[**
+ * The Alloy module of a model.
+ *
+ * The module opens the module of the package of the model and declares an atom for every object of the model. A fact
+ * fixes the objects of every signature and the values of every feature, so that the model is the only instance. The
+ * command 'conforms' has an instance exactly if the model satisfies the structure of the metamodel, and each 'check'
+ * finds no counterexample exactly if the model satisfies one invariant.
+ **/]
+[module AlloyModel('http://www.eclipse.org/emf/2002/Ecore')/]
+[import verification::VerificationQueries/]
+[import AlloyNames/]
+
+[**
+ * The complete text of the module of a model.
+ **/]
+[template public modelModule(p : EPackage, root : EObject, name : String)]
+[let objects : Sequence(EObject) = root.modelObjects()]
+/*
+ * Alloy 6 module of a model of the Ecore package [p.name/] ([p.nsURI/]).
+ *
+ * Every object of the model is an atom, and the fact 'Model' fixes the objects of every signature and the values of
+ * every feature. The command 'conforms' has an instance exactly if the model satisfies the multiplicities, opposite
+ * references and containment of the metamodel; each 'check' reports no counterexample exactly if the model satisfies
+ * the invariant. Values of uninterpreted data types are not fixed.
+ */
+module [name/]
+
+open [p.moduleName()/]
+open util/boolean
+[for (c : EClass | p.classes()->select(c | c.isConcrete()))]
+[let atoms : Sequence(EObject) = objects->select(o | o.eClass().name = c.name)]
+[if (atoms->notEmpty())]
+
+one sig [atoms->collect(o | atom(objects, o))->sep(', ')/] extends [id(c.name)/] {}
+[/if]
+[/let]
+[/for]
+
+/** The objects and values of the model. */
+fact Model {
+  [objectSignature()/] = [objects->collect(o | atom(objects, o))->sep(' + ')/]
+[for (c : EClass | p.classes()->select(c | p.isSubsetSignature(c)))]
+  [p.extent(objects, c)/]
+[/for]
+[for (o : EObject | objects)]
+[for (f : EStructuralFeature | p.classOf(o).allExportedFeatures())]
+  [p.valueFact(objects, o, f)/]
+[/for]
+[/for]
+}
+
+/** The model satisfies the structure of the metamodel exactly if this command has an instance. */
+run conforms {} for [p.modelScope(objects)/]
+[for (c : EClass | p.classes())]
+[for (n : String | p.translatedInvariants(c, target()))]
+
+assert [invariantIdentifier(c, n)/]_satisfied {
+  [invariantIdentifier(c, n)/]
+}
+check [invariantIdentifier(c, n)/]_satisfied for [p.modelScope(objects)/]
+[/for]
+[/for]
+[/let]
+[/template]
+
+[**
+ * The atom of an object: the name of its class followed by its position in the model.
+ **/]
+[query public atom(objects : Sequence(EObject), o : EObject) : String = id(o.eClass().name + objects->indexOf(o).toString())/]
+
+[**
+ * The fact that fixes the objects of a subset signature.
+ **/]
+[query public extent(p : EPackage, objects : Sequence(EObject), c : EClass) : String = let members : Sequence(EObject) = objects->select(o | p.classOf(o).conformsTo(c)) in if members->isEmpty() then 'no ' + id(c.name) else id(c.name) + ' = ' + members->collect(o | atom(objects, o))->sep(' + ') endif/]
+
+[**
+ * The fact that fixes the values of a feature of an object.
+ **/]
+[query public valueFact(p : EPackage, objects : Sequence(EObject), o : EObject, f : EStructuralFeature) : String = if f.valueKind() = 'uninterpreted' then '-- ' + atom(objects, o) + '.' + id(f.name) + ' is not fixed: values of ' + f.eType.name + ' are uninterpreted' else (let values : Sequence(OclAny) = o.valuesOf(f) in if values->isEmpty() then 'no ' + atom(objects, o) + '.' + id(f.name) else atom(objects, o) + '.' + id(f.name) + ' = ' + values->collect(v | p.valueText(objects, f, v))->sep(' + ') endif) endif/]
+
+[**
+ * The Alloy text of a value of a feature.
+ **/]
+[query public valueText(p : EPackage, objects : Sequence(EObject), f : EStructuralFeature, v : OclAny) : String = if f.valueKind() = 'object' then atom(objects, v) else if f.valueKind() = 'integer' then (if v < 0 then 'minus[0, ' + (0 - v).toString() + ']' else v.toString() endif) else if f.valueKind() = 'boolean' then (if v then 'True' else 'False' endif) else if f.valueKind() = 'string' then v.toString().verificationString(target()) else literalId(f.eType, f.eType.eLiterals->select(l | l.name = v.toString() or l.literal = v.toString())->first().name) endif endif endif endif/]
+
+[**
+ * The scope of the commands of a model module: enough atoms for every object, and an integer bit width that represents
+ * every integer of the model and the number of objects.
+ **/]
+[query public modelScope(p : EPackage, objects : Sequence(EObject)) : String = objects->size().toString() + ' but ' + bitWidthFor(p.largestInteger(objects)).toString() + ' Int'/]
+
+[**
+ * The largest magnitude of an integer in a model, at least the number of its objects.
+ **/]
+[query public largestInteger(p : EPackage, objects : Sequence(EObject)) : Integer = Sequence{objects->size()}->union(objects->collect(o | p.classOf(o).allExportedFeatures()->select(f | f.valueKind() = 'integer')->collect(f | o.valuesOf(f)))->flatten()->collect(v | v.abs()))->sortedBy(x | x)->last()/]

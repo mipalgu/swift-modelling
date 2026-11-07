@@ -12,6 +12,8 @@ Generator models and code generation for the Swift modelling toolchain.
 
 A template set is a directory of Model-to-Text templates and data files; the engines, the generator model and the language-neutral services are the only Swift involved. Adding a language means adding a directory, never changing Swift. See <doc:TemplateSets> for the layout, <doc:JavaGeneration> for the Java set, <doc:SwiftGeneration> for the Swift set, <doc:CGeneration> for the C set and <doc:CppGeneration> for the C++ set.
 
+The verification sets, `alloy`, `tla`, `eventb` and `lean`, export a metamodel with its OCL invariants to a formal method, and ``GenerationPipeline/generate(modelURL:metamodelURL:language:outputDirectory:options:progress:)`` exports models of it as well, so that the tools of the method check that a model conforms. See <doc:VerificationExports>.
+
 ```swift
 let result = try await GenerationPipeline.generate(
     genModelURL: URL(fileURLWithPath: "model/library.genmodel"),
@@ -33,6 +35,7 @@ print(result.files.count)
 - <doc:SwiftGeneration>
 - <doc:CGeneration>
 - <doc:CppGeneration>
+- <doc:VerificationExports>
 
 ### Importing Ecore models
 
@@ -61,3 +64,10 @@ print(result.files.count)
 - ``GenModelServices``
 - ``GenModelServiceName``
 - ``TemplateDataServices``
+
+### Verification exports
+
+- ``VerificationTarget``
+- ``VerificationServices``
+- ``VerificationServiceName``
+- ``VerificationKindName``

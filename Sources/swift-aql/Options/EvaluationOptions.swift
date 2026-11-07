@@ -33,8 +33,11 @@ struct EvaluationOptions: ParsableArguments, Sendable {
     /// The metamodels of the models.
     @OptionGroup var metamodelOptions: MetamodelOptions
 
-    /// How the data types of a KM3 metamodel are read.
-    @OptionGroup var km3Options: KM3Options
+    /// How metamodels in KM3 and in grammar formats are read.
+    @OptionGroup var formatOptions: MetamodelFormatOptions
+
+    /// The level whose deep view presents each multi-level model.
+    @OptionGroup var deepViewOptions: DeepViewOptions
 
     /// How expressions read features that a model does not set.
     @OptionGroup(title: "Evaluation")

@@ -89,6 +89,21 @@ public enum GenerationError: Error, Sendable, Equatable, CustomStringConvertible
     /// styles that the template set offers.
     case unknownCodeStyle(String, String, [String])
 
+    /// The model to export does not exist.
+    ///
+    /// The associated value is the path of the model.
+    case modelNotFound(String)
+
+    /// The model to export cannot be read.
+    ///
+    /// The first associated value is the path of the model, the second the cause.
+    case modelUnreadable(String, String)
+
+    /// The template set cannot export models, because its descriptor names no model template.
+    ///
+    /// The associated value is the language of the template set.
+    case noModelTemplate(String)
+
     /// A description of the error for display to the user.
     public var errorDescription: String? { description }
 
@@ -130,6 +145,12 @@ public enum GenerationError: Error, Sendable, Equatable, CustomStringConvertible
         case .unknownCodeStyle(let style, let language, let available):
             let known = available.isEmpty ? "none" : available.joined(separator: ", ")
             return "The template set '\(language)' has no code style '\(style)'; available code styles: \(known)"
+        case .modelNotFound(let path):
+            return "The model '\(path)' does not exist"
+        case .modelUnreadable(let path, let cause):
+            return "The model '\(path)' cannot be read: \(cause)"
+        case .noModelTemplate(let language):
+            return "The template set '\(language)' cannot export models"
         }
     }
 }

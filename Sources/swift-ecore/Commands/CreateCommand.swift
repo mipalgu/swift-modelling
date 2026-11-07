@@ -29,8 +29,8 @@ struct CreateCommand: AsyncParsableCommand {
     /// The metamodels that define the root class.
     @OptionGroup var metamodelOptions: MetamodelOptions
 
-    /// How the data types of a KM3 metamodel are read.
-    @OptionGroup var km3Options: KM3Options
+    /// How metamodels in KM3 and in grammar formats are read.
+    @OptionGroup var formatOptions: MetamodelFormatOptions
 
     /// The name of the class of the root object.
     @Option(help: "The class of the root object")
@@ -41,7 +41,7 @@ struct CreateCommand: AsyncParsableCommand {
     var output: String
 
     /// The output format override.
-    @Option(help: "Output format (xmi, json) - infer from extension if not specified")
+    @Option(help: "Output format (\(ConvertCommand.modelFormatNames)) - infer from extension if not specified")
     var outputFormat: String?
 
     /// Whether an existing file is replaced.
@@ -71,11 +71,11 @@ struct CreateCommand: AsyncParsableCommand {
             throw CreationError.outputExists(output)
         }
         let formatName = outputFormat ?? url.pathExtension
-        guard let format = ModelFormat(fileExtension: formatName), format != .ecore else {
+        guard let format = ModelFormat(fileExtension: formatName), ConvertCommand.modelFormats.contains(format) else {
             throw CreationError.unsupportedFormat(formatName)
         }
         let resourceSet =
-            try await metamodelOptions.resourceSet(verbose: verbose, options: km3Options.ecoreLoadOptions) ?? ResourceSet()
+            try await metamodelOptions.resourceSet(verbose: verbose, options: formatOptions.ecoreLoadOptions) ?? ResourceSet()
         let catalogue = MetamodelCatalogue(roots: await ModelDocument.registeredMetamodels(of: resourceSet))
         guard let eClass = catalogue.classes.first(where: { $0.name == rootClass }) else {
             let concrete = catalogue.classes.filter { !$0.isAbstract && !$0.isInterface }.map(\.name)

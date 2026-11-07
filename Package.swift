@@ -94,6 +94,9 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "ECore", package: "swift-ecore"),
                 .product(name: "EMFBase", package: "swift-ecore"),
+                .product(name: "MultiLevel", package: "swift-ecore"),
+                .product(name: "AQL", package: "swift-aql"),
+                .product(name: "AQLMultiLevel", package: "swift-aql"),
                 .product(name: "MTL", package: "swift-mtl"),
                 .product(name: "ATL", package: "swift-atl"),
                 "ModellingGenerators",
@@ -107,6 +110,10 @@ let package = Package(
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "ECore", package: "swift-ecore"),
+                .product(name: "OCL", package: "swift-ecore"),
+                .product(name: "MultiLevel", package: "swift-ecore"),
+                .product(name: "AQL", package: "swift-aql"),
+                .product(name: "AQLMultiLevel", package: "swift-aql"),
                 "ModellingGenerators",
                 "ModellingCommandLine",
             ],
@@ -132,6 +139,9 @@ let package = Package(
             name: "swift-mtl",
             dependencies: [
                 .product(name: "MTL", package: "swift-mtl"),
+                .product(name: "MultiLevel", package: "swift-ecore"),
+                .product(name: "AQL", package: "swift-aql"),
+                .product(name: "AQLMultiLevel", package: "swift-aql"),
                 "ModellingGenerators",
                 "ModellingPipeline",
                 "ModellingCommandLine",
@@ -147,6 +157,8 @@ let package = Package(
             name: "swift-aql",
             dependencies: [
                 .product(name: "AQL", package: "swift-aql"),
+                .product(name: "AQLMultiLevel", package: "swift-aql"),
+                .product(name: "MultiLevel", package: "swift-ecore"),
                 .product(name: "ECore", package: "swift-ecore"),
                 .product(name: "EMFBase", package: "swift-ecore"),
                 "ModellingCommandLine",
@@ -189,6 +201,7 @@ let package = Package(
             name: "ModellingCommandLineTests",
             dependencies: [
                 "ModellingCommandLine",
+                .product(name: "MultiLevel", package: "swift-ecore"),
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "ECore", package: "swift-ecore"),
                 .product(name: "EMFBase", package: "swift-ecore"),

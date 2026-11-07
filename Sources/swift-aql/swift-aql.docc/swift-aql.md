@@ -51,8 +51,10 @@ swift-aql query <file> --query-file <file.aql> [options]
 ### Options of both commands
 
 - `--context <id-or-name>` - The object to bind to `self` (see below)
-- `-m, --metamodel <file.ecore>` - An Ecore, JSON or KM3 metamodel of the models (repeatable); without it, the metamodels beside the models are found automatically
+- `-m, --metamodel <file.ecore>` - A metamodel of the models in any metamodel format, such as Ecore, JSON, KM3 or EMOF (repeatable); without it, the metamodels beside the models are found automatically
 - `--km3-primitives <ecore|declared>` - Whether the data types that a KM3 metamodel declares, such as `String` or `Integer`, are the built-in Ecore data types of the same meaning (`ecore`, the default) or data types of their own package (`declared`); the `km3-primitives` key of the configuration file chooses it too
+- `--package-name <name>`, `--ns-uri <uri>`, `--ns-prefix <prefix>`, `--asdl-enumerations <all-nullary|never>`, `--langium-types <normal|strict>`, `--sdf3-labels` / `--no-sdf3-labels` - How a metamodel is imported from an ASDL, Langium, Xtext or SDF3 grammar: the name of the package of a grammar that declares none, its namespace URI and prefix, whether ASDL sum types whose constructors have no fields become enumerations, whether Langium classes come only from declared types, and whether SDF3 constructor labels name the classes; the configuration file keys of the same names choose them too (see the `swift-ecore` article)
+- `--deep-view <level>` - Present each multi-level model, such as a MetaDepth document (`.mdepth`), as the deep view of that level, so that `Type.allInstances()` finds the deep instances of a type at the level and the services `clabjectName()`, `ontologicalType()` and `linguisticType()` are available; without it, a multi-level model is read as instances of the linguistic metamodel of multi-level models
 - `--unset-features <defaults|undefined>` - Whether unset features read as their defaults (`defaults`, the default, as in the Eclipse Modeling Framework) or as undefined
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`) for every behaviour option below; an option that is given overrides it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models that it holds in containment references
@@ -88,8 +90,7 @@ is reported as an error.
 
 A model refers to its metamodels by their namespace URIs. Without
 `--metamodel`, the tool registers each metamodel file in the directory
-of a model, whether an Ecore, a JSON or a KM3 file, whose namespace URI
-the model uses, so that the attributes of
+of a model whose namespace URI the model uses, so that the attributes of
 the model have the types that the metamodel declares: a `budget` of
 type `EDouble` is the real number `500000.0`, not a string. If several
 Ecore files beside a model declare the same namespace URI, the tool
@@ -101,13 +102,31 @@ URIs, so each root package of a KM3 metamodel is registered under its
 name instead, and a model refers to it by a namespace declaration with
 that name, such as `xmlns:Library="Library"`.
 
+The format registry of swift-ecore decides from the extension and the
+contents of each file whether it is a metamodel: an Ecore, JSON, KM3,
+EMOF, Emfatic, Xcore or OCLinEcore file, or a grammar from which a
+metamodel is imported. An EMOF metamodel saved with the extension
+`xmi` is therefore found as a metamodel, while an XMI model is not.
+A grammar declares the namespace URI that its import gives, so
+`--ns-uri` and its configuration key apply to discovery as well.
+
 A model is read as XMI or JSON by its extension, `xmi` or `json`, and
 a file with any other extension in the format of its contents. A file
 whose contents are neither XML nor JSON is reported with the supported
 formats.
 
-An Ecore or KM3 file can itself be given as the model, so that its
-first package can be queried, as in `self.eClassifiers.name`.
+A metamodel file in any metamodel format can itself be given as the
+model, so that its first package can be queried, as in
+`self.eClassifiers.name`.
+
+A UML class model given with `--metamodel` registers the Ecore
+metamodel that it describes. A multi-level model in the MetaDepth
+notation (`.mdepth`) is queried as the deep view of a level with
+`--deep-view`:
+
+```bash
+swift-aql query products.mdepth 'BookStore::ProductType.allInstances()->collect(p | p.clabjectName())' --deep-view 0
+```
 
 ## Output
 

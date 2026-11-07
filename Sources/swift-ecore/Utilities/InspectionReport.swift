@@ -19,6 +19,9 @@ struct InspectionReport: Codable, Sendable, Equatable {
 
         /// A model that conforms to a metamodel.
         case model
+
+        /// A multi-level model, whose levels are listed.
+        case multiLevelModel
     }
 
     /// The name of the inspected file.
@@ -45,6 +48,57 @@ struct InspectionReport: Codable, Sendable, Equatable {
     /// Every reference between the classes of a metamodel, or between the objects of a model,
     /// if asked for.
     var referenceGraph: [ReferenceEdge]?
+
+    /// The levels of a multi-level model, from the top down; `nil` for other documents.
+    var multiLevel: MultiLevelReport?
+}
+
+/// The levels of a multi-level model.
+struct MultiLevelReport: Codable, Sendable, Equatable {
+    /// The potency scheme of the model, such as `MetaDepth`.
+    var potencyVariant: String
+
+    /// The level crossing mode under which the model is read, as the command line spells it.
+    var levelCrossing: String
+
+    /// The levels, from the top down.
+    var levels: [LevelReport]
+}
+
+/// One level of a multi-level model.
+struct LevelReport: Codable, Sendable, Equatable {
+    /// The number of the level.
+    var level: Int
+
+    /// The name of the level model.
+    var name: String
+
+    /// The name of the level model that it instantiates, if any.
+    var typeModel: String?
+
+    /// The clabjects of the level, in declaration order.
+    var clabjects: [ClabjectReport]
+}
+
+/// A clabject of a multi-level model.
+struct ClabjectReport: Codable, Sendable, Equatable {
+    /// The name of the clabject.
+    var name: String
+
+    /// The name of its ontological type, if it has one.
+    var type: String?
+
+    /// Its potency, if it declares or receives one.
+    var potency: String?
+
+    /// Whether it is an edge rather than a node.
+    var isEdge: Bool
+
+    /// Whether it is abstract.
+    var isAbstract: Bool
+
+    /// The names of the features that it declares.
+    var features: [String]
 }
 
 /// One package of a metamodel.

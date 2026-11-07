@@ -27,9 +27,10 @@ import MTL
 /// ```
 ///
 /// The values are the spellings of the options on the command line, as JSON strings, except
-/// for `check-let-types`, `cache-containers` and `strict-aql`, which take JSON booleans. The
-/// `encoding` of source files is the name or an alias of one of the supported encodings, as for
-/// `--encoding`. ``keys`` lists the accepted keys.
+/// for `check-let-types`, `cache-containers`, `strict-aql` and `sdf3-labels`, which take JSON
+/// booleans. The `encoding` of source files is the name or an alias of one of the supported
+/// encodings, as for `--encoding`, and `package-name`, `ns-uri` and `ns-prefix` take any
+/// string. ``keys`` lists the accepted keys.
 ///
 /// A command reads the file named ``fileName`` that ``discover(from:)`` finds from the current
 /// directory, or the file that `--config` names (see ``SemanticsOptions``). An option given on
@@ -58,7 +59,8 @@ public struct ModellingConfiguration: Sendable, Equatable {
     ///
     /// The keys are the long names of the options that ``SemanticsOptions``,
     /// ``MTLSemanticsOptions``, ``ATLSemanticsOptions``, ``LetTypeMismatchOptions``,
-    /// ``UnsetFeatureOptions``, ``SourceEncodingOptions`` and ``KM3Options`` define.
+    /// ``UnsetFeatureOptions``, ``SourceEncodingOptions``, ``KM3Options`` and
+    /// ``GrammarImportOptions`` define.
     public static let keys: [String] = [
         SemanticsOptions.OptionName.semantics,
         MTLSemanticsOptions.OptionName.blockLineBreaks,
@@ -82,6 +84,12 @@ public struct ModellingConfiguration: Sendable, Equatable {
         MTLSemanticsOptions.OptionName.strictAQL,
         SourceEncodingOptions.optionName,
         KM3Options.optionName,
+        GrammarImportOptions.OptionName.packageName,
+        GrammarImportOptions.OptionName.nsURI,
+        GrammarImportOptions.OptionName.nsPrefix,
+        GrammarImportOptions.OptionName.asdlEnumerations,
+        GrammarImportOptions.OptionName.langiumTypes,
+        GrammarImportOptions.OptionName.sdf3Labels,
     ]
 
     /// The file that the settings were read from, or `nil` if they were not read from a file.
@@ -153,6 +161,24 @@ public struct ModellingConfiguration: Sendable, Equatable {
 
     /// How the data types of KM3 metamodels are read (`km3-primitives`).
     public var km3PrimitiveTypes: KM3PrimitiveTypeMapping?
+
+    /// The name of the package of a metamodel imported from a grammar (`package-name`).
+    public var packageName: String?
+
+    /// The namespace URI of the package of a metamodel imported from a grammar (`ns-uri`).
+    public var nsURI: String?
+
+    /// The namespace prefix of the package of a metamodel imported from a grammar (`ns-prefix`).
+    public var nsPrefix: String?
+
+    /// Which ASDL sum types become enumerations (`asdl-enumerations`).
+    public var asdlEnumerations: ASDLEnumerationsOption?
+
+    /// How a Langium grammar types its rules (`langium-types`).
+    public var langiumTypes: LangiumTypeMode?
+
+    /// Whether SDF3 constructor labels name the classes of an import (`sdf3-labels`).
+    public var sdf3Labels: Bool?
 
     /// Creates settings that set nothing, as when no configuration file is read.
     public init() {}
@@ -227,6 +253,12 @@ public struct ModellingConfiguration: Sendable, Equatable {
         strictAQL = try reader.flag(MTLSemanticsOptions.OptionName.strictAQL)
         encoding = try reader.encoding(SourceEncodingOptions.optionName)
         km3PrimitiveTypes = try reader.value(of: KM3Options.optionName)
+        packageName = try reader.string(GrammarImportOptions.OptionName.packageName)
+        nsURI = try reader.string(GrammarImportOptions.OptionName.nsURI)
+        nsPrefix = try reader.string(GrammarImportOptions.OptionName.nsPrefix)
+        asdlEnumerations = try reader.value(of: GrammarImportOptions.OptionName.asdlEnumerations)
+        langiumTypes = try reader.value(of: GrammarImportOptions.OptionName.langiumTypes)
+        sdf3Labels = try reader.flag(GrammarImportOptions.OptionName.sdf3Labels)
     }
 
     /// Finds the configuration file that applies to a directory.
@@ -409,6 +441,20 @@ private struct Reader {
             throw .invalidValue(text, key: key, accepted: TextEncoding.allCases.map(\.name), path: path)
         }
         return encoding
+    }
+
+    /// Reads the value of a key that takes any string.
+    ///
+    /// - Parameter key: The key.
+    /// - Returns: The value, or `nil` if the key is absent.
+    /// - Throws: ``ModellingConfigurationError/wrongType(key:expected:path:)`` if the value is
+    ///   not a string.
+    func string(_ key: String) throws(ModellingConfigurationError) -> String? {
+        guard let found = object[key] else { return nil }
+        guard case .string(let text) = found else {
+            throw .wrongType(key: key, expected: .string, path: path)
+        }
+        return text
     }
 
     /// Reads the value of a key that takes a boolean.

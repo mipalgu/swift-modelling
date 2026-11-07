@@ -60,8 +60,11 @@ struct CompareCommand: AsyncParsableCommand {
     /// The metamodels of the models.
     @OptionGroup var metamodelOptions: MetamodelOptions
 
-    /// How the data types of a KM3 metamodel are read.
-    @OptionGroup var km3Options: KM3Options
+    /// How metamodels in KM3 and in grammar formats are read.
+    @OptionGroup var formatOptions: MetamodelFormatOptions
+
+    /// The Complete OCL documents that constrain the metamodels.
+    @OptionGroup var completeOCLOptions: CompleteOCLOptions
 
     /// Whether to show the counts only.
     @Flag(
@@ -104,16 +107,16 @@ struct CompareCommand: AsyncParsableCommand {
     ///   differ and `--exit-code` is given, or the error of the parser, the encoder or the
     ///   file system.
     func run() async throws {
-        try checkKinds(ModelFormat.detect(url: URL(fileURLWithPath: originalPath)),
-                       ModelFormat.detect(url: URL(fileURLWithPath: revisedPath)))
+        try checkKinds(await MetamodelRegistration.documentHandler(at: originalPath)?.format,
+                       await MetamodelRegistration.documentHandler(at: revisedPath)?.format)
         if verbose {
             print("Original: \(originalPath)")
             print("Revised: \(revisedPath)")
         }
         let original = try await ModelDocument.load(path: originalPath, metamodelOptions: metamodelOptions, verbose: verbose,
-            km3Options: km3Options.readOptions)
+            ecoreLoadOptions: formatOptions.ecoreLoadOptions, completeOCL: completeOCLOptions.documents)
         let revised = try await ModelDocument.load(path: revisedPath, metamodelOptions: metamodelOptions, verbose: verbose,
-            km3Options: km3Options.readOptions)
+            ecoreLoadOptions: formatOptions.ecoreLoadOptions, completeOCL: completeOCLOptions.documents)
         try checkKinds(original.format, revised.format)
         let report = await compare(original, revised)
         withExtendedLifetime((original, revised)) {}
@@ -195,13 +198,25 @@ struct CompareCommand: AsyncParsableCommand {
     /// - Parameters:
     ///   - original: The format of the original document, if known.
     ///   - revised: The format of the revised document, if known.
-    /// - Throws: ``ComparisonError/mixedKinds(metamodel:model:)`` if exactly one of them is a metamodel.
+    /// - Throws: ``ComparisonError/mixedKinds(metamodel:model:)`` if exactly one of them is in a
+    ///   format that holds only metamodels.
     private func checkKinds(_ original: ModelFormat?, _ revised: ModelFormat?) throws {
-        guard let original, let revised, (original == .ecore) != (revised == .ecore) else { return }
+        guard let original, let revised, Self.holdsMetamodels(original) != Self.holdsMetamodels(revised) else {
+            return
+        }
         let originalName = URL(fileURLWithPath: originalPath).lastPathComponent
         let revisedName = URL(fileURLWithPath: revisedPath).lastPathComponent
-        throw original == .ecore
+        throw Self.holdsMetamodels(original)
             ? ComparisonError.mixedKinds(metamodel: originalName, model: revisedName)
             : ComparisonError.mixedKinds(metamodel: revisedName, model: originalName)
+    }
+
+    /// Whether a format holds only metamodels, such as Ecore, KM3 or EMOF.
+    ///
+    /// - Parameter format: The format of a document.
+    /// - Returns: `true` if the built-in handler of the format has the role of a metamodel
+    ///   format; `false` for a format that holds models, or models and metamodels, such as JSON.
+    private static func holdsMetamodels(_ format: ModelFormat) -> Bool {
+        ModelFormatRegistry.builtInHandlers.contains { $0.format == format && $0.role == .metamodel }
     }
 }

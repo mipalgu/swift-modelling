@@ -71,8 +71,14 @@ struct InspectCommand: AsyncParsableCommand {
     /// The metamodels of the model.
     @OptionGroup var metamodelOptions: MetamodelOptions
 
-    /// How the data types of a KM3 metamodel are read.
-    @OptionGroup var km3Options: KM3Options
+    /// How metamodels in KM3 and in grammar formats are read.
+    @OptionGroup var formatOptions: MetamodelFormatOptions
+
+    /// The Complete OCL documents that constrain the metamodels.
+    @OptionGroup var completeOCLOptions: CompleteOCLOptions
+
+    /// Which references of a multi-level model may cross levels.
+    @OptionGroup var levelCrossingOptions: LevelCrossingOptions
 
     /// Enable verbose output.
     @Flag(name: .shortAndLong, help: "Enable verbose output")
@@ -87,10 +93,10 @@ struct InspectCommand: AsyncParsableCommand {
     func run() async throws {
         if verbose { print("Inspecting: \(inputPath)") }
         let document = try await ModelDocument.load(path: inputPath, metamodelOptions: metamodelOptions, verbose: verbose,
-            km3Options: km3Options.readOptions)
+            ecoreLoadOptions: formatOptions.ecoreLoadOptions, completeOCL: completeOCLOptions.documents)
         let options = InspectionOptions(
             detail: detail, showAttributes: showAttributes, showReferences: showReferences, showSupertypes: showSupertypes)
-        let report = await Inspector.inspect(document, options: options)
+        let report = await Inspector.inspect(document, options: options, levelCrossing: levelCrossingOptions.mode)
         withExtendedLifetime(document) {}
         let text = format == .json ? try report.json() : InspectionTextRenderer.render(report)
         if let output {

@@ -251,8 +251,8 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
     /// The character encoding of the ATL source.
     @OptionGroup var encodingOptions: SourceEncodingOptions
 
-    /// How the data types of a KM3 metamodel are read.
-    @OptionGroup var km3Options: KM3Options
+    /// How metamodels in KM3 and in grammar formats are read.
+    @OptionGroup var formatOptions: MetamodelFormatOptions
 
     /// Checks that the command line does not ask for both quiet and verbose output.
     ///
@@ -304,7 +304,7 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
                 metamodelRegistry: try await builtInMetamodelRegistry())
             var module = try await metamodelFiles.bind(
                 parsed, requiresAll: metamodelFiles.isGiven && !continueAfterErrors, verbose: verbose,
-                options: km3Options.ecoreLoadOptions(settings: settings))
+                options: formatOptions.ecoreLoadOptions(settings: settings))
             if refining && !module.isRefining {
                 module = module.refining()
             }

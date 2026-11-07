@@ -67,8 +67,14 @@ struct ValidateCommand: AsyncParsableCommand {
     /// The metamodels that the model is validated against.
     @OptionGroup var metamodelOptions: MetamodelOptions
 
-    /// How the data types of a KM3 metamodel are read.
-    @OptionGroup var km3Options: KM3Options
+    /// How metamodels in KM3 and in grammar formats are read.
+    @OptionGroup var formatOptions: MetamodelFormatOptions
+
+    /// The Complete OCL documents that constrain the metamodels.
+    @OptionGroup var completeOCLOptions: CompleteOCLOptions
+
+    /// Which references of a multi-level model may cross levels.
+    @OptionGroup var levelCrossingOptions: LevelCrossingOptions
 
     /// Whether abstract classes are checked explicitly.
     @Flag(help: "List the abstract classes of a metamodel and whether concrete classes extend them, or check that no object of a model is an instance of one")
@@ -208,7 +214,7 @@ struct ValidateCommand: AsyncParsableCommand {
     private func check(_ document: ModelDocument) async -> ValidationReport {
         let options = ValidationOptions(
             strict: strict, checkAbstractClasses: checkAbstractClasses, strictAQL: strictAQL,
-            requiresExplicitValues: requireExplicitValues)
+            requiresExplicitValues: requireExplicitValues, levelCrossing: levelCrossingOptions.mode)
         let outcome = await ModelChecker(document: document, options: options).check()
         withExtendedLifetime(document) {}
         return ValidationReport(
@@ -226,7 +232,7 @@ struct ValidateCommand: AsyncParsableCommand {
         do {
             return try await ModelDocument.load(
                 path: inputPath, metamodelOptions: metamodelOptions, requiresMetamodel: metamodelOptions.isGiven,
-                verbose: verbose, km3Options: km3Options.readOptions)
+                verbose: verbose, ecoreLoadOptions: formatOptions.ecoreLoadOptions, completeOCL: completeOCLOptions.documents)
         } catch DocumentError.fileNotFound(let path) {
             throw ValidationError.fileNotFound(path)
         } catch DocumentError.unsupportedFormat(let format) {

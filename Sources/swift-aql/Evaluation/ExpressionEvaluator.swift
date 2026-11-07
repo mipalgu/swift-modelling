@@ -46,7 +46,8 @@ final class ExpressionEvaluator {
     /// Creates an evaluator.
     ///
     /// - Parameters:
-    ///   - models: The models against which expressions are evaluated.
+    ///   - models: The models against which expressions are evaluated; the deep views of a
+    ///     multi-level model contribute the services of `AQLMultiLevelServices`.
     ///   - options: The behaviours of expressions.
     ///   - unsetFeatureReads: How expressions read features that a model does not set.
     init(models: [LoadedModel], options: AQLOptions, unsetFeatureReads: UnsetFeatureReads = .defaults) async {
@@ -55,7 +56,9 @@ final class ExpressionEvaluator {
         for (index, model) in models.enumerated() {
             await engine.registerResource(model.resource, alias: Self.alias(of: model, at: index))
         }
-        context = AQLExecutionContext(executionEngine: engine, options: options)
+        context = AQLExecutionContext(
+            executionEngine: engine, options: options,
+            serviceProviders: models.compactMap { $0.deepViews.map { $0.services } })
         for model in models { context.addResource(model.resource) }
     }
 

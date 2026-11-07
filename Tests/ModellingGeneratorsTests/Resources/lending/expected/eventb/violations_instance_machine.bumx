@@ -1,0 +1,142 @@
+/*
+ * Event-B machine of a model of the Ecore package lending (http://example.org/lending), in CamilleX notation.
+ *
+ * Rodin compiles this file into the machine violations_instance_machine once it is in an Event-B project with the
+ * CamilleX plug-in installed, beside the files of the context violations_instance_ctx and of the package.
+ *
+ * The machine has the variables and invariants of lending_machine, and its INITIALISATION assigns the population
+ * of every class and the values of every feature in the model. Each invariant proof obligation INITIALISATION/<label>/INV therefore holds exactly if the model satisfies
+ * the invariant with that label: together they state that the model conforms to the multiplicities, opposite
+ * references, containment and translated invariants of the metamodel. Values of uninterpreted data types are not
+ * fixed: the INITIALISATION fixes only which objects have such values.
+ */
+machine violations_instance_machine
+sees violations_instance_ctx
+variables
+  Library
+  Named
+  Branch
+  Item
+  Book
+  Periodical
+  Restricted
+  ReferenceBook
+  Member
+  Loan
+  Library_name
+  Library_branches
+  Library_members
+  Library_items
+  Named_name
+  Branch_code
+  Branch_holdings
+  Item_year
+  Item_status
+  Item_location
+  Item_loan
+  Book_pages
+  Book_isbn
+  Book_rating
+  Periodical_issue
+  Restricted_minimumAge
+  Member_age
+  Member_active
+  Member_loans
+  Loan_item
+  Loan_member
+  Loan_due
+invariants
+  @Library_type: Library ⊆ OBJECT
+  @Named_type: Named ⊆ OBJECT
+  @Branch_type: Branch ⊆ Named
+  @Item_type: Item ⊆ Named
+  @Book_type: Book ⊆ Item
+  @Periodical_type: Periodical ⊆ Item
+  @Restricted_type: Restricted ⊆ OBJECT
+  @ReferenceBook_type: ReferenceBook ⊆ Book ∩ Restricted
+  @Member_type: Member ⊆ Named
+  @Loan_type: Loan ⊆ OBJECT
+  @Named_abstract: Named = Branch ∪ Item ∪ Member
+  @Item_abstract: Item = Book ∪ Periodical
+  @Restricted_abstract: Restricted = ReferenceBook
+  @Library_Named_disjoint: Library ∩ Named = ∅
+  @Library_Restricted_disjoint: Library ∩ Restricted = ∅
+  @Library_Loan_disjoint: Library ∩ Loan = ∅
+  @Named_Loan_disjoint: Named ∩ Loan = ∅
+  @Restricted_Loan_disjoint: Restricted ∩ Loan = ∅
+  @Branch_Item_disjoint: Branch ∩ Item = ∅
+  @Branch_Member_disjoint: Branch ∩ Member = ∅
+  @Item_Member_disjoint: Item ∩ Member = ∅
+  @Book_Periodical_disjoint: Book ∩ Periodical = ∅
+  @Library_name_type: Library_name ∈ Library → STRING
+  @Library_branches_type: Library_branches ∈ Library ↔ Branch
+  @Library_members_type: Library_members ∈ Library ↔ Member
+  @Library_items_type: Library_items ∈ Library ↔ Item
+  @Named_name_type: Named_name ∈ Named → STRING
+  @Branch_code_type: Branch_code ∈ Branch → ℤ
+  @Branch_holdings_type: Branch_holdings ∈ Branch ↔ Item
+  @Item_year_type: Item_year ∈ Item ⇸ ℤ
+  @Item_status_type: Item_status ∈ Item → Status
+  @Item_location_type: Item_location ∈ Item ⇸ Branch
+  @Item_loan_type: Item_loan ∈ Item ⇸ Loan
+  @Book_pages_type: Book_pages ∈ Book → ℤ
+  @Book_isbn_type: Book_isbn ∈ Book ⇸ STRING
+  @Book_rating_type: Book_rating ∈ Book ⇸ EDouble
+  @Periodical_issue_type: Periodical_issue ∈ Periodical → ℤ
+  @Restricted_minimumAge_type: Restricted_minimumAge ∈ Restricted → ℤ
+  @Member_age_type: Member_age ∈ Member → ℤ
+  @Member_active_type: Member_active ∈ Member → BOOL
+  @Member_loans_type: Member_loans ∈ Member ↔ Loan
+  @Member_loans_bounds: ∀o·o ∈ Member ⇒ card(Member_loans[{o}]) ≤ 3
+  @Loan_item_type: Loan_item ∈ Loan → Item
+  @Loan_member_type: Loan_member ∈ Loan → Member
+  @Loan_due_type: Loan_due ∈ Loan → ℤ
+  @Branch_holdings_opposite: Branch_holdings = Item_location∼
+  @Item_loan_opposite: Item_loan = Loan_item∼
+  @Loan_member_opposite: Loan_member = Member_loans∼
+  @containment_single_container: (Library_branches ∪ Library_members ∪ Library_items ∪ Member_loans)∼ ∈ OBJECT ⇸ OBJECT
+  @containment_acyclic: ∀s·s ⊆ OBJECT ∧ s ⊆ (Library_branches ∪ Library_members ∪ Library_items ∪ Member_loans)[s] ⇒ s = ∅
+  "self.branches->isUnique(b | b.code)" @Library_UniqueBranchCodes: ∀self·self ∈ Library ⇒ (∀b_1, b_2·b_1 ∈ Library_branches[{self}] ∧ b_2 ∈ Library_branches[{self}] ∧ b_1 ≠ b_2 ⇒ (Branch_code(b_1) ≠ Branch_code(b_2)))
+  "self.status = Status::AVAILABLE implies self.loan->isEmpty()" @Item_AvailableHasNoLoan: ∀self·self ∈ Item ⇒ ((Item_status(self) = Status_AVAILABLE) ⇒ (Item_loan[{self}] = ∅))
+  "self.status <> Status::ON_LOAN" @ReferenceBook_ReadingRoomOnly: ∀self·self ∈ ReferenceBook ⇒ (Item_status(self) ≠ Status_ON_LOAN)
+  "self.age >= 0" @Member_NonNegativeAge: ∀self·self ∈ Member ⇒ (Member_age(self) ≥ 0)
+  "self.loans->forAll(l | l.item.oclIsKindOf(Restricted) implies self.age >= l.item.oclAsType(Restricted).minimumAge)" @Member_AgeRestriction: ∀self·self ∈ Member ⇒ (∀l·l ∈ Member_loans[{self}] ⇒ ((Loan_item(l) ∈ Restricted) ⇒ (Member_age(self) ≥ Restricted_minimumAge(Loan_item(l)))))
+  "self.active or self.loans->isEmpty()" @Member_ActiveLoans: ∀self·self ∈ Member ⇒ ((Member_active(self) = TRUE) ∨ (Member_loans[{self}] = ∅))
+  "self.item.status = Status::ON_LOAN" @Loan_OnLoanStatus: ∀self·self ∈ Loan ⇒ (Item_status(Loan_item(self)) = Status_ON_LOAN)
+events
+  event INITIALISATION
+  then
+    @Library_init: Library ≔ {Library1}
+    @Named_init: Named ≔ {Branch2, Branch3, Member4, Member6, Book7, Periodical8, ReferenceBook9}
+    @Branch_init: Branch ≔ {Branch2, Branch3}
+    @Item_init: Item ≔ {Book7, Periodical8, ReferenceBook9}
+    @Book_init: Book ≔ {Book7, ReferenceBook9}
+    @Periodical_init: Periodical ≔ {Periodical8}
+    @Restricted_init: Restricted ≔ {ReferenceBook9}
+    @ReferenceBook_init: ReferenceBook ≔ {ReferenceBook9}
+    @Member_init: Member ≔ {Member4, Member6}
+    @Loan_init: Loan ≔ {Loan5}
+    @Library_name_init: Library_name ≔ {Library1 ↦ STRING_1}
+    @Library_branches_init: Library_branches ≔ {Library1 ↦ Branch2, Library1 ↦ Branch3}
+    @Library_members_init: Library_members ≔ {Library1 ↦ Member4, Library1 ↦ Member6}
+    @Library_items_init: Library_items ≔ {Library1 ↦ Book7, Library1 ↦ Periodical8, Library1 ↦ ReferenceBook9}
+    @Named_name_init: Named_name ≔ {Branch2 ↦ STRING_2, Branch3 ↦ STRING_3, Member4 ↦ STRING_4, Member6 ↦ STRING_5, Book7 ↦ STRING_6, Periodical8 ↦ STRING_8, ReferenceBook9 ↦ STRING_9}
+    @Branch_code_init: Branch_code ≔ {Branch2 ↦ 1, Branch3 ↦ 1}
+    @Branch_holdings_init: Branch_holdings ≔ {Branch2 ↦ Book7, Branch2 ↦ ReferenceBook9, Branch3 ↦ Periodical8}
+    @Item_year_init: Item_year ≔ {Book7 ↦ 2019, ReferenceBook9 ↦ 2021}
+    @Item_status_init: Item_status ≔ {Book7 ↦ Status_ON_LOAN, Periodical8 ↦ Status_ON_LOAN, ReferenceBook9 ↦ Status_AVAILABLE}
+    @Item_location_init: Item_location ≔ {Book7 ↦ Branch2, Periodical8 ↦ Branch3, ReferenceBook9 ↦ Branch2}
+    @Item_loan_init: Item_loan ≔ {ReferenceBook9 ↦ Loan5}
+    @Book_pages_init: Book_pages ≔ {Book7 ↦ 320, ReferenceBook9 ↦ 200}
+    @Book_isbn_init: Book_isbn ≔ {Book7 ↦ STRING_7}
+    @Book_rating_init: Book_rating ≔ ∅
+    @Periodical_issue_init: Periodical_issue ≔ {Periodical8 ↦ 42}
+    @Restricted_minimumAge_init: Restricted_minimumAge ≔ {ReferenceBook9 ↦ 16}
+    @Member_age_init: Member_age ≔ {Member4 ↦ 34, Member6 ↦ 12}
+    @Member_active_init: Member_active ≔ {Member4 ↦ TRUE, Member6 ↦ FALSE}
+    @Member_loans_init: Member_loans ≔ {Member4 ↦ Loan5}
+    @Loan_item_init: Loan_item ≔ {Loan5 ↦ ReferenceBook9}
+    @Loan_member_init: Loan_member ≔ {Loan5 ↦ Member4}
+    @Loan_due_init: Loan_due ≔ {Loan5 ↦ 14}
+  end
+end

@@ -115,7 +115,31 @@ package enum TemplateRun {
         services: [any AQLServiceProvider], models: [String: Resource],
         mtlOptions: MTLOptions, prepare: @MainActor (MTLGenerator) -> Void = { _ in }
     ) async throws -> Int? {
-        guard let name = descriptor.fileCountTemplate else { return nil }
+        try await expectedFileCount(
+            of: module, template: descriptor.fileCountTemplate, descriptor: descriptor, arguments: arguments,
+            services: services, models: models, mtlOptions: mtlOptions, prepare: prepare)
+    }
+
+    /// The number of files that a template will write, from a template that counts them.
+    ///
+    /// - Parameters:
+    ///   - module: The parsed main module of the template set.
+    ///   - template: The name of the template that writes the number of files, if any.
+    ///   - descriptor: The descriptor of the template set.
+    ///   - arguments: The arguments of the counting template.
+    ///   - services: The services available to the templates.
+    ///   - models: The models available to the templates, by alias.
+    ///   - mtlOptions: The behaviours of the templates.
+    ///   - prepare: Prepares the counting generator, such as by binding global variables.
+    /// - Returns: The number of files, or `nil` if no counting template is named.
+    /// - Throws: ``GenerationError`` if the counting template is missing or fails.
+    @MainActor
+    package static func expectedFileCount(
+        of module: MTLModule, template: String?, descriptor: TemplateSetDescriptor,
+        arguments: [(any EcoreValue)?], services: [any AQLServiceProvider], models: [String: Resource],
+        mtlOptions: MTLOptions, prepare: @MainActor (MTLGenerator) -> Void = { _ in }
+    ) async throws -> Int? {
+        guard let name = template else { return nil }
         guard !module.templates(named: name).isEmpty else {
             throw GenerationError.templateSetInvalid(
                 descriptor.name, "the file count template '\(name)' is missing")

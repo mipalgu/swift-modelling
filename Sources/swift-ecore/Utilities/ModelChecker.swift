@@ -5,9 +5,12 @@
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
 import AQL
+import AQLMultiLevel
 import ECore
 import EMFBase
 import Foundation
+import ModellingCommandLine
+import MultiLevel
 
 /// What validation checks besides conformance.
 struct ValidationOptions: Sendable, Equatable {
@@ -27,6 +30,9 @@ struct ValidationOptions: Sendable, Equatable {
     /// first literal of an enumeration or zero for a number. When it is `true`, such a feature
     /// is reported as having no value.
     var requiresExplicitValues = false
+
+    /// Which references of a multi-level model may cross levels.
+    var levelCrossing = LevelCrossingOptions.defaultMode
 }
 
 /// Checks a metamodel or a model and collects what is wrong with it.
@@ -62,7 +68,30 @@ struct ModelChecker {
     ///
     /// - Returns: What the checks found.
     func check() async -> Outcome {
-        document.isMetamodel ? checkMetamodel() : await checkModel()
+        if let deepModel = document.deepModel { return await checkDeepModel(deepModel) }
+        return document.isMetamodel ? checkMetamodel() : await checkModel()
+    }
+
+    // MARK: - Multi-level models
+
+    /// Checks a multi-level model: its structure, its level crossings under
+    /// ``ValidationOptions/levelCrossing``, and its constraints, which are evaluated with AQL on
+    /// the deep instances at the levels that their potencies select.
+    ///
+    /// - Parameter model: The multi-level model of the document.
+    /// - Returns: What the checks found.
+    private func checkDeepModel(_ model: DeepModel) async -> Outcome {
+        var model = model
+        model.levelCrossing = options.levelCrossing.policy
+        let evaluator = AQLDeepConstraintEvaluator(options: AQLOptions(strict: options.strictAQL))
+        let diagnostics = await model.validate(evaluator: evaluator) + options.levelCrossing.diagnostics(for: model)
+        var outcome = Outcome()
+        outcome.findings = diagnostics.map { diagnostic in
+            ValidationFinding(
+                severity: Self.severity(of: diagnostic.severity), code: diagnostic.code,
+                location: diagnostic.range.map { "\($0.start.line):\($0.start.column)" }, message: diagnostic.message)
+        }
+        return outcome
     }
 
     // MARK: - Metamodels
@@ -149,7 +178,8 @@ struct ModelChecker {
             for check in checks where check.outcome != .satisfied {
                 outcome.findings.append(
                     ValidationFinding(
-                        severity: .error, code: ValidationCode.invariant, location: check.location, element: check.object,
+                        severity: check.outcome == .untranslated ? .warning : .error, code: ValidationCode.invariant,
+                        location: check.location, element: check.object,
                         message: "Invariant \(check.context)::\(check.constraint) is \(check.outcome.rawValue)"
                             + (check.detail.map { " (\($0))" } ?? "")))
             }

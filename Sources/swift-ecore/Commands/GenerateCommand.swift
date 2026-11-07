@@ -16,6 +16,9 @@ import ModellingGenerators
 /// or generator models. Every language has a template set, such as C, C++, Java and Swift, and is
 /// generated from a generator model (`.genmodel`) by the template engine; an Ecore model is
 /// imported into a temporary generator model first.
+///
+/// The verification targets, Alloy, TLA+, Event-B and Lean, are template sets as well. Their
+/// sets also export models of the metamodel, which `--model` names.
 struct GenerateCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "generate",
@@ -26,6 +29,12 @@ struct GenerateCommand: AsyncParsableCommand {
             model first.
 
             Languages with a template set: \(templateLanguageList())
+
+            Verification targets: \(verificationTargetList()). Each writes the metamodel in its \
+            formal notation, with the OCL invariants of its classes, and --model <file.xmi> \
+            (repeatable) exports a model of the metamodel as well, named after the model file, \
+            so that the tools of the target check that the model conforms. A model export reads \
+            features that the model does not set as undefined, whatever --unset-features says.
 
             Template files in the directories given with --template-path replace the bundled \
             templates of the same name, and a directory there that holds a template set adds a \
@@ -49,11 +58,34 @@ struct GenerateCommand: AsyncParsableCommand {
             """
     )
 
-    /// The names of the template set languages that are bundled, as text for the help.
+    /// The names of the bundled template set languages that generate code, as text for the help.
     ///
     /// - Returns: The language names, separated by commas.
     static func templateLanguageList() -> String {
-        TemplateSet.availableLanguages().joined(separator: ", ")
+        codeLanguages(TemplateSet.availableLanguages()).joined(separator: ", ")
+    }
+
+    /// The names of the bundled verification targets, as text for the help.
+    ///
+    /// - Returns: The names of the template sets of the verification targets, separated by commas.
+    static func verificationTargetList() -> String {
+        verificationTargets(TemplateSet.availableLanguages()).joined(separator: ", ")
+    }
+
+    /// The languages that generate code, in their given order.
+    ///
+    /// - Parameter languages: The names of template set languages.
+    /// - Returns: The languages that are not verification targets.
+    static func codeLanguages(_ languages: [String]) -> [String] {
+        languages.filter { !VerificationTarget.isTarget($0) }
+    }
+
+    /// The languages that are verification targets, in their given order.
+    ///
+    /// - Parameter languages: The names of template set languages.
+    /// - Returns: The languages that are verification targets.
+    static func verificationTargets(_ languages: [String]) -> [String] {
+        languages.filter(VerificationTarget.isTarget)
     }
 
     /// Input model file path.
@@ -69,6 +101,19 @@ struct GenerateCommand: AsyncParsableCommand {
         name: .shortAndLong,
         help: "Target language: the name of a template set such as swift, java, c or cpp (see the discussion)")
     var language: String = "swift"
+
+    /// The models of the input metamodel to export as well, in command line order.
+    @Option(
+        name: .customLong("model"),
+        help: ArgumentHelp(
+            "A model of the input metamodel to export with the language as well (can be repeated)",
+            discussion: """
+                Only template sets that export models accept models, such as the verification \
+                targets alloy, tla, eventb and lean. The model is read with the input model as its \
+                metamodel, and its files are named after the model file.
+                """,
+            valueName: "file.xmi"))
+    var models: [String] = []
 
     /// The preset and the overrides of the generator model defaults.
     @OptionGroup(title: "Generator model defaults")
@@ -132,14 +177,49 @@ struct GenerateCommand: AsyncParsableCommand {
         let templateURLs = templatePaths.map { URL(fileURLWithPath: $0) }
         let templateLanguages = TemplateSet.availableLanguages(templatePaths: templateURLs)
         guard templateLanguages.contains(language) else {
-            throw GenerationError.unknownLanguage(language, templateLanguages)
+            throw GenerationError.unknownLanguage(
+                language, Self.codeLanguages(templateLanguages) + Self.verificationTargets(templateLanguages))
         }
+        try validateModels(templateURLs: templateURLs, languages: templateLanguages)
         if genModelDefaults.isGiven && inputURL.pathExtension.lowercased() != "ecore" {
             throw ArgumentParser.ValidationError(
                 "The generator model defaults only apply to an Ecore model generated with a template language")
         }
         try await generateFromTemplates(
             input: inputURL, templateURLs: templateURLs, settings: try semanticsOptions.settings())
+    }
+
+    // MARK: - Models
+
+    /// Checks that the models to export exist and that the template set can export them.
+    ///
+    /// - Parameters:
+    ///   - templateURLs: The directories whose template files replace the bundled templates.
+    ///   - languages: The languages that have a template set.
+    /// - Throws: ``GenerationError/fileNotFound(_:)`` if a model does not exist, and a
+    ///   validation error if the template set of the language cannot export models.
+    private func validateModels(templateURLs: [URL], languages: [String]) throws {
+        guard !models.isEmpty else { return }
+        for path in models where !FileManager.default.fileExists(atPath: path) {
+            throw GenerationError.fileNotFound(path)
+        }
+        guard !Self.exportsModels(language, templateURLs: templateURLs) else { return }
+        let exporting = languages.filter { Self.exportsModels($0, templateURLs: templateURLs) }
+        throw ArgumentParser.ValidationError(
+            "The \(language) templates cannot export models; --model needs a language that can: "
+                + exporting.joined(separator: ", "))
+    }
+
+    /// Whether the template set of a language exports models.
+    ///
+    /// - Parameters:
+    ///   - language: The language, which names the template set.
+    ///   - templateURLs: The directories whose template files replace the bundled templates.
+    /// - Returns: `true` if the descriptor of the assembled set names a model template.
+    private static func exportsModels(_ language: String, templateURLs: [URL]) -> Bool {
+        guard let set = try? TemplateSet.assemble(language: language, templatePaths: templateURLs) else { return false }
+        defer { set.remove() }
+        return set.descriptor.modelTemplate != nil
     }
 
     // MARK: - Template sets
@@ -181,7 +261,38 @@ struct GenerateCommand: AsyncParsableCommand {
         }
         bar.finish()
         GenerationWarningReport.write(result.warnings)
-        let noun = result.files.count == 1 ? "file" : "files"
-        print("Generated \(result.files.count) \(noun) in: \(result.outputDirectory.path)")
+        let exported = try await exportModels(metamodel: input, options: options, verbose: verbose)
+        let count = result.files.count + exported
+        let noun = count == 1 ? "file" : "files"
+        print("Generated \(count) \(noun) in: \(result.outputDirectory.path)")
+    }
+
+    /// Exports the models given on the command line with the template set of the language.
+    ///
+    /// - Parameters:
+    ///   - metamodel: The input model, which is the metamodel of the models.
+    ///   - options: The settings of the generation.
+    ///   - verbose: Whether to print progress to standard output.
+    /// - Returns: The number of files written.
+    /// - Throws: `GenerationError` if a model cannot be exported.
+    private func exportModels(metamodel: URL, options: GenerationOptions, verbose: Bool) async throws -> Int {
+        var count = 0
+        for path in models {
+            if verbose { print("Exporting model: \(path)") }
+            let bar = GenerationProgressBar(verbose: verbose)
+            let result: ModellingGenerators.GenerationResult
+            do {
+                result = try await ModellingGenerators.GenerationPipeline.generate(
+                    modelURL: URL(fileURLWithPath: path), metamodelURL: metamodel, language: language,
+                    outputDirectory: URL(fileURLWithPath: output), options: options, progress: bar.reporter)
+            } catch {
+                bar.finish()
+                throw error
+            }
+            bar.finish()
+            GenerationWarningReport.write(result.warnings)
+            count += result.files.count
+        }
+        return count
     }
 }

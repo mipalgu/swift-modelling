@@ -59,10 +59,11 @@ struct EvaluationRun: Sendable {
         let settings = try options.semanticsOptions.settings(
             environment: environment, currentDirectory: currentDirectory)
         let text = try source.text(encoding: options.encodingOptions.encoding(settings: settings))
-        let loaded = try await ModelLoader(
+        var loader = ModelLoader(
             metamodels: options.metamodelOptions.metamodels, settings: settings,
-            metamodelOptions: options.km3Options.ecoreLoadOptions(settings: settings)
-        ).load(models)
+            metamodelOptions: options.formatOptions.ecoreLoadOptions(settings: settings))
+        loader.deepViewLevel = options.deepViewOptions.level
+        let loaded = try await loader.load(models)
         let evaluator = await ExpressionEvaluator(
             models: loaded, options: options.aqlSemanticsOptions.aqlOptions(settings: settings),
             unsetFeatureReads: options.unsetFeatureOptions.unsetFeatures(settings: settings))

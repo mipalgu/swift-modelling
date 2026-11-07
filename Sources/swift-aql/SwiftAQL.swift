@@ -55,9 +55,9 @@ struct SwiftAQLCommand: AsyncParsableCommand {
 
     /// A paragraph that describes how the metamodels of the models are found.
     static let metamodelDiscussion = """
-        Without --\(MetamodelOptions.optionName), the Ecore files in the directory of \
-        each model whose namespace URI the model uses are registered as its metamodels, so that \
-        its attributes have their declared types.
+        Without --\(MetamodelOptions.optionName), the metamodel files in the directory of \
+        each model, such as Ecore, JSON, KM3 or EMOF files, whose namespace URI the model uses \
+        are registered as its metamodels, so that its attributes have their declared types.
         """
 
     /// A paragraph that describes how values are printed.

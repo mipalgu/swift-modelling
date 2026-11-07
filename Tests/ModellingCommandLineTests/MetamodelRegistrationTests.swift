@@ -254,6 +254,30 @@ struct MetamodelRegistrationTests {
         #expect(errors.hasSuffix("\n"), "\(errors)")
         #expect(!output.contains("warning: \(path): "), "\(output)")
     }
+
+    /// A Complete OCL document whose context the test metamodel does not declare.
+    static let undeclaredContext = """
+        package company
+        context Department
+        inv Named: true
+        endpackage
+
+        """
+
+    @Test("writes the diagnostics of a Complete OCL document through the writer it is given")
+    func completeOCLDiagnosticsThroughWriter() async throws {
+        let metamodel = URL(fileURLWithPath: try Self.writeMetamodel())
+        let document = metamodel.deletingLastPathComponent().appendingPathComponent("Company.ocl")
+        try Self.undeclaredContext.write(to: document, atomically: true, encoding: .utf8)
+        let resourceSet = ResourceSet()
+        let loaded = try await ModelIO.load(url: metamodel, format: .ecore, resourceSet: resourceSet)
+        var errors = ""
+        try await MetamodelRegistration.applyCompleteOCL([document.path], to: [loaded.resource], in: resourceSet) {
+            errors += $0
+        }
+        #expect(errors.contains("\(document.path): "), "\(errors)")
+        #expect(errors.hasSuffix("\n"), "\(errors)")
+    }
 }
 
 /// Captures what the process writes to standard output.

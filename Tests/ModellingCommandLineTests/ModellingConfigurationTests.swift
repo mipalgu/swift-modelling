@@ -141,7 +141,8 @@ struct ModellingConfigurationTests {
                 "cache-containers", "collection-arguments", "collection-kinds", "single-value-collections",
                 "container-lookup", "sequence-union", "null-addition", "text-form", "dot-calls",
                 "collection-range-syntax", "integer-division", "bag-representation", "container-scope", "let-type-mismatches", "unset-features", "strict-aql",
-                "encoding", "km3-primitives",
+                "encoding", "km3-primitives", "package-name", "ns-uri", "ns-prefix", "asdl-enumerations",
+                "langium-types", "sdf3-labels",
             ])
     }
 

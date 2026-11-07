@@ -56,8 +56,9 @@ struct GenerateCommand: AsyncParsableCommand {
 
             \(SemanticsOptions.discussion())
 
-            Bundled languages: \(availableLanguageList()). A directory that holds a template set and \
-            is given with --template-path adds its language.
+            Bundled languages: \(availableLanguageList()). Verification targets: \
+            \(verificationTargetList()). A directory that holds a template set and is given with \
+            --template-path adds its language.
 
             Examples:
                 # Create library.genmodel beside library.ecore
@@ -176,17 +177,25 @@ struct GenerateCommand: AsyncParsableCommand {
     /// The default output directory of the template languages.
     static let defaultOutputDirectory = "Generated"
 
-    /// The languages that are available without extra template paths, as text for the help.
+    /// The code languages that are available without extra template paths, as text for the help.
     static func availableLanguageList(templatePaths: [URL] = []) -> String {
-        languages(templatePaths: templatePaths).joined(separator: ", ")
+        languages(templatePaths: templatePaths).filter { !VerificationTarget.isTarget($0) }.joined(separator: ", ")
+    }
+
+    /// The verification targets that are available, as text for the help.
+    static func verificationTargetList(templatePaths: [URL] = []) -> String {
+        languages(templatePaths: templatePaths).filter(VerificationTarget.isTarget).joined(separator: ", ")
     }
 
     /// The languages that the command accepts.
     ///
     /// - Parameter templatePaths: The template directories to search in addition to the bundled ones.
-    /// - Returns: The pseudo-language `genmodel` followed by the names of the template sets.
+    /// - Returns: The pseudo-language `genmodel` followed by the names of the template sets of
+    ///   code languages, and then the names of the template sets of verification targets.
     static func languages(templatePaths: [URL] = []) -> [String] {
-        [TemplateSetConstants.genModelLanguage] + TemplateSet.availableLanguages(templatePaths: templatePaths)
+        let sets = TemplateSet.availableLanguages(templatePaths: templatePaths)
+        return [TemplateSetConstants.genModelLanguage] + sets.filter { !VerificationTarget.isTarget($0) }
+            + sets.filter(VerificationTarget.isTarget)
     }
 
     /// Executes the generate command.

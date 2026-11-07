@@ -16,17 +16,27 @@ import ModellingCommandLine
 /// reference such as `"http://www.example.org/company#//Company"` in JSON. Discovery looks at
 /// the files in the directory of each model whose format may hold a metamodel, such as Ecore,
 /// JSON and KM3 files, and selects every file whose root package declares a namespace URI that
-/// the model refers to. A KM3 package has no namespace URI and is registered under its name,
-/// so a model refers to it by a namespace declaration with that name, such as
-/// `xmlns:company="Company"`. Files that cannot be read, and files that are models themselves,
-/// are left out.
+/// the model refers to. The format registry decides from the extension and the contents of
+/// each file whether it may hold a metamodel, so an EMOF metamodel in an `.xmi` file is found
+/// as well as the metamodels of the textual formats, such as Emfatic or a grammar. A KM3
+/// package has no namespace URI and is registered under its name, so a model refers to it by a
+/// namespace declaration with that name, such as `xmlns:company="Company"`. Files that cannot
+/// be read, and files that are models themselves, are left out.
 ///
 /// When several files in one directory declare the same namespace URI that a model refers to,
 /// discovery cannot tell which one is meant and reports them, so that one can be chosen with
 /// `--metamodel`.
 struct MetamodelDiscovery: Sendable {
+    /// The options with which metamodels in formats that need them, such as grammars, are read.
+    let options: EcoreLoadOptions
+
     /// Creates a discovery.
-    init() {}
+    ///
+    /// - Parameter options: The options with which metamodels are read, so that a grammar
+    ///   import declares the namespace URI that it registers (default options).
+    init(options: EcoreLoadOptions = EcoreLoadOptions()) {
+        self.options = options
+    }
 
     /// The metamodel files that the models refer to.
     ///
@@ -35,18 +45,19 @@ struct MetamodelDiscovery: Sendable {
     ///   the models and the files of their directories are listed.
     /// - Throws: ``SwiftAQLError/ambiguousMetamodels(_:_:)`` if several files beside a model
     ///   declare a namespace URI that the model refers to.
-    func metamodels(for models: [String]) throws -> [String] {
+    func metamodels(for models: [String]) async throws -> [String] {
         let modelPaths = Set(models.map { URL(fileURLWithPath: $0).standardizedFileURL.path })
         var found: [String] = []
         for model in models {
             let url = URL(fileURLWithPath: model)
             guard let text = try? String(contentsOf: url, encoding: .utf8) else { continue }
-            let candidates = metamodelFiles(in: url.deletingLastPathComponent())
+            let candidates = await metamodelFiles(in: url.deletingLastPathComponent())
                 .filter { !modelPaths.contains($0.standardizedFileURL.path) }
             var byNamespace: [String: [String]] = [:]
             var order: [String] = []
             for candidate in candidates {
-                for namespace in namespaces(ofMetamodelAt: candidate) where namespace.isReferred(by: text, in: self) {
+                for namespace in await namespaces(ofMetamodelAt: candidate)
+                where namespace.isReferred(by: text, in: self) {
                     if byNamespace[namespace.uri] == nil { order.append(namespace.uri) }
                     byNamespace[namespace.uri, default: []].append(candidate.path)
                 }
@@ -65,16 +76,18 @@ struct MetamodelDiscovery: Sendable {
     /// The files in a directory whose format may hold a metamodel, sorted by name.
     ///
     /// - Parameter directory: The directory.
-    /// - Returns: The files whose extension names a format that may hold a metamodel, such as
-    ///   Ecore, JSON or KM3 (see `MetamodelRegistration.mayHoldMetamodel(_:)`), or no files if
-    ///   the directory cannot be read.
-    func metamodelFiles(in directory: URL) -> [URL] {
+    /// - Returns: The files whose format may hold a metamodel, such as Ecore, JSON, KM3 or EMOF
+    ///   (see `MetamodelRegistration.mayHoldMetamodel(at:registry:)`), or no files if the
+    ///   directory cannot be read.
+    func metamodelFiles(in directory: URL) async -> [URL] {
         let contents =
             (try? FileManager.default.contentsOfDirectory(
                 at: directory, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])) ?? []
-        return contents
-            .filter { MetamodelRegistration.mayHoldMetamodel($0.path) }
-            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+        var files: [URL] = []
+        for url in contents where await MetamodelRegistration.mayHoldMetamodel(at: url.path) {
+            files.append(url)
+        }
+        return files.sorted { $0.lastPathComponent < $1.lastPathComponent }
     }
 
     /// A namespace under which a metamodel file registers a root package.
@@ -101,13 +114,15 @@ struct MetamodelDiscovery: Sendable {
     ///
     /// An Ecore document and other XML documents declare the first `nsURI` attribute (see
     /// ``namespaceURI(ofMetamodelAt:)``). A JSON metamodel declares the `nsURI` of each root
-    /// package. A KM3 document registers each root package under its name.
+    /// package. A KM3 document registers each root package under its name. A document in any
+    /// other metamodel format, such as EMOF, Emfatic or a grammar, is read, and declares the
+    /// namespace URI of each root package, or the name of a package without one.
     ///
     /// - Parameter url: The location of the file.
     /// - Returns: The namespaces, or none if the file declares none or cannot be read.
-    func namespaces(ofMetamodelAt url: URL) -> [Namespace] {
+    func namespaces(ofMetamodelAt url: URL) async -> [Namespace] {
         guard let data = try? Data(contentsOf: url) else { return [] }
-        switch ModelFormat.detect(url: url) ?? ModelFormat.detect(data: data) {
+        switch await MetamodelRegistration.documentHandler(at: url.path)?.format ?? ModelFormat.detect(data: data) {
         case .json?:
             return namespaceURIs(declaredInJSON: data).map { Namespace(uri: $0, isName: false) }
         case .km3?:
@@ -116,8 +131,32 @@ struct MetamodelDiscovery: Sendable {
                 if !package.nsURI.isEmpty { return Namespace(uri: package.nsURI, isName: false) }
                 return package.name.isEmpty ? nil : Namespace(uri: package.name, isName: true)
             }
-        default:
+        case .xmi?, .ecore?, .uml?, nil:
             return namespaceURI(ofMetamodelAt: url).map { [Namespace(uri: $0, isName: false)] } ?? []
+        case let format?:
+            return await namespaces(ofPackagesIn: url, format: format)
+        }
+    }
+
+    /// The namespaces of the root packages of a metamodel document, read in its format.
+    ///
+    /// The document is read into a resource set of its own, so that nothing is registered for
+    /// the run, and its diagnostics are not reported.
+    ///
+    /// - Parameters:
+    ///   - url: The location of the document.
+    ///   - format: The format of the document.
+    /// - Returns: The namespace URI of each root package, or its name if it has none; none if the
+    ///   document cannot be read.
+    func namespaces(ofPackagesIn url: URL, format: ModelFormat) async -> [Namespace] {
+        guard
+            let loaded = try? await ModelIO.load(
+                url: url, format: format, resourceSet: ResourceSet(),
+                options: ModelIO.LoadOptions(requiresMetamodel: false, ecoreLoadOptions: options))
+        else { return [] }
+        return loaded.packages.compactMap { package in
+            if !package.nsURI.isEmpty { return Namespace(uri: package.nsURI, isName: false) }
+            return package.name.isEmpty ? nil : Namespace(uri: package.name, isName: true)
         }
     }
 

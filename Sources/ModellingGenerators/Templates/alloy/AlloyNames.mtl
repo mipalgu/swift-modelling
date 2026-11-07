@@ -1,0 +1,78 @@
+[comment encoding = UTF-8 /]
+[**
+ * The names, types and scopes of the Alloy template set.
+ *
+ * Identifiers follow the rules of the verification services, so that the declarations written here and the formulas of
+ * translated invariants agree: reserved words get a trailing underscore and enumeration literals are qualified by their
+ * enumeration.
+ **/]
+[module AlloyNames('http://www.eclipse.org/emf/2002/Ecore')/]
+[import verification::VerificationQueries/]
+
+[**
+ * The name of the verification target of this template set.
+ **/]
+[query public target() : String = 'alloy'/]
+
+[**
+ * A model name as an Alloy identifier.
+ **/]
+[query public id(name : String) : String = name.verificationIdentifier(target())/]
+
+[**
+ * The name of the module of a package.
+ **/]
+[query public moduleName(p : EPackage) : String = id(p.name)/]
+
+[**
+ * The name of the module of a model.
+ **/]
+[query public instanceModuleName(model : String) : String = id(model + '_instance')/]
+
+[**
+ * The signature that all objects belong to.
+ **/]
+[query public objectSignature() : String = 'EObject'/]
+
+[**
+ * The number of atoms of each signature in the commands of a metamodel module.
+ **/]
+[query public defaultScope() : Integer = 4/]
+
+[**
+ * The integer bit width of the commands of a metamodel module, which allows the integers from -16 to 15.
+ **/]
+[query public defaultBitWidth() : Integer = 5/]
+
+[**
+ * The number of string atoms in the commands of a metamodel module; Alloy needs an exact scope for strings.
+ **/]
+[query public defaultStringScope() : Integer = 4/]
+
+[**
+ * The identifier of an enumeration literal.
+ **/]
+[query public literalId(e : EEnum, literal : String) : String = e.name.verificationLiteral(literal, target())/]
+
+[**
+ * The Alloy type of the values of a feature.
+ **/]
+[query public typeName(f : EStructuralFeature) : String = if f.valueKind() = 'integer' then 'Int' else if f.valueKind() = 'boolean' then 'Bool' else if f.valueKind() = 'string' then 'String' else id(f.eType.name) endif endif endif/]
+
+[**
+ * The multiplicity keyword of a field: one, lone, some or set.
+ **/]
+[query public multiplicity(f : EStructuralFeature) : String = if f.isRequiredSingle() then 'one' else if f.isOptional() then 'lone' else if f.lowerBound > 0 then 'some' else 'set' endif endif endif/]
+
+[**
+ * Whether a class is declared as a subset signature: it is a further supertype of a class that has several, or its
+ * first supertype is a subset signature. Alloy signatures extend at most one signature and are disjoint from their
+ * siblings, so a class that shares instances with an unrelated hierarchy cannot extend a signature.
+ **/]
+[query public isSubsetSignature(p : EPackage, c : EClass) : Boolean = p.classes()->exists(x | x.eSuperTypes->size() > 1 and x.eSuperTypes->excluding(x.eSuperTypes->first())->exists(s | s.name = c.name)) or (c.eSuperTypes->notEmpty() and p.isSubsetSignature(p.classNamed(c.eSuperTypes->first().name)))/]
+
+[**
+ * The integer bit width that represents a number: the smallest width from 4 bits whose largest integer is at least the
+ * number, up to 16 bits.
+ **/]
+[query public bitWidthFor(n : Integer) : Integer = Sequence{7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767}->select(t | t >= n)->collect(t | Sequence{7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767}->indexOf(t) + 3)->first()/]
