@@ -327,7 +327,10 @@ The supported formats are XMI (`.xmi`), JSON (`.json`) and Ecore (`.ecore`); a f
 extension is read in the format of its contents. A metamodel (`.ecore`)
 is checked against the constraints of Ecore, such as well-formed names,
 consistent bounds and opposites, and acyclic inheritance. A model is checked for references into
-other documents that name no object. With a metamodel, a model is also checked against it: every
+other documents that name no object. A reference into a document of the Eclipse platform, written
+with a `pathmap:` URI, such as a UML profile that is not available, is reported as a warning
+instead, as it cannot be checked; the UML primitive types of Eclipse UML2 are available, so
+references to them are checked. With a metamodel, a model is also checked against it: every
 class and feature must be defined by the metamodel, values must fit the types and bounds of their
 features, references must lead to objects of the right class, no object may be an instance of an
 abstract class or an interface, and every OCL invariant of the metamodel must hold. A JSON model is

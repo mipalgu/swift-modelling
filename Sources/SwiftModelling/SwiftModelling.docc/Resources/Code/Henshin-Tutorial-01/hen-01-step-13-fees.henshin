@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<henshin:Module xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" xmlns:henshin="http://www.eclipse.org/emf/2011/Henshin"
+    xmi:id="fees" name="fees">
+  <imports href="Bank.ecore#/"/>
+  <units xsi:type="henshin:Rule" xmi:id="chargeFee" name="chargeFee" description="Takes a fee from an account that covers it">
+    <parameters xmi:id="chargeFee.number" name="number" kind="IN">
+      <type xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    </parameters>
+    <parameters xmi:id="chargeFee.fee" name="fee" kind="IN">
+      <type xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    </parameters>
+    <parameters xmi:id="chargeFee.balance" name="balance" kind="VAR">
+      <type xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    </parameters>
+    <lhs xmi:id="chargeFee.lhs" name="Lhs">
+      <nodes xmi:id="chargeFee.lhs.account" name="account">
+        <type href="Bank.ecore#//Account"/>
+        <attributes xmi:id="chargeFee.lhs.id" value="number"><type href="Bank.ecore#//Account/id"/></attributes>
+        <attributes xmi:id="chargeFee.lhs.balance" value="balance"><type href="Bank.ecore#//Account/balance"/></attributes>
+      </nodes>
+    </lhs>
+    <rhs xmi:id="chargeFee.rhs" name="Rhs">
+      <nodes xmi:id="chargeFee.rhs.account" name="account">
+        <type href="Bank.ecore#//Account"/>
+        <attributes xmi:id="chargeFee.rhs.id" value="number"><type href="Bank.ecore#//Account/id"/></attributes>
+        <attributes xmi:id="chargeFee.rhs.balance" value="balance - fee"><type href="Bank.ecore#//Account/balance"/></attributes>
+      </nodes>
+    </rhs>
+    <attributeConditions xmi:id="chargeFee.covered" name="covered" conditionText="balance &gt;= fee"/>
+    <mappings xmi:id="chargeFee.map" origin="chargeFee.lhs.account" image="chargeFee.rhs.account"/>
+  </units>
+</henshin:Module>

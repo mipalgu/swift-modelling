@@ -308,3 +308,80 @@ struct ValidateMetamodelTests {
         #expect(result.stdout.contains(Self.shortOption))
     }
 }
+
+@Suite("swift-ecore validate - UML models")
+struct ValidateUMLTests {
+    /// A class model in the OMG layout of UML 2.5, which refers to the primitive types the OMG
+    /// publishes.
+    static let omgModel = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <xmi:XMI xmi:version="20131001" xmlns:xmi="http://www.omg.org/spec/XMI/20131001" \
+        xmlns:uml="http://www.omg.org/spec/UML/20131001">
+          <uml:Model xmi:type="uml:Model" xmi:id="m1" name="Garden">
+            <packagedElement xmi:type="uml:Class" xmi:id="c1" name="Plant">
+              <ownedAttribute xmi:type="uml:Property" xmi:id="c1-name" name="name">
+                <type href="http://www.omg.org/spec/UML/20131001/PrimitiveTypes.xmi#String"/>
+              </ownedAttribute>
+              <ownedAttribute xmi:type="uml:Property" xmi:id="c1-bed" name="bed" type="c2"/>
+            </packagedElement>
+            <packagedElement xmi:type="uml:Class" xmi:id="c2" name="Bed"/>
+          </uml:Model>
+        </xmi:XMI>
+        """
+
+    /// A model in the Eclipse UML2 layout that applies the standard profile and refers to a
+    /// primitive type that the library does not define.
+    static let profiledModel = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <uml:Model xmi:version="20131001" xmlns:xmi="http://www.omg.org/spec/XMI/20131001" \
+        xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML" xmi:id="m1" name="Garden">
+          <packagedElement xmi:type="uml:Class" xmi:id="c1" name="Plant">
+            <ownedAttribute xmi:id="c1-name" name="name">
+              <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+            </ownedAttribute>
+            <ownedAttribute xmi:id="c1-age" name="age">
+              <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Age"/>
+            </ownedAttribute>
+          </packagedElement>
+          <profileApplication xmi:id="m1-standard">
+            <appliedProfile href="pathmap://UML_PROFILES/Standard.profile.uml#_0"/>
+          </profileApplication>
+        </uml:Model>
+        """
+
+    @Test("validates a model in the OMG layout whose primitive types come from the bundled library")
+    @MainActor
+    func omgLayout() async throws {
+        let directory = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(directory) }
+        let file = directory.appendingPathComponent("class-model-omg.xmi")
+        try Self.omgModel.write(to: file, atomically: true, encoding: .utf8)
+
+        let result = try await executeSwiftEcore(command: "validate", arguments: [file.path])
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+        #expect(!result.stdout.contains("error:"), "\(result.stdout)")
+        #expect(!result.stderr.contains("error:"), "\(result.stderr)")
+    }
+
+    @Test("warns of references into Eclipse UML2 documents that are not available, and checks the library")
+    @MainActor
+    func unavailableLibraries() async throws {
+        let directory = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(directory) }
+        let file = directory.appendingPathComponent("garden.uml")
+        try Self.profiledModel.write(to: file, atomically: true, encoding: .utf8)
+
+        let result = try await executeSwiftEcore(command: "validate", arguments: [file.path])
+        let output = result.stdout + result.stderr
+
+        #expect(!result.succeeded, "\(output)")
+        #expect(output.contains("warning: ProfileApplication"), "\(output)")
+        #expect(output.contains("Standard.profile.uml#_0"), "\(output)")
+        #expect(output.contains("is not available"), "\(output)")
+        #expect(output.contains("error: Property 'age'"), "\(output)")
+        #expect(output.contains("UMLPrimitiveTypes.library.uml#Age, which does not exist"), "\(output)")
+        #expect(!output.contains("UMLPrimitiveTypes.library.uml#String"), "\(output)")
+        #expect(output.contains("1 error(s), 1 warning(s)"), "\(output)")
+    }
+}

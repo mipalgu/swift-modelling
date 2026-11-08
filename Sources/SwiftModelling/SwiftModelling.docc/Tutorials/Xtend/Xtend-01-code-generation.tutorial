@@ -1,0 +1,263 @@
+@Tutorial(time: 35) {
+    @Intro(title: "Code Generation with Xtend") {
+        Write Xtend classes that compute results from a model, change it, and generate files from it with rich strings.
+
+        Xtend is a statically typed language that compiles to Java and is widely used for the code generators of Xtext languages. Two of its features make generators short: dispatch methods, which choose a case by the runtime type of their argument, and rich strings, templates between triple quotes whose indentation follows the output rather than the source. `swift-xtend` interprets a documented subset of Xtend over models directly, without a Java virtual machine. In this tutorial, you'll:
+        - Write a small metamodel of drawings and a model of a poster
+        - Call methods of an Xtend class on the model with `swift-xtend run`, passing named objects and arguments
+        - Use dispatch methods to treat circles and rectangles differently
+        - Generate an SVG picture with a rich string, using `FOR` and `IF`
+        - Write a second file into a named output configuration, with `SEPARATOR` and `ELSEIF`
+        - Change the model with a method and write the result to a new file
+
+        The tutorial assumes that swift-xtend is on your search path and that you know the basics of Ecore metamodels. Every command runs in one directory, which starts empty.
+
+        @Image(source: "xtend-generation.svg", alt: "A model of a poster is read by two Xtend classes: Measure computes results and changes the model, and Pictures generates an SVG picture and a legend")
+    }
+
+    @Section(title: "A Model of Shapes") {
+        @ContentAndMedia {
+            The example is a drawing: a poster with a frame, a sun and a door. A drawing has a name and a size, and contains shapes. Every shape has a name, an optional colour and a position; a circle adds a radius, and a rectangle a width and a height.
+        }
+
+        @Steps {
+            @Step {
+                Write the metamodel of drawings.
+
+                @Code(name: "Shapes.ecore", file: xt-01-step-01-shapes.ecore)
+
+                `Shape` is abstract, so every shape of a model is a `Circle` or a `Rectangle`. All sizes and positions are integers.
+            }
+
+            @Step {
+                Write the model of the poster.
+
+                @Code(name: "poster.xmi", file: xt-01-step-02-poster.xmi)
+
+                The door has no colour. The generator later draws such a shape as an outline.
+            }
+        }
+    }
+
+    @Section(title: "Methods and Dispatch") {
+        @ContentAndMedia {
+            `swift-xtend run` calls one method of an Xtend class and prints its result. The parameters of the method receive their values from their declared types: a parameter of a class of the metamodel receives an object of the model, and a parameter of type `int` or `String` receives the next `--argument`.
+
+            A dispatch method has several cases, each declared with `def dispatch` and a parameter of a different type. A call runs the case that fits the runtime type of the argument best, so `area` computes the area of a circle and of a rectangle with different formulas, without a chain of `instanceof` tests.
+        }
+
+        @Steps {
+            @Step {
+                Write a class that measures a drawing.
+
+                @Code(name: "Measure.xtend", file: xt-01-step-03-measure.xtend)
+
+                `describe` maps each shape to its summary and joins the summaries. `summary` and `area` are dispatch methods with a case for circles and a case for rectangles. The area of a circle is computed in integers, with 3.14 written as `314 / 100`. `largerThan` keeps the shapes whose area exceeds a minimum, and `total` adds up all areas with `reduce`.
+            }
+
+            @Step {
+                Describe the drawing.
+
+                @Code(name: "Terminal", file: xt-01-step-04-describe.sh)
+
+                The parameter of `describe` is a `Drawing`, so it receives the drawing of the model. `--metamodel` registers the metamodel, so that the imports of the class and the types of its parameters are known. Each summary comes from the case of `summary` that fits its shape.
+            }
+
+            @Step {
+                Compute the areas of three shapes.
+
+                @Code(name: "Terminal", file: xt-01-step-05-dispatch.sh)
+
+                `--object` names the object of the model that the method receives: the object whose `name` is `sun`, and then the one named `door`. The first call runs the case for circles and the second the case for rectangles. As in Xtend, the cases of `area` share one dispatcher, whose parameter type is `Shape`, the common supertype of `Circle` and `Rectangle`. Without `--object`, the method therefore receives the first shape of the model, the frame, and the case for rectangles runs. Name the object whenever the first shape is not the one you mean.
+            }
+
+            @Step {
+                Pass a number to a method, and add up the areas.
+
+                @Code(name: "Terminal", file: xt-01-step-06-arguments.sh)
+
+                `largerThan` receives the drawing for its first parameter and `1900` for its second, an `int`. Its result is a list, which is printed in square brackets. The door has an area of 1800, so it is left out.
+            }
+        }
+    }
+
+    @Section(title: "Generating Files with Rich Strings") {
+        @ContentAndMedia {
+            A rich string is a template between three single quotes. Text is written as it stands, and expressions between guillemets (`«` and `»`) are evaluated and inserted. `«FOR»` repeats a part of the template for each element of a collection, and `«IF»` includes a part only if a condition holds.
+
+            Rich strings handle white space for you. The indentation that a template shares with the method that holds it is removed, and so are the lines that hold only a control structure such as `«FOR»` or `«ENDFOR»`, together with the indentation of the lines inside them. The output is therefore indented as the text of the template is, relative to its first line.
+
+            `swift-xtend generate` runs a generator class: a class with a `doGenerate` method that takes the model as a `Resource` and an `IFileSystemAccess`. The generator writes each file with `fsa.generateFile(path, contents)`, below the directory that `--output` names.
+        }
+
+        @Steps {
+            @Step {
+                Write a generator that draws each drawing as an SVG picture.
+
+                @Code(name: "Pictures.xtend", file: xt-01-step-07-pictures.xtend)
+
+                `svg` loops over the shapes and inserts the element of each, which the dispatch method `element` writes as a `circle` or a `rect`. `paint` uses `«IF»` and `«ELSE»` to fill a shape with its colour, or to draw an outline when it has none.
+            }
+
+            @Step {
+                Generate the picture.
+
+                @Code(name: "Terminal", file: xt-01-step-08-generate.sh)
+
+                The command lists each file that it writes. The elements of the shapes are indented by two spaces, as in the template, although the template of `element` starts at the left margin, and neither the `«FOR»` lines nor the line breaks at the end of `element` add empty lines.
+            }
+        }
+    }
+
+    @Section(title: "Output Configurations") {
+        @ContentAndMedia {
+            A generator may write files of different kinds to different places, such as source files and their documentation. Xtend calls each place an output configuration: `fsa.generateFile(path, "docs", contents)` writes to the configuration named `docs`, and `--output-configuration docs=docs` maps it to a directory. The directory of a mapping is relative to the working directory, not to `--output`.
+
+            The generator can reuse the methods of `Measure` as extension methods: a field declared with `extension` makes the methods of its type callable as if they belonged to their first argument, as in `shape.area`.
+        }
+
+        @Steps {
+            @Step {
+                Add a legend to the generator, which it writes to the `docs` output configuration.
+
+                @Code(name: "Pictures.xtend", file: xt-01-step-09-pictures.xtend, previousFile: xt-01-step-07-pictures.xtend)
+
+                `legend` lists the names of the shapes on one line, with `SEPARATOR` between them, and then one line per shape with its summary and area. `«ELSEIF»` marks a shape as large or small, and a shape in between gets no remark.
+            }
+
+            @Step {
+                Generate the picture and the legend.
+
+                @Code(name: "Terminal", file: xt-01-step-10-output-configuration.sh)
+
+                `--include` adds `Measure.xtend` to the program, so that the generator finds the class of its extension field. The program now has two classes, and `swift-xtend generate` runs the first one with a `doGenerate` method, `Pictures`; `--class` would name the generator explicitly. A file written to a named output configuration is listed after the name of the configuration and a colon.
+            }
+
+            @Step {
+                Run the generator without mapping `docs`.
+
+                @Code(name: "Terminal", file: xt-01-step-11-unmapped.sh)
+
+                Writing to an output configuration that no option maps is an error, which names the call of `generateFile` in the source. The command exits with status 1.
+            }
+        }
+    }
+
+    @Section(title: "Changing a Model") {
+        @ContentAndMedia {
+            A method can change the model it receives: assignments to features, such as `drawing.width = ...`, set the values of the objects. With `--output`, `swift-xtend run` writes the model after the method has run to the file that it names, in the format of its extension, and leaves the original file as it was.
+        }
+
+        @Steps {
+            @Step {
+                Add a method that enlarges a drawing by a factor.
+
+                @Code(name: "Measure.xtend", file: xt-01-step-12-measure.xtend, previousFile: xt-01-step-03-measure.xtend)
+
+                `enlarge` renames the drawing, scales its size, and moves and grows each shape. Inside the lambda, `x` and `y` are features of the shape that the lambda receives. `grow` is a dispatch method with two parameters: the case is chosen by the type of the shape.
+            }
+
+            @Step {
+                Enlarge the poster and describe the result.
+
+                @Code(name: "Terminal", file: xt-01-step-13-enlarge.sh)
+
+                `enlarge` returns nothing, so the first command prints nothing; the changed model is in `poster-large.xmi`. The second command describes it.
+            }
+
+            @Step {
+                Generate the picture and the legend of the enlarged poster.
+
+                @Code(name: "Terminal", file: xt-01-step-14-regenerate.sh)
+
+                The generator names its files after the drawing, so the enlarged poster is written to `out/poster-large.svg` and `docs/poster-large.md`, beside the files of the original.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            `area` has a case for `Circle` and a case for `Rectangle`. Which case runs for the object named `door`?
+
+            @Choice(isCorrect: false) {
+                The case declared first
+
+                @Justification(reaction: "Not quite!") {
+                    The order of declaration does not choose the case. A dispatch method looks at the argument.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                The case for `Rectangle`, because the door is a rectangle
+
+                @Justification(reaction: "Correct!") {
+                    A dispatch method chooses the case whose parameter type fits the runtime type of the argument best.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Both cases, one after the other
+
+                @Justification(reaction: "Try again!") {
+                    Exactly one case runs for each call.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            A line of a rich string holds only `«FOR shape : drawing.shapes»`. What does it contribute to the output?
+
+            @Choice(isCorrect: false) {
+                An empty line before each iteration
+
+                @Justification(reaction: "Not quite!") {
+                    Rich strings drop the lines that hold only a control structure.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                Nothing: the line and its indentation are removed
+
+                @Justification(reaction: "Correct!") {
+                    Only the lines inside the loop are written, once per shape, and their extra indentation within the loop is removed as well.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The indentation of the line, written once
+
+                @Justification(reaction: "Try again!") {
+                    The indentation of a control structure line is not written.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            A generator calls `fsa.generateFile('poster.md', 'docs', contents)`. Where is the file written?
+
+            @Choice(isCorrect: false) {
+                Below the `--output` directory, in a subdirectory named `docs`
+
+                @Justification(reaction: "Not quite!") {
+                    `--output` holds only the files of the default output configuration.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Nowhere: the name is ignored and the file goes to `--output`
+
+                @Justification(reaction: "Try again!") {
+                    A file written to a named output configuration that no option maps is an error.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                In the directory that `--output-configuration docs=...` maps the name to
+
+                @Justification(reaction: "Correct!") {
+                    Each named output configuration needs its own mapping, relative to the working directory.
+                }
+            }
+        }
+    }
+}

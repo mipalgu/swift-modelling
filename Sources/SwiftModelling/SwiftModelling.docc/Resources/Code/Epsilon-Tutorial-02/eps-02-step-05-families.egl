@@ -1,0 +1,14 @@
+# [%= title %]
+
+[% for (f in Family.all.sortBy(f | f.lastName)) { %]
+## The [%= f.lastName %] family
+
+- Parents: [%= f.father.firstName %] and [%= f.mother.firstName %]
+[% if (f.sons.notEmpty()) { %]
+- Sons: [%= f.sons.collect(m | m.firstName).concat(", ") %]
+[% } %]
+[% if (f.daughters.notEmpty()) { %]
+- Daughters: [%= f.daughters.collect(m | m.firstName).concat(", ") %]
+[% } %]
+
+[% } %]

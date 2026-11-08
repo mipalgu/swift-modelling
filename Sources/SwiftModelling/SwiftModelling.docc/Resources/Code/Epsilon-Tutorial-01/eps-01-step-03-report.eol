@@ -1,0 +1,8 @@
+// List every family with its members
+for (f in Family.all.sortBy(f | f.lastName)) {
+  var children = f.sons.size() + f.daughters.size();
+  (f.lastName + ": " + f.father.firstName + " and " + f.mother.firstName + ", " + children + " children").println();
+}
+var members = Member.all;
+("Members: " + members.size()).println();
+("Greeting: " + greeting).println();

@@ -31,7 +31,8 @@ struct ValidateCommand: AsyncParsableCommand {
             well-formed names, consistent bounds and opposites, and acyclic inheritance.
 
             A model (.xmi or .json) is checked for references into other documents that name \
-            no object. With --\(MetamodelOptions.optionName), it is checked against the \
+            no object; a reference into an unavailable document of the Eclipse platform, \
+            written with a pathmap: URI, such as a UML profile, is a warning instead. With --\(MetamodelOptions.optionName), it is checked against the \
             metamodel: every class and feature must be defined by it, values must fit the \
             types and bounds of their features, references must lead to objects of the right \
             class, no object may be an instance of an abstract class, and every OCL invariant \

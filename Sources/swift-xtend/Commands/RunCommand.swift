@@ -82,7 +82,7 @@ struct RunCommand: AsyncParsableCommand {
         do {
             let session = try await XtendSession.open(programOptions)
             let xtendClass = try session.selectClass(named: programOptions.className)
-            let candidates = xtendClass.methods.filter { $0.name == method && !$0.isConstructor }
+            let candidates = session.parameterLists(of: method, in: xtendClass)
             guard !candidates.isEmpty else {
                 let names = Array(Set(xtendClass.methods.filter { !$0.isConstructor }.map(\.name))).sorted()
                 throw SwiftXtendError.methodNotFound(method, xtendClass.qualifiedName, names)
@@ -92,7 +92,7 @@ struct RunCommand: AsyncParsableCommand {
             var failure: (any Error)?
             for candidate in candidates {
                 do {
-                    values = try await binder.bind(candidate.parameters, method: method)
+                    values = try await binder.bind(candidate, method: method)
                     break
                 } catch {
                     failure = failure ?? error

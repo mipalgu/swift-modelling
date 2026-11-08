@@ -427,4 +427,29 @@ struct TutorialReplayHarnessTests {
         }
         #expect(found.isEmpty)
     }
+
+    @Test("Nested subcommands are resolved level by level before their options are checked")
+    func nestedSubcommandProblems() async throws {
+        let pages: [String: CommandHelpPage] = [
+            "": CommandHelpPage(text: "SUBCOMMANDS:\n  eol\n  evl\n"),
+            "eol": CommandHelpPage(text: "SUBCOMMANDS:\n  run\n"),
+            "eol run": CommandHelpPage(text: "OPTIONS:\n  --model <name=file>   Model\n"),
+        ]
+        let help: (String, String?) async throws -> CommandHelpPage? = { tool, subcommand in
+            guard tool == "swift-epsilon" else { return nil }
+            return pages[subcommand ?? ""]
+        }
+        func problems(_ line: String) async throws -> [String] {
+            let invocation = try #require(DocumentedCommands.invocations(in: line, at: 1).first)
+            return try await DocumentedCommands.problems(of: invocation, help: help)
+        }
+        #expect(try await problems("swift-epsilon eol run p.eol --model Bank=bank.xmi").isEmpty)
+        #expect(try await problems("swift-epsilon eol run p.eol --strict") == [
+            "'swift-epsilon eol run' has no option '--strict' (not listed by 'swift-epsilon eol run --help')"
+        ])
+        #expect(try await problems("swift-epsilon eol walk p.eol") == [
+            "'swift-epsilon eol' has no subcommand 'walk' (subcommands: run)"
+        ])
+        #expect(try await problems("swift-epsilon eol <command> --help").isEmpty)
+    }
 }

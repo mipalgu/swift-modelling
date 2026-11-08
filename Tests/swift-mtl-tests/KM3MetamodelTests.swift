@@ -71,4 +71,41 @@ struct KM3MetamodelTests {
         let text = try? String(contentsOf: output.appendingPathComponent("pages.txt"), encoding: .utf8)
         #expect(text == "Field Notes: 121\n")
     }
+
+    /// A module whose main template takes the package of the metamodel and a book.
+    static let packageTemplate = """
+        [module Shelf('Library')]
+
+        [template public main(p : ecore::EPackage, b : Library::Book)]
+        [file ('shelf.txt', 'overwrite', 'UTF-8')]
+        [p.name/]: [b.title/]
+        [/file]
+        [/template]
+
+        """
+
+    @Test("passes the package of a KM3 metamodel given with --model to the main template")
+    @MainActor
+    func metamodelAsModel() async throws {
+        let directory = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(directory) }
+        try FileManager.default.createDirectory(at: directory.appendingPathComponent(".git"), withIntermediateDirectories: true)
+        for (text, name) in [(Self.library, "Library.km3"), (Self.book, "book.xmi"), (Self.packageTemplate, "Shelf.mtl")] {
+            try text.write(to: directory.appendingPathComponent(name), atomically: true, encoding: .utf8)
+        }
+        let output = directory.appendingPathComponent("out")
+
+        let shelf = try await executeSwiftMTL(
+            command: "generate",
+            arguments: [
+                directory.appendingPathComponent("Shelf.mtl").path,
+                "--model", directory.appendingPathComponent("Library.km3").path,
+                "--model", directory.appendingPathComponent("book.xmi").path, "--output", output.path,
+            ],
+            workingDirectory: directory)
+
+        #expect(shelf.succeeded, "\(shelf.stdout)\(shelf.stderr)")
+        let listing = try? String(contentsOf: output.appendingPathComponent("shelf.txt"), encoding: .utf8)
+        #expect(listing == "Library: Field Notes\n")
+    }
 }

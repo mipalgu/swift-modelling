@@ -1,0 +1,218 @@
+@Tutorial(time: 30) {
+    @Intro(title: "Transforming Models and Generating Text with ETL and EGL") {
+        Transform the families into persons with the Epsilon Transformation Language, and generate text from them with Epsilon Generation Language templates and EGX rules.
+
+        ETL and EGL cover the ground of ATL and MTL. Both build on the Epsilon Object Language, so the operations and collection expressions of the previous tutorial work in their rules and templates as well. In this tutorial, you'll:
+        - Write the Families to Persons transformation of the ATL tutorials in ETL
+        - Run it with a target model and a trace of the rule applications
+        - Render an EGL template with a parameter, on standard output and into a file
+        - Generate one file per family with the rules of an EGX module
+        - Keep hand-written text in a protected region when the files are generated again
+
+        The tutorial continues in the directory of the previous tutorial, which holds `Families.ecore`, `sample-Families.xmi` and `families-2.xmi`.
+
+        @Image(source: "epsilon-languages.svg", alt: "The Families model passes through the four commands of swift-epsilon: EOL, EVL, ETL and EGL")
+    }
+
+    @Section(title: "Transformations in ETL") {
+        @ContentAndMedia {
+            An ETL rule transforms each element of a source type into elements of target types: `rule Member2Male transform s : Families!Member to t : Persons!Male` creates a `Male` for each `Member`. A `guard` selects the elements a rule applies to, and the body of the rule is a block of EOL statements that fills the target element.
+
+            Where ATL defines helpers and binds features with `<-`, ETL defines EOL operations and assigns features with `=`. The source and target models are named on the command line, and every rule names the models of its types.
+        }
+
+        @Steps {
+            @Step {
+                Save the Persons metamodel.
+
+                @Code(name: "Persons.ecore", file: eps-02-step-01-persons.ecore)
+
+                The abstract class `Person` has a `fullName`, and `Male` and `Female` specialise it.
+            }
+
+            @Step {
+                Write the transformation.
+
+                @Code(name: "Families2Persons.etl", file: eps-02-step-02-families2persons.etl)
+
+                The two guards split the members, as the guards of `Member2Male` and `Member2Female` do in the ATL transformation. `isFemale` and `familyName` are operations on `Families!Member`.
+            }
+
+            @Step {
+                Run the transformation with a trace.
+
+                @Code(name: "Terminal", file: eps-02-step-03-transform.sh)
+
+                `--target Persons=persons.xmi` creates an empty model named `Persons`, which the rules fill and which is written once the transformation has succeeded. `--trace` prints each rule application with the classes of its source and target elements. The rules apply in the order in which the module declares them.
+            }
+
+            @Step {
+                Look at the persons.
+
+                @Code(name: "Terminal", file: eps-02-step-04-persons.sh)
+
+                Each member became a `Male` or a `Female` whose `fullName` joins the first name and the name of the family.
+            }
+        }
+    }
+
+    @Section(title: "Templates in EGL") {
+        @ContentAndMedia {
+            An EGL template is text with embedded EOL. `[% ... %]` holds statements, such as the head and end of a loop, and `[%= expression %]` writes the value of an expression. A line that holds only a statement section is removed together with its line break, so the loops and conditions leave no blank lines behind.
+        }
+
+        @Steps {
+            @Step {
+                Write a template that gives an overview of the families in Markdown.
+
+                @Code(name: "families.egl", file: eps-02-step-05-families.egl)
+
+                `title` is a parameter, as in EOL. `collect` and `concat` join the first names of the children, and the conditions leave out empty lists.
+            }
+
+            @Step {
+                Render the template.
+
+                @Code(name: "Terminal", file: eps-02-step-06-render.sh)
+
+                Without `-o`, the text is written to standard output.
+            }
+
+            @Step {
+                Render the template into a file.
+
+                @Code(name: "Terminal", file: eps-02-step-07-render-file.sh)
+
+                The command names the file it wrote and what happened to it. If the file exists, the text replaces it, keeping its protected regions unless `--no-merge` is given.
+            }
+        }
+    }
+
+    @Section(title: "Files from EGX Rules") {
+        @ContentAndMedia {
+            An EGX module generates one file for each element that its rules select. A rule names the type it transforms, a `guard`, the `parameters` it passes to its `template`, and the `target` path of the file. Templates are read relative to the module, and targets are written below the directory that `-o` names.
+
+            A protected region marks text that belongs to you rather than to the generator. When a file is generated again, the contents of each enabled region are taken from the existing file, so your edits survive.
+        }
+
+        @Steps {
+            @Step {
+                Write a template for the page of one family.
+
+                @Code(name: "family.egl", file: eps-02-step-08-family.egl)
+
+                `family` is a parameter, which the EGX rule passes. `out.preserve` writes a protected region with the comment delimiters of the target language, here those of HTML, which Markdown accepts; its arguments are the opening and closing comment marks, the identifier of the region, whether it is enabled, and its default contents. The operation at the end of the template defines `members`.
+            }
+
+            @Step {
+                Write an EGX module with one rule.
+
+                @Code(name: "families.egx", file: eps-02-step-09-families.egx)
+
+                The rule applies to every family with at least one child, and writes its page to `families/` followed by the last name in lower case.
+            }
+
+            @Step {
+                Generate the pages.
+
+                @Code(name: "Terminal", file: eps-02-step-10-generate.sh)
+
+                Each file is listed with its status and its path relative to the output directory. The region `notes` holds its default contents between the marker lines.
+            }
+
+            @Step {
+                Write your own notes into the region, and generate the pages again from the model of the previous tutorial, in which Mia joined the Smith family.
+
+                @Code(name: "Terminal", file: eps-02-step-11-regenerate.sh)
+
+                The pages of the March and Sailor families are `unchanged`. The Smith page is `updated`: its list of members now includes Mia, and its region keeps your notes. A file that a rule writes outside the output directory is an error, unless `--allow-outside-output` permits it.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            Which part of an ETL rule corresponds to the filter of an ATL `from` pattern, as in `s: Families!Member (s.isFemale())`?
+
+            @Choice(isCorrect: false) {
+                The `to` part
+
+                @Justification(reaction: "Not quite!") {
+                    `to` declares the target elements of the rule.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                The `guard`
+
+                @Justification(reaction: "Correct!") {
+                    A rule applies only to the source elements for which its guard holds.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                An operation on the source type
+
+                @Justification(reaction: "Try again!") {
+                    Operations such as `isFemale` compute values; the guard decides whether the rule applies.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What does `[%= f.lastName %]` do in an EGL template?
+
+            @Choice(isCorrect: true) {
+                It writes the last name of `f` into the output
+
+                @Justification(reaction: "Correct!") {
+                    `[%= %]` writes the value of its expression.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                It assigns a value to `f.lastName`
+
+                @Justification(reaction: "Not quite!") {
+                    Assignments are statements, written in `[% %]` sections.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                It marks a protected region named after the family
+
+                @Justification(reaction: "Try again!") {
+                    Protected regions are written with `out.preserve` or `startPreserve` and `stopPreserve`.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            You edit the contents of an enabled protected region in a generated file and run the same EGX module again. What happens to your edit?
+
+            @Choice(isCorrect: false) {
+                It is replaced by the default contents of the region
+
+                @Justification(reaction: "Not quite!") {
+                    That happens only to regions that are disabled, or with `--no-merge` for a template.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                It is kept, while the text around the region is generated anew
+
+                @Justification(reaction: "Correct!") {
+                    Merging takes the contents of enabled regions from the existing file.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The file is skipped because it was changed by hand
+
+                @Justification(reaction: "Try again!") {
+                    A file is skipped only when its rule sets `overwrite` to false.
+                }
+            }
+        }
+    }
+}

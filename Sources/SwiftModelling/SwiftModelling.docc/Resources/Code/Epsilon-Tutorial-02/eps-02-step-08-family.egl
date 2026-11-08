@@ -1,0 +1,10 @@
+# The [%= family.lastName %] family
+
+Members: [%= family.members().collect(m | m.firstName).concat(", ") %]
+
+[%= out.preserve('<!--', '-->', 'notes', true, 'No notes yet.') %]
+[%
+operation Family members() : Sequence {
+  return Sequence{self.father, self.mother}.includingAll(self.sons).includingAll(self.daughters);
+}
+%]

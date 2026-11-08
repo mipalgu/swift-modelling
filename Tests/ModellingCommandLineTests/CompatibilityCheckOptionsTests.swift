@@ -339,6 +339,52 @@ struct CompatibilityCheckOptionsTests {
         #expect(!json.contains("\\/"))
     }
 
+    @Test("writes the features of the footprint as objects with readable access")
+    func jsonFootprint() async throws {
+        let options = try libraryOptions(["--format", "json"])
+        let report = try await check("self.books->collect(b | b.title)", options)
+        let json = try options.render(report)
+        let object = try #require(try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])
+        let footprint = try #require(object["footprint"] as? [String: Any])
+        let metamodels = try #require(footprint["metamodels"] as? [String: Any])
+        let library = try #require(metamodels["library"] as? [String: Any])
+        let features = try #require(library["features"] as? [[String: Any]])
+        let title = try #require(features.first { $0["featureName"] as? String == "title" })
+        #expect(title["className"] as? String == "Book")
+        #expect(title["access"] as? [String] == ["read"])
+        #expect(title["isCertain"] as? Bool == true)
+        #expect(features.map { $0["featureName"] as? String ?? "" } == ["title", "books"])
+        #expect(!json.contains("\"access\" : 1"))
+    }
+
+    @Test("warns of options that the mode or the semantics ignores")
+    func ignoredOptions() throws {
+        let rename = ["--rename", "Library.books=volumes"]
+        let warning = CompatibilityCheckOptions.warningPrefix
+        for mode in ["partial-isomorphic", "total-isomorphic"] {
+            let warnings = try CompatibilityCheckOptions.parse(arguments(rename + ["--mode", mode])).ignoredOptionWarnings
+            #expect(warnings == [warning + "--rename is ignored in the mode \(mode), which admits no renaming"])
+        }
+        for mode in ["partial", "total-non-isomorphic"] {
+            #expect(try CompatibilityCheckOptions.parse(arguments(rename + ["--mode", mode])).ignoredOptionWarnings.isEmpty)
+        }
+        #expect(try CompatibilityCheckOptions.parse(arguments()).ignoredOptionWarnings.isEmpty)
+        let isomorphic = try CompatibilityCheckOptions.parse(
+            arguments(["--mode", "partial-isomorphic", "--allow-widening", "--lenient-lower-bounds"]))
+        #expect(isomorphic.ignoredOptionWarnings == [
+            warning + "--allow-widening is ignored in the mode partial-isomorphic, which admits no adaptation",
+            warning + "--lenient-lower-bounds is ignored in the mode partial-isomorphic, which admits no adaptation",
+        ])
+        let published = try CompatibilityCheckOptions.parse(
+            arguments(["--subtyping", "object-type-matching", "--allow-widening", "--lenient-lower-bounds"]))
+        #expect(published.ignoredOptionWarnings == [
+            warning + "--allow-widening is ignored by object-type-matching; it applies only to the access-refined semantics",
+            warning + "--lenient-lower-bounds is ignored by object-type-matching; it applies only to the access-refined semantics",
+        ])
+        let refined = try CompatibilityCheckOptions.parse(arguments(["--allow-widening", "--lenient-lower-bounds"]))
+        #expect(refined.ignoredOptionWarnings.isEmpty)
+    }
+
     @Test("describes the command, its statuses and the option of the matching semantics")
     func discussion() {
         let text = CompatibilityCheckOptions.discussion(module: "the transformation")

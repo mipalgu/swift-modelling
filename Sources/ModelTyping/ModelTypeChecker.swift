@@ -91,7 +91,13 @@ public struct CheckOptions: Sendable, Hashable {
     /// Whether numeric data types may widen in the direction of use (for example `EInt` to `ELong`).
     ///
     /// Widening is an extension. It applies only in non-isomorphic modes, and
-    /// only where the semantics gives a single direction of use.
+    /// only where the semantics gives a single direction of use, which is only
+    /// the access-refined semantics. The published definitions do not apply it,
+    /// even to a feature that a module only reads: they match a property type
+    /// only by the same type or, for classes, by a subclass, define no subtype
+    /// relation between data types such as `EInt` and `ELong`, and assume every
+    /// possible use of a property. A finding that widening would have resolved
+    /// says so.
     public var allowsNumericWidening: Bool
     /// Whether lower bound violations are reported as warnings instead of errors.
     ///
@@ -681,9 +687,15 @@ struct MetamodelComparison {
         guard options.suggestsRenamings, let providedEnumeration = provided.enumerations[mapped(enumeration)] else { return }
         let known = Set((required.enumerations[enumeration]?.literalNames ?? []).map { mapped(literal: $0, of: enumeration) })
         let candidates = providedEnumeration.literalNames.filter { !known.contains($0) }
-        for miss in NameSimilarity.nearMisses(of: renamed, among: candidates, maximumDistance: options.maximumHintDistance) {
+        let nearMisses = NameSimilarity.nearMisses(of: renamed, among: candidates, maximumDistance: options.maximumHintDistance)
+        for miss in nearMisses {
             appendHint(RenamingHint(kind: .literal, metamodel: metamodel, owner: enumeration, requiredName: literal,
                                     suggestedName: miss.name, reason: miss.reason, distance: miss.distance))
+        }
+        if nearMisses.isEmpty, candidates.count == 1 {
+            appendHint(RenamingHint(kind: .literal, metamodel: metamodel, owner: enumeration, requiredName: literal,
+                                    suggestedName: candidates[0], reason: .uniqueStructuralCandidate,
+                                    distance: NameSimilarity.editDistance(literal, candidates[0])))
         }
     }
 
@@ -850,7 +862,9 @@ struct MetamodelComparison {
         case .dataType:
             if providedProperty.typeKind != .dataType || !sameDataType(requiredProperty, providedProperty) {
                 report(failure, .featureTypeMismatch, .propertyTypeVariance, element,
-                       "provided data type '\(providedName)' is not required data type '\(requiredProperty.typeName)'")
+                       "provided data type '\(providedName)' is not required data type '\(requiredProperty.typeName)'"
+                        + (ignoresRequestedWidening(requiredProperty, providedProperty)
+                            ? " (numeric widening applies only to the access-refined semantics)" : ""))
             }
         }
         let description = "required \(requiredProperty.multiplicityDescription), provided \(providedProperty.multiplicityDescription)"
@@ -890,6 +904,23 @@ struct MetamodelComparison {
             report(failure, .featureNotChangeable, .instantiationAndChangeability, element,
                    "provided '\(providedProperty.name)' is read-only, but the required property is changeable")
         }
+    }
+
+    /// Whether numeric widening was asked for between two data types that it could relate,
+    /// although the published semantics do not apply it.
+    ///
+    /// The published definitions match a property type only by the same type or, for
+    /// classes, by a subclass; they define no subtype relation between data types, so `EInt`
+    /// does not match `ELong`. They also assume every possible use of a property, while
+    /// widening is safe only in one direction of use, which only the access-refined semantics
+    /// records.
+    private func ignoresRequestedWidening(_ requiredProperty: PropertyType, _ providedProperty: PropertyType) -> Bool {
+        guard options.allowsNumericWidening, let requiredCanonical = canonical(requiredProperty),
+            let providedCanonical = canonical(providedProperty)
+        else {
+            return false
+        }
+        return requiredCanonical.widens(to: providedCanonical) || providedCanonical.widens(to: requiredCanonical)
     }
 
     // MARK: - Access-refined property matching

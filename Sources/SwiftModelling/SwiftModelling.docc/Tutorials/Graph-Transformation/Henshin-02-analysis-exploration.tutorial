@@ -1,0 +1,200 @@
+@Tutorial(time: 35) {
+    @Intro(title: "Analysing and Exploring Graph Transformations") {
+        Find out how rules interact, and check properties of every model that they can reach.
+
+        Applying a rule answers a question about one model. Two further questions concern the rules themselves: can applying one rule stop another from applying, or make it applicable, and which models can the rules reach at all? Critical pair analysis answers the first statically, from the rules alone. State-space exploration answers the second by applying the rules at every match, from a start model, until no new model appears. In this tutorial, you'll:
+        - Find the conflicts and dependencies of the bank rules with `analyse`
+        - Explore the state space of a small bank with `explore`
+        - Check an invariant, a reachability property, a forbidden pattern and deadlock freedom
+        - Draw the state space with Graphviz
+        - Bind the parameters of rules and bound the exploration
+
+        The tutorial continues in the directory of <doc:Henshin-01-graph-rules>, which holds `Bank.ecore`, `bank.xmi` and `bank.henshin_text`.
+
+        @Image(source: "graph-transformation.svg", alt: "A Henshin module and a model, with the commands of swift-henshin and what they produce")
+    }
+
+    @Section(title: "Conflicts and Dependencies") {
+        @ContentAndMedia {
+            `analyse` looks at every ordered pair of rules, each rule paired with itself too. A conflict means that applying the first rule may disable the second: it deletes something the second uses (`delete-use`), creates something the second forbids (`produce-forbid`), or changes an attribute that the second reads (`change-use`). A dependency means that the first may enable the second, such as by creating what it uses (`produce-use`) or deleting what it forbids (`delete-forbid`).
+
+            The analysis is static and over-approximates: attribute conditions are not evaluated, and the notes of a pair say so. `--granularity` chooses how much detail to report, from `binary` (whether the rules interact at all) through `atoms` and `minimal-reasons` (the default) to `critical-pairs`.
+        }
+
+        @Steps {
+            @Step {
+                Find the conflicts of the four bank rules.
+
+                @Code(name: "Terminal", file: hen-02-step-01-conflicts.sh)
+
+                The matrix shows a row for each first rule and a column for each second rule, numbered in the order of the rows, with `x` for a conflict and `.` for none. Opening an account only conflicts with opening another account, because the new account may take the number that the other one needs. Deposits and transfers conflict with each other because they change the balances that they read, and closing an account deletes what deposits and transfers use.
+            }
+
+            @Step {
+                Analyse opening and closing accounts in both directions.
+
+                @Code(name: "Terminal", file: hen-02-step-02-both.sh)
+
+                `--rules` restricts the analysis to the rules named, and `--direction both` adds the dependencies. With `--granularity atoms`, each interaction lists the overlapping elements, numbered nodes of the two rules, and the matrix holds their number. Opening an account enables closing it, and closing an account enables opening one with the same number again.
+            }
+        }
+    }
+
+    @Section(title: "State Spaces") {
+        @ContentAndMedia {
+            `explore` applies the rules at every match, starting from a model, and collects the models that it reaches as states, with each rule application as a transition. Models that differ only in the identities and order of their objects are the same state, so a finite number of different models gives a finite state space.
+
+            The properties to check are given as options: `--invariant` and `--reach` take AQL expressions, evaluated with `self` bound to the root object of each state, `--forbid` names a rule whose left-hand side must match in no state, and `--deadlock` checks that some rule applies in every state.
+        }
+
+        @Steps {
+            @Step {
+                Write rules that move single dollars.
+
+                @Code(name: "payments.henshin_text", file: hen-02-step-03-payments.henshin_text)
+
+                `payOne` and `withdrawOne` have only `VAR` parameters, so matching binds all of them, and they apply wherever an account has a positive balance. Matching is injective, so the source and the target of `payOne` are different accounts. `overdrawn` changes nothing: it describes a pattern that should never occur.
+            }
+
+            @Step {
+                Save a small bank with two accounts and three dollars.
+
+                @Code(name: "small-bank.xmi", file: hen-02-step-04-small-bank.xmi)
+            }
+
+            @Step {
+                Explore the states that `payOne` reaches and check four properties.
+
+                @Code(name: "Terminal", file: hen-02-step-05-explore.sh)
+
+                The three dollars can be split between the two accounts in four ways, so the state space has four states. The total stays 3 in every state, no account is ever overdrawn, and there is always a dollar to move, so no state is a deadlock. A reachability property comes with a witness: the shortest path to a state that satisfies it, each step naming the rule and its match.
+            }
+
+            @Step {
+                Look at the graph of the state space.
+
+                @Code(name: "Terminal", file: hen-02-step-06-dot.sh)
+
+                `--dot` wrote the state space as a Graphviz graph. The initial state is a double circle, and the states of the printed paths are bold. Render it with Graphviz, for example with `dot -Tsvg payments.dot -o payments.svg`.
+            }
+
+            @Step {
+                Add withdrawals and check deadlock freedom again.
+
+                @Code(name: "Terminal", file: hen-02-step-07-deadlock.sh)
+
+                Every dollar can now leave the bank, so the bank with two empty accounts is a state in which no rule applies. The report prints the shortest path to the counterexample, and the command exits with status 2 because a property does not hold.
+            }
+        }
+    }
+
+    @Section(title: "Parameters and Bounds") {
+        @ContentAndMedia {
+            A rule whose `IN` parameters are not bound by matching needs values, which `--param rule.name=value` gives; the rule is then applied with those values in every state. When the rules can always create new models, the state space is infinite, and options such as `--max-depth`, `--max-states` and `--max-objects` bound the exploration. A property without a counterexample is then inconclusive, and the command exits with status 3.
+        }
+
+        @Steps {
+            @Step {
+                Repeat a transfer of 20 dollars from account 1 to account 2.
+
+                @Code(name: "Terminal", file: hen-02-step-08-parameters.sh)
+
+                Account 1 holds 80 dollars, so the transfer applies four times, after which its condition fails and the last state is a deadlock. Account 2 then holds 100 dollars, which the witness shows. Without `--deadlock`, a deadlock is reported in the summary but is not checked as a property.
+            }
+
+            @Step {
+                Explore deposits up to three steps from the start.
+
+                @Code(name: "Terminal", file: hen-02-step-09-bounded.sh)
+
+                Every deposit gives a new balance, so the exploration stops at the bound, and the state that it did not expand stays open. The invariant holds in every state that was explored, but the state space is incomplete, so the outcome is inconclusive and the command exits with status 3.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            `analyse` reports that `closeAccount` conflicts with `deposit` by `delete-use`. What does that mean?
+
+            @Choice(isCorrect: true) {
+                Closing an account may delete the account that a deposit needs, so the deposit can no longer apply
+
+                @Justification(reaction: "Correct!") {
+                    A conflict means that applying the first rule may disable the second.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                A deposit must be made before an account can be closed
+
+                @Justification(reaction: "Not quite!") {
+                    That would be a dependency, which `--direction dependency` or `both` reports.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The two rules can never be applied to the same model
+
+                @Justification(reaction: "Try again!") {
+                    Both can apply to the same model. The conflict only says that applying one may disable the other.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Which option checks that no state of the state space has an overdrawn account, as described by a rule?
+
+            @Choice(isCorrect: false) {
+                `--deadlock`
+
+                @Justification(reaction: "Not quite!") {
+                    `--deadlock` checks that some rule applies in every state.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                `--forbid overdrawn`
+
+                @Justification(reaction: "Correct!") {
+                    The left-hand side of the rule, with its conditions, must match in no state.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `--reach`
+
+                @Justification(reaction: "Incorrect!") {
+                    `--reach` checks that some state satisfies an AQL expression.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            `explore` exits with status 3. What should you conclude?
+
+            @Choice(isCorrect: false) {
+                A property does not hold
+
+                @Justification(reaction: "Not quite!") {
+                    A property that does not hold gives status 2, with a counterexample.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Every property holds
+
+                @Justification(reaction: "Try again!") {
+                    That gives status 0.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                No property failed, but the state space is incomplete, so an outcome is inconclusive
+
+                @Justification(reaction: "Correct!") {
+                    A bound stopped the exploration, so a counterexample may lie beyond it.
+                }
+            }
+        }
+    }
+}

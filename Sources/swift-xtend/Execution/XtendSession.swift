@@ -105,6 +105,7 @@ struct XtendSession {
     ///
     /// - Parameter name: The simple or qualified name that `--class` gives, if any.
     /// - Returns: The class with that name, or the only class of the program if no name is given.
+    ///   A generator is chosen with ``selectGenerator(named:)`` instead.
     /// - Throws: ``SwiftXtendError/noClasses``, ``SwiftXtendError/ambiguousClass(_:)`` or
     ///   ``SwiftXtendError/classNotFound(_:_:)``.
     func selectClass(named name: String?) throws -> XtendClass {
@@ -118,6 +119,50 @@ struct XtendSession {
             throw SwiftXtendError.classNotFound(name, all.map(\.qualifiedName))
         }
         return found
+    }
+
+    /// Chooses the generator class.
+    ///
+    /// - Parameter name: The simple or qualified name that `--class` gives, if any.
+    /// - Returns: The class with that name, or else the first class that is not abstract and
+    ///   has a `doGenerate` or `generate` method that takes the model and a file system access,
+    ///   or `nil` if no class has one.
+    /// - Throws: ``SwiftXtendError/noClasses`` or ``SwiftXtendError/classNotFound(_:_:)``.
+    func selectGenerator(named name: String?) throws -> XtendClass? {
+        guard let name else {
+            guard !classes.isEmpty else { throw SwiftXtendError.noClasses }
+            return program.generatorClass()
+        }
+        return try selectClass(named: name)
+    }
+
+    /// The lists of parameters by which arguments are bound for a call of a method.
+    ///
+    /// A method that is not a dispatch method contributes its own parameters. The cases of a
+    /// dispatch method with the same number of parameters contribute the parameters of their
+    /// dispatcher once, whose types are the common supertypes of the parameter types of the
+    /// cases, so that a parameter of a model class receives the first object of that common
+    /// type rather than of the type of the first case.
+    ///
+    /// - Parameters:
+    ///   - method: The name of the method.
+    ///   - xtendClass: The class that declares the method.
+    /// - Returns: The lists of parameters in declaration order, empty if the class declares no
+    ///   method of that name.
+    func parameterLists(of method: String, in xtendClass: XtendClass) -> [[XtendParameter]] {
+        var lists: [[XtendParameter]] = []
+        var dispatchArities: Set<Int> = []
+        for candidate in xtendClass.methods where candidate.name == method && !candidate.isConstructor {
+            let arity = candidate.parameters.count
+            guard candidate.modifiers.isDispatch else {
+                lists.append(candidate.parameters)
+                continue
+            }
+            guard dispatchArities.insert(arity).inserted else { continue }
+            lists.append(
+                program.dispatcherParameters(of: method, arity: arity, in: xtendClass.qualifiedName) ?? candidate.parameters)
+        }
+        return lists
     }
 
     /// Reports a line of progress on standard error.

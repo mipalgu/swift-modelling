@@ -56,6 +56,9 @@ enum Fixture {
     /// The source of the generator.
     static let catalogueGenerator = "Catalogue.xtend"
 
+    /// The source of the dispatch methods over libraries and books.
+    static let labels = "Labels.xtend"
+
     /// The source of the transformation from libraries to catalogues.
     static let transform = "Transform.xtend"
 
@@ -103,6 +106,7 @@ enum Fixture {
         for name in [
             libraryMetamodel, catalogueMetamodel, libraryModel, report, catalogueGenerator, transform,
             "Maths.xtend", "Escape.xtend", "Latin.xtend", "Pair.xtend", "Helper.xtend", "Wrong.xtend",
+            labels,
         ] {
             try FileManager.default.copyItem(at: try library(name), to: directory.appendingPathComponent(name))
         }

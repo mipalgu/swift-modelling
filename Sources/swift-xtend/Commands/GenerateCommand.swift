@@ -107,7 +107,7 @@ struct GenerateCommand: AsyncParsableCommand {
         defer { bar.finish() }
         do {
             let session = try await XtendSession.open(programOptions)
-            let selected = try session.selectClass(named: programOptions.className)
+            let selected = try session.selectGenerator(named: programOptions.className)
             let directories = try Self.configurationOption.values(from: outputConfigurations)
             let access = XtendDirectoryFileSystemAccess(
                 outputDirectory: URL(fileURLWithPath: output),
@@ -122,10 +122,10 @@ struct GenerateCommand: AsyncParsableCommand {
             }
             let interpreter = try XtendInterpreter(program: session.program, resources: session.models)
             guard let model = session.models.first else { return }
-            if programOptions.verbose { XtendSession.report("Running \(selected.qualifiedName)") }
+            if programOptions.verbose, let selected { XtendSession.report("Running \(selected.qualifiedName)") }
             try await interpreter.generate(
                 resource: model, fileSystem: LoggingFileSystemAccess(base: access, log: log),
-                className: programOptions.className == nil ? nil : selected.qualifiedName)
+                className: selected?.qualifiedName)
             bar.finish()
             let printed = await interpreter.standardOutput
             if !printed.isEmpty { print(printed, terminator: printed.hasSuffix("\n") ? "" : "\n") }

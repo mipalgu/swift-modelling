@@ -117,6 +117,40 @@
         @TutorialReference(tutorial: "doc:MultiLevel-01-deep-modelling")
     }
 
+    @Chapter(name: "Graph Transformation with Henshin") {
+        Apply, validate and convert Henshin rules, find their conflicts and dependencies, and explore the states they reach.
+
+        @Image(source: "graph-transformation.svg", alt: "A Henshin module and a model, with the commands of swift-henshin and what they produce")
+
+        @TutorialReference(tutorial: "doc:Henshin-01-graph-rules")
+        @TutorialReference(tutorial: "doc:Henshin-02-analysis-exploration")
+    }
+
+    @Chapter(name: "Epsilon Languages") {
+        Query, validate, transform and generate text from models with EOL, EVL, ETL and EGL.
+
+        @Image(source: "epsilon-languages.svg", alt: "The Families model passes through the four commands of swift-epsilon: EOL, EVL, ETL and EGL")
+
+        @TutorialReference(tutorial: "doc:Epsilon-01-eol-evl")
+        @TutorialReference(tutorial: "doc:Epsilon-02-etl-egl")
+    }
+
+    @Chapter(name: "Code Generation with Xtend") {
+        Generate files from models with Xtend rich strings, and call dispatch methods on models.
+
+        @Image(source: "xtend-generation.svg", alt: "A model of a poster is read by two Xtend classes: Measure computes results and changes the model, and Pictures generates an SVG picture and a legend")
+
+        @TutorialReference(tutorial: "doc:Xtend-01-code-generation")
+    }
+
+    @Chapter(name: "Model Typing") {
+        Check whether ATL transformations, MTL templates and AQL queries can be reused with a revised metamodel.
+
+        @Image(source: "model-typing.svg", alt: "Modules written against version 1 of a metamodel have a footprint, which check-compat compares with version 2 to reach a verdict")
+
+        @TutorialReference(tutorial: "doc:Typing-01-check-compat")
+    }
+
     @Chapter(name: "Integrated Workflows") {
         Complete end-to-end model-driven engineering workflows.
 

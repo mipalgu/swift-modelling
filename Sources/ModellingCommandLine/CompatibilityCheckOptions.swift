@@ -315,6 +315,10 @@ public struct CompatibilityCheckOptions: ParsableArguments, Sendable {
     /// ArgumentParser starts the messages of errors.
     public static let errorPrefix = "Error: "
 
+    /// The text that starts the message of an option that the check ignores, as the other
+    /// warnings of the tools start.
+    public static let warningPrefix = ConversionWarningReport.warningPrefix
+
     /// The other spellings of the published matching definitions, named after their authors.
     public static let semanticsAliases: [String: MatchingSemantics] = [
         "steel-jezequel": .objectTypeMatching, "guy": .mofClassMatching,
@@ -393,7 +397,8 @@ public struct CompatibilityCheckOptions: ParsableArguments, Sendable {
                 + "(can be specified multiple times)",
             discussion: """
                 Renamings apply only in the modes \(SubtypingMode.partial.defaultValueDescription) \
-                and \(SubtypingMode.totalNonIsomorphic.defaultValueDescription). A classifier \
+                and \(SubtypingMode.totalNonIsomorphic.defaultValueDescription); the other modes \
+                ignore them with a warning. A classifier \
                 renaming applies to a class, an enumeration or a data type; a member renaming, \
                 written Owner.member with the names of the original metamodel, applies to a \
                 feature or an enumeration literal. One value may hold several renamings, \
@@ -410,7 +415,11 @@ public struct CompatibilityCheckOptions: ParsableArguments, Sendable {
             discussion: """
                 An attribute that the module reads may then have a narrower type in the target \
                 metamodel, such as EInt where ELong was declared, and one that it writes a wider \
-                type. Widening applies only in the modes that allow renamings.
+                type. Widening is an extension of the \(MatchingSemantics.accessRefined.defaultValueDescription) \
+                semantics and applies only in the modes that allow renamings. The published \
+                semantics ignore it, even for an attribute that is only read: they relate no \
+                data types by subtyping, so EInt does not match ELong, and they assume that \
+                every attribute may be written as well as read.
                 """))
     public var allowWidening = false
 
@@ -419,7 +428,10 @@ public struct CompatibilityCheckOptions: ParsableArguments, Sendable {
         name: .customLong(OptionName.lenientLowerBounds),
         help: ArgumentHelp(
             "Report lower bounds that do not conform as warnings instead of errors",
-            discussion: "The leniency applies only in the modes that allow renamings."))
+            discussion: """
+                The leniency is an extension of the \(MatchingSemantics.accessRefined.defaultValueDescription) \
+                semantics and applies only in the modes that allow renamings.
+                """))
     public var lenientLowerBounds = false
 
     /// The format of the report.
@@ -431,7 +443,10 @@ public struct CompatibilityCheckOptions: ParsableArguments, Sendable {
                 \(CompatibilityReportFormat.json.rawValue) writes one object with the flags \
                 \(CompatibilityReportDocument.FlagKey.compatible.rawValue) and \
                 \(CompatibilityReportDocument.FlagKey.conclusive.rawValue), the mode, the \
-                findings, the footprint of the module and the renaming hints.
+                findings, the footprint of the module and the renaming hints. In the \
+                footprint, the classes are an object by name, the features and literals are \
+                arrays of objects, and each use lists its access by name, such as \
+                ["read", "write"].
                 """))
     public var format: CompatibilityReportFormat = .text
 
@@ -506,6 +521,35 @@ public struct CompatibilityCheckOptions: ParsableArguments, Sendable {
         }
     }
 
+    /// Warnings about options that the mode or the matching semantics of the check ignores.
+    ///
+    /// The isomorphic modes admit no adaptation, so they ignore `--rename`, `--allow-widening`
+    /// and `--lenient-lower-bounds`. The published matching semantics ignore the last two,
+    /// which are extensions of the access-refined semantics: the published definitions relate
+    /// no data types by subtyping and assume every possible use of an element.
+    ///
+    /// - Returns: One line for each ignored option, starting with ``warningPrefix``.
+    public var ignoredOptionWarnings: [String] {
+        var warnings: [String] = []
+        let modeName = mode.defaultValueDescription
+        if mode.isIsomorphic, !renamings.isEmpty {
+            warnings.append(
+                Self.warningPrefix + "--\(OptionName.rename) is ignored in the mode \(modeName), which admits no renaming")
+        }
+        let extensions = [(allowWidening, OptionName.allowWidening), (lenientLowerBounds, OptionName.lenientLowerBounds)]
+        for (isGiven, option) in extensions where isGiven {
+            if mode.isIsomorphic {
+                warnings.append(
+                    Self.warningPrefix + "--\(option) is ignored in the mode \(modeName), which admits no adaptation")
+            } else if semantics.isPublished {
+                warnings.append(
+                    Self.warningPrefix + "--\(option) is ignored by \(semantics.defaultValueDescription); it applies "
+                        + "only to the \(MatchingSemantics.accessRefined.defaultValueDescription) semantics")
+            }
+        }
+        return warnings
+    }
+
     /// The options of the check that the command line chooses.
     ///
     /// - Returns: The options, with the renaming, widening, leniency and semantics given.
@@ -564,6 +608,8 @@ public struct CompatibilityCheckOptions: ParsableArguments, Sendable {
     /// Loads the metamodels, checks the module, prints the report and exits with the status of
     /// the verdict.
     ///
+    /// Each of the ``ignoredOptionWarnings`` is written to standard error first.
+    ///
     /// The report is printed to standard output. A problem that prevents the check, such as a
     /// file that cannot be read or a module that cannot be parsed, is written to standard
     /// error, and the command exits with ``CompatibilityVerdict/failureExitStatus``.
@@ -577,6 +623,7 @@ public struct CompatibilityCheckOptions: ParsableArguments, Sendable {
         isolation: isolated (any Actor)? = #isolation,
         _ check: (CompatibilityMetamodels) async throws -> CompatibilityReport
     ) async throws {
+        for warning in ignoredOptionWarnings { FileDiagnosticReport.writeToStandardError(warning + "\n") }
         let output: String
         let verdict: CompatibilityVerdict
         do {

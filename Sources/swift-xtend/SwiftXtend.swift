@@ -50,7 +50,11 @@ struct SwiftXtendCommand: AsyncParsableCommand {
         The parameters of the method take their values from their types. A Resource is the \
         first model. A class of the metamodel, or EObject, is its first instance in the models, \
         or the instance whose name --\(SwiftXtendVocabulary.OptionName.object) gives. A list of \
-        such a class holds all its instances. A String, number or Boolean takes the next \
+        such a class holds all its instances. The cases of a dispatch method share one \
+        dispatcher, as in Xtend, whose parameter types are the common supertypes of those of \
+        the cases, so that a parameter of a dispatch method is the first instance of that \
+        common type unless --\(SwiftXtendVocabulary.OptionName.object) names one. A String, \
+        number or Boolean takes the next \
         --\(SwiftXtendVocabulary.OptionName.argument) value. With --\(SwiftXtendVocabulary.OptionName.output), \
         the model that the method created with new is written to the file, in the format its \
         extension names, or else the first model after the method has changed it.

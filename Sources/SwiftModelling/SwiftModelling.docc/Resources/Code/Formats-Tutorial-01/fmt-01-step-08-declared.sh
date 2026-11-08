@@ -3,7 +3,7 @@ swift-ecore convert Families.km3 Families-declared.ecore --km3-primitives declar
 swift-ecore inspect Families-declared.ecore --show-attributes
 
 # Output:
-# warning: Families.km3: The package 'PrimitiveTypes' has no 'nsURI' and is registered under its name in this resource set
+# warning: Families.km3: The package 'PrimitiveTypes' has no 'nsURI' and is registered under its name in this resource set only; its 'nsURI' stays empty, which validation reports as an error
 # Metamodel: Families-declared.ecore (Ecore)
 # ...
 #   Class Family

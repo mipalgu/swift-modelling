@@ -69,6 +69,16 @@ Generate Swift model code that compiles against the ECore runtime, from an Ecore
 
 - Swift Generation: what the set writes for classes, enumerations, data types, packages and factories, how names are made safe, and how existing files are merged. Find it in the ModellingGenerators documentation.
 
+### Incremental Execution
+
+Applications that keep a model open, such as editors, can bring the results of queries and transformations up to date after each change instead of computing them afresh. Incremental execution is offered by the libraries only: every command of the tools reads its files, runs once and exits, so it has no incremental form.
+
+- **ATL**: `ATLIncrementalTransformation` of the swift-atl package executes a module once, records what its guards and bindings read, and propagates later changes of the source models to the target models with `update()`. The article Incremental Transformations of the ATL library describes it.
+- **AQL**: `AQLIncrementalExpression` of the swift-aql package keeps the value of an expression up to date and reports the elements added to and removed from it, and `AQLQueryObserver` refreshes many expressions at once. The article Incremental Queries of the AQL library describes them.
+- **Ecore**: the ECore library of the swift-ecore package provides what both build on: change observation with `ResourceChangeQueue`, dependencies with `ModelDependencies` and `ModelDependencyRecorder`, and their impact with `ModelChangeImpact`, as its article Incremental Evaluation describes.
+
+Changes must be made through the editing operations of `Resource`, such as `eSetWithChanges(objectId:feature:value:)`, so that they are observed.
+
 ### Compatibility with 0.6
 
 The tools follow the behaviour of this release by default. Each behaviour that changed since version 0.6 has an option, and `--semantics legacy` selects the behaviour of version 0.6 for all of them at once. An option given on the command line overrides the preset, whatever the order of the options, so `--semantics legacy --block-line-breaks acceleo` behaves as version 0.6 apart from the line breaks. `--semantics standard` is the default.

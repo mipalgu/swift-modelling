@@ -228,11 +228,9 @@ struct ModelChecker {
                 for proxy in proxies {
                     let target = ModelCatalogue.text(of: proxy)
                     guard let resolved = await proxy.resolveObject(in: document.resourceSet) else {
-                        findings.append(
-                            ValidationFinding(
-                                severity: .error, code: ValidationCode.unresolvedReference, location: entry.location,
-                                element: objects.label(of: entry.object),
-                                message: "Reference '\(name)' names \(target), which does not exist"))
+                        findings.append(await Self.unresolvedFinding(
+                            proxy, reference: name, target: target, in: document.resourceSet,
+                            location: entry.location, element: objects.label(of: entry.object)))
                         continue
                     }
                     guard let expected = (reference?.eType as? EClass).map(catalogue.canonical),
@@ -248,6 +246,37 @@ struct ModelChecker {
             }
         }
         return findings
+    }
+
+    /// The finding for a reference into another document that names no object.
+    ///
+    /// A reference into a document of the Eclipse platform, such as a UML profile or library
+    /// with a `pathmap:` URI, that cannot be read is a warning: the document is not available
+    /// here, so the reference cannot be checked. Any other unresolved reference, including one
+    /// into a document that can be read but has no such object, is an error.
+    ///
+    /// - Parameters:
+    ///   - proxy: The unresolved reference.
+    ///   - reference: The name of the reference feature.
+    ///   - target: The text of the reference.
+    ///   - resourceSet: The resource set in which the reference was resolved.
+    ///   - location: Where the referring object is.
+    ///   - element: The label of the referring object.
+    /// - Returns: The finding.
+    private static func unresolvedFinding(
+        _ proxy: ResourceProxy, reference: String, target: String, in resourceSet: ResourceSet,
+        location: String?, element: String
+    ) async -> ValidationFinding {
+        let isPlatformDocument = proxy.uri.hasPrefix(ValidationCode.platformDocumentPrefix)
+        if isPlatformDocument, await proxy.targetResource(in: resourceSet) == nil {
+            return ValidationFinding(
+                severity: .warning, code: ValidationCode.unavailableDocument, location: location, element: element,
+                message: "Reference '\(reference)' names \(target), whose document \(proxy.uri) is not available, "
+                    + "so the reference is not checked")
+        }
+        return ValidationFinding(
+            severity: .error, code: ValidationCode.unresolvedReference, location: location, element: element,
+            message: "Reference '\(reference)' names \(target), which does not exist")
     }
 
     /// Whether a class is a class or a subclass of another, compared by name across documents.
@@ -282,6 +311,14 @@ enum ValidationCode {
 
     /// A reference into another document names no object.
     static let unresolvedReference = "model.unresolvedReference"
+
+    /// A reference into a document of the Eclipse platform names a document that is not
+    /// available.
+    static let unavailableDocument = "model.unavailableDocument"
+
+    /// The start of the URIs by which models refer to documents of the Eclipse platform, such
+    /// as the libraries and profiles of Eclipse UML2.
+    static let platformDocumentPrefix = "pathmap://"
 
     /// A reference into another document names an object of the wrong class.
     static let referenceTypeMismatch = "model.crossReferenceTypeMismatch"

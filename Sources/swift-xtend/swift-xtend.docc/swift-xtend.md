@@ -59,6 +59,12 @@ The parameters of the method take their values from their declared types:
 | `String`, `int`, `long`, `double`, `boolean` and their wrappers | The next `--argument`, converted to the type |
 | No declared type | The next `--argument`, read as a number or Boolean where it looks like one, else the first model object |
 
+The cases of a dispatch method share one dispatcher, as in Xtend, whose parameter types are the
+common supertypes of the parameter types of the cases. A parameter of a dispatch method
+therefore receives the first object of that common type, such as the first `Shape` for cases
+on `Circle` and `Rectangle`, unless `--object` names one; the case that runs is the one that
+fits the object.
+
 The result is printed on standard output as Xtend's `toString` would print it. A model object is
 printed as its class name followed by its name in parentheses, such as `Book(Dune)`, lists in
 square brackets and maps in braces. A method that returns nothing prints nothing. Text written
@@ -99,14 +105,15 @@ swift-xtend generate <file.xtend> --model <file> --output <directory> [options]
 
 The generator is the class that `--class` names, or else the first class with a `doGenerate` or
 `generate` method that takes the model as a `Resource` and an `IFileSystemAccess`, optionally
-followed by an `IGeneratorContext`, which is passed as `null`.
+followed by an `IGeneratorContext`, which is passed as `null`. The other classes of the
+program, such as those that `--include` adds, can then be helpers of the generator.
 
 **Options:**
 
 - `--model <file>` - The model to generate from (required)
 - `-o, --output <directory>` - The directory of the default output configuration (required)
 - `--output-configuration <name=directory>` - Map a named output configuration to a directory (repeatable)
-- `--class <class>` - The generator class
+- `--class <class>` - The generator class (default: the first class with a generator method)
 - `-m, --metamodel <file.ecore>` - A metamodel of the model (repeatable)
 - `--include <file.xtend>` - A further Xtend source file of the same program (repeatable)
 - `-q, --quiet` - Do not list the generated files

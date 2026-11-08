@@ -42,7 +42,7 @@ struct ProgramOptions: ParsableArguments, Sendable {
     @Option(
         name: .customLong(SwiftXtendVocabulary.OptionName.className),
         help: ArgumentHelp(
-            "The class to use (default: the only class of the source)",
+            "The class to use (default: the only class of the source; for generate, the first class with a generator method)",
             valueName: SwiftXtendVocabulary.ValueName.className))
     var className: String?
 

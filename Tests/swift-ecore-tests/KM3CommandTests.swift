@@ -114,6 +114,20 @@ struct KM3CommandTests {
         #expect(validation.stdout.contains("Feature 'author' needs at least 1 value(s)"), "\(validation.stdout)")
     }
 
+    @Test("validates a KM3 metamodel as EMF does: the missing namespace URI is an error the warning announces")
+    @MainActor
+    func validateMetamodel() async throws {
+        let files = try Files()
+        defer { files.remove() }
+
+        let validation = try await executeSwiftEcore(command: "validate", arguments: [files.metamodel.path])
+
+        #expect(!validation.succeeded)
+        #expect(validation.stderr.contains(Self.registeredUnderName), "\(validation.stderr)")
+        #expect(validation.stderr.contains("validation reports"), "\(validation.stderr)")
+        #expect(validation.stdout.contains("The namespace URI '' is not well formed"), "\(validation.stdout)")
+    }
+
     @Test("converts KM3 to Ecore and JSON, and back to KM3")
     @MainActor
     func convert() async throws {

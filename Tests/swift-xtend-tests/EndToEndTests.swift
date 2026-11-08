@@ -87,6 +87,25 @@ struct EndToEndTests {
         }
     }
 
+    @Test("run passes a dispatch method the first object of the common type of its cases")
+    func runDispatch() async throws {
+        try await withFixtures { directory in
+            let first = try await runSwiftXtend(
+                ["run", Fixture.labels, "--method", "label"] + Self.library, in: directory)
+            #expect(first.output == "library City Library\n", "\(first.error)")
+            let named = try await runSwiftXtend(
+                ["run", Fixture.labels, "--method", "label", "--object", "Emma"] + Self.library, in: directory)
+            #expect(named.output == "book Emma\n", "\(named.error)")
+            let withArgument = try await runSwiftXtend(
+                ["run", Fixture.labels, "--method", "weigh", "--argument", "2", "--object", "Dune"] + Self.library,
+                in: directory)
+            #expect(withArgument.output == "824\n", "\(withArgument.error)")
+            let library = try await runSwiftXtend(
+                ["run", Fixture.labels, "--method", "weigh", "--argument", "2"] + Self.library, in: directory)
+            #expect(library.output == "6\n", "\(library.error)")
+        }
+    }
+
     @Test("run prints program output and nothing for a method without a result")
     func runPrintAndVoid() async throws {
         try await withFixtures { directory in
@@ -276,6 +295,28 @@ struct EndToEndTests {
             #expect(run.succeeded, "\(run.error)")
             #expect(run.output == "Generated the catalogue\n")
             #expect(FileManager.default.fileExists(atPath: directory.appendingPathComponent("out/docs/index.txt").path))
+        }
+    }
+
+    @Test("generate uses the first class with a generator method when several classes are declared")
+    func generateAmongSeveralClasses() async throws {
+        try await withFixtures { directory in
+            let included = try await runSwiftXtend(
+                ["generate", "Catalogue.xtend", "--include", "Helper.xtend", "-o", "out",
+                 "--output-configuration", "docs=out/docs"] + Self.library, in: directory)
+            #expect(included.succeeded, "\(included.error)")
+            #expect(FileManager.default.fileExists(atPath: directory.appendingPathComponent("out/Dune.txt").path))
+            let helperFirst = try await runSwiftXtend(
+                ["generate", "Helper.xtend", "--include", "Catalogue.xtend", "-o", "second",
+                 "--output-configuration", "docs=second/docs", "--verbose"] + Self.library, in: directory)
+            #expect(helperFirst.succeeded, "\(helperFirst.error)")
+            #expect(helperFirst.error.contains("Running Catalogue"))
+            #expect(FileManager.default.fileExists(atPath: directory.appendingPathComponent("second/docs/index.txt").path))
+            let noGenerator = try await runSwiftXtend(
+                ["generate", "Pair.xtend", "--include", "Helper.xtend", "-o", "none"] + Self.library, in: directory)
+            #expect(noGenerator.status == 1)
+            #expect(noGenerator.error.contains("No generator class"))
+            #expect(!noGenerator.error.contains("several classes"))
         }
     }
 

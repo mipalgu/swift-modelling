@@ -244,6 +244,28 @@ struct SessionTests {
         #expect(try pair.selectClass(named: "Second").name == "Second")
         #expect(pair.classes.count == 2)
         #expect(pair.models.count == 1)
+        #expect(try pair.selectGenerator(named: nil) == nil)
+        #expect(try pair.selectGenerator(named: "Second")?.name == "Second")
+        let generator = try await librarySession(in: directory, source: "Helper.xtend", extra: ["--include", directory.appendingPathComponent(Fixture.catalogueGenerator).path])
+        #expect(try generator.selectGenerator(named: nil)?.name == "Catalogue")
+        #expect(throws: SwiftXtendError.classNotFound("Nope", ["Helper", "Catalogue"])) { try generator.selectGenerator(named: "Nope") }
+    }
+
+    @Test("A dispatch method is bound by the parameters of its dispatcher, other methods by their own")
+    func parameterLists() async throws {
+        let directory = try Fixture.temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try Fixture.copyAll(to: directory)
+        let labels = try await librarySession(in: directory, source: Fixture.labels)
+        let labelClass = try labels.selectClass(named: nil)
+        let label = labels.parameterLists(of: "label", in: labelClass)
+        #expect(label.map { $0.map { $0.type?.name } } == [["EObject"]])
+        let weigh = labels.parameterLists(of: "weigh", in: labelClass)
+        #expect(weigh.map { $0.map { $0.type?.name } } == [["EObject", "int"]])
+        let report = try await librarySession(in: directory)
+        let reportClass = try report.selectClass(named: nil)
+        #expect(report.parameterLists(of: "pageCount", in: reportClass).map { $0.map { $0.type?.name } } == [["Book"]])
+        #expect(report.parameterLists(of: "missing", in: reportClass).isEmpty)
     }
 
     @Test("A session reports missing files and invalid sources")

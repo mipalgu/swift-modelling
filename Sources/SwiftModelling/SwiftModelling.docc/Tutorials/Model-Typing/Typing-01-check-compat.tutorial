@@ -1,0 +1,324 @@
+@Tutorial(time: 35) {
+    @Intro(title: "Reusing Modules with Model Typing") {
+        Find out, without running anything, whether a transformation, a template or a query written for one version of a metamodel still works with another.
+
+        Metamodels evolve: classes are renamed, features change their type or multiplicity, and new elements appear. A module written against the old version may or may not still work with models of the new one. Model typing answers the question statically: a metamodel is seen as a model type, and the new metamodel can replace the old one if it is a subtype of it. `swift-atl`, `swift-mtl` and `swift-aql` each offer the check as `check-compat`. In this tutorial, you'll:
+        - Check an ATL transformation against the metamodel it was written for and against a revised version
+        - Read the findings and follow the hints for `--rename`
+        - Compare the partial and total modes, and the isomorphic and non-isomorphic ones
+        - Choose how classes and features are matched with `--subtyping`
+        - Check an MTL template and an AQL query, and let numeric types widen
+        - Learn what each exit status of the check means
+
+        The tutorial assumes that swift-atl, swift-mtl and swift-aql are on your search path, and that you know the basics of Ecore metamodels, ATL, MTL and AQL. Every command runs in one directory, which starts empty.
+
+        @Image(source: "model-typing.svg", alt: "Modules written against version 1 of a metamodel have a footprint, which check-compat compares with version 2 to reach a verdict")
+    }
+
+    @Section(title: "A Transformation Written for One Metamodel") {
+        @ContentAndMedia {
+            The example is a small library: a library holds its books and their writers, and every book has a title, an ISBN, a number of pages, a genre and its authors. A transformation turns the books into the entries of a catalogue.
+
+            `check-compat` does not run a module. It extracts the footprint of the module, the classes, features and enumeration literals that the module reads, writes or instantiates, and checks whether the target metamodel provides each of them in a way that suits its use. This follows the model typing of [Steel and Jézéquel (2007)](https://doi.org/10.1007/s10270-006-0036-6) and the subtyping relations of [Guy et al. (2012)](https://doi.org/10.1007/978-3-642-31491-9_30).
+        }
+
+        @Steps {
+            @Step {
+                Write the first version of the library metamodel.
+
+                @Code(name: "Library.ecore", file: typ-01-step-01-library.ecore)
+
+                `pages` is an `ELong`, and the enumeration `Genre` has the literals `fiction`, `science` and `history`. A library also has an `address`, which none of the modules of this tutorial uses.
+            }
+
+            @Step {
+                Write the metamodel of the catalogue.
+
+                @Code(name: "Catalogue.ecore", file: typ-01-step-02-catalogue.ecore)
+
+                An entry has a title and the names of its creators.
+            }
+
+            @Step {
+                Write a transformation from libraries to catalogues.
+
+                @Code(name: "Library2Catalogue.atl", file: typ-01-step-03-library2catalogue.atl)
+
+                The rule reads the title and the authors of every book and the name of every writer. It creates entries and writes their `title` and `creators`.
+            }
+
+            @Step {
+                Check the transformation against the metamodel it was written for.
+
+                @Code(name: "Terminal", file: typ-01-step-04-check-unchanged.sh)
+
+                Each `--metamodel` binds a metamodel name of the module header, such as `Library` in `IN : Library`, to the file the module was written against. `--target-metamodel` names the metamodel to check against, here the same file. A metamodel without a target metamodel, such as `Catalogue`, is checked against itself, as if it were unchanged. Exit status 0 means that the target metamodels are compatible.
+            }
+        }
+    }
+
+    @Section(title: "A Revised Metamodel") {
+        @ContentAndMedia {
+            The second version of the library metamodel makes several changes at once. Some of them affect the transformation and some do not, and the check tells them apart.
+        }
+
+        @Steps {
+            @Step {
+                Write the second version of the library metamodel.
+
+                @Code(name: "LibraryV2.ecore", file: typ-01-step-05-library-v2.ecore)
+
+                `Writer` is now `Author`, and a library holds `authors` instead of `writers`. A book has an `ISBN` instead of an `isbn`, `pages` is an `EInt`, and every book needs at least one author. The literal `history` is now `historical`, the `address` of a library is gone, and libraries can hold magazines.
+            }
+
+            @Step {
+                Check the transformation against the revised metamodel.
+
+                @Code(name: "Terminal", file: typ-01-step-06-check-v2.sh)
+
+                Each finding names the metamodel, the element and, in brackets, its kind. The transformation needs a class `Writer`, which the revision does not have, and `Book.authors` now refers to a class that is not a subclass of `Writer`. The `hint:` line suggests a renaming, because `Author` has the same structure as `Writer`. Exit status 1 means that the target metamodel is not compatible. The script catches the status with `||` so that it can print it.
+            }
+
+            @Step {
+                Follow the hint and map `Writer` to `Author`.
+
+                @Code(name: "Terminal", file: typ-01-step-07-rename.sh)
+
+                `--rename` maps a name of the original metamodel to the name it has in the target metamodel: `Writer=Author` for a classifier, or `Book.isbn=ISBN` for a feature or a literal, always written with the names of the original. With the renaming, the transformation is compatible with the revision. The other changes, such as the new type of `pages`, do not matter, because the transformation does not use those elements.
+            }
+
+            @Step {
+                Leave out the metamodel of the catalogue.
+
+                @Code(name: "Terminal", file: typ-01-step-08-inconclusive.sh)
+
+                Without a model type for `Catalogue`, the check cannot tell what `Catalogue!Entry` provides. It finds no incompatibility, but lists each `uncertain:` use with its line. Exit status 2 means that the verdict is inconclusive: give every metamodel of the module header with `--metamodel`.
+            }
+        }
+    }
+
+    @Section(title: "Partial and Total Model Types") {
+        @ContentAndMedia {
+            `--mode` chooses the subtyping relation to decide. The partial modes consider only the elements that the module uses, and the total modes every element of the original metamodel. The isomorphic modes require the elements under the same names, while the non-isomorphic modes apply the renamings of `--rename`. In every mode, the target metamodel may add classes, optional features and enumerations.
+
+            - `partial`, the default: the elements that the module uses, after renaming
+            - `partial-isomorphic`: the elements that the module uses, under their own names
+            - `total-non-isomorphic`: every element of the original metamodel, after renaming
+            - `total-isomorphic`: every element of the original metamodel, under its own name
+
+            A partial check answers whether this module can be reused; a total check answers whether every module written for the original metamodel could be.
+        }
+
+        @Steps {
+            @Step {
+                Check the transformation in the mode `partial-isomorphic`.
+
+                @Code(name: "Terminal", file: typ-01-step-09-partial-isomorphic.sh)
+
+                The findings are those of the check without a renaming: in an isomorphic mode, `--rename` has no effect, so `Writer` must exist under its own name. A warning on standard error says that the renaming was ignored.
+            }
+
+            @Step {
+                Check the whole original metamodel in the mode `total-non-isomorphic`.
+
+                @Code(name: "Terminal", file: typ-01-step-10-total.sh)
+
+                Now every element of the original counts, so the renamings must cover `isbn`, `writers` and the literal `history` too, and `--allow-widening` accepts the `EInt` of `pages`, as the last section explains. One value of `--rename` may hold several renamings, separated by commas. One error remains: the revision has no `address`. No renaming can fix that, so the revision is not a total subtype, although it suits the transformation.
+            }
+        }
+    }
+
+    @Section(title: "Matching Semantics") {
+        @ContentAndMedia {
+            `--subtyping` chooses how classes and their features are matched:
+
+            - `access-refined`, the default, matches each element by how the module uses it. A feature that is only read may have a narrower type or multiplicity, one that is only written a wider one, and one that is both read and written must match exactly. Abstractness matters only for classes that the module instantiates.
+            - `object-type-matching` is object type matching as Steel and Jézéquel define it.
+            - `mof-class-matching` is the stricter MOF class matching of Guy et al., which compares multiplicities and abstractness exactly.
+        }
+
+        @Steps {
+            @Step {
+                Check the revision with both published semantics.
+
+                @Code(name: "Terminal", file: typ-01-step-11-subtyping.sh)
+
+                In the revision, every book needs at least one author. The transformation only reads `authors`, so a model of the revision gives it nothing it cannot handle, and object type matching accepts the revision, as `access-refined` did before. MOF class matching requires equal multiplicities and rejects it.
+            }
+        }
+    }
+
+    @Section(title: "Templates and Queries") {
+        @ContentAndMedia {
+            `swift-mtl check-compat` and `swift-aql check-compat` take the same options, but a template module or a query is checked against one metamodel. The name in `--metamodel` is the name under which the findings refer to it, conventionally the name of its package, which also qualifies the types of the module, such as `library::Book`.
+        }
+
+        @Steps {
+            @Step {
+                Write an MTL template that lists the books of a library.
+
+                @Code(name: "catalogue.mtl", file: typ-01-step-12-catalogue.mtl)
+
+                The template reads the name of the library, and the title, the ISBN and the genre of each book. It compares the genre with the literal `history`.
+            }
+
+            @Step {
+                Check the template against the revision.
+
+                @Code(name: "Terminal", file: typ-01-step-13-check-mtl.sh)
+
+                The template needs `isbn`, for which a hint suggests `ISBN`, and the literal `history`. The names `history` and `historical` are not close enough for a near miss, but `historical` is the only literal of the revised `Genre` that no original literal has, so a hint suggests it as well. The warning names the same clue: models of the revision may hold a literal `historical`, which the template does not know.
+            }
+
+            @Step {
+                Map the feature and the literal to their new names.
+
+                @Code(name: "Terminal", file: typ-01-step-14-mtl-rename.sh)
+
+                With both renamings, the template is compatible. The template itself is unchanged; the renamings state how to adapt it, or the models, to the revision.
+            }
+
+            @Step {
+                Write an AQL query that selects the titles of the long books.
+
+                @Code(name: "long-books.aql", file: typ-01-step-15-long-books.aql)
+
+                The query is evaluated with `self` bound to a library.
+            }
+
+            @Step {
+                Check the query, giving the type of `self`.
+
+                @Code(name: "Terminal", file: typ-01-step-16-check-aql.sh)
+
+                `--variable` gives the written type of a variable of the expression, so that the features it navigates can be found. The query reads `pages`, which is an `ELong` in the original and an `EInt` in the revision.
+            }
+
+            @Step {
+                Let numeric types widen in the direction of use.
+
+                @Code(name: "Terminal", file: typ-01-step-17-widening.sh)
+
+                With `--allow-widening`, a feature that the module reads may have a narrower numeric type in the target metamodel, because every `EInt` is also a valid `ELong`. A feature that it writes may have a wider one. Widening is an extension of `access-refined`: the published semantics of `--subtyping` relate no data types and ignore the option with a warning. `--format json` writes the same report as one JSON object, which starts with the flags `compatible` and `conclusive` and goes on with the mode, the findings, the footprint and the renaming hints. In the footprint, each feature is an object with its class, its name, its access, such as `["read"]`, and whether the use is certain.
+            }
+        }
+    }
+
+    @Section(title: "Exit Statuses") {
+        @ContentAndMedia {
+            The exit status of `check-compat` tells a script what the check found, in the same way for all three tools:
+
+            - 0: the target metamodels are compatible
+            - 1: they are not compatible
+            - 2: no incompatibility was found, but some types could not be inferred, so the verdict is inconclusive
+            - 3: the check could not be made, for example because a file cannot be read or parsed
+            - 64: the command line is not valid
+
+            An inconclusive check still checks the uses it could guess, so a status of 1 takes precedence over 2.
+        }
+
+        @Steps {
+            @Step {
+                Check the query without the type of `self`.
+
+                @Code(name: "Terminal", file: typ-01-step-18-no-variable.sh)
+
+                Without `--variable`, the check cannot know the type of `self`. It names the class that could own `books`, and reports the verdict as inconclusive with status 2.
+            }
+
+            @Step {
+                Name a query file that does not exist.
+
+                @Code(name: "Terminal", file: typ-01-step-19-cannot-check.sh)
+
+                A file that cannot be read gives status 3, which a script can tell apart from an incompatible metamodel.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            A revision of a metamodel drops a feature that no module uses. Which mode still accepts it?
+
+            @Choice(isCorrect: true) {
+                `partial`
+
+                @Justification(reaction: "Correct!") {
+                    A partial mode considers only the elements that the module uses, so an unused feature does not matter.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `total-non-isomorphic`
+
+                @Justification(reaction: "Not quite!") {
+                    A total mode requires every element of the original metamodel, as the missing `address` showed.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `total-isomorphic`
+
+                @Justification(reaction: "Try again!") {
+                    This mode requires every element of the original, under the same name.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            A module only reads a feature declared as `ELong`, which the revision declares as `EInt`. What makes the check accept it?
+
+            @Choice(isCorrect: false) {
+                `--rename Book.pages=pages`
+
+                @Justification(reaction: "Not quite!") {
+                    The name is unchanged. The difference is the type of the feature.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                `--allow-widening`
+
+                @Justification(reaction: "Correct!") {
+                    Every `EInt` is a valid `ELong`, so a feature that is only read may have the narrower type once widening is allowed.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `--subtyping object-type-matching`
+
+                @Justification(reaction: "Try again!") {
+                    Object type matching requires the same data type, so it rejects the `EInt` even with widening allowed.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            `check-compat` exits with status 2. What does that mean?
+
+            @Choice(isCorrect: false) {
+                The target metamodel is not compatible
+
+                @Justification(reaction: "Not quite!") {
+                    An incompatibility gives status 1.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                A file could not be read
+
+                @Justification(reaction: "Try again!") {
+                    A check that cannot be made gives status 3.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                No incompatibility was found, but the verdict is inconclusive
+
+                @Justification(reaction: "Correct!") {
+                    Some types could not be inferred, such as those of a variable without `--variable` or of a metamodel without `--metamodel`.
+                }
+            }
+        }
+    }
+}

@@ -23,7 +23,8 @@ public enum RenamingHintReason: String, Sendable, Hashable, Codable {
     case nearMissName
     /// One name contains the other.
     case containedName
-    /// The only unmatched provided feature of the same kind and type.
+    /// The only unmatched provided feature of the same kind and type, or the only unmatched
+    /// literal of the provided enumeration.
     case uniqueStructuralCandidate
     /// An unmatched provided class with largely the same feature names.
     case similarStructure

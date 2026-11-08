@@ -1,0 +1,12 @@
+module Library2Catalogue;
+create OUT : Catalogue from IN : Library;
+
+rule Book2Entry {
+    from
+        b : Library!Book
+    to
+        e : Catalogue!Entry (
+            title <- b.title,
+            creators <- b.authors->collect(w | w.name)
+        )
+}

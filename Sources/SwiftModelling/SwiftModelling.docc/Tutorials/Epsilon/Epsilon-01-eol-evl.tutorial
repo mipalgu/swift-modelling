@@ -1,0 +1,230 @@
+@Tutorial(time: 30) {
+    @Intro(title: "Querying and Validating Models with EOL and EVL") {
+        Run Epsilon Object Language programs against a model, and check the model with Epsilon Validation Language constraints and critiques.
+
+        The Epsilon family of languages shares one expression language, the Epsilon Object Language (EOL). Each task language adds its own structure around it: EVL adds constraints, ETL transformation rules and EGL templates. `swift-epsilon` runs all four against models in XMI, JSON or UML. This tutorial uses the Families model of the ATL tutorials, so that you can compare the languages. In this tutorial, you'll:
+        - Run an EOL program that prints a report, with a parameter from the command line
+        - Change a model with EOL and store the result in a new file
+        - Write EVL constraints and critiques with fixes
+        - Read the findings of a validation and its exit status
+        - Repair a model with `--fix`, and fail on critiques with `--strict`
+
+        The tutorial assumes that swift-epsilon is on your search path. Every command runs in one directory, which starts empty; the next tutorial continues in the same directory.
+
+        @Image(source: "epsilon-languages.svg", alt: "The Families model passes through the four commands of swift-epsilon: EOL, EVL, ETL and EGL")
+    }
+
+    @Section(title: "The Families Model") {
+        @ContentAndMedia {
+            The Families metamodel organises people into families. A family has a last name and contains its father, mother, sons and daughters, and each member has a first name and refers back to its family through the opposite references `familyFather`, `familyMother`, `familySon` and `familyDaughter`.
+        }
+
+        @Steps {
+            @Step {
+                Save the Families metamodel.
+
+                @Code(name: "Families.ecore", file: eps-01-step-01-families.ecore)
+
+                This is the metamodel of the first ATL tutorial, with the namespace URI `http://www.example.org/families`.
+            }
+
+            @Step {
+                Save a model with three families.
+
+                @Code(name: "sample-Families.xmi", file: eps-01-step-02-sample-families.xmi)
+            }
+        }
+    }
+
+    @Section(title: "Programs in EOL") {
+        @ContentAndMedia {
+            An EOL program is a sequence of statements, much like a script. It refers to the types of a model by name, as in `Family.all`, which holds every instance of `Family`, and navigates features with a dot. Collections offer operations such as `select`, `collect` and `sortBy`, which take a lambda written `x | expression`.
+
+            Every model is given a name on the command line, as in `--model Families=sample-Families.xmi`, and `-m` names its metamodel. A type can be qualified with the name of its model, as in `Families!Family`, when several models define a type of the same name.
+        }
+
+        @Steps {
+            @Step {
+                Write a program that prints a line for each family and counts the members.
+
+                @Code(name: "report.eol", file: eps-01-step-03-report.eol)
+
+                `greeting` is not declared in the program. It is a parameter, which the command line gives as a global variable.
+            }
+
+            @Step {
+                Run the program.
+
+                @Code(name: "Terminal", file: eps-01-step-04-run-report.sh)
+
+                `--param greeting=Hello` binds the variable. A value is a Boolean for `true` or `false`, an Integer for a whole number, a Real for another number, and a String otherwise.
+            }
+
+            @Step {
+                Write a program that adds a daughter to a family.
+
+                @Code(name: "adopt.eol", file: eps-01-step-05-adopt.eol)
+
+                `new Member` creates an object, and adding it to `daughters` places it in the family, as containment does in Ecore. The operation `familyMembers` is defined on `Family` and called like a feature of every family, as an ATL helper with a context would be.
+            }
+
+            @Step {
+                Run the program and store the changed model.
+
+                @Code(name: "Terminal", file: eps-01-step-06-run-adopt.sh)
+
+                A model is never written unless you ask for it. `--store Families=families-2.xmi` writes the model named `Families` to a new file once the program has succeeded, and `--store Families` alone would replace `sample-Families.xmi`. The next tutorial uses `families-2.xmi`.
+            }
+        }
+    }
+
+    @Section(title: "Constraints and Critiques in EVL") {
+        @ContentAndMedia {
+            An EVL module groups its checks by context, the type whose instances they check. A `constraint` is a check that must hold: an element that does not satisfy it is an error. A `critique` is a recommendation: an element that does not satisfy it is a warning. Each check has a `check` expression, a `message` and optionally one or more `fix` blocks, whose `do` part repairs the element.
+        }
+
+        @Steps {
+            @Step {
+                Write constraints for families and members.
+
+                @Code(name: "families.evl", file: eps-01-step-07-families.evl)
+
+                The operation `family` finds the family of a member through whichever opposite reference is set. Operations defined in an EVL module are available to every check, as in EOL.
+            }
+
+            @Step {
+                Validate the families.
+
+                @Code(name: "Terminal", file: eps-01-step-08-validate.sh)
+
+                Every check holds, so the command exits with status 0.
+            }
+
+            @Step {
+                Save a copy of the model with two mistakes in the second family.
+
+                @Code(name: "families-errors.xmi", file: eps-01-step-09-families-errors.xmi)
+
+                The last name `sailor` starts with a lower-case letter, and one son has an empty first name.
+            }
+
+            @Step {
+                Validate the copy.
+
+                @Code(name: "Terminal", file: eps-01-step-10-validate-errors.sh)
+
+                Each finding names its kind, its check and the element, followed by the message and the fixes on offer. An element is shown by its class, followed by its name in parentheses if it has a `name` attribute; members and families have none. The unsatisfied constraint makes the command exit with status 2, after printing every finding.
+            }
+
+            @Step {
+                Repair the copy with the fixes.
+
+                @Code(name: "Terminal", file: eps-01-step-11-fix.sh)
+
+                `--fix` applies the first fix of each finding, prints its title after `applied:`, and validates again. `--store` keeps the repaired model, here in a file of its own.
+            }
+
+            @Step {
+                Make a copy whose only problem is a last name in lower case, and validate it.
+
+                @Code(name: "Terminal", file: eps-01-step-12-critique.sh)
+
+                An unsatisfied critique is reported as a warning, but validation succeeds with status 0.
+            }
+
+            @Step {
+                Validate the copy with `--strict`.
+
+                @Code(name: "Terminal", file: eps-01-step-13-strict.sh)
+
+                With `--strict`, critiques fail validation as constraints do, so the command exits with status 2. Use it where warnings must not pass unnoticed, such as in continuous integration.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            How does an EOL program receive the value of a parameter given as `--param greeting=Hello`?
+
+            @Choice(isCorrect: false) {
+                As an argument of its first operation
+
+                @Justification(reaction: "Not quite!") {
+                    An EOL program needs no main operation; its statements run in order.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                As a global variable named `greeting`
+
+                @Justification(reaction: "Correct!") {
+                    Each parameter becomes a global variable that the program reads by name.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                As a model named `greeting`
+
+                @Justification(reaction: "Try again!") {
+                    Models are bound with `--model`; `--param` binds values.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What is the difference between a `constraint` and a `critique` in EVL?
+
+            @Choice(isCorrect: true) {
+                An unsatisfied constraint is an error, an unsatisfied critique a warning
+
+                @Justification(reaction: "Correct!") {
+                    Only constraints fail validation, unless `--strict` makes critiques fail it too.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Only critiques can offer fixes
+
+                @Justification(reaction: "Not quite!") {
+                    Both can offer fixes, as the constraint `HasFirstName` does.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Constraints check single elements, critiques whole models
+
+                @Justification(reaction: "Try again!") {
+                    Both are checked on every instance of their context.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            You run `swift-epsilon eol run adopt.eol --model Families=sample-Families.xmi -m Families.ecore` without `--store`. What happens to `sample-Families.xmi`?
+
+            @Choice(isCorrect: false) {
+                It is replaced by the changed model
+
+                @Justification(reaction: "Not quite!") {
+                    That needs `--store Families`.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The changed model is written beside it with a new name
+
+                @Justification(reaction: "Try again!") {
+                    The tool writes no file of its own accord; `--store Families=file` names one.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                It stays as it was
+
+                @Justification(reaction: "Correct!") {
+                    A model is only written when `--store` or `--target` names it.
+                }
+            }
+        }
+    }
+}

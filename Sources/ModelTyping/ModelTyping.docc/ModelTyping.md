@@ -47,7 +47,9 @@ The ``MatchingSemantics`` of the ``CheckOptions`` chooses how classes and proper
 
 ### Tuning a check
 
-``CheckOptions`` hold a ``Renaming`` from required to provided names, which applies in the non-isomorphic modes and is written as `Writer=Author` for a classifier or `Book.isbn=ISBN` for a feature or literal (see ``Renaming/init(parsing:)``); whether numeric data types may widen in the direction of use; and whether lower bounds that do not conform are reported as warnings.
+``CheckOptions`` hold a ``Renaming`` from required to provided names, which applies in the non-isomorphic modes and is written as `Writer=Author` for a classifier or `Book.isbn=ISBN` for a feature or literal (see ``Renaming/init(parsing:)``); whether numeric data types may widen in the direction of use; and whether lower bounds that do not conform are reported as warnings. Widening and lenient lower bounds are extensions of the access-refined semantics. The published definitions do not apply them, even to a feature that a module only reads: they match a property type only by the same type or, for classes, by a subclass, so `EInt` does not match `ELong`, and they assume every possible use of a property. A finding that widening would have resolved under the access-refined semantics says so.
+
+A ``CompatibilityReport`` is `Codable`. In the JSON of a ``MetamodelFootprint``, the classes are an object indexed by class name, the features and literals are arrays of objects that hold the names of the reference beside its ``Usage``, and an ``AccessMode`` is an array of the names of its uses, such as `["read", "write"]`.
 
 ### Reading a report
 
