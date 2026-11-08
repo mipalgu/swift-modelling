@@ -6,8 +6,8 @@ Generate code from models using templates.
 
 The `swift-mtl` command-line tool executes MTL (Model-to-Text
 Language) templates to generate code and other text artefacts from
-models. It provides a complete implementation of the OMG MOFM2T
-(MOF Model-to-Text Transformation) standard with support for file
+models. It provides a complete implementation of the
+[OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec/MOFM2T/1.0) standard with support for file
 generation, template inheritance, query expressions, and protected
 regions.
 
@@ -68,7 +68,7 @@ swift-mtl generate --template-set <directory|language> [options]
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`) for every option below; an option below that is given overrides it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
-- `--encoding <name>` - The character encoding of the template file and the modules it imports, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8); the `encoding` key of the configuration file names it too
+- `--encoding <name>` - The character encoding of the template file, or of the templates of a template set, and the modules they import, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8); the `encoding` key of the configuration file names it too
 - `--block-line-breaks <acceleo|kept>` - Whether the line break after a block written on one line is dropped when the line is empty once the block has run (`acceleo`, the default, as in Acceleo 4) or always written (`kept`, as in version 0.6)
 - `--collection-parameters <conforming|exact>` - Whether any collection whose elements conform, a many-valued feature or a single object conforms to a collection-typed parameter (`conforming`, the default) or collection types are matched as in version 0.6 (`exact`)
 - `--check-let-types`, `--no-check-let-types` - Whether typed `let` blocks check their values (the default) or bind them unchecked, as in version 0.6
@@ -87,7 +87,7 @@ swift-mtl generate --template-set <directory|language> [options]
 
 **Template path.** Imported modules (`[import shared::Common/]`) are searched in the directory of the template and then in the `--template-path` directories, in order. A directory that does not exist is an error.
 
-**Encoding.** The template file and the modules it imports are read as UTF-8. A file that is not valid UTF-8 is read as ISO-8859-1 instead, with a warning on standard error that names the file and the line and column of its first byte that is not UTF-8. `--encoding` names the encoding of the files instead (`UTF-8`, `UTF-16`, `UTF-16BE`, `UTF-16LE`, `ISO-8859-1`, `windows-1252` or `US-ASCII`, or an alias such as `latin1`); they are then read in that encoding alone, and a file that is not valid in it is an error. The encoding applies to a template file; the templates of a template set are read as UTF-8, with the same fallback.
+**Encoding.** The template file and the modules it imports are read as UTF-8. A file that is not valid UTF-8 is read as ISO-8859-1 instead, with a warning on standard error that names the file and the line and column of its first byte that is not UTF-8. `--encoding` names the encoding of the files instead (`UTF-8`, `UTF-16`, `UTF-16BE`, `UTF-16LE`, `ISO-8859-1`, `windows-1252` or `US-ASCII`, or an alias such as `latin1`); they are then read in that encoding alone, and a file that is not valid in it is an error. The encoding applies to the templates of a template set given with `--template-set` as well; a warning names such a template by its path within the set, such as `warning: generate.mtl: line 2, column 6: ...`, because the set is copied together with the files of `--template-path` before it is read.
 
 **Template sets.** `--template-set` runs a template set instead of a single template file; give one or the other. A path names a directory that holds a `templateset.json` descriptor, and a plain name is the language of a bundled set. The main template of the set, named by its descriptor, receives the root objects of the models in command line order, and the data models of the set are available through `templateData('name')`. The modules that the descriptor lists under `imports` are copied beside the set, so that its modules import them by qualified name. `--code-style` chooses one of the code styles of the set; `--template` does not apply to a set.
 
@@ -111,7 +111,7 @@ same=[parameter('package')/]
 
 **Text outside file blocks.** Text that the templates write outside their `[file]` blocks is saved as `stdout` in the output directory. Nothing is saved when that text is only white space, such as the line breaks between file blocks, and a `stdout` file that a `[file]` block of the same run wrote is kept. `--print-standard-output` prints the text on standard output instead, before the completion message, and saves no `stdout` file.
 
-**Typed let blocks.** A `let` variable may declare a type, as in `[let n : Integer = c.size]...[/let]`. By default a value that does not conform to that type stops the generation with an error that names the variable and both types; `null` conforms to every type. The OMG MOFM2T specification and Acceleo 3 treat a typed `let` as a type test instead. `--let-type-mismatches skip` follows them: the `let` block is skipped, the generation continues, and a warning that names the variable, its declared type and the type of the value is written to standard error, such as `warning: line 4, column 1: Variable 'n' of type Integer cannot hold a value of type String, so the let block is skipped`. A mismatch that recurs, for instance in a loop, is reported once. With `--no-check-let-types`, values are bound unchecked, as version 0.6 did, and the option has no effect. `swift-ecore generate` and `swift-atl generate` accept the option too, for their templates.
+**Typed let blocks.** A `let` variable may declare a type, as in `[let n : Integer = c.size]...[/let]`. By default a value that does not conform to that type stops the generation with an error that names the variable and both types; `null` conforms to every type. The [OMG MOFM2T specification](https://www.omg.org/spec/MOFM2T/1.0) and Acceleo 3 treat a typed `let` as a type test instead. `--let-type-mismatches skip` follows them: the `let` block is skipped, the generation continues, and a warning that names the variable, its declared type and the type of the value is written to standard error, such as `warning: line 4, column 1: Variable 'n' of type Integer cannot hold a value of type String, so the let block is skipped`. A mismatch that recurs, for instance in a loop, is reported once. With `--no-check-let-types`, values are bound unchecked, as version 0.6 did, and the option has no effect. `swift-ecore generate` and `swift-atl generate` accept the option too, for their templates.
 
 **Dot calls on collections.** A call written with `.` on a collection applies to each element, so `[names.size()/]` writes the length of each name and `[names->size()/]` the number of names. When a dot call reaches an element without the operation while the collection has it, as in `[Sequence{1, 2}.size()/]`, a warning that suggests `->size()` is written to standard error with the other generation warnings, such as `warning: line 3, column 1: ...`. Warnings do not change the exit status. `swift-ecore generate` and `swift-atl generate` report them too, for their templates.
 
@@ -229,6 +229,69 @@ swift-mtl parse GenerateSwift.mtl --json
 
 # Parse several files
 swift-mtl parse Template1.mtl Template2.mtl --detailed
+```
+
+### check-compat
+
+Check whether a template module can be used with another metamodel, such as a revised version of
+the metamodel that it was written against, without generating anything.
+
+```bash
+swift-mtl check-compat <template> --metamodel <name=file> --target-metamodel <name=file> [options]
+```
+
+The command parses the module with the modules that it imports and extends, extracts their
+footprint, the classes, features and enumeration literals that their templates and queries read,
+and checks the target metamodel against it by structural model subtyping. A template module is
+checked against one metamodel; the name of `--metamodel` is the name under which the findings
+refer to it, conventionally the name of its package, which also qualifies the types of the
+module, such as `library` in `library::Book`. The library behind the command is described in the
+ModelTyping documentation.
+
+**Options:**
+
+- `-m, --metamodel <name=file>` - The metamodel that the module was written against, named conventionally after its package (give exactly one); the file may be in any metamodel format, such as Ecore, JSON, KM3 or EMOF
+- `--target-metamodel <name=file>` - The metamodel to check the module against, under the name of the `--metamodel`
+- `--mode <total-isomorphic|total-non-isomorphic|partial-isomorphic|partial>` - The subtyping relation to decide (default: `partial`): whether every element of the metamodel (`total-...`) or only the elements the module uses (`partial...`) must exist in the target metamodel, and whether under the same names (`...isomorphic`) or after the renamings of `--rename`
+- `--subtyping <access-refined|object-type-matching|mof-class-matching>` - How model subtyping matches classes and features (default: `access-refined`, which compares each element by how the module reads, writes or instantiates it); `object-type-matching` (alias `steel-jezequel`) and `mof-class-matching` (alias `guy`) are the published definitions of [Steel and Jézéquel (2007)](https://doi.org/10.1007/s10270-006-0036-6) and [Guy et al. (2012)](https://doi.org/10.1007/978-3-642-31491-9_30)
+- `--rename <required=provided>` - Map a name of the original metamodel to a name of the target metamodel, as `Class=NewClass` for a class, enumeration or data type, or `Owner.member=newMember` for a feature or literal (repeatable, or separated by commas); renamings apply in the modes `partial` and `total-non-isomorphic`
+- `--allow-widening` - Let numeric types widen in the direction of use: an attribute that is read may have a narrower type in the target metamodel, such as `EInt` where `ELong` was declared, and one that is written a wider type
+- `--lenient-lower-bounds` - Report lower bounds that do not conform as warnings instead of errors
+- `--format <text|json>` - The format of the report (default: `text`); `json` writes one object with the flags `compatible` and `conclusive`, the mode, the findings, the footprint and the renaming hints
+- `--encoding <name>` - The character encoding of the module and the modules it imports (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8)
+- `--km3-primitives`, `--package-name`, `--ns-uri`, `--ns-prefix`, `--asdl-enumerations`, `--langium-types`, `--sdf3-labels` - How metamodels in KM3 and grammar formats are read, as for the other commands
+
+The report is printed to standard output. Its first line states the verdict, the mode and the
+numbers of errors and warnings, such as `incompatible (partial): 1 error(s), 0 warning(s)`;
+each finding follows on a line of its own, starting with `error:` or `warning:` and naming the
+element, such as `library!Writer`, then each `uncertain:` use whose type could not be inferred, and
+each hint, such as `hint: --rename Writer=Author`, with the reason for it in parentheses, that would
+reconcile a missing element.
+
+**Exit status:**
+
+- `0` - The target metamodels are compatible
+- `1` - The target metamodels are not compatible
+- `2` - No incompatibility was found, but the types of some expressions could not be inferred, so the verdict is inconclusive
+- `3` - The check could not be made, such as for a file that cannot be read or parsed
+- `64` - The arguments are invalid, such as a `--target-metamodel` whose name no `--metamodel` gives, or several `--metamodel` options
+
+**Examples:**
+
+```bash
+# Check a template module against a revised metamodel
+swift-mtl check-compat catalogue.mtl \
+    --metamodel library=Library.ecore --target-metamodel library=LibraryV2.ecore
+
+# Apply renamings and let numeric types widen
+swift-mtl check-compat catalogue.mtl \
+    --metamodel library=Library.ecore --target-metamodel library=LibraryV2.ecore \
+    --rename Writer=Author --rename Book.isbn=ISBN --allow-widening
+
+# Check the whole metamodel rather than the part the module uses, as JSON
+swift-mtl check-compat catalogue.mtl \
+    --metamodel library=Library.ecore --target-metamodel library=LibraryV2.ecore \
+    --mode total-non-isomorphic --format json
 ```
 
 ## Common Workflows

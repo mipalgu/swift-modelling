@@ -23,6 +23,9 @@ the Acceleo Query Language (AQL), and aims to stay compatible with the Eclipse t
 - **swift-atl**: run, check and analyse ATL transformations and queries written for Eclipse ATL
 - **swift-mtl**: generate text from MTL templates and template sets, merging with existing files
 - **swift-aql**: evaluate AQL expressions against models, interactively or in scripts
+- **swift-henshin**: apply, validate, analyse and explore Henshin graph transformations
+- **swift-epsilon**: run Epsilon EOL programs, EVL constraints, ETL transformations and EGL templates
+- **swift-xtend**: run Xtend methods and generators on models
 - **Cross-platform**: macOS, Linux, Windows and WebAssembly
 
 ## Requirements

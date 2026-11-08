@@ -23,6 +23,10 @@ let package = Package(
             name: "ModellingCommandLine",
             targets: ["ModellingCommandLine"]
         ),
+        .library(
+            name: "ModelTyping",
+            targets: ["ModelTyping"]
+        ),
         .executable(
             name: "swift-ecore",
             targets: ["swift-ecore"]
@@ -39,6 +43,18 @@ let package = Package(
             name: "swift-aql",
             targets: ["swift-aql"]
         ),
+        .executable(
+            name: "swift-henshin",
+            targets: ["swift-henshin"]
+        ),
+        .executable(
+            name: "swift-epsilon",
+            targets: ["swift-epsilon"]
+        ),
+        .executable(
+            name: "swift-xtend",
+            targets: ["swift-xtend"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.6.2"),
@@ -47,6 +63,9 @@ let package = Package(
         .package(url: "https://github.com/mipalgu/swift-atl", branch: "development"),
         .package(url: "https://github.com/mipalgu/swift-mtl", branch: "development"),
         .package(url: "https://github.com/mipalgu/swift-aql", branch: "development"),
+        .package(url: "https://github.com/mipalgu/swift-henshin", branch: "development"),
+        .package(url: "https://github.com/mipalgu/swift-epsilon", branch: "development"),
+        .package(url: "https://github.com/mipalgu/swift-xtend", branch: "development"),
         .package(url: "https://github.com/mipalgu/swift-docc-static", branch: "main"),
         .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.4.0"),
     ],
@@ -89,6 +108,19 @@ let package = Package(
             ]
         ),
         .target(
+            name: "ModelTyping",
+            dependencies: [
+                .product(name: "ECore", package: "swift-ecore"),
+                .product(name: "EMFBase", package: "swift-ecore"),
+                .product(name: "AQL", package: "swift-aql"),
+                .product(name: "MTL", package: "swift-mtl"),
+                .product(name: "ATL", package: "swift-atl"),
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency")
+            ]
+        ),
+        .target(
             name: "ModellingCommandLine",
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
@@ -100,6 +132,7 @@ let package = Package(
                 .product(name: "MTL", package: "swift-mtl"),
                 .product(name: "ATL", package: "swift-atl"),
                 "ModellingGenerators",
+                "ModelTyping",
             ],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency")
@@ -129,6 +162,7 @@ let package = Package(
                 .product(name: "GenModel", package: "swift-ecore"),
                 "ModellingGenerators",
                 "ModellingCommandLine",
+                "ModelTyping",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
             swiftSettings: [
@@ -145,6 +179,7 @@ let package = Package(
                 "ModellingGenerators",
                 "ModellingPipeline",
                 "ModellingCommandLine",
+                "ModelTyping",
                 .product(name: "ECore", package: "swift-ecore"),
                 .product(name: "EMFBase", package: "swift-ecore"),
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
@@ -162,6 +197,54 @@ let package = Package(
                 .product(name: "ECore", package: "swift-ecore"),
                 .product(name: "EMFBase", package: "swift-ecore"),
                 "ModellingCommandLine",
+                "ModelTyping",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency")
+            ]
+        ),
+        .executableTarget(
+            name: "swift-henshin",
+            dependencies: [
+                .product(name: "Henshin", package: "swift-henshin"),
+                .product(name: "HenshinAnalysis", package: "swift-henshin"),
+                .product(name: "HenshinStateSpace", package: "swift-henshin"),
+                .product(name: "AQL", package: "swift-aql"),
+                .product(name: "ECore", package: "swift-ecore"),
+                .product(name: "EMFBase", package: "swift-ecore"),
+                "ModellingCommandLine",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency")
+            ]
+        ),
+        .executableTarget(
+            name: "swift-epsilon",
+            dependencies: [
+                .product(name: "EOL", package: "swift-epsilon"),
+                .product(name: "EVL", package: "swift-epsilon"),
+                .product(name: "ETL", package: "swift-epsilon"),
+                .product(name: "EGL", package: "swift-epsilon"),
+                .product(name: "ECore", package: "swift-ecore"),
+                .product(name: "EMFBase", package: "swift-ecore"),
+                "ModellingCommandLine",
+                "ModellingGenerators",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency")
+            ]
+        ),
+        .executableTarget(
+            name: "swift-xtend",
+            dependencies: [
+                .product(name: "Xtend", package: "swift-xtend"),
+                .product(name: "ECore", package: "swift-ecore"),
+                .product(name: "EMFBase", package: "swift-ecore"),
+                "ModellingCommandLine",
+                "ModellingGenerators",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
             swiftSettings: [
@@ -201,6 +284,7 @@ let package = Package(
             name: "ModellingCommandLineTests",
             dependencies: [
                 "ModellingCommandLine",
+                "ModelTyping",
                 .product(name: "MultiLevel", package: "swift-ecore"),
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "ECore", package: "swift-ecore"),
@@ -229,7 +313,8 @@ let package = Package(
         .testTarget(
             name: "swift-atl-tests",
             dependencies: [
-                .product(name: "Subprocess", package: "swift-subprocess")
+                .product(name: "Subprocess", package: "swift-subprocess"),
+                "swift-atl",
             ],
             resources: [
                 .copy("Resources")
@@ -243,6 +328,7 @@ let package = Package(
             dependencies: [
                 .product(name: "Subprocess", package: "swift-subprocess"),
                 .product(name: "MTL", package: "swift-mtl"),
+                "swift-mtl",
             ],
             resources: [
                 .copy("Resources")
@@ -260,6 +346,71 @@ let package = Package(
                 .product(name: "EMFBase", package: "swift-ecore"),
                 "ModellingCommandLine",
                 "swift-aql",
+            ],
+            resources: [
+                .copy("Resources")
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency")
+            ]
+        ),
+        .testTarget(
+            name: "ModelTypingTests",
+            dependencies: [
+                "ModelTyping",
+                .product(name: "ECore", package: "swift-ecore"),
+                .product(name: "EMFBase", package: "swift-ecore"),
+                .product(name: "AQL", package: "swift-aql"),
+                .product(name: "MTL", package: "swift-mtl"),
+                .product(name: "ATL", package: "swift-atl"),
+            ],
+            resources: [
+                .copy("Fixtures")
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency")
+            ]
+        ),
+        .testTarget(
+            name: "swift-henshin-tests",
+            dependencies: [
+                .product(name: "Subprocess", package: "swift-subprocess"),
+                .product(name: "Henshin", package: "swift-henshin"),
+                .product(name: "HenshinAnalysis", package: "swift-henshin"),
+                .product(name: "HenshinStateSpace", package: "swift-henshin"),
+                .product(name: "ECore", package: "swift-ecore"),
+                .product(name: "EMFBase", package: "swift-ecore"),
+                "ModellingCommandLine",
+                "swift-henshin",
+            ],
+            resources: [
+                .copy("Resources")
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency")
+            ]
+        ),
+        .testTarget(
+            name: "swift-epsilon-tests",
+            dependencies: [
+                .product(name: "Subprocess", package: "swift-subprocess"),
+                .product(name: "ECore", package: "swift-ecore"),
+                .product(name: "EOL", package: "swift-epsilon"),
+                "swift-epsilon",
+            ],
+            resources: [
+                .copy("Resources")
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency")
+            ]
+        ),
+        .testTarget(
+            name: "swift-xtend-tests",
+            dependencies: [
+                .product(name: "Subprocess", package: "swift-subprocess"),
+                .product(name: "ECore", package: "swift-ecore"),
+                "swift-xtend",
             ],
             resources: [
                 .copy("Resources")

@@ -337,6 +337,15 @@ struct MetamodelComparer {
         property(.derived, of: element, path: path, "\(originalShape.derived)", "\(revisedShape.derived)")
         property(.transient, of: element, path: path, "\(originalShape.transient)", "\(revisedShape.transient)")
         property(.readOnly, of: element, path: path, "\(!originalShape.changeable)", "\(!revisedShape.changeable)")
+        property(.ordered, of: element, path: path, "\(originalShape.ordered)", "\(revisedShape.ordered)")
+        property(.unique, of: element, path: path, "\(originalShape.unique)", "\(revisedShape.unique)")
+        property(.volatile, of: element, path: path, "\(originalShape.volatile)", "\(revisedShape.volatile)")
+        property(.unsettable, of: element, path: path, "\(originalShape.unsettable)", "\(revisedShape.unsettable)")
+        if let originalReference = original as? EReference, let revisedReference = revised as? EReference {
+            property(
+                .resolveProxies, of: element, path: path, "\(originalReference.resolveProxies)",
+                "\(revisedReference.resolveProxies)")
+        }
         property(
             .defaultValue, of: element, path: path, originalShape.defaultValueLiteral ?? ComparisonVocabulary.none,
             revisedShape.defaultValueLiteral ?? ComparisonVocabulary.none)

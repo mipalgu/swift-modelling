@@ -1,0 +1,247 @@
+@Tutorial(time: 35) {
+    @Intro(title: "Textual Metamodels with Emfatic and Xcore") {
+        Author a metamodel as text in Emfatic and in Xcore, convert both to Ecore, and compare what each notation produces.
+
+        Emfatic and Xcore are two textual notations for Ecore metamodels. Emfatic mirrors Ecore closely, with Java-like declarations. Xcore reads more like a programming language and can carry the bodies of operations, written in the Xbase expression language. In this tutorial, you'll:
+        - Write a small lending library metamodel in Emfatic
+        - Write the same metamodel in Xcore, with the body of an operation
+        - Inspect both and convert them to Ecore
+        - Compare the two Ecore metamodels and find what Xcore adds
+        - Write an Ecore metamodel back as Xcore and as Emfatic
+        - Validate models with a textual metamodel as their metamodel
+
+        Every command in this tutorial runs in one directory, which starts empty.
+
+        @Image(source: "metamodel-formats.svg", alt: "Emfatic and Xcore texts are read as Ecore metamodels and written back from them")
+    }
+
+    @Section(title: "Writing the Metamodel in Emfatic") {
+        @ContentAndMedia {
+            An Emfatic document declares one package. The `@namespace` annotation before it gives the namespace URI and prefix. Inside the package, `class`, `abstract class`, `interface`, `enum` and `datatype` declare the classifiers.
+
+            A class declares its features with three keywords: `attr` for an attribute, `ref` for a reference, and `val` for a containment reference. The multiplicity follows the type in square brackets: `[1]` is required, `[*]` is any number, `[+]` is one or more, and a feature without brackets is optional. `#` after the multiplicity names the opposite reference. Modifiers such as `id`, `readonly` or `transient` come before the declaration, and `op` declares an operation, which has no body in Emfatic.
+        }
+
+        @Steps {
+            @Step {
+                Write the lending library metamodel in Emfatic.
+
+                @Code(name: "Library.emf", file: fmt-03-step-01-library.emf)
+
+                A `Library` contains its items and its writers. `Item` is abstract, its `identifier` is marked as the identifying attribute with `id`, and `copies` has the default value `1`. A `Book` has one or more authors, and each `Writer` refers back to the books through the opposite reference `books`. `Genre` numbers its literals explicitly.
+            }
+
+            @Step {
+                Inspect the Emfatic metamodel.
+
+                @Code(name: "Terminal", file: fmt-03-step-02-inspect-emfatic.sh)
+
+                swift-ecore recognises Emfatic by the extension `.emf` and reads it wherever it reads an Ecore metamodel. Emfatic names basic types as Java does, so `String`, `int` and `boolean` become the Ecore data types `EString`, `EInt` and `EBoolean`.
+            }
+        }
+    }
+
+    @Section(title: "Writing the Metamodel in Xcore") {
+        @ContentAndMedia {
+            Xcore needs no semicolons, and its package name is qualified, as a Java package name is. The `@Ecore` annotation gives the namespace URI and prefix. `contains` declares a containment reference, `refers` a plain reference and `container` the reference back to a container, and `opposite` names the opposite reference.
+
+            Xcore states the multiplicity after the type, like Emfatic: a feature without brackets is optional, and `[]` stands for any number. Default values are written in quotes. An operation may have a body in braces, written in Xbase. swift-ecore keeps such a body as text in an annotation of the operation, and writes it back when it writes Xcore, but it does not execute it.
+        }
+
+        @Steps {
+            @Step {
+                Write the same metamodel in Xcore.
+
+                @Code(name: "Library.xcore", file: fmt-03-step-03-library.xcore)
+
+                The package `org.example.lending` becomes the Ecore package `lending`; the leading part, `org.example`, is kept as the base package of the generated Java code. The operation `isLoanable` now has a body.
+            }
+
+            @Step {
+                Inspect the Xcore metamodel.
+
+                @Code(name: "Terminal", file: fmt-03-step-04-inspect-xcore.sh)
+
+                The report shows the same classes and features as for the Emfatic text. A warning tells you that the Xbase body of `isLoanable` is kept as text but not executed: swift-ecore reads the structure of an Xcore metamodel, and leaves the behaviour to the tools that run Xbase.
+            }
+        }
+    }
+
+    @Section(title: "Comparing the Two Notations") {
+        @ContentAndMedia {
+            Both texts describe the same metamodel, but each notation has its own defaults and its own additions. Converting both to Ecore and comparing the results shows whether they really agree.
+        }
+
+        @Steps {
+            @Step {
+                Convert both metamodels to Ecore.
+
+                @Code(name: "Terminal", file: fmt-03-step-05-convert.sh)
+
+                The output format follows the extension of the output file, as for every conversion.
+            }
+
+            @Step {
+                Compare the two Ecore metamodels.
+
+                @Code(name: "Terminal", file: fmt-03-step-06-compare.sh)
+
+                `swift-ecore compare` matches the classes, features, operations and literals by name and reports any difference in their kinds, types, multiplicities, containment, opposites, flags and default values. The two texts agree on the classes, the features and their types and multiplicities. The differences are two flags whose defaults differ between the notations: in Xcore, an attribute is not unique and a containment reference does not resolve proxies unless the text says otherwise. Uniqueness makes no difference to an attribute that holds a single value, as all of these do. Writing the metamodel as Emfatic, later in this tutorial, shows the flags in the text.
+            }
+
+            @Step {
+                Find what the Xcore reader added as annotations.
+
+                @Code(name: "Terminal", file: fmt-03-step-07-annotations.sh)
+
+                The base package `org.example` is kept in a `GenModel` annotation of the package, and the body of `isLoanable` in an annotation of the operation with the source `http://www.eclipse.org/emf/2011/Xcore`. The comparison looks at the structure of the metamodels, so `grep` is the quickest way to see these annotations.
+            }
+        }
+    }
+
+    @Section(title: "Writing Ecore as Text") {
+        @ContentAndMedia {
+            swift-ecore also writes Ecore metamodels as Emfatic and as Xcore. Each writer lays the text out in its own canonical form, and reports on standard error anything that the notation cannot hold. Comments of the original text are not kept.
+        }
+
+        @Steps {
+            @Step {
+                Write the metamodel that came from Xcore back as Xcore.
+
+                @Code(name: "Terminal", file: fmt-03-step-08-write-xcore.sh)
+
+                The body of `isLoanable` is back in its place, taken from the annotation that the reader created, and the base package `org.example` is again part of the package name. The text is laid out in the canonical form of the writer, with the namespace in the `@Ecore` annotation.
+            }
+
+            @Step {
+                Write the same metamodel as Emfatic.
+
+                @Code(name: "Terminal", file: fmt-03-step-09-write-emfatic.sh)
+
+                Emfatic has no operation bodies, so the body of `isLoanable` is kept in the Xcore annotation of the operation, and the base package in a `@GenModel` annotation of the package. `!unique` and `!resolve` show the two defaults in which Xcore differs from Emfatic: Emfatic would make these attributes unique and these containment references resolve proxies. Whatever the writer cannot express in Emfatic is named in a warning on standard error; this metamodel needs none.
+            }
+        }
+    }
+
+    @Section(title: "Using a Textual Metamodel") {
+        @ContentAndMedia {
+            `--metamodel` accepts an Emfatic or Xcore text directly, so a model can be validated, queried or transformed without converting its metamodel to Ecore first.
+        }
+
+        @Steps {
+            @Step {
+                Save a small library model.
+
+                @Code(name: "library.xmi", file: fmt-03-step-10-library.xmi)
+
+                The library holds two books and two writers. Each book names its authors, and each writer names the books, as the opposite references require.
+            }
+
+            @Step {
+                Validate it with the Emfatic metamodel.
+
+                @Code(name: "Terminal", file: fmt-03-step-11-validate.sh)
+            }
+
+            @Step {
+                Save a model whose book has no title.
+
+                @Code(name: "library-untitled.xmi", file: fmt-03-step-12-library-untitled.xmi)
+            }
+
+            @Step {
+                Validate it with the Xcore metamodel.
+
+                @Code(name: "Terminal", file: fmt-03-step-13-validate-untitled.sh)
+
+                `title` is required in both texts, so the validator reports the missing value and fails with exit status 1, which the `echo` shows.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            Which Emfatic declaration contains any number of `Item` objects?
+
+            @Choice(isCorrect: true) {
+                `val Item[*] items;`
+
+                @Justification(reaction: "Correct!") {
+                    `val` declares a containment reference, and `[*]` allows any number of values.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `ref Item[*] items;`
+
+                @Justification(reaction: "Not quite!") {
+                    `ref` declares a reference that does not contain its targets.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `contains Item[] items`
+
+                @Justification(reaction: "Try again!") {
+                    That is the Xcore spelling of the same containment.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What happens to the Xbase body of an Xcore operation?
+
+            @Choice(isCorrect: false) {
+                It is executed when the model is validated
+
+                @Justification(reaction: "Not quite!") {
+                    swift-ecore reads the structure of an Xcore metamodel and does not execute Xbase.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                It is kept as text in an annotation and written back to Xcore
+
+                @Justification(reaction: "Correct!") {
+                    The body travels with the metamodel, and a warning reminds you that it is not executed.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                It is dropped with an error
+
+                @Justification(reaction: "Incorrect!") {
+                    The metamodel is read, and the body is kept.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What does the Xcore package name `org.example.lending` become in Ecore?
+
+            @Choice(isCorrect: false) {
+                A package named `org.example.lending`
+
+                @Justification(reaction: "Not quite!") {
+                    Ecore package names are simple names.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Three nested packages, `org`, `example` and `lending`
+
+                @Justification(reaction: "Try again!") {
+                    Xcore has no subpackages; the qualifier is not turned into packages.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                A package named `lending`, with `org.example` kept as its base package
+
+                @Justification(reaction: "Correct!") {
+                    The last part names the package, and the rest is kept in a `GenModel` annotation for Java code generation.
+                }
+            }
+        }
+    }
+}

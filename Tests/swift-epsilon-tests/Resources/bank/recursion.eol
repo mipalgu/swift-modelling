@@ -1,0 +1,5 @@
+operation Integer countdown() : Integer {
+  if (self = 0) { return 0; }
+  return (self - 1).countdown();
+}
+50.countdown().println();

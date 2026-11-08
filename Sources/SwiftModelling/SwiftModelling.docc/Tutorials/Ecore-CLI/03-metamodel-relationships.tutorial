@@ -38,7 +38,7 @@
 
     @Section(title: "Containment References") {
         @ContentAndMedia {
-            Containment references define ownership—when a Company contains Persons, those Persons belong to the Company and are saved inside it in XMI.
+            Containment references define ownership: when a Company contains Persons, those Persons belong to the Company and are saved inside it in XMI.
 
             Containment is crucial for defining the structure and scope of your models. Contained objects are owned by their container and typically cannot exist independently.
         }
@@ -66,7 +66,7 @@
         @ContentAndMedia {
             Bidirectional references link two classes in both directions using eOpposite. When you navigate from Company to Person via employees, you can also navigate back from Person to Company via employer.
 
-            The framework automatically maintains consistency—when you add a Person to a Company's employees, the Person's employer is automatically set.
+            The framework automatically maintains consistency: when you add a Person to a Company's employees, the Person's employer is automatically set.
         }
 
         @Steps {
@@ -112,7 +112,7 @@
                 They are the same thing with different names
 
                 @Justification {
-                    Incorrect. They serve completely different purposes—attributes hold values, references connect objects.
+                    Incorrect. They serve completely different purposes: attributes hold values, references connect objects.
                 }
             }
         }
@@ -160,7 +160,7 @@
                 The reference can have unlimited (zero or more) objects
 
                 @Justification {
-                    Correct! In Ecore, -1 means unbounded—there's no upper limit on how many objects the reference can hold. It's equivalent to "0..*" in UML.
+                    Correct! In Ecore, -1 means unbounded, so there's no upper limit on how many objects the reference can hold. It's equivalent to "0..*" in UML.
                 }
             }
 
@@ -188,7 +188,7 @@
                 To reverse the direction of a reference
 
                 @Justification {
-                    Incorrect. It doesn't reverse—it creates a two-way connection. Both references exist simultaneously and are kept in sync.
+                    Incorrect. It doesn't reverse; it creates a two-way connection. Both references exist simultaneously and are kept in sync.
                 }
             }
 

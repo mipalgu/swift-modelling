@@ -65,6 +65,69 @@ swift-aql query <file> --query-file <file.aql> [options]
 
 The Compatibility with 0.6 section of the [SwiftModelling documentation](https://mipalgu.github.io/swift-modelling/documentation/swiftmodelling/swiftmodelling/index.html) lists every behaviour option with its default and its version 0.6 behaviour, and describes the `SWIFT_MODELLING_SEMANTICS` environment variable and the `.swift-modelling.json` configuration file.
 
+### check-compat
+
+Check whether an expression can be used with another metamodel, such as a revised version of the
+metamodel that it was written against, without evaluating it. Unlike `evaluate` and `query`, the
+command reads no model and takes only the options below.
+
+```bash
+swift-aql check-compat --expression <expression> --variable <name=type> ... --metamodel <name=file> --target-metamodel <name=file> [options]
+swift-aql check-compat --expression-file <file.aql> --variable <name=type> ... --metamodel <name=file> --target-metamodel <name=file> [options]
+```
+
+The command extracts the footprint of the expression, the classes, features and enumeration
+literals that it reads, and checks the target metamodel against it by structural model
+subtyping. An expression is checked against one metamodel; the name of `--metamodel` is the name
+under which the findings refer to it, conventionally the name of its package, which also
+qualifies the types of the expression, such as `library` in `library::Book`. The library behind
+the command is described in the ModelTyping documentation.
+
+**Options:**
+
+- `-e, --expression <expression>` - The expression to check
+- `-f, --expression-file <file.aql>` - A file that holds the expression to check; give either this or `--expression`
+- `--variable <name=type>` - The type of a variable of the expression, such as `self=library::Library` or `books=Sequence(library::Book)` (repeatable); the uses of a variable without a type make the verdict inconclusive
+- `-m, --metamodel <name=file>` - The metamodel that the expression was written against, named conventionally after its package (give exactly one); the file may be in any metamodel format, such as Ecore, JSON, KM3 or EMOF
+- `--target-metamodel <name=file>` - The metamodel to check the expression against, under the name of the `--metamodel`
+- `--mode <total-isomorphic|total-non-isomorphic|partial-isomorphic|partial>` - The subtyping relation to decide (default: `partial`): whether every element of the metamodel (`total-...`) or only the elements the expression uses (`partial...`) must exist in the target metamodel, and whether under the same names (`...isomorphic`) or after the renamings of `--rename`
+- `--subtyping <access-refined|object-type-matching|mof-class-matching>` - How model subtyping matches classes and features (default: `access-refined`, which compares each element by how the expression reads, writes or instantiates it); `object-type-matching` (alias `steel-jezequel`) and `mof-class-matching` (alias `guy`) are the published definitions of [Steel and Jézéquel (2007)](https://doi.org/10.1007/s10270-006-0036-6) and [Guy et al. (2012)](https://doi.org/10.1007/978-3-642-31491-9_30)
+- `--rename <required=provided>` - Map a name of the original metamodel to a name of the target metamodel, as `Class=NewClass` for a class, enumeration or data type, or `Owner.member=newMember` for a feature or literal (repeatable, or separated by commas); renamings apply in the modes `partial` and `total-non-isomorphic`
+- `--allow-widening` - Let numeric types widen in the direction of use: an attribute that is read may have a narrower type in the target metamodel, such as `EInt` where `ELong` was declared, and one that is written a wider type
+- `--lenient-lower-bounds` - Report lower bounds that do not conform as warnings instead of errors
+- `--format <text|json>` - The format of the report (default: `text`); `json` writes one object with the flags `compatible` and `conclusive`, the mode, the findings, the footprint and the renaming hints
+- `--encoding <name>` - The character encoding of the expression file (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8)
+- `--km3-primitives`, `--package-name`, `--ns-uri`, `--ns-prefix`, `--asdl-enumerations`, `--langium-types`, `--sdf3-labels` - How metamodels in KM3 and grammar formats are read, as for the other commands
+
+The report is printed to standard output. Its first line states the verdict, the mode and the
+numbers of errors and warnings, such as `incompatible (partial): 1 error(s), 0 warning(s)`;
+each finding follows on a line of its own, starting with `error:` or `warning:` and naming the
+element, such as `library!Book.pages`, then each `uncertain:` use whose type could not be inferred, and
+each hint, such as `hint: --rename Writer=Author`, with the reason for it in parentheses, that would
+reconcile a missing element.
+
+**Exit status:**
+
+- `0` - The target metamodels are compatible
+- `1` - The target metamodels are not compatible
+- `2` - No incompatibility was found, but the types of some expressions could not be inferred, so the verdict is inconclusive
+- `3` - The check could not be made, such as for a file that cannot be read or parsed
+- `64` - The arguments are invalid, such as a `--target-metamodel` whose name no `--metamodel` gives, or several `--metamodel` options
+
+**Examples:**
+
+```bash
+# Check an expression on a library against a revised metamodel
+swift-aql check-compat -e "self.books->collect(b | b.title)" \
+    --variable self=library::Library \
+    --metamodel library=Library.ecore --target-metamodel library=LibraryV2.ecore
+
+# Read the expression from a file, apply renamings and write JSON
+swift-aql check-compat -f titles.aql --variable self=library::Library \
+    --metamodel library=Library.ecore --target-metamodel library=LibraryV2.ecore \
+    --rename Writer=Author,Library.writers=authors --allow-widening --format json
+```
+
 ## Variables
 
 Before an expression is evaluated, the tool binds these variables:

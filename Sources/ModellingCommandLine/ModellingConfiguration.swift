@@ -177,7 +177,8 @@ public struct ModellingConfiguration: Sendable, Equatable {
     /// How a Langium grammar types its rules (`langium-types`).
     public var langiumTypes: LangiumTypeMode?
 
-    /// Whether SDF3 constructor labels name the classes of an import (`sdf3-labels`).
+    /// Whether the argument labels of an SDF3 grammar name the features of an import
+    /// (`sdf3-labels`).
     public var sdf3Labels: Bool?
 
     /// Creates settings that set nothing, as when no configuration file is read.

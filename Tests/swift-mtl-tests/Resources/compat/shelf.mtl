@@ -1,0 +1,5 @@
+[module generateShelf('http://example.org/library/1.0')/]
+
+[template public main(book : library::Book)]
+[book.title/] on the shelf of [book.eContainer().name/]
+[/template]

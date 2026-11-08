@@ -34,6 +34,8 @@ Swift implementation of the Eclipse ATL
   with the shared pipeline
 - **Queries**: `query` evaluates ATL query units, such as one that builds a Graphviz file from a
   model with `writeTo`, writing only inside an output directory unless told otherwise
+- **Compatibility Checks**: `check-compat` decides whether a transformation can be used with
+  revised or related metamodels, by structural model subtyping of the metamodels it uses
 - **Integer Ranges**: Collection literals accept OCL integer ranges such as `Sequence{1..3}`
 - **Integer Division**: `/` divides two Integers into a Real, so `7 / 2` is `3.5`, as in OCL and
   Eclipse ATL, and `div` gives the truncated Integer quotient
@@ -232,6 +234,7 @@ The command is the ATL entry to the shared generation pipeline. An Ecore model i
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`) for every behaviour option above; a behaviour option that is given overrides it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--encoding <name>` - The character encoding of a transformation given with `--transformations` and of the templates with the modules they import, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8; a template is named by its path within the template set); the `encoding` key of the configuration file names it too
 - `--verbose` - One line for every file; without it a progress bar with counts appears on an interactive terminal
 
 **Examples:**
@@ -339,7 +342,7 @@ swift-atl test [<atl-files> ...] [options]
 **Options:**
 
 - `-d, --directory <directory>` - Directory containing ATL test files
-- `-t, --timeout <seconds>` - Test timeout in seconds (default: 60)
+- `-t, --timeout <seconds>` - The time limit for checking each file, a positive number of seconds (default: 60); a file whose checks take longer is reported as failed with 'Test timed out after N seconds', and testing continues with the next file. Each file is reported as soon as its checks finish. Parsing cannot be interrupted, so a file whose parsing overruns the limit keeps using processor time until its parsing ends or the command exits
 - `-o, --output <file>` - Write the test results to a file
 - `-v, --verbose` - Enable verbose output
 - `--fail-fast` - Stop on the first test failure
@@ -417,6 +420,71 @@ The command parses the transformation and names the compiled module, which defau
 
 ```bash
 swift-atl compile Families2Persons.atl --output families2persons.atlc
+```
+
+### check-compat
+
+Check whether a transformation can be used with other metamodels, such as revised versions of its
+source or target metamodels, without running it.
+
+```bash
+swift-atl check-compat <atl-file> --metamodel <name=file> ... --target-metamodel <name=file> ... [options]
+```
+
+The command extracts the footprint of the transformation, the classes, features and enumeration
+literals that it reads, creates and writes, and checks the target metamodels against it by
+structural model subtyping. Each `--metamodel` is named after a metamodel of the module header,
+such as `Families` in `create OUT : Persons from IN : Families`: the metamodels of source models
+are checked for what the transformation reads, and those of target models for what it creates and
+writes. A metamodel of the header without `--metamodel` is not checked, which makes the verdict
+inconclusive. The library behind the command is described in the ModelTyping documentation.
+
+**Options:**
+
+- `-m, --metamodel <name=file>` - A metamodel that the transformation was written against, named after a metamodel of the module header (repeatable); the file may be in any metamodel format, such as Ecore, JSON, KM3 or EMOF
+- `--target-metamodel <name=file>` - A metamodel to check the transformation against, under the name of a `--metamodel` (repeatable); a metamodel without one is checked against itself, as if it were unchanged
+- `--mode <total-isomorphic|total-non-isomorphic|partial-isomorphic|partial>` - The subtyping relation to decide (default: `partial`): whether every element of the metamodel (`total-...`) or only the elements the transformation uses (`partial...`) must exist in the target metamodel, and whether under the same names (`...isomorphic`) or after the renamings of `--rename`
+- `--subtyping <access-refined|object-type-matching|mof-class-matching>` - How model subtyping matches classes and features (default: `access-refined`, which compares each element by how the transformation reads, writes or instantiates it); `object-type-matching` (alias `steel-jezequel`) and `mof-class-matching` (alias `guy`) are the published definitions of [Steel and Jézéquel (2007)](https://doi.org/10.1007/s10270-006-0036-6) and [Guy et al. (2012)](https://doi.org/10.1007/978-3-642-31491-9_30)
+- `--rename <required=provided>` - Map a name of the original metamodel to a name of the target metamodel, as `Class=NewClass` for a class, enumeration or data type, or `Owner.member=newMember` for a feature or literal (repeatable, or separated by commas); renamings apply in the modes `partial` and `total-non-isomorphic`
+- `--allow-widening` - Let numeric types widen in the direction of use: an attribute that is read may have a narrower type in the target metamodel, such as `EInt` where `ELong` was declared, and one that is written a wider type
+- `--lenient-lower-bounds` - Report lower bounds that do not conform as warnings instead of errors
+- `--format <text|json>` - The format of the report (default: `text`); `json` writes one object with the flags `compatible` and `conclusive`, the mode, the findings, the footprint and the renaming hints
+- `--encoding <name>` - The character encoding of the transformation (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8)
+- `--km3-primitives`, `--package-name`, `--ns-uri`, `--ns-prefix`, `--asdl-enumerations`, `--langium-types`, `--sdf3-labels` - How metamodels in KM3 and grammar formats are read, as for the other commands
+
+The report is printed to standard output. Its first line states the verdict, the mode and the
+numbers of errors and warnings, such as `incompatible (partial): 1 error(s), 0 warning(s)`;
+each finding follows on a line of its own, starting with `error:` or `warning:` and naming the
+element, such as `Families!Member.firstName`, then each `uncertain:` use whose type could not be inferred, and
+each hint, such as `hint: --rename Member.firstName=givenName`, with the reason for it in parentheses, that would
+reconcile a missing element.
+
+**Exit status:**
+
+- `0` - The target metamodels are compatible
+- `1` - The target metamodels are not compatible
+- `2` - No incompatibility was found, but the types of some expressions could not be inferred, so the verdict is inconclusive
+- `3` - The check could not be made, such as for a file that cannot be read or parsed, or a metamodel name that the module header does not declare
+- `64` - The arguments are invalid, such as a `--target-metamodel` whose name no `--metamodel` gives
+
+**Examples:**
+
+```bash
+# Check the transformation against a revised source metamodel
+swift-atl check-compat Families2Persons.atl \
+    --metamodel Families=Families.ecore --metamodel Persons=Persons.ecore \
+    --target-metamodel Families=FamiliesV2.ecore
+
+# Apply the suggested renaming
+swift-atl check-compat Families2Persons.atl \
+    --metamodel Families=Families.ecore --metamodel Persons=Persons.ecore \
+    --target-metamodel Families=FamiliesV2.ecore --rename Member.firstName=givenName
+
+# Decide total isomorphic subtyping with MOF class matching, as JSON
+swift-atl check-compat Families2Persons.atl \
+    --metamodel Families=Families.ecore --metamodel Persons=Persons.ecore \
+    --target-metamodel Persons=PersonsV2.ecore \
+    --mode total-isomorphic --subtyping mof-class-matching --format json
 ```
 
 ## Environment and Configuration File

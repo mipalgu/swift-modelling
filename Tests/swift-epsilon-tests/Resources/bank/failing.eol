@@ -1,0 +1,2 @@
+'before'.println();
+throw 'The ledger is closed';

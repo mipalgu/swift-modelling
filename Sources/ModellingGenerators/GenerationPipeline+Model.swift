@@ -96,7 +96,8 @@ extension GenerationPipeline {
         }
 
         let data = try await TemplateRun.loadDataModels(of: templateSet, into: resourceSet)
-        let module = try await TemplateRun.parseMainModule(of: templateSet)
+        let parsed = try await TemplateRun.parseMainModule(of: templateSet, encoding: options.templateEncoding)
+        let module = parsed.module
         let services: [any AQLServiceProvider] = [TemplateDataServices(roots: data.roots), VerificationServices()]
         var models: [String: Resource] = [TemplateSetConstants.modelAlias: instance]
         models.merge(data.models) { _, data in data }
@@ -131,7 +132,8 @@ extension GenerationPipeline {
         progress(GenerationProgressUpdate(message: "Done", completed: files.count, total: total ?? files.count))
         return GenerationResult(
             outputDirectory: base, files: files, language: descriptor.name,
-            packageCount: metamodels.packages.count, warnings: output.warnings)
+            packageCount: metamodels.packages.count, warnings: output.warnings,
+            decodingWarnings: parsed.decodingWarnings)
     }
 
     // MARK: - Metamodels of a model export

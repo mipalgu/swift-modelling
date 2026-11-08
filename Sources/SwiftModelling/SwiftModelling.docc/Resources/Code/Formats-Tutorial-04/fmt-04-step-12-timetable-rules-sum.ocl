@@ -1,0 +1,16 @@
+import 'Timetable.ecore'
+
+package timetable
+
+context Room
+inv PositiveSeats: seats > 0
+
+context Session
+inv WithinTeachingDay: startHour >= 8 and startHour + durationHours <= 18
+inv FitsRoom: attendees <= room.seats
+
+context Timetable
+inv UniqueRoomNames: rooms->isUnique(r | r.name)
+inv EnoughSeats: rooms->collect(r | r.seats)->sum() >= 100
+
+endpackage

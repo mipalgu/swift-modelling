@@ -195,56 +195,37 @@ struct TestCommand: AsyncParsableCommand, ATLSourceReading {
         }
     }
 
-    private func runTest(for filePath: String, atlOptions: ATLOptions) async -> TestResult {
-        let startTime = Date()
-
-        return await withTaskGroup(of: TestResult.self) { group in
-            group.addTask {
-                await self.executeTestWithTimeout(filePath: filePath, startTime: startTime, atlOptions: atlOptions)
-            }
-            return await group.next()
-                ?? TestResult(
-                    filename: filePath,
-                    passed: false,
-                    testTime: Date().timeIntervalSince(startTime),
-                    error: "Test task failed to complete"
-                )
+    /// Checks that the time limit is a positive number of seconds.
+    ///
+    /// - Throws: A validation error if the time limit is zero, negative or not a number.
+    func validate() throws {
+        guard timeout.isFinite, timeout > 0 else {
+            throw ArgumentParser.ValidationError("--timeout must be a positive number of seconds")
         }
     }
 
-    private func executeTestWithTimeout(filePath: String, startTime: Date, atlOptions: ATLOptions) async
-        -> TestResult
-    {
+    /// Runs the checks of one ATL file within the time limit.
+    ///
+    /// The result is available as soon as the checks finish or the time limit passes,
+    /// whichever comes first.  Checks that overrun the time limit are cancelled and are
+    /// not waited for.
+    ///
+    /// - Parameters:
+    ///   - filePath: The path of the ATL file to check.
+    ///   - atlOptions: The options of the ATL language.
+    /// - Returns: The result of the checks, or a failure that reports the timeout.
+    private func runTest(for filePath: String, atlOptions: ATLOptions) async -> TestResult {
+        let startTime = Date()
         do {
-            let testTask = Task {
-                try await executeTest(filePath: filePath, startTime: startTime, atlOptions: atlOptions)
+            return try await Self.firstOutcome(withinSeconds: timeout) {
+                try await self.executeTest(filePath: filePath, startTime: startTime, atlOptions: atlOptions)
             }
-
-            let timeoutTask = Task {
-                try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
-                throw TestError.timeout
-            }
-
-            let result = try await withThrowingTaskGroup(of: TestResult.self) { group in
-                group.addTask { try await testTask.value }
-                group.addTask {
-                    _ = try await timeoutTask.value
-                    throw TestError.timeout
-                }
-
-                let result = try await group.next()!
-                group.cancelAll()
-                return result
-            }
-
-            return result
-
         } catch TestError.timeout {
             return TestResult(
                 filename: filePath,
                 passed: false,
                 testTime: timeout,
-                error: "Test timed out after \(Int(timeout)) seconds"
+                error: "Test timed out after \(Self.formattedSeconds(timeout)) seconds"
             )
         } catch {
             return TestResult(
@@ -254,6 +235,73 @@ struct TestCommand: AsyncParsableCommand, ATLSourceReading {
                 error: error.localizedDescription
             )
         }
+    }
+
+    /// Runs an operation with a time limit, without waiting for an operation that overruns it.
+    ///
+    /// The operation runs in a separate task, so the time limit is kept even if the operation
+    /// does not respond to cancellation.  Whichever finishes first, the operation or the time
+    /// limit, decides the outcome; the other is cancelled.
+    ///
+    /// - Parameters:
+    ///   - seconds: The time limit in seconds, which must be positive.
+    ///   - operation: The operation to run.
+    /// - Returns: The value of the operation, if it finishes within the time limit.
+    /// - Throws: `TestError.timeout` if the time limit passes first, the error of the
+    ///   operation if it fails first, or `CancellationError` if the caller is cancelled.
+    static func firstOutcome<Value: Sendable>(
+        withinSeconds seconds: TimeInterval,
+        operation: @escaping @Sendable () async throws -> Value
+    ) async throws -> Value {
+        let (outcomes, sink) = AsyncStream.makeStream(of: Result<Value, any Error>.self)
+        let work = Task {
+            do {
+                sink.yield(.success(try await operation()))
+            } catch {
+                sink.yield(.failure(error))
+            }
+        }
+        let timer = Task {
+            do {
+                try await Task.sleep(nanoseconds: nanoseconds(for: seconds))
+                sink.yield(.failure(TestError.timeout))
+            } catch {
+                return
+            }
+        }
+        defer {
+            work.cancel()
+            timer.cancel()
+            sink.finish()
+        }
+        var iterator = outcomes.makeAsyncIterator()
+        guard let outcome = await iterator.next() else {
+            throw CancellationError()
+        }
+        return try outcome.get()
+    }
+
+    /// The number of nanoseconds in a time limit, capped at the longest sleep available.
+    ///
+    /// - Parameter seconds: The time limit in seconds, which must be positive.
+    /// - Returns: The time limit in nanoseconds.
+    static func nanoseconds(for seconds: TimeInterval) -> UInt64 {
+        let nanoseconds = seconds * 1_000_000_000
+        guard nanoseconds < Double(UInt64.max) else { return UInt64.max }
+        return UInt64(nanoseconds)
+    }
+
+    /// A number of seconds as the timeout message shows it.
+    ///
+    /// Whole numbers of seconds have no fractional part; other numbers keep theirs.
+    ///
+    /// - Parameter seconds: The number of seconds.
+    /// - Returns: The number as text.
+    static func formattedSeconds(_ seconds: TimeInterval) -> String {
+        guard seconds >= 1, seconds < Double(Int.max), seconds.rounded() == seconds else {
+            return "\(seconds)"
+        }
+        return "\(Int(seconds))"
     }
 
     private func executeTest(filePath: String, startTime: Date, atlOptions: ATLOptions) async throws
@@ -273,6 +321,8 @@ struct TestCommand: AsyncParsableCommand, ATLSourceReading {
         let parser = ATLParser(options: atlOptions)
         let module = try await parser.parseContent(
             atlSource, filename: URL(fileURLWithPath: filePath).lastPathComponent)
+
+        try Task.checkCancellation()
 
         if verbose {
             print("  Parse successful: \(module.name)")

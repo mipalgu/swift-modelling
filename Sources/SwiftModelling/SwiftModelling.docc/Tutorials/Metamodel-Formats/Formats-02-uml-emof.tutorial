@@ -1,0 +1,269 @@
+@Tutorial(time: 35) {
+    @Intro(title: "EMOF Metamodels and UML Models") {
+        Exchange metamodels in the OMG EMOF format, read and query UML class models, and use a UML class model as a metamodel.
+
+        EMOF (Essential MOF) is the metamodelling language of the Object Management Group. It is close to Ecore, so a metamodel can move between the two without losing anything. UML models, such as the class diagrams that UML tools save, are instances of the UML metamodel, which swift-ecore bundles, and the classes of a UML class model can serve as a metamodel in their own right. In this tutorial, you'll:
+        - Write an Ecore metamodel as EMOF, read it back and compare the result with the original
+        - Validate a model against a metamodel given in EMOF
+        - Inspect and query a UML class model with swift-ecore
+        - Navigate the UML model with AQL expressions
+        - Write a UML model again and check that nothing changed
+        - Convert a UML class model to Ecore and validate a model against it
+
+        Every command in this tutorial runs in one directory, which starts empty.
+
+        @Image(source: "metamodel-formats.svg", alt: "An Ecore metamodel converts to and from EMOF, and a UML model is read as an instance of the bundled UML metamodel")
+    }
+
+    @Section(title: "From Ecore to EMOF and Back") {
+        @ContentAndMedia {
+            An EMOF document is XMI with the EMOF namespace. Packages own types, classes own properties, and a property stands for both attributes and references: its type decides which it is. Ecore has a few settings that EMOF has no place for, such as the namespace prefix of a package. These are written into an extension block of the EMOF document, so that reading it back restores them.
+
+            swift-ecore recognises an EMOF document by the extension `.emof`. It reads EMOF documents only; a CMOF document is refused with an error that says so.
+        }
+
+        @Steps {
+            @Step {
+                Save the Company metamodel of the Ecore tutorials.
+
+                @Code(name: "Company.ecore", file: fmt-02-step-01-company.ecore)
+
+                An abstract `Person` has a name, an email address and an employment status, and `Employee` and `Manager` extend it. A `Company` contains its employees, and each person refers back to the company through the opposite reference `employer`.
+            }
+
+            @Step {
+                Convert the metamodel to EMOF and look at the result.
+
+                @Code(name: "Terminal", file: fmt-02-step-02-to-emof.sh)
+
+                Each class becomes a `Class` and each feature an `ownedAttribute` property. Every element has an `xmi:id` made of the dotted names that lead to it, such as `company.Person.name`. The basic Ecore data types are written as the EMOF primitive types, such as `String` and `Integer`, and the Ecore settings that EMOF lacks appear in an `xmi:Extension` block.
+            }
+
+            @Step {
+                Read the EMOF document back into Ecore and compare it with the original.
+
+                @Code(name: "Terminal", file: fmt-02-step-03-emof-roundtrip.sh)
+
+                `swift-ecore compare` matches packages, classes and features by name and reports every difference. The extension block carries what EMOF cannot say itself, so the metamodel that comes back describes the same classes, features and literals as the original.
+            }
+        }
+    }
+
+    @Section(title: "Validating Against an EMOF Metamodel") {
+        @ContentAndMedia {
+            An EMOF metamodel can be used wherever an Ecore metamodel is expected. `--metamodel` accepts the EMOF document directly, without converting it first.
+        }
+
+        @Steps {
+            @Step {
+                Save a small company model.
+
+                @Code(name: "company.xmi", file: fmt-02-step-04-company.xmi)
+
+                The company employs two employees and a manager. `xsi:type` names the class of each person, as `Person` is abstract.
+            }
+
+            @Step {
+                Validate the model against the EMOF metamodel.
+
+                @Code(name: "Terminal", file: fmt-02-step-05-validate-emof.sh)
+
+                The validator checks the classes, features, types and multiplicities of the model against the metamodel, exactly as it does for an Ecore file.
+            }
+        }
+    }
+
+    @Section(title: "A UML Class Model") {
+        @ContentAndMedia {
+            A UML model is first of all a model: its objects are instances of the UML metamodel, such as `Class`, `Property`, `Enumeration` and `Association`. swift-ecore bundles the UML metamodel of the Eclipse UML2 project, so it reads a UML model without any metamodel file of yours.
+
+            swift-ecore reads the Eclipse UML2 layout, which UML tools based on Eclipse save with the extension `.uml`. It also reads the XMI dialects of the Object Management Group, from XMI 2.1 to XMI 2.5.1, with the UML namespaces of the OMG specifications, so models exported by other UML tools can be read as well. References to the UML primitive types, such as `String` and `Integer`, are resolved to the bundled UML primitive type library.
+        }
+
+        @Steps {
+            @Step {
+                Save a small UML class model of a library.
+
+                @Code(name: "Library.uml", file: fmt-02-step-06-library.uml)
+
+                The model declares four classes and an enumeration. `Item` is abstract, and the `generalization` of `Book` names it as the general class. The attribute `items` of `Library` is a composite end of an association, so a library owns its items, and the association between `Book` and `Writer` gives each book one or more authors. Every element carries an `xmi:id`, by which the others refer to it.
+            }
+
+            @Step {
+                Inspect the UML model.
+
+                @Code(name: "Terminal", file: fmt-02-step-07-inspect-uml.sh)
+
+                The report describes a model, not a metamodel: it counts the objects of each UML class, such as `Class`, `Property` and `Association`.
+            }
+
+            @Step {
+                Find the classes of the model.
+
+                @Code(name: "Terminal", file: fmt-02-step-08-query-uml.sh)
+
+                `find Class` lists every object whose UML class is `Class`, with its features: its name, whether it is abstract, its attributes and its generalisations.
+            }
+        }
+    }
+
+    @Section(title: "Querying UML with AQL") {
+        @ContentAndMedia {
+            AQL navigates a UML model like any other model. The root object of `Library.uml` is a `Model`, so the expression sees it as the variable `model`, and `self` is bound to it as well. The classes of the UML metamodel are named with their package, `uml`, as in `uml::Class`.
+        }
+
+        @Steps {
+            @Step {
+                List the names of the classes, and then of the abstract classes.
+
+                @Code(name: "Terminal", file: fmt-02-step-09-aql-classes.sh)
+
+                `packagedElement` holds every element of the model: classes, the enumeration and the associations. `filter(uml::Class)` keeps the classes, and `select` keeps those whose `isAbstract` is true.
+            }
+
+            @Step {
+                List the attributes of `Book` and the classes it specialises.
+
+                @Code(name: "Terminal", file: fmt-02-step-10-aql-attributes.sh)
+
+                `ownedAttribute` holds the properties that a class declares itself. The inherited `title` of `Item` is not among them; it is reached through `generalization.general`.
+            }
+        }
+    }
+
+    @Section(title: "Writing a UML Model") {
+        @ContentAndMedia {
+            swift-ecore writes a file with the extension `.uml` in the Eclipse UML2 layout and keeps the `xmi:id` of every object that had one, so other tools still find the elements they refer to.
+        }
+
+        @Steps {
+            @Step {
+                Write the model to a new file and compare the copy with the original.
+
+                @Code(name: "Terminal", file: fmt-02-step-11-uml-roundtrip.sh)
+
+                `swift-ecore compare` matches the objects of the two models and reports every changed attribute value and reference. The copy holds the same classes, properties, literals and associations as the model you wrote.
+            }
+        }
+    }
+
+    @Section(title: "A UML Class Model as a Metamodel") {
+        @ContentAndMedia {
+            The classes of a UML class model describe the objects of another model, just as the classes of an Ecore metamodel do. swift-ecore converts a UML class model to Ecore in the way of the UML to Ecore converter of Eclipse: each UML class becomes an Ecore class, each enumeration an Ecore enumeration, each property that a class owns an attribute or a reference, and each generalisation a supertype. A composite property becomes a containment reference, and the UML primitive types become the matching Ecore data types.
+
+            A UML class model can also be given directly wherever a metamodel is expected, with `--metamodel`, and swift-ecore converts it on the fly.
+        }
+
+        @Steps {
+            @Step {
+                Convert the UML class model to an Ecore metamodel and inspect it.
+
+                @Code(name: "Terminal", file: fmt-02-step-12-uml-to-ecore.sh)
+
+                The package is named after the UML model, and as the model declares no namespace URI, the package gets the URI `http:///LibraryModel.ecore`, as Eclipse gives it. A property without a multiplicity is required and single-valued, as in UML. The association ends `library` and `books` are owned by their associations rather than by a class, so they do not become references.
+            }
+
+            @Step {
+                Save a library model whose classes come from the UML class model.
+
+                @Code(name: "city-library.xmi", file: fmt-02-step-13-city-library.xmi)
+
+                `Writer` is not contained in `Library`, so the writer is a second root object of the document, and the book refers to it as `/1`.
+            }
+
+            @Step {
+                Validate the library model with the UML class model as its metamodel.
+
+                @Code(name: "Terminal", file: fmt-02-step-14-validate-uml.sh)
+
+                The validator checks the classes, features, types and multiplicities of the model against the classes of the UML model. A book without an author would fail, as `authors` needs at least one value.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            How does EMOF keep Ecore settings that it has no place for, such as the namespace prefix?
+
+            @Choice(isCorrect: false) {
+                It drops them, and reading the document back restores defaults
+
+                @Justification(reaction: "Not quite!") {
+                    Nothing is dropped: the settings travel with the document.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                It writes them into an `xmi:Extension` block that reading restores
+
+                @Justification(reaction: "Correct!") {
+                    The extension block of the Eclipse Modeling Framework carries the Ecore-only settings, so an Ecore to EMOF to Ecore round trip keeps them.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                It writes them as comments
+
+                @Justification(reaction: "Incorrect!") {
+                    Comments are for people. The settings are kept as data in the extension block.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What is `Library.uml` to swift-ecore?
+
+            @Choice(isCorrect: false) {
+                Only a metamodel, so it cannot be queried like a model
+
+                @Justification(reaction: "Not quite!") {
+                    swift-ecore reads a UML file as a model of the UML metamodel, so `inspect`, `query` and AQL work on it like on any model.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                A model of the bundled UML metamodel, whose classes can also serve as a metamodel
+
+                @Justification(reaction: "Correct!") {
+                    Each class of the diagram is an object of the UML class `Class`, so it can be queried and compared like any model. Given with `--metamodel` or converted to `.ecore`, its classes become an Ecore metamodel.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                A file that needs a UML metamodel of your own with `--metamodel`
+
+                @Justification(reaction: "Incorrect!") {
+                    The UML metamodel is bundled, so no metamodel file is needed.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Which AQL expression yields the names of the classes of a UML model whose root is a `Model`?
+
+            @Choice(isCorrect: true) {
+                `model.packagedElement->filter(uml::Class).name`
+
+                @Justification(reaction: "Correct!") {
+                    The root is bound to `model`, `packagedElement` holds its elements, and `filter` keeps those of the UML class `Class`.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `model.classes.name`
+
+                @Justification(reaction: "Not quite!") {
+                    The UML metamodel has no feature `classes`. Packaged elements of every kind are held by `packagedElement`.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `model.packagedElement->filter(Class).name`
+
+                @Justification(reaction: "Try again!") {
+                    The classes of the UML metamodel are named with their package, as `uml::Class`.
+                }
+            }
+        }
+    }
+}

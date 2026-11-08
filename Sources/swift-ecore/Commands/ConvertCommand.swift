@@ -26,7 +26,8 @@ struct ConvertCommand: AsyncParsableCommand {
         abstract: "Convert models (XMI <-> JSON) and metamodels (Ecore <-> JSON)",
         discussion: """
             Converts a model between XMI and JSON, or a metamodel between Ecore and JSON, \
-            inferring the formats from the file extensions unless --input-format or \
+            choosing the input format from the extension and the contents of the file unless \
+            --input-format is given, and the output format from its extension unless \
             --output-format is given. The output file is the second argument or the value of \
             --output. JSON is written indented, with the keys of every object of a model in \
             alphabetical order.
@@ -53,10 +54,13 @@ struct ConvertCommand: AsyncParsableCommand {
             Information that cannot be kept, such as a class that no metamodel defines or a \
             reference that cannot be written as a fragment, is reported on standard error as a \
             line starting with '\(ConversionWarningReport.warningPrefix)'. Without a metamodel, \
-            the warnings are followed by a hint to give one. Warnings do not change the exit \
-            status.
+            the warnings of converting a model are followed by a hint to give one. Warnings do \
+            not change the exit status, but an error of reading the input, such as a syntax \
+            error of a grammar, stops the conversion.
 
             \(ReferenceStyleOptions.discussion(written: "outputs"))
+
+            \(SourceEncodingOptions.discussion(reader: EncodingVocabulary.encodedDocuments, configurable: false))
             """
     )
 
@@ -79,7 +83,7 @@ struct ConvertCommand: AsyncParsableCommand {
     /// Input format override.
     @Option(
         name: .long,
-        help: "Input format (\(ConvertCommand.readableFormatNames)) - auto-detect from extension if not specified")
+        help: "Input format (\(ConvertCommand.readableFormatNames)) - detected from the extension and contents if not specified")
     var inputFormat: String?
 
     /// Output format override.
@@ -102,6 +106,13 @@ struct ConvertCommand: AsyncParsableCommand {
     /// How metamodels in KM3 and in grammar formats are read.
     @OptionGroup var formatOptions: MetamodelFormatOptions
 
+    /// The character encoding of the documents in text formats.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// The options with which the documents and metamodels are read, in the encoding of
+    /// `--encoding`.
+    private var loadOptions: EcoreLoadOptions { formatOptions.ecoreLoadOptions(encoding: encodingOptions.explicitEncoding) }
+
     /// The Complete OCL documents that constrain the metamodels.
     @OptionGroup var completeOCLOptions: CompleteOCLOptions
 
@@ -118,7 +129,7 @@ struct ConvertCommand: AsyncParsableCommand {
     @Option(
         name: .customLong(ConvertCommand.levelOption),
         help: ArgumentHelp(
-            "Write the Ecore metamodel of this level of a multi-level model, in a metamodel format",
+            "Write the Ecore metamodel whose instances live at this level of a multi-level model, in a metamodel format",
             valueName: "level"))
     var level: Int?
 
@@ -178,7 +189,7 @@ struct ConvertCommand: AsyncParsableCommand {
         // Register metamodels, if any, for both reading and writing
         await MultiLevelSupport.registerFormats()
         var resourceSet = try await metamodelOptions.resourceSet(
-            applying: completeOCLOptions.documents, verbose: verbose, options: formatOptions.ecoreLoadOptions)
+            applying: completeOCLOptions.documents, verbose: verbose, options: loadOptions)
         let linguistic = MultiLevelSupport.holdsLinguisticInstances(inputURL)
         if linguistic {
             let linguisticSet = resourceSet ?? ResourceSet()
@@ -187,15 +198,7 @@ struct ConvertCommand: AsyncParsableCommand {
         }
 
         // Load input, collecting what the parser could not keep
-        var readFormat = try Self.format(named: inputFormatToUse) {
-            ConversionError.unsupportedInputFormat($0)
-        }
-        if inputFormat == nil, let recognised = await MetamodelRegistration.documentHandler(at: inputPath)?.format,
-            recognised != readFormat
-        {
-            readFormat = recognised
-            if verbose { print("Recognised input format from contents: \(readFormat.rawValue)") }
-        }
+        let readFormat = try await readFormat(named: inputFormatToUse)
         let writeFormat = try Self.format(named: outputFormatToUse) {
             ConversionError.unsupportedOutputFormat($0)
         }
@@ -205,8 +208,8 @@ struct ConvertCommand: AsyncParsableCommand {
         if verbose { print("Reading \(readFormat.description)...") }
         let loaded = try await ModelIO.load(
             url: inputURL, format: readFormat, resourceSet: resourceSet ?? ResourceSet(),
-            options: ModelIO.LoadOptions(requiresMetamodel: false, ecoreLoadOptions: formatOptions.ecoreLoadOptions))
-        FileDiagnosticReport.write(await loaded.resource.loadDiagnostics, file: inputPath)
+            options: ModelIO.LoadOptions(requiresMetamodel: false, ecoreLoadOptions: loadOptions))
+        try DocumentError.report(await loaded.resource.loadDiagnostics, file: inputPath)
         var resource = loaded.resource
         var diagnostics = loaded.diagnostics
         let deepModel = readFormat == .metadepth || linguistic
@@ -224,16 +227,15 @@ struct ConvertCommand: AsyncParsableCommand {
             await MetamodelRegistration.documentHandler(at: inputPath) is any MetamodelConvertingModelFormatHandler
         {
             resource = try await Self.convertedMetamodel(
-                at: inputPath, options: formatOptions.ecoreLoadOptions, in: resourceSet ?? ResourceSet())
+                at: inputPath, options: loadOptions, in: resourceSet ?? ResourceSet())
             convertedToMetamodel = true
         }
-        try Self.checkOutput(
-            writeFormat, isMetamodel: level != nil || convertedToMetamodel || !loaded.packages.isEmpty,
-            input: inputURL.lastPathComponent)
+        let isMetamodel = level != nil || convertedToMetamodel || !loaded.packages.isEmpty
+        try Self.checkOutput(writeFormat, isMetamodel: isMetamodel, input: inputURL.lastPathComponent)
         if completeOCLOptions.isGiven && !metamodelOptions.isGiven {
             try await MetamodelRegistration.applyCompleteOCL(
                 completeOCLOptions.documents, to: loaded.packages.isEmpty ? [] : [resource],
-                in: resourceSet ?? ResourceSet(), verbose: verbose)
+                in: resourceSet ?? ResourceSet(), verbose: verbose, encoding: loadOptions.textEncoding)
         }
         if validate {
             try await check(loaded, deepModel: deepModel, at: inputURL, in: resourceSet ?? ResourceSet())
@@ -245,7 +247,8 @@ struct ConvertCommand: AsyncParsableCommand {
             resource, to: outputURL, format: writeFormat,
             xmiOptions: referenceStyleOptions.serializationOptions, diagnostics: &diagnostics)
         withExtendedLifetime(resourceSet) {}
-        ConversionWarningReport.write(diagnostics, metamodelGiven: metamodelOptions.isGiven || deepModel != nil)
+        ConversionWarningReport.write(
+            diagnostics, metamodelGiven: metamodelOptions.isGiven || deepModel != nil || isMetamodel)
 
         if verbose {
             let objects = await resource.getRootObjects()
@@ -253,6 +256,26 @@ struct ConvertCommand: AsyncParsableCommand {
         }
 
         print("Conversion completed: \(outputPath)")
+    }
+
+    /// The format in which the input is read.
+    ///
+    /// Without `--input-format`, the format registry chooses the format from the extension and
+    /// the contents of the file, as the other commands do, so that a file whose extension names
+    /// no format, such as a Stratego signature (`.str`), is still recognised by its contents.
+    ///
+    /// - Parameter name: The name of the format given with `--input-format`, or the extension
+    ///   of the input file, in lower case.
+    /// - Returns: The format.
+    /// - Throws: ``ConversionError/unsupportedInputFormat(_:)`` if the name denotes no format and
+    ///   the contents of the file name none either.
+    func readFormat(named name: String) async throws -> ModelFormat {
+        let named = ModelFormat(fileExtension: name)
+        guard inputFormat == nil, let recognised = await MetamodelRegistration.documentHandler(at: inputPath)?.format else {
+            return try named ?? Self.format(named: name) { ConversionError.unsupportedInputFormat($0) }
+        }
+        if verbose, recognised != named { print("Recognised input format from contents: \(recognised.rawValue)") }
+        return recognised
     }
 
     /// The output path, from the second argument or the `--output` option.

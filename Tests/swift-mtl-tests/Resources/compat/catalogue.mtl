@@ -1,0 +1,12 @@
+[module generateCatalogue('http://example.org/library/1.0')/]
+
+[template public main(library : library::Library)]
+[file (library.name + '.txt', overwrite)]
+[for (book : library::Book | library.books)]
+[book.title/] by [book.authors.name->sep(', ')/][if (book.genre = library::Genre::poetry)] (poem)[/if]
+[book.describe()/]
+[/for]
+[/file]
+[/template]
+
+[template public describe(book : library::Book)][book.pages/] pages[/template]

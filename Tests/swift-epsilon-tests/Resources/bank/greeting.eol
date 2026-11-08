@@ -1,0 +1,3 @@
+// Greets the reader named by a parameter.
+(greeting + ', ' + reader + '!').println();
+(Account.all.size() * factor).println();

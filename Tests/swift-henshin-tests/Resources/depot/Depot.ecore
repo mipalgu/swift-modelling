@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="depot" nsURI="http://example.org/depot" nsPrefix="depot">
+  <eClassifiers xsi:type="ecore:EClass" name="Depot">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bins" upperBound="-1"
+        eType="#//Bin" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="parcels" upperBound="-1"
+        eType="#//Parcel" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Bin">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="tokens" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="next" eType="#//Bin"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="holds" upperBound="-1"
+        eType="#//Parcel"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Parcel">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="code" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="weight" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+  </eClassifiers>
+</ecore:EPackage>

@@ -1,0 +1,318 @@
+@Tutorial(time: 45) {
+    @Intro(title: "Multi-Level Modelling with Potency") {
+        Model a domain with more than one boundary between types and instances, and use it with the tools you already know.
+
+        Ecore separates a metamodel from its models, so it has one level of types. A product catalogue has two: a shop defines product types such as books and magazines, and each product type has products of its own. Multi-level modelling describes such a domain as a chain of levels, each an instance of the one above. Its elements, called clabjects, are classes and objects at once, and their potency says over how many levels they can still be instantiated. In this tutorial, you'll:
+        - Write a three-level model in the MetaDepth notation
+        - Inspect and validate it, and read errors of potency and of constraints
+        - Use Melanee potency, which separates how long a feature lasts from where its value may change
+        - Choose which references may cross levels
+        - Convert the model to XMI and back, and export the metamodel of one level to Ecore
+        - Query the model with swift-aql and generate text from it with swift-mtl through a deep view
+
+        The tutorial assumes that swift-ecore, swift-aql and swift-mtl are on your search path and that you know the basics of Ecore metamodels, AQL and MTL. Every command runs in one directory, which starts empty.
+
+        @Image(source: "multi-level.svg", alt: "A chain of levels, each an instance of the level above")
+    }
+
+    @Section(title: "Three Levels of Products") {
+        @ContentAndMedia {
+            A MetaDepth document (`.mdepth`) starts with its top level: `Model Catalogue@2` declares a model named `Catalogue` with potency 2, so it has two levels below it. Each further level names the level it instantiates, as in `Catalogue Bookshop`, which is an instance of `Catalogue`, and `Bookshop Shelf`, an instance of `Bookshop`.
+
+            Inside a level, `Node ProductType` declares a clabject, and `ProductType Book` declares a clabject `Book` whose type is `ProductType`. A clabject without a potency of its own has the potency of its level, so `ProductType` has potency 2, `Book` potency 1 and the books on the shelf potency 0: they are plain objects.
+
+            A feature has a potency as well. `gst@1 : double = 10.0;` declares a feature with potency 1, which receives its value one level down, at the product types. A feature without a potency, such as `price`, has the potency of its clabject and receives its value at the bottom level. A constraint is written in AQL between dollar signs, and its potency says at which level below it is checked.
+        }
+
+        @Steps {
+            @Step {
+                Write a product catalogue in three levels.
+
+                @Code(name: "products.mdepth", file: ml-01-step-01-products.mdepth)
+
+                `Book` sets the goods and services tax (GST) of every book to 0 and adds a feature `pages`, which its instances fill. `Magazine` keeps the default GST of 10 per cent and adds `issue`. On the shelf, `manual` and `monthly` give a price and the values of the features of their types. The constraint `positivePrice@2` is checked two levels down, on the products themselves.
+            }
+
+            @Step {
+                Inspect the model.
+
+                @Code(name: "Terminal", file: ml-01-step-02-inspect.sh)
+
+                The report lists the levels from the top down. Each clabject is shown with its name, its type, its potency after `@`, and the features it declares in braces. The potency scheme and the level-crossing mode are explained in the sections below.
+            }
+
+            @Step {
+                Validate the model.
+
+                @Code(name: "Terminal", file: ml-01-step-03-validate.sh)
+
+                Validation checks the structure of the model, such as that every type and feature that a clabject uses exists, that every potency fits the level it is declared at, and that every slot fills a feature that is visible and changeable at its level. It then evaluates the constraints on the deep instances at the levels their potencies select.
+            }
+        }
+    }
+
+    @Section(title: "Potency") {
+        @ContentAndMedia {
+            Potency decides where a feature can receive a value. `gst` has potency 1, so its value is set one level below `ProductType`, at `Book` and `Magazine`. At the shelf, its potency is used up: the products inherit the GST of their type, and cannot set it themselves.
+        }
+
+        @Steps {
+            @Step {
+                Save a copy of the model with two mistakes in the magazine on the shelf.
+
+                @Code(name: "products-errors.mdepth", file: ml-01-step-04-products-errors.mdepth)
+
+                `monthly` now sets `gst` itself, and its price is `0.0`.
+            }
+
+            @Step {
+                Validate the copy.
+
+                @Code(name: "Terminal", file: ml-01-step-05-validate-errors.sh)
+
+                The first error is about potency: `gst` is no longer visible at the bottom level. The second comes from the constraint `positivePrice`, which is evaluated on every product on the shelf. Validation reports every error it finds and exits with status 1.
+            }
+        }
+    }
+
+    @Section(title: "Melanee Potency") {
+        @ContentAndMedia {
+            The MetaDepth notation gives every feature a single potency. The Melanee tool separates two questions: how many levels a feature lasts (its durability), and over how many of them its value may still change (its mutability). Writing `melanee` after the potency of the top model selects this scheme for the whole model. A feature then gives its mutability after a slash, as in `price@2/1`, and the potency `*` is unbounded: a clabject or feature with potency `*` can be instantiated at every level below.
+        }
+
+        @Steps {
+            @Step {
+                Write the catalogue with Melanee potency.
+
+                @Code(name: "products-melanee.mdepth", file: ml-01-step-06-products-melanee.mdepth)
+
+                `gst@1/0` lasts one level but can never change, so every product type has the default of 10 per cent. `price@2/1` lasts two levels but can only change one level down: `Book` sets a price for every book, which the books on the shelf cannot change. `discount@2` changes at the bottom level, and `Category@*` and its `label@*` can be instantiated at any depth.
+            }
+
+            @Step {
+                Inspect and validate the model.
+
+                @Code(name: "Terminal", file: ml-01-step-07-melanee.sh)
+
+                The report names the Melanee scheme and shows the unbounded potency of the categories at every level. Without `melanee`, the same text is an error: MetaDepth potency admits neither a mutability nor the unbounded potency. If `manual` set its own `price`, validation would report that `price` cannot be changed at `Shelf.manual`.
+            }
+        }
+    }
+
+    @Section(title: "References Across Levels") {
+        @ContentAndMedia {
+            In strict multi-level modelling, a reference connects clabjects of one level. Three declared exceptions are useful in practice:
+            - A **deep reference** names the potency of its targets, as in `items : ProductType@0[*];`, and refers to the instances of `ProductType` at the bottom level.
+            - A clabject with **leap potency**, written `@(2)`, skips the levels in between: its instances reside two levels down.
+            - A reference that declares its **target level**, as in `{level=1}`, refers to clabjects at that level.
+
+            `--level-crossing` chooses what `validate` accepts: `declared`, the default, admits these three exceptions and no other crossing; `strict` admits no crossing at all; and `non-strict` lets any reference cross levels.
+        }
+
+        @Steps {
+            @Step {
+                Write a catalogue whose products recommend a product type, and whose window display shows products.
+
+                @Code(name: "displays.mdepth", file: ml-01-step-08-displays.mdepth)
+
+                `seeAlso` refers from a product on the shelf to a product type one level up, so it declares `{level=1}`. `Display` has leap potency, so `window` resides on the shelf without a type at the bookshop level, and its deep reference `items` holds products.
+            }
+
+            @Step {
+                Validate the model with the default mode and with `non-strict`.
+
+                @Code(name: "Terminal", file: ml-01-step-09-validate-declared.sh)
+
+                Both modes accept the model: every crossing is declared.
+            }
+
+            @Step {
+                Validate the model with strict levels.
+
+                @Code(name: "Terminal", file: ml-01-step-10-validate-strict.sh)
+
+                Each declared crossing is now an error, and each message names the mode that forbids it.
+            }
+
+            @Step {
+                Save a copy of the model in which `seeAlso` does not declare its target level.
+
+                @Code(name: "displays-undeclared.mdepth", file: ml-01-step-11-displays-undeclared.mdepth)
+            }
+
+            @Step {
+                Validate the copy without limits, and then with the default mode.
+
+                @Code(name: "Terminal", file: ml-01-step-12-validate-undeclared.sh)
+
+                A non-strict model may cross levels anywhere. With the default mode, the reference from `manual` to `Magazine` is an error, because it leaves level 0 without declaring it.
+            }
+        }
+    }
+
+    @Section(title: "Converting Multi-Level Models") {
+        @ContentAndMedia {
+            A multi-level model is stored in XMI or JSON as instances of a linguistic metamodel, whose classes describe levels, clabjects, features and slots. The conversion keeps everything, so a model converts back to the MetaDepth notation unchanged in meaning. Ecore has a single level of types, so only the metamodel of one level can be written as Ecore.
+        }
+
+        @Steps {
+            @Step {
+                Convert the model to XMI and look at its start.
+
+                @Code(name: "Terminal", file: ml-01-step-13-to-xmi.sh)
+
+                The root object is a `DeepModel` of the linguistic metamodel, which records the potency scheme, and every level and clabject is an object below it. Each clabject has a stable identifier.
+            }
+
+            @Step {
+                Convert the XMI document back to the MetaDepth notation.
+
+                @Code(name: "Terminal", file: ml-01-step-14-to-mdepth.sh)
+
+                The XMI document is recognised as a multi-level model by the namespace of the linguistic metamodel. The text is the model you wrote, laid out by the writer: features come before slots, and an empty line separates the clabjects.
+            }
+
+            @Step {
+                Try to write the model as an Ecore metamodel.
+
+                @Code(name: "Terminal", file: ml-01-step-15-to-ecore.sh)
+
+                The error lists the levels to choose from and the formats that keep the whole model.
+            }
+
+            @Step {
+                Write the metamodel of the bottom level as Ecore and inspect it.
+
+                @Code(name: "Terminal", file: ml-01-step-16-level-ecore.sh)
+
+                `--level 0` writes the classes whose instances reside at level 0: `Book` and `Magazine`, with the features that their instances fill. `gst` is derived and read-only, because its value is fixed one level up. The classes and features carry annotations with their levels and potencies. The export is one-way, and works with every metamodel format that swift-ecore writes.
+            }
+        }
+    }
+
+    @Section(title: "Deep Views for AQL and MTL") {
+        @ContentAndMedia {
+            Queries and templates written for Ecore models know classes and instances. A deep view presents one level of a multi-level model in these terms: every type above the level becomes a class, and the supertypes of a class include its type, so that `ProductType.allInstances()` finds the deep instances of `ProductType`, the products on the shelf. The package of the view is named after the level that types the chosen level. The services `clabjectName()`, `ontologicalType()` and `linguisticType()` give the name of a clabject, its type and its linguistic kind.
+        }
+
+        @Steps {
+            @Step {
+                Query the model without a deep view.
+
+                @Code(name: "Terminal", file: ml-01-step-17-linguistic.sh)
+
+                Without `--deep-view`, swift-aql reads the model as instances of the linguistic metamodel: the root object is the `DeepModel`, and its levels are objects with names.
+            }
+
+            @Step {
+                Query the deep view of the bottom level, and of the level above it.
+
+                @Code(name: "Terminal", file: ml-01-step-18-deep-view.sh)
+
+                At level 0, the deep instances of `ProductType` are the two products. `price` holds the values set on the shelf, and `gst` the values that `Book` and `Magazine` set one level up. At level 1, the instances of `ProductType` are the product types themselves, and the package of the view is `Catalogue`.
+            }
+
+            @Step {
+                Write an MTL template that lists the products with their prices.
+
+                @Code(name: "price-list.mtl", file: ml-01-step-19-price-list.mtl)
+
+                The module names the namespace URI of the deep view: `urn:swift-ecore:multilevel:view:`, followed by the name of the model, the name of the level and `deep`. The main template receives the first clabject of the level, and the loop visits every product, sorted by name.
+            }
+
+            @Step {
+                Generate the price list.
+
+                @Code(name: "Terminal", file: ml-01-step-20-generate.sh)
+
+                `--deep-view 0` presents the model to the template as the deep view of the bottom level, so the template reads like any other MTL template over an Ecore model.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            In `Model Catalogue@2`, a feature `gst@1` is declared on `ProductType`. Where does `gst` receive its value?
+
+            @Choice(isCorrect: false) {
+                On `ProductType` itself
+
+                @Justification(reaction: "Not quite!") {
+                    `ProductType` declares the feature. A feature with potency 1 receives its value one level down.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                On the product types one level down, such as `Book`
+
+                @Justification(reaction: "Correct!") {
+                    Potency 1 lasts one level, so the instances of `ProductType` set the value, and their own instances inherit it.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                On the products at the bottom level
+
+                @Justification(reaction: "Try again!") {
+                    That would need potency 2, like `price`.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What does the Melanee feature `price@2/1` declare?
+
+            @Choice(isCorrect: false) {
+                Two prices, one at each level below
+
+                @Justification(reaction: "Not quite!") {
+                    A feature holds one value per clabject. The two numbers describe how long it lasts and where it may change.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                A feature that lasts two levels but whose value can only change one level down
+
+                @Justification(reaction: "Correct!") {
+                    The durability is 2 and the mutability 1, so the value that `Book` sets is fixed for the books on the shelf.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                A feature with leap potency
+
+                @Justification(reaction: "Incorrect!") {
+                    Leap potency is written in parentheses, as in `@(2)`, and applies to clabjects.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Which `--level-crossing` mode accepts a reference declared with `{level=1}`, but rejects one that crosses levels without a declaration?
+
+            @Choice(isCorrect: false) {
+                `strict`
+
+                @Justification(reaction: "Not quite!") {
+                    Strict levels reject every crossing, declared or not.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                `declared`
+
+                @Justification(reaction: "Correct!") {
+                    The default mode admits deep references, leap potency and declared target levels, and no other crossing.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `non-strict`
+
+                @Justification(reaction: "Try again!") {
+                    A non-strict model lets any reference cross levels, with or without a declaration.
+                }
+            }
+        }
+    }
+}

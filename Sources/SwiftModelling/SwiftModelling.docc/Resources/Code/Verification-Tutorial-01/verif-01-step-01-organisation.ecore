@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="organisation" nsURI="http://www.example.org/organisation"
+    nsPrefix="org">
+
+  <!-- Company: contains its departments and its employees -->
+  <eClassifiers xsi:type="ecore:EClass" name="Company">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+      <details key="constraints" value="UniqueDepartmentCodes"/>
+    </eAnnotations>
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
+      <!-- Invariant: no two departments share a code -->
+      <details key="UniqueDepartmentCodes" value="self.departments->isUnique(d | d.code)"/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="departments" upperBound="8"
+        eType="#//Department" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="employees" upperBound="-1"
+        eType="#//Employee" containment="true"/>
+  </eClassifiers>
+
+  <!-- Department: a group of employees with a code, a capacity and an optional manager -->
+  <eClassifiers xsi:type="ecore:EClass" name="Department">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+      <details key="constraints" value="ManagerIsMember WithinCapacity NonEmptyName"/>
+    </eAnnotations>
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL">
+      <!-- Invariant: a manager belongs to the department that they manage -->
+      <details key="ManagerIsMember" value="not self.manager.oclIsUndefined() implies self.members->includes(self.manager)"/>
+      <!-- Invariant: a department has no more members than its capacity -->
+      <details key="WithinCapacity" value="self.members->size() &lt;= self.capacity"/>
+      <!-- Invariant: a department has a name (uses a string operation) -->
+      <details key="NonEmptyName" value="self.name.size() > 0"/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="code" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="capacity" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="members" upperBound="-1"
+        eType="#//Employee" eOpposite="#//Employee/department"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="manager" eType="#//Employee"/>
+  </eClassifiers>
+
+  <!-- EmploymentKind: how an employee is employed -->
+  <eClassifiers xsi:type="ecore:EEnum" name="EmploymentKind">
+    <eLiterals name="FULL_TIME"/>
+    <eLiterals name="PART_TIME" value="1"/>
+  </eClassifiers>
+
+  <!-- Employee: belongs to at most one department -->
+  <eClassifiers xsi:type="ecore:EClass" name="Employee">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="kind" lowerBound="1"
+        eType="#//EmploymentKind"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="department" eType="#//Department"
+        eOpposite="#//Department/members"/>
+  </eClassifiers>
+</ecore:EPackage>

@@ -57,8 +57,10 @@ extension GenerationPipeline {
         let imported = try await ecoreToGenModel(
             ecoreURLs: [inputURL], options: importing,
             progress: { progress(GenerationProgressUpdate(message: $0)) })
-        return try await generate(
+        var result = try await generate(
             genModelURL: imported.url, language: language, outputDirectory: outputDirectory,
             options: options, progress: progress)
+        result.decodingWarnings = imported.decodingWarnings + result.decodingWarnings
+        return result
     }
 }

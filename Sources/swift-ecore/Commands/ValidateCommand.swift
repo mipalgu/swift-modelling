@@ -57,6 +57,8 @@ struct ValidateCommand: AsyncParsableCommand {
             with its result; a file that cannot be read counts as invalid. A final line counts \
             the valid and invalid files, and the command fails if any file is invalid. With \
             --format json, the report is an array with one report per file.
+
+            \(SourceEncodingOptions.discussion(reader: EncodingVocabulary.encodedDocuments, configurable: false))
             """
     )
 
@@ -69,6 +71,13 @@ struct ValidateCommand: AsyncParsableCommand {
 
     /// How metamodels in KM3 and in grammar formats are read.
     @OptionGroup var formatOptions: MetamodelFormatOptions
+
+    /// The character encoding of the documents in text formats.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// The options with which the documents and metamodels are read, in the encoding of
+    /// `--encoding`.
+    private var loadOptions: EcoreLoadOptions { formatOptions.ecoreLoadOptions(encoding: encodingOptions.explicitEncoding) }
 
     /// The Complete OCL documents that constrain the metamodels.
     @OptionGroup var completeOCLOptions: CompleteOCLOptions
@@ -227,16 +236,19 @@ struct ValidateCommand: AsyncParsableCommand {
     /// - Parameter inputPath: The path of the file.
     /// - Returns: The document.
     /// - Throws: ``ValidationError`` if the file does not exist, has an unknown format or cannot
-    ///   be parsed, or the error of a metamodel.
+    ///   be parsed, ``DocumentError/unreadable(_:errors:)`` if its reader reports an error, or
+    ///   the error of a metamodel.
     private func load(_ inputPath: String) async throws -> ModelDocument {
         do {
             return try await ModelDocument.load(
                 path: inputPath, metamodelOptions: metamodelOptions, requiresMetamodel: metamodelOptions.isGiven,
-                verbose: verbose, ecoreLoadOptions: formatOptions.ecoreLoadOptions, completeOCL: completeOCLOptions.documents)
+                verbose: verbose, ecoreLoadOptions: loadOptions, completeOCL: completeOCLOptions.documents)
         } catch DocumentError.fileNotFound(let path) {
             throw ValidationError.fileNotFound(path)
         } catch DocumentError.unsupportedFormat(let format) {
             throw ValidationError.unsupportedFormat(format)
+        } catch let error as DocumentError {
+            throw error
         } catch let error as MetamodelRegistrationError {
             throw error
         } catch {

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:crs="http://www.example.org/courses">
+  <!--
+    A faculty that satisfies every invariant of the courses metamodel:
+    unique course codes, positive capacities, no course with more
+    students than places, a prerequisite for every advanced course,
+    and a name for every student.
+  -->
+  <crs:Faculty name="Faculty of Science">
+    <courses code="CS101" title="Programming Foundations" level="introductory" capacity="3"
+        enrolled="//@students.0 //@students.1"/>
+    <courses code="CS201" title="Data Structures" level="intermediate" capacity="2"
+        prerequisites="//@courses.0" enrolled="//@students.0"/>
+    <courses code="CS301" title="Compilers" level="advanced" capacity="2"
+        prerequisites="//@courses.1" enrolled="//@students.1"/>
+    <students name="Alex Chen" courses="//@courses.0 //@courses.1"/>
+    <students name="Sam Taylor" courses="//@courses.0 //@courses.2"/>
+  </crs:Faculty>
+</xmi:XMI>

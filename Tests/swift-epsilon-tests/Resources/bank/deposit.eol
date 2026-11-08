@@ -1,0 +1,4 @@
+// Adds interest to every account in credit.
+for (account in Account.all.select(a | a.balance > 0)) {
+  account.balance = account.balance + 10;
+}

@@ -34,6 +34,8 @@ struct StatisticsCommand: AsyncParsableCommand {
             those into other documents and those that cannot be resolved. With \
             --\(MetamodelOptions.optionName), the concrete classes of the metamodel that have \
             no objects are listed too. \(MetamodelOptions.effect)
+
+            \(SourceEncodingOptions.discussion(reader: EncodingVocabulary.encodedDocuments, configurable: false))
             """
     )
 
@@ -46,6 +48,13 @@ struct StatisticsCommand: AsyncParsableCommand {
 
     /// How metamodels in KM3 and in grammar formats are read.
     @OptionGroup var formatOptions: MetamodelFormatOptions
+
+    /// The character encoding of the documents in text formats.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// The options with which the documents and metamodels are read, in the encoding of
+    /// `--encoding`.
+    private var loadOptions: EcoreLoadOptions { formatOptions.ecoreLoadOptions(encoding: encodingOptions.explicitEncoding) }
 
     /// The Complete OCL documents that constrain the metamodels.
     @OptionGroup var completeOCLOptions: CompleteOCLOptions
@@ -71,7 +80,7 @@ struct StatisticsCommand: AsyncParsableCommand {
     func run() async throws {
         if verbose { print("Measuring: \(inputPath)") }
         let document = try await ModelDocument.load(path: inputPath, metamodelOptions: metamodelOptions, verbose: verbose,
-            ecoreLoadOptions: formatOptions.ecoreLoadOptions, completeOCL: completeOCLOptions.documents)
+            ecoreLoadOptions: loadOptions, completeOCL: completeOCLOptions.documents)
         let report = await Statistician.measure(document)
         withExtendedLifetime(document) {}
         let text = format == .json ? try report.json() : report.text()

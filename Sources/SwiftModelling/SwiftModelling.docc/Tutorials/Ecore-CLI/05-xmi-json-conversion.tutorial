@@ -46,7 +46,7 @@
         @ContentAndMedia {
             Converting between JSON and XMI is bidirectional and lossless. You can freely move between formats depending on your workflow needs.
 
-            Use `swift-ecore convert` with appropriate input and output file extensions—the tool automatically detects and handles both formats.
+            Use `swift-ecore convert` with appropriate input and output file extensions; the tool automatically detects and handles both formats.
         }
 
         @Steps {
@@ -146,7 +146,7 @@
                 XMI should always be used instead of JSON
 
                 @Justification {
-                    Incorrect. Both formats have their place—JSON is often better for web applications, APIs, and modern workflows where readability and tooling matter.
+                    Incorrect. Both formats have their place: JSON is often better for web applications, APIs, and modern workflows where readability and tooling matter.
                 }
             }
 

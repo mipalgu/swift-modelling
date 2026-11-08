@@ -1,0 +1,6 @@
+context Account {
+  critique HasOwner {
+    check : self.owner.length() > 0
+    message : 'Account ' + self.name + ' has no owner'
+  }
+}

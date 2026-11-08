@@ -1,0 +1,264 @@
+@Tutorial(time: 40) {
+    @Intro(title: "Constraints in OCLinEcore and Complete OCL") {
+        Write a metamodel and its OCL constraints together in OCLinEcore, add constraints to an existing metamodel with Complete OCL, and validate models against both.
+
+        The first OCL tutorial kept its invariants in annotations of an Ecore file. Two textual notations of the Eclipse OCL project make constraints easier to write and read. In this tutorial, you'll:
+        - Author a metamodel with invariants, a derived attribute and an operation body in OCLinEcore
+        - Convert it to Ecore and see where the constraints are kept
+        - Validate valid and invalid models against an OCLinEcore metamodel
+        - Add constraints to an Ecore metamodel from a separate Complete OCL document
+        - Recognise and rewrite an invariant that cannot be evaluated
+        - Write a metamodel with constraints back out as OCLinEcore
+
+        The tutorial builds on <doc:OCL-01-constraints>. Every command in this tutorial runs in one directory.
+
+        @Image(source: "ocl-constraints.svg", alt: "An OCLinEcore metamodel or an Ecore metamodel with a Complete OCL document supplies the invariants that validation evaluates for every object of a model")
+    }
+
+    @Section(title: "Constraints Inside the Metamodel") {
+        @ContentAndMedia {
+            OCLinEcore is a textual notation for Ecore metamodels in which constraints are written next to the elements they constrain. A package is declared with its name, prefix and namespace URI, as in `package courses : crs = 'http://www.example.org/courses'`. Inside it, `attribute` declares a feature of a data type and `property` a reference to a class.
+
+            A multiplicity follows the type in square brackets: `[?]` is optional, `[*]` is any number, `[+]` is at least one, and a feature without brackets is required and single-valued. Qualifiers in braces after a feature, such as `{ composes, ordered }`, set its flags, and `!` negates one. `courses#faculty` names a reference together with its opposite.
+
+            Constraints are part of the class:
+            - `invariant Name: expression;` must hold for every object of the class.
+            - `derivation: expression;` computes the value of a derived feature.
+            - `body: expression;` computes the result of an operation.
+        }
+
+        @Steps {
+            @Step {
+                Write a course enrolment metamodel in OCLinEcore.
+
+                @Code(name: "Courses.oclinecore", file: fmt-04-step-01-courses.oclinecore)
+
+                A `Faculty` contains its courses and its students. Each `Course` has a level, a capacity, prerequisite courses and the students enrolled in it, and each `Student` refers back to their courses. The invariants require unique course codes, a positive capacity, no more students than places, a prerequisite for every advanced course, and a name for every student. `freePlaces` is derived from the capacity and the enrolments, and `isFull()` has a body.
+            }
+
+            @Step {
+                Inspect the metamodel.
+
+                @Code(name: "Terminal", file: fmt-04-step-02-inspect.sh)
+
+                swift-ecore recognises an OCLinEcore file by its extension, `.oclinecore`, and reads it wherever it reads an Ecore metamodel. The report lists the package, the enumeration and every class with its features.
+            }
+
+            @Step {
+                Convert the metamodel to Ecore and look for its constraints.
+
+                @Code(name: "Terminal", file: fmt-04-step-03-convert.sh)
+
+                In Ecore, the constraints of a class are kept in an annotation with the source `http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot`: each invariant is a detail whose key is its name and whose value is its expression. The Ecore annotation of the class names its invariants in a `constraints` detail, separated by spaces. This is the layout of the Eclipse OCL tools, so they read the converted file unchanged.
+            }
+        }
+    }
+
+    @Section(title: "Validating Models") {
+        @ContentAndMedia {
+            `swift-ecore validate` checks a model against its metamodel and evaluates every invariant for every object whose class, or one of its superclasses, declares it. The OCL expressions are translated into the Acceleo Query Language (AQL) and evaluated by the AQL engine of the tools. Navigation, arithmetic, comparisons, string operations, type tests and the common collection operations, such as `select`, `collect`, `forAll`, `exists`, `isUnique`, `size` and `sum`, have a translation.
+        }
+
+        @Steps {
+            @Step {
+                Create a faculty that satisfies every invariant.
+
+                @Code(name: "faculty-valid.xmi", file: fmt-04-step-04-faculty-valid.xmi)
+
+                Three courses build on each other through their prerequisites, and two students are enrolled in them. Each student lists their courses, and each course lists its students.
+            }
+
+            @Step {
+                Validate it against the OCLinEcore metamodel.
+
+                @Code(name: "Terminal", file: fmt-04-step-05-validate-valid.sh)
+
+                `--metamodel` takes the OCLinEcore file directly, so there is no need to convert it first. The report counts the invariant checks, one for each invariant and each object it applies to.
+            }
+
+            @Step {
+                Create a faculty that violates each invariant once.
+
+                @Code(name: "faculty-invalid.xmi", file: fmt-04-step-06-faculty-invalid.xmi)
+
+                The comment at the top lists the five violations.
+            }
+
+            @Step {
+                Validate the invalid faculty.
+
+                @Code(name: "Terminal", file: fmt-04-step-07-validate-invalid.sh)
+
+                Each violation is reported with the name of the invariant and the object it was checked on. The validator fails with exit status 1, which the `echo` shows, so a script can stop at an invalid model.
+            }
+        }
+    }
+
+    @Section(title: "Adding Constraints with Complete OCL") {
+        @ContentAndMedia {
+            Sometimes the metamodel is not yours to change: it belongs to another team, or it is generated. A Complete OCL document keeps constraints in a file of their own. It imports the metamodel, opens a package with `package` and closes it with `endpackage`, and names the class that each constraint belongs to with `context`. `inv Name: expression` declares an invariant.
+
+            Applying a Complete OCL document to a metamodel has the same effect as declaring its constraints inline in OCLinEcore.
+        }
+
+        @Steps {
+            @Step {
+                Save a timetable metamodel written in Ecore, without any constraints.
+
+                @Code(name: "Timetable.ecore", file: fmt-04-step-08-timetable.ecore)
+
+                A `Timetable` contains rooms and teaching sessions. Each `Session` takes place in a room, starts at a whole hour, lasts a number of hours, and has a number of attendees.
+            }
+
+            @Step {
+                Create a timetable.
+
+                @Code(name: "timetable.xmi", file: fmt-04-step-09-timetable.xmi)
+
+                Two rooms with 144 seats in total hold three sessions.
+            }
+
+            @Step {
+                Write the rules of the timetable in Complete OCL.
+
+                @Code(name: "timetable-rules.ocl", file: fmt-04-step-10-timetable-rules.ocl)
+
+                Rooms need seats, sessions stay within the teaching day and fit their room, room names are unique, and the rooms together must seat at least 100 people. `EnoughSeats` adds up the seats with `iterate`, which accumulates a value over a collection.
+            }
+
+            @Step {
+                Validate the timetable with the rules.
+
+                @Code(name: "Terminal", file: fmt-04-step-11-validate-rules.sh)
+
+                The other invariants are checked, but `EnoughSeats` is reported instead of evaluated: the operation `iterate` has no AQL translation. Other OCL constructs without a translation include `@pre`, tuple literals and `oclIsInvalid`. The report names the invariant and the construct, so you know which one to rewrite. An untranslated invariant does not make the validation fail. Both notations also let an invariant carry a message in parentheses after its name, as in `inv PositiveSeats('Room ' + name + ' has no seats'): seats > 0`. The Eclipse OCL tools keep such an invariant as a tuple of its message and its status. swift-ecore checks the status, and when an object violates the invariant, it evaluates the message for that object and adds it to the line that reports the violation.
+            }
+
+            @Step {
+                Rewrite `EnoughSeats` with operations that have a translation.
+
+                @Code(name: "timetable-rules.ocl", file: fmt-04-step-12-timetable-rules-sum.ocl, previousFile: fmt-04-step-10-timetable-rules.ocl)
+
+                `collect` gathers the seats of every room and `sum` adds them up. Most uses of `iterate` can be written with `collect`, `select`, `size`, `sum`, `forAll` or `exists`, which are also easier to read.
+            }
+
+            @Step {
+                Validate the timetable again.
+
+                @Code(name: "Terminal", file: fmt-04-step-13-validate-rules-again.sh)
+
+                Every invariant is now evaluated, and the timetable satisfies them all.
+            }
+        }
+    }
+
+    @Section(title: "Writing OCLinEcore") {
+        @ContentAndMedia {
+            swift-ecore also writes a metamodel as OCLinEcore. The constraints in its OCL annotations become invariants, derivations and bodies in the text again. Multiplicities and qualifiers are only written where they differ from the defaults, and comments are not kept.
+        }
+
+        @Steps {
+            @Step {
+                Write the converted courses metamodel back out as OCLinEcore.
+
+                @Code(name: "Terminal", file: fmt-04-step-14-to-oclinecore.sh)
+
+                The text declares the same package, classes and constraints as the file you wrote, in the layout of the writer. Writing the result again gives the same text.
+            }
+
+            @Step {
+                Apply the Complete OCL rules to the timetable metamodel and write it as OCLinEcore.
+
+                @Code(name: "Terminal", file: fmt-04-step-15-inline-constraints.sh)
+
+                The invariants of the rules now appear inside their classes. This turns a metamodel and a separate rules file into a single document, for example when you take over a metamodel and its rules together.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            In OCLinEcore, how do you declare a reference `courses` whose opposite is `faculty` and that contains its courses?
+
+            @Choice(isCorrect: true) {
+                `property courses#faculty : Course[*] { composes };`
+
+                @Justification(reaction: "Correct!") {
+                    `#faculty` names the opposite, `[*]` allows any number of courses, and `composes` makes the reference a containment.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `attribute courses : Course[*] oppositeOf faculty;`
+
+                @Justification(reaction: "Not quite!") {
+                    `attribute` declares a feature of a data type, and `oppositeOf` is KM3 rather than OCLinEcore.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `val Course[*]#faculty courses;`
+
+                @Justification(reaction: "Try again!") {
+                    That is close to Emfatic. OCLinEcore names the opposite after the feature name and uses qualifiers in braces.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What is the main reason to keep constraints in a Complete OCL document?
+
+            @Choice(isCorrect: false) {
+                Complete OCL constraints are evaluated faster
+
+                @Justification(reaction: "Not quite!") {
+                    Once applied, they are the same as constraints declared inline, and they are evaluated in the same way.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                To add constraints to a metamodel without changing the metamodel file
+
+                @Justification(reaction: "Correct!") {
+                    The document imports the metamodel and adds its constraints when it is applied, so the metamodel itself stays untouched.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Complete OCL allows constraints that OCLinEcore cannot express
+
+                @Justification(reaction: "Incorrect!") {
+                    Both notations declare the same kinds of constraints, and applying a Complete OCL document is equivalent to declaring its constraints inline.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            An invariant that uses `iterate` is reported instead of evaluated. What should you do?
+
+            @Choice(isCorrect: false) {
+                Remove the invariant, because it cannot be checked
+
+                @Justification(reaction: "Not quite!") {
+                    The rule is still worth checking. Most uses of `iterate` have an equivalent that can be evaluated.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Move it from the Complete OCL document into an OCLinEcore file
+
+                @Justification(reaction: "Try again!") {
+                    Where an invariant is declared does not matter: the same translation into AQL applies to both notations.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                Rewrite it with operations such as `collect` and `sum`
+
+                @Justification(reaction: "Correct!") {
+                    `rooms->collect(r | r.seats)->sum()` computes the same total as the `iterate` expression and has a translation into AQL.
+                }
+            }
+        }
+    }
+}

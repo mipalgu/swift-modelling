@@ -480,7 +480,9 @@ public enum MetamodelRegistration {
                     options: options, diagnosticOutput: FileDiagnosticReport.writeToStandardError))
         }
         if !documents.isEmpty {
-            try await applyCompleteOCL(documents, to: loaded.compactMap(\.resource), in: resourceSet, verbose: verbose)
+            try await applyCompleteOCL(
+                documents, to: loaded.compactMap(\.resource), in: resourceSet, verbose: verbose,
+                encoding: options.textEncoding)
         }
         withExtendedLifetime(loaded) {}
         return resourceSet
@@ -503,6 +505,8 @@ public enum MetamodelRegistration {
     ///   - resources: The resources of the metamodels, in the order in which contexts are looked up.
     ///   - resourceSet: The resource set with which the metamodels are registered.
     ///   - verbose: Whether to report each document and the number of constraints it added.
+    ///   - encoding: The character encoding of the documents, or `nil` (the default) to read
+    ///     UTF-8 with a fallback to ISO-8859-1.
     ///   - diagnosticOutput: The writer that receives the report of the diagnostics of applying
     ///     each document, if there are any (standard error by default).
     /// - Returns: The constrained root packages after the last document, in the order of the
@@ -513,6 +517,7 @@ public enum MetamodelRegistration {
     @discardableResult
     public static func applyCompleteOCL(
         _ documents: [String], to resources: [Resource], in resourceSet: ResourceSet, verbose: Bool = false,
+        encoding: TextEncoding? = nil,
         diagnosticOutput: (String) -> Void = FileDiagnosticReport.writeToStandardError
     ) async throws -> [EPackage] {
         var packages: [EPackage] = []
@@ -522,7 +527,8 @@ public enum MetamodelRegistration {
             }
             guard !resources.isEmpty else { throw MetamodelRegistrationError.nothingToConstrain(path) }
             let applied = try await ModelIO.applyCompleteOCL(
-                at: URL(fileURLWithPath: path), to: resources, in: resourceSet)
+                at: URL(fileURLWithPath: path), to: resources, in: resourceSet,
+                options: ModelIO.LoadOptions(textEncoding: encoding))
             FileDiagnosticReport.write(applied.diagnostics, file: path, to: diagnosticOutput)
             if verbose {
                 print(appliedMessage(count: applied.appliedCount, document: path))

@@ -80,7 +80,7 @@ public enum GenerationPipeline {
         progress("Loading the transformation")
         let transformation = try await GenModelTransformation.load(
             generatorMetamodel: generatorMetamodel, replacement: options.transformation,
-            atlOptions: options.atlOptions)
+            atlOptions: options.atlOptions, encoding: options.transformationEncoding)
 
         var loaded: [(url: URL, resource: Resource, package: EPackage)] = []
         for url in sources {
@@ -126,7 +126,9 @@ public enum GenerationPipeline {
         } catch {
             throw GenerationError.outputFailed(output.path, String(describing: error))
         }
-        return await summary(of: target, resourceSet: resourceSet, url: output, reloaded: reloaded)
+        var result = await summary(of: target, resourceSet: resourceSet, url: output, reloaded: reloaded)
+        result.decodingWarnings = transformation.decodingWarnings
+        return result
     }
 
     /// The compliance levels that generator models support.

@@ -14,7 +14,11 @@ Follow these tutorial series to build expertise across all Swift MDE technologie
 2. **ATL Transformations** - Master model-to-model transformations
 3. **MTL Code Generation** - Generate code from models using templates
 4. **AQL Query Language** - Query and navigate models effectively
-5. **Integrated Workflows** - Combine technologies for complete MDE solutions
+5. **Metamodel Languages and Formats** - Write metamodels in KM3, EMOF, Emfatic, Xcore and OCLinEcore
+6. **From Grammars to Metamodels** - Import the abstract syntax of a language from its grammar
+7. **Formal Verification Exports** - Check metamodels and models with Alloy, TLA+, Event-B and Lean
+8. **Multi-Level Modelling** - Model domains with more than two levels
+9. **Integrated Workflows** - Combine technologies for complete MDE solutions
 
 ## Topics
 
@@ -89,6 +93,42 @@ Define and validate model constraints with the Object Constraint Language.
 
 @Links(visualStyle: detailedGrid) {
    - <doc:OCL-01-constraints>
+}
+
+### Metamodel Languages and Formats
+
+Write metamodels in KM3, EMOF, Emfatic, Xcore and OCLinEcore, and read UML class models.
+
+@Links(visualStyle: detailedGrid) {
+   - <doc:Formats-01-km3>
+   - <doc:Formats-02-uml-emof>
+   - <doc:Formats-03-emfatic-xcore>
+   - <doc:Formats-04-ocl-languages>
+}
+
+### From Grammars to Metamodels
+
+Import the abstract syntax of a language from ASDL, Stratego, Xtext, Langium and SDF3.
+
+@Links(visualStyle: detailedGrid) {
+   - <doc:Grammar-01-abstract-syntax>
+   - <doc:Grammar-02-concrete-syntax>
+}
+
+### Formal Verification Exports
+
+Export metamodels, constraints and models to Alloy, TLA+, Event-B and Lean.
+
+@Links(visualStyle: detailedGrid) {
+   - <doc:Verification-01-alloy>
+}
+
+### Multi-Level Modelling
+
+Model domains with more than two levels, with clabjects, potency and deep views.
+
+@Links(visualStyle: detailedGrid) {
+   - <doc:MultiLevel-01-deep-modelling>
 }
 
 ### Integrated Workflows

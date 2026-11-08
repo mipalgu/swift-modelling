@@ -165,4 +165,63 @@ struct SourceEncodingTests {
         #expect(!overridden.result.succeeded)
         #expect((overridden.result.stdout + overridden.result.stderr).contains("not valid UTF-8"))
     }
+
+    /// Writes a template set whose main module, in ISO-8859-1, imports ``library`` and writes
+    /// ``expected`` to `result.txt`.
+    ///
+    /// - Parameter workspace: The repository that receives the set below its root.
+    /// - Returns: The directory of the set.
+    static func writeLatin1Set(in workspace: Workspace) throws -> URL {
+        let set = workspace.base.root.appendingPathComponent("sets/encoded")
+        try FileManager.default.createDirectory(at: set, withIntermediateDirectories: true)
+        try Data(#"{ "name": "encoded", "mainModule": "Encoded", "mainTemplate": "main" }"#.utf8)
+            .write(to: set.appendingPathComponent("templateset.json"))
+        try latin1(main).write(to: set.appendingPathComponent("Encoded.mtl"))
+        try latin1(library).write(to: set.appendingPathComponent("Library.mtl"))
+        return set
+    }
+
+    /// Runs `generate` with the template set of ``writeLatin1Set(in:)``.
+    @MainActor
+    private func generateSet(_ extra: [String]) async throws -> (result: SubprocessResult, text: String?) {
+        let workspace = try Workspace(utf8: true)
+        defer { workspace.remove() }
+        let set = try Self.writeLatin1Set(in: workspace)
+        let output = workspace.base.output
+        let result = try await executeSwiftMTL(
+            command: "generate",
+            arguments: [
+                "--template-set", set.path, "--model", workspace.base.root.appendingPathComponent("lib.ecore").path,
+                "--output", output.path,
+            ] + extra,
+            workingDirectory: workspace.base.workingDirectory)
+        let text = try? String(contentsOf: output.appendingPathComponent("result.txt"), encoding: .utf8)
+        return (result, text)
+    }
+
+    @Test("reads the templates of a set that are not UTF-8 as ISO-8859-1, naming each in the set")
+    @MainActor
+    func templateSetFallback() async throws {
+        let (result, text) = try await generateSet([])
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+        #expect(text == Self.expected)
+        for file in ["Encoded.mtl", "Library.mtl"] {
+            #expect(result.stderr.contains("warning: \(file): line "), "\(file): \(result.stderr)")
+        }
+        #expect(result.stderr.contains(Self.fallbackWarning), "\(result.stderr)")
+    }
+
+    @Test("reads the templates of a set in the encoding given with --encoding")
+    @MainActor
+    func templateSetExplicit() async throws {
+        let latin1 = try await generateSet(["--encoding", "latin1"])
+        let utf8 = try await generateSet(["--encoding", "UTF-8"])
+
+        #expect(latin1.result.succeeded, "\(latin1.result.stdout)\(latin1.result.stderr)")
+        #expect(latin1.text == Self.expected)
+        #expect(!latin1.result.stderr.contains(Self.fallbackWarning), "\(latin1.result.stderr)")
+        #expect(!utf8.result.succeeded)
+        #expect((utf8.result.stdout + utf8.result.stderr).contains("not valid UTF-8"))
+    }
 }

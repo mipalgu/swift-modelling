@@ -62,6 +62,64 @@ struct CompareMetamodelTests {
         #expect(lines.dropFirst(expected.count + 1).first == "28 differences: 6 added, 2 removed, 20 changed")
     }
 
+    @Test("reports changes of the ordered, unique, volatile, unsettable and resolve proxies flags")
+    @MainActor
+    func featureFlags() async throws {
+        let directory = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(directory) }
+        let original = directory.appendingPathComponent("tags-v1.ecore")
+        let revised = directory.appendingPathComponent("tags-v2.ecore")
+        try Self.tags(flags: "").write(to: original, atomically: true, encoding: .utf8)
+        try Self.tags(flags: #"ordered="false" unique="false" volatile="true" unsettable="true""#, resolveProxies: false)
+            .write(to: revised, atomically: true, encoding: .utf8)
+
+        let result = try await compare([original.path, revised.path])
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+        #expect(result.stdout == """
+            Comparing metamodels: tags-v1.ecore -> tags-v2.ecore
+            ~ attribute Note.tags ordered: true -> false
+            ~ attribute Note.tags unique: true -> false
+            ~ attribute Note.tags volatile: false -> true
+            ~ attribute Note.tags unsettable: false -> true
+            ~ reference Note.related ordered: true -> false
+            ~ reference Note.related unique: true -> false
+            ~ reference Note.related volatile: false -> true
+            ~ reference Note.related unsettable: false -> true
+            ~ reference Note.related resolve proxies: true -> false
+            9 differences: 0 added, 0 removed, 9 changed
+
+            """)
+        let reversed = try await compare([revised.path, original.path, "--ignore", "unique", "--ignore", "resolve proxies"])
+        #expect(reversed.succeeded)
+        #expect(!reversed.stdout.contains("unique"))
+        #expect(!reversed.stdout.contains("resolve proxies"))
+        #expect(reversed.stdout.contains("~ reference Note.related volatile: true -> false\n"))
+    }
+
+    /// A metamodel with an attribute and a reference that share some flags.
+    ///
+    /// - Parameters:
+    ///   - flags: The XML attributes of the flags of both features, such as `ordered="false"`.
+    ///   - resolveProxies: Whether the reference resolves proxies.
+    /// - Returns: The text of the Ecore document.
+    private static func tags(flags: String, resolveProxies: Bool = true) -> String {
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="notes"
+            nsURI="http://www.example.org/notes" nsPrefix="notes">
+          <eClassifiers xsi:type="ecore:EClass" name="Note">
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="tags" upperBound="-1" \(flags)
+                eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="related" upperBound="-1" \(flags)
+                eType="#//Note"\(resolveProxies ? "" : #" resolveProxies="false""#)/>
+          </eClassifiers>
+        </ecore:EPackage>
+        """
+    }
+
     @Test("reports no differences between a metamodel and itself")
     @MainActor
     func identical() async throws {

@@ -41,7 +41,7 @@
 
                 @Code(name: "Company.ecore", file: step-02-person-class.ecore)
 
-                The `EClass` defines a new type in your metamodel. At this point, Person has no attributes—it's just an empty class.
+                The `EClass` defines a new type in your metamodel. At this point, Person has no attributes; it's just an empty class.
             }
 
             @Step {

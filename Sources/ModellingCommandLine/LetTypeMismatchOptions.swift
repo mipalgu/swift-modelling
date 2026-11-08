@@ -18,7 +18,7 @@ extension MTLLetTypeMismatches: @retroactive ExpressibleByArgument {}
 ///
 /// A `let` variable in a template may declare a type, as in `[let n : Integer = e]`. By default a
 /// value that does not conform to that type is an error that stops the generation. The `skip`
-/// mode follows the OMG MOFM2T specification and Acceleo 3 instead, which treat a typed `let` as
+/// mode follows the [OMG MOFM2T specification](https://www.omg.org/spec/MOFM2T/1.0) and Acceleo 3 instead, which treat a typed `let` as
 /// a type test: the `let` block is skipped and the generation continues, and the command writes a
 /// warning to standard error with ``GenerationWarningReport``. The option applies only while `let`
 /// types are checked, as ``MTLSemanticsOptions/checksLetTypes`` selects.

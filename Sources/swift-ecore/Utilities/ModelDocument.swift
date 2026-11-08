@@ -5,6 +5,7 @@
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
 import ECore
+import EMFBase
 import Foundation
 import ModellingCommandLine
 import MultiLevel
@@ -77,8 +78,9 @@ struct ModelDocument: Sendable {
     /// file (see `MetamodelRegistration.documentHandler(at:registry:)`). The metamodels of
     /// `metamodelOptions` are registered first and constrained by the Complete OCL documents;
     /// a JSON model must then use their classes only. Without metamodels, the documents
-    /// constrain the file itself if it is a metamodel. The warnings of reading the file, such
-    /// as a root package without a namespace URI, are written to standard error.
+    /// constrain the file itself if it is a metamodel. The warnings and errors of reading the
+    /// file, such as a root package without a namespace URI or a syntax error of a grammar, are
+    /// written to standard error; an error then makes the load fail.
     ///
     /// - Parameters:
     ///   - path: The path of the file.
@@ -90,9 +92,9 @@ struct ModelDocument: Sendable {
     ///     packages of grammar imports (default options).
     ///   - completeOCL: The paths of the Complete OCL documents that constrain the metamodels.
     /// - Returns: The document.
-    /// - Throws: ``DocumentError`` if the file does not exist or its format cannot be
-    ///   determined, `MetamodelRegistrationError` if a Complete OCL document does not exist or
-    ///   has nothing to constrain, or the error of a metamodel or of the parser.
+    /// - Throws: ``DocumentError`` if the file does not exist, its format cannot be determined
+    ///   or its reader reports an error, `MetamodelRegistrationError` if a Complete OCL document
+    ///   does not exist or has nothing to constrain, or the error of a metamodel or of the parser.
     static func load(
         path: String,
         metamodelOptions: MetamodelOptions,
@@ -116,11 +118,12 @@ struct ModelDocument: Sendable {
         if linguistic { await MultiLevelSupport.registerLinguisticMetamodel(in: resourceSet) }
         let options = ModelIO.LoadOptions(requiresMetamodel: requiresMetamodel, ecoreLoadOptions: ecoreLoadOptions)
         let loaded = try await ModelIO.load(url: url, format: format, resourceSet: resourceSet, options: options)
-        FileDiagnosticReport.write(await loaded.resource.loadDiagnostics, file: path)
+        try DocumentError.report(await loaded.resource.loadDiagnostics, file: path)
         var packages = loaded.packages
         if !completeOCL.isEmpty && !metamodelOptions.isGiven {
             packages = try await MetamodelRegistration.applyCompleteOCL(
-                completeOCL, to: packages.isEmpty ? [] : [loaded.resource], in: resourceSet, verbose: verbose)
+                completeOCL, to: packages.isEmpty ? [] : [loaded.resource], in: resourceSet, verbose: verbose,
+                encoding: ecoreLoadOptions.textEncoding)
         }
         var document = ModelDocument(
             path: path, url: url, format: loaded.format, resource: loaded.resource, resourceSet: resourceSet,
@@ -160,6 +163,13 @@ enum DocumentError: Error, LocalizedError, Equatable {
     /// The associated value is the extension.
     case unsupportedFormat(String)
 
+    /// The reader of the file reported errors, such as the syntax errors of a grammar.
+    ///
+    /// - Parameters:
+    ///   - path: The path of the file, as given on the command line.
+    ///   - errors: The number of errors.
+    case unreadable(String, errors: Int)
+
     /// A localised description of the error.
     var errorDescription: String? {
         switch self {
@@ -167,7 +177,24 @@ enum DocumentError: Error, LocalizedError, Equatable {
             return "File not found: \(path)"
         case .unsupportedFormat(let format):
             return Self.unsupportedFormatDescription(format)
+        case .unreadable(let path, let errors):
+            return "Failed to read \(path): \(errors) error(s)"
         }
+    }
+
+    /// Reports the diagnostics of reading a file and fails if any of them is an error.
+    ///
+    /// Each warning and error is written to standard error with `FileDiagnosticReport`, as a
+    /// line that names the file. Warnings do not make the read fail.
+    ///
+    /// - Parameters:
+    ///   - diagnostics: The diagnostics of reading the file.
+    ///   - path: The path of the file, as given on the command line.
+    /// - Throws: ``unreadable(_:errors:)`` if a diagnostic is an error.
+    static func report(_ diagnostics: [SourceDiagnostic], file path: String) throws {
+        FileDiagnosticReport.write(diagnostics, file: path)
+        let errors = diagnostics.filter { $0.severity == .error }.count
+        guard errors == 0 else { throw unreadable(path, errors: errors) }
     }
 
     /// The description of a format that no command reads, listing the supported formats.

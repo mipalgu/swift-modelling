@@ -1,0 +1,243 @@
+@Tutorial(time: 35) {
+    @Intro(title: "Importing Grammars") {
+        Infer Ecore metamodels from the grammars of Xtext, Langium and SDF3, and compare them with the abstract syntax you imported before.
+
+        A grammar describes the text of a language: its keywords, punctuation and the order of its parts. Its assignments, such as `left=Expr`, also describe the tree that a parser builds, and language workbenches infer a metamodel from them. swift-ecore infers the same metamodel without the workbench. In this tutorial, you'll:
+        - Write the arithmetic language of the previous tutorial as an Xtext grammar
+        - Write it as a Langium grammar and see how its types differ
+        - Write it in SDF3 and name the features after the labels of its templates
+        - Compare every import with the ASDL import
+
+        This tutorial continues in the directory of the previous one and compares with `Arith-asdl.ecore` and `Arith-sig.ecore`, which you created there. As before, the importers create metamodels only: they do not parse programs written in the language.
+
+        @Image(source: "grammar-import.svg", alt: "Xtext, Langium and SDF3 grammars are imported as Ecore metamodels and compared with the ASDL import")
+    }
+
+    @Section(title: "Xtext") {
+        @ContentAndMedia {
+            An Xtext grammar names the package it generates with `generate`, followed by its namespace URI. Each parser rule infers a class. An assignment adds a feature: `f=Rule` holds one value, `f+=Rule` a list, and `f?='keyword'` a truth value. When the rule called is a parser rule, the feature is a containment reference. When it is a terminal rule, such as `ID` or `INT`, the feature is an attribute, and when it is an enumeration rule, an attribute of the enumeration. A rule that only calls other rules, such as `Expr: Num | Var | BinOp | Let;`, makes each of them a subclass of its own class.
+
+            An assignment of the form `f=[Type]` is a cross-reference: it refers to an object that is defined elsewhere in the text instead of containing it, and becomes a non-containment reference.
+        }
+
+        @Steps {
+            @Step {
+                Write the arithmetic language as an Xtext grammar.
+
+                @Code(name: "Arith.xtext", file: gram-02-step-01-arith.xtext)
+
+                `with org.eclipse.xtext.common.Terminals` brings in the usual terminal rules, such as `ID`, `INT` and `STRING`. The operators are an enumeration rule whose literals are written `+`, `-`, `*` and `/`.
+            }
+
+            @Step {
+                Inspect the metamodel that the grammar infers.
+
+                @Code(name: "Terminal", file: gram-02-step-02-inspect-xtext.sh)
+
+                The package is named `arith`, after the `generate` line, and its namespace URI is the one that line gives. `Num`, `Var`, `BinOp` and `Let` extend `Expr`, which is a concrete class, as in Xtext, and `Op` is an enumeration. `ID` becomes `EString` and `INT` becomes `EInt`. As in Xtext, every feature that a grammar infers is optional: its lower bound is 0.
+            }
+
+            @Step {
+                Convert the grammar to an Ecore file and list its classes.
+
+                @Code(name: "Terminal", file: gram-02-step-03-convert-xtext.sh)
+
+                The class list shows each class with its supertypes.
+            }
+        }
+    }
+
+    @Section(title: "Langium") {
+        @ContentAndMedia {
+            Langium grammars look much like Xtext grammars, but they follow the type system of TypeScript. The rule marked `entry` is where parsing starts, and terminal rules are regular expressions. `returns number` gives a terminal the TypeScript type `number`, which becomes `EDouble`. A rule that only lists alternatives, such as `Expr`, infers a union type, which becomes an abstract class.
+
+            A cross-reference is written `f=[Type:ID]`, naming the terminal that spells the name of the target.
+        }
+
+        @Steps {
+            @Step {
+                Write the arithmetic language as a Langium grammar.
+
+                @Code(name: "Arith.langium", file: gram-02-step-04-arith.langium)
+
+                The rules are those of the Xtext grammar, except that the operator is an alternative of keywords instead of an enumeration rule.
+            }
+
+            @Step {
+                Convert the grammar to Ecore and inspect the result.
+
+                @Code(name: "Terminal", file: gram-02-step-05-convert-langium.sh)
+
+                The package is named `Arith`, after the `grammar` line, and its namespace URI is `urn:langium:Arith`. `operator` is an attribute of type `EString`, because the grammar assigns it one of four keywords. `value` is an `EDouble`, because the terminal `INT` returns a `number`.
+            }
+        }
+    }
+
+    @Section(title: "SDF3") {
+        @ContentAndMedia {
+            SDF3, the syntax definition formalism of the Spoofax language workbench, writes each production as a template. `Expr.BinOp = <(<left:Expr> <operator:Op> <right:Expr>)>` defines the constructor `BinOp` of the sort `Expr`, and the placeholders in angle brackets are its arguments. A placeholder may carry a label, such as `left`.
+
+            swift-ecore imports a context-free sort as an abstract class and each constructor as a concrete class that extends it, as for the Stratego signature in the previous tutorial. A lexical sort, such as `ID` or `INT`, becomes a data type of its own. By default, the features are named after their sorts and numbered, as Spoofax names them. You can ask for the labels instead.
+        }
+
+        @Steps {
+            @Step {
+                Write the arithmetic language in SDF3.
+
+                @Code(name: "Arith.sdf3", file: gram-02-step-06-arith.sdf3)
+
+                The lexical sorts `ID` and `INT` are defined in the module, so no warning reports them. `<title:ID?>` is optional and `<statements:Expr*>` is a list. The constructor `Program` has the name of its sort, as in the signature of the previous tutorial.
+            }
+
+            @Step {
+                Convert the grammar with the default feature names.
+
+                @Code(name: "Terminal", file: gram-02-step-07-convert-sdf3.sh)
+
+                The features are named after their sorts, as in the Stratego signature, and the constructor `Program` is renamed with a warning. The labels in the templates are not used yet.
+            }
+
+            @Step {
+                Convert the grammar again, naming the features after their labels.
+
+                @Code(name: "Terminal", file: gram-02-step-08-convert-sdf3-labels.sh)
+
+                `--sdf3-labels` names each labelled argument after its label, so `BinOp` now has the features `left`, `operator` and `right`, as in the other imports. Use labels whenever a grammar has them: the names then mean something to the people who query and transform the models.
+            }
+        }
+    }
+
+    @Section(title: "Comparing the Imports") {
+        @ContentAndMedia {
+            You now have five metamodels of one language: from ASDL, from a Stratego signature, and from the Xtext, Langium and SDF3 grammars. Each notation decides some things differently: whether the operators are an enumeration, a string or classes, which data types numbers and names have, whether features are required, and what the package is called.
+        }
+
+        @Steps {
+            @Step {
+                Count the elements of each import against the ASDL import.
+
+                @Code(name: "Terminal", file: gram-02-step-09-compare-summary.sh)
+
+                `--summary` shows the numbers of packages, classes and features of the two metamodels, so you see at a glance which imports have more classes, such as the classes of the operators.
+            }
+
+            @Step {
+                Compare the Xtext import with the ASDL import in full.
+
+                @Code(name: "Terminal", file: gram-02-step-10-compare-xtext.sh)
+
+                Each line starts with `+` for an addition, `-` for a removal or `~` for a change. Look for changed lower bounds, as every feature that Xtext infers is optional, for the different names and namespace URIs of the packages, and for the types, which ASDL names in lower case.
+            }
+
+            @Step {
+                Compare the Langium import with the Xtext import.
+
+                @Code(name: "Terminal", file: gram-02-step-11-compare-langium.sh)
+
+                The two grammars have the same rules, so the differences come from the notations: the type of `operator` and of `value`, the abstract `Expr`, and the package.
+            }
+
+            @Step {
+                Import the Langium grammar into the namespace of the Xtext import, and compare again.
+
+                @Code(name: "Terminal", file: gram-02-step-12-namespace.sh)
+
+                `--ns-uri` and `--ns-prefix` set the namespace of a metamodel imported from a grammar, and `--package-name` names the package of a grammar that declares no name. The namespace URI no longer differs. Give an imported metamodel the namespace URI that the models of the language use, so that they load with it.
+            }
+
+            @Step {
+                Show the inheritance of the Xtext import.
+
+                @Code(name: "Terminal", file: gram-02-step-13-hierarchy.sh)
+
+                Every imported metamodel is an ordinary Ecore file, so all commands of swift-ecore, and the transformation and generation tools, work with it as with a metamodel written by hand.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What does the Xtext assignment `left=Expr` become, where `Expr` is a parser rule?
+
+            @Choice(isCorrect: true) {
+                A containment reference to the class `Expr`
+
+                @Justification(reaction: "Correct!") {
+                    An assignment of a parser rule contains the object that the rule builds.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                A non-containment reference to the class `Expr`
+
+                @Justification(reaction: "Not quite!") {
+                    That is what a cross-reference such as `left=[Expr]` becomes.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                An attribute of type `EString`
+
+                @Justification(reaction: "Try again!") {
+                    Attributes come from terminal rules and keywords, not from parser rules.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Why is `operator` an `EString` attribute in the Langium import?
+
+            @Choice(isCorrect: false) {
+                Because Langium has no enumerations
+
+                @Justification(reaction: "Not quite!") {
+                    A Langium type such as `type Op = 'Add' | 'Sub'` can become an enumeration. This grammar does not declare one.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                Because the grammar assigns it one of several keywords
+
+                @Justification(reaction: "Correct!") {
+                    A keyword is a string, so an assignment of alternative keywords is a string attribute.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Because the terminal `ID` returns a string
+
+                @Justification(reaction: "Try again!") {
+                    `operator` is not assigned an `ID`. Its value is one of the four operator keywords.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What does naming the features after the labels change in the SDF3 import?
+
+            @Choice(isCorrect: true) {
+                The features are named `left`, `operator` and `right` instead of being numbered after their sorts
+
+                @Justification(reaction: "Correct!") {
+                    The labels of the placeholders give the features their names. Without them, the names come from the sorts.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The lexical sorts become built-in Ecore data types
+
+                @Justification(reaction: "Not quite!") {
+                    The labels only change the names of the features, not their types.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The importer also reads programs written in the language
+
+                @Justification(reaction: "Incorrect!") {
+                    The importers create metamodels only, whatever their options.
+                }
+            }
+        }
+    }
+}

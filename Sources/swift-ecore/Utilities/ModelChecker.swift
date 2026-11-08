@@ -181,7 +181,7 @@ struct ModelChecker {
                         severity: check.outcome == .untranslated ? .warning : .error, code: ValidationCode.invariant,
                         location: check.location, element: check.object,
                         message: "Invariant \(check.context)::\(check.constraint) is \(check.outcome.rawValue)"
-                            + (check.detail.map { " (\($0))" } ?? "")))
+                            + (check.detail.map { " (\($0))" } ?? "") + (check.message.map { ": " + $0 } ?? "")))
             }
         }
         return outcome

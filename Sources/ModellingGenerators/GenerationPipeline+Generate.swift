@@ -62,7 +62,8 @@ extension GenerationPipeline {
         }
 
         let data = try await TemplateRun.loadDataModels(of: templateSet, into: resourceSet)
-        let module = try await TemplateRun.parseMainModule(of: templateSet)
+        let parsed = try await TemplateRun.parseMainModule(of: templateSet, encoding: options.templateEncoding)
+        let module = parsed.module
         let base = outputBase(
             for: genModel, descriptor: templateSet.descriptor, in: outputDirectory, options: options)
         let services: [any AQLServiceProvider] = [
@@ -98,7 +99,8 @@ extension GenerationPipeline {
         progress(GenerationProgressUpdate(message: "Done", completed: files.count, total: total ?? files.count))
         return GenerationResult(
             outputDirectory: base, files: files, language: templateSet.descriptor.name,
-            packageCount: genModel.allGenPackages.count, warnings: output.warnings)
+            packageCount: genModel.allGenPackages.count, warnings: output.warnings,
+            decodingWarnings: parsed.decodingWarnings)
     }
 
     // MARK: - Loading

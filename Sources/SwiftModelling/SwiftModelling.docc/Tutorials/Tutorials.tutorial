@@ -81,6 +81,42 @@
         @TutorialReference(tutorial: "doc:OCL-01-constraints")
     }
 
+    @Chapter(name: "Metamodel Languages and Formats") {
+        Write metamodels in KM3, EMOF, Emfatic, Xcore and OCLinEcore, and read UML class models.
+
+        @Image(source: "metamodel-formats.svg", alt: "Metamodel languages and formats around Ecore")
+
+        @TutorialReference(tutorial: "doc:Formats-01-km3")
+        @TutorialReference(tutorial: "doc:Formats-02-uml-emof")
+        @TutorialReference(tutorial: "doc:Formats-03-emfatic-xcore")
+        @TutorialReference(tutorial: "doc:Formats-04-ocl-languages")
+    }
+
+    @Chapter(name: "From Grammars to Metamodels") {
+        Import the abstract syntax of a language from ASDL, Stratego, Xtext, Langium and SDF3.
+
+        @Image(source: "grammar-import.svg", alt: "Grammar notations imported into Ecore metamodels")
+
+        @TutorialReference(tutorial: "doc:Grammar-01-abstract-syntax")
+        @TutorialReference(tutorial: "doc:Grammar-02-concrete-syntax")
+    }
+
+    @Chapter(name: "Formal Verification Exports") {
+        Export metamodels, constraints and models to Alloy, TLA+, Event-B and Lean.
+
+        @Image(source: "verification-exports.svg", alt: "An Ecore metamodel with OCL invariants exported to verification languages")
+
+        @TutorialReference(tutorial: "doc:Verification-01-alloy")
+    }
+
+    @Chapter(name: "Multi-Level Modelling") {
+        Model domains with more than two levels, with clabjects, potency and deep views.
+
+        @Image(source: "multi-level.svg", alt: "Three levels of a product catalogue, each an instance of the level above")
+
+        @TutorialReference(tutorial: "doc:MultiLevel-01-deep-modelling")
+    }
+
     @Chapter(name: "Integrated Workflows") {
         Complete end-to-end model-driven engineering workflows.
 

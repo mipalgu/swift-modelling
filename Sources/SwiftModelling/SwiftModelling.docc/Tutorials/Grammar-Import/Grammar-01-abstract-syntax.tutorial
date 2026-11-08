@@ -1,0 +1,202 @@
+@Tutorial(time: 30) {
+    @Intro(title: "Importing Abstract Syntax") {
+        Turn the abstract syntax of a language, written in ASDL or as a Stratego signature, into an Ecore metamodel.
+
+        Language tools often describe the trees that their parsers build in a notation of their own. ASDL (the Zephyr Abstract Syntax Description Language) describes the syntax trees of compilers such as CPython, and Stratego signatures describe the terms of languages built with Spoofax. swift-ecore imports both as Ecore metamodels, so the modelling tools can query, transform and generate from the same structure. In this tutorial, you'll:
+        - Describe a small arithmetic language in ASDL
+        - Inspect, convert and validate the imported metamodel
+        - Choose whether sum types without fields become enumerations
+        - Describe the same language as a Stratego signature and read the warnings of its import
+        - Compare the two imports
+
+        The importers create metamodels only: they read the description of a language, not programs written in it. Every command in this tutorial runs in one directory, which starts empty. The next tutorial imports the same language from grammars and uses the files of this one.
+
+        @Image(source: "grammar-import.svg", alt: "An ASDL module and a Stratego signature are imported as Ecore metamodels and compared")
+    }
+
+    @Section(title: "Describing a Language in ASDL") {
+        @ContentAndMedia {
+            An ASDL module defines types. A **sum type** lists alternatives separated by `|`, each a constructor with fields in parentheses. A **product type** is a single unnamed constructor, a list of fields in parentheses. A field names its type and then its own name. A `?` after the type makes a field optional, and a `*` makes it a sequence.
+
+            swift-ecore imports a module as a package of the same name. A sum type becomes an abstract class, and each constructor a concrete class that extends it. A sum type whose constructors have no fields becomes an enumeration instead. A product type becomes a concrete class. A field whose type is a class becomes a containment reference, and a field of an enumeration or of a built-in type, such as `identifier` or `int`, an attribute.
+        }
+
+        @Steps {
+            @Step {
+                Describe the arithmetic language in ASDL.
+
+                @Code(name: "Arith.asdl", file: gram-01-step-01-arith.asdl)
+
+                An expression is a number, a variable, a binary operation or a `let` that binds a name to a value within a body. The operators form a sum type of constructors without fields. A program has an optional title and a sequence of expressions.
+            }
+
+            @Step {
+                Inspect the metamodel that the module describes.
+
+                @Code(name: "Terminal", file: gram-01-step-02-inspect-asdl.sh)
+
+                The package `Arith` has an abstract class `expr` with the subclasses `Num`, `Var`, `BinOp` and `Let`, an enumeration `op` with the literals `Add`, `Sub`, `Mul` and `Div`, and a class `program`. `identifier` becomes `EString` and `int` becomes `EInt`. The single fields are required, `title` is optional (`[0..1]`) and `statements` is a sequence (`[0..*]`). The classes keep the names of the module, so the types are in lower case, as is usual in ASDL.
+            }
+
+            @Step {
+                Convert the module to an Ecore file and validate the result.
+
+                @Code(name: "Terminal", file: gram-01-step-03-convert-asdl.sh)
+
+                The namespace URI of the package is `urn:asdl:Arith` and its prefix `arith`, as no other is given. `--ns-uri` and `--ns-prefix` give others. Information that Ecore has no place for, such as the original ASDL type of an attribute, is kept in annotations.
+            }
+
+            @Step {
+                Show the class hierarchy of the imported metamodel.
+
+                @Code(name: "Terminal", file: gram-01-step-04-hierarchy.sh)
+
+                The four constructors of `expr` are its subclasses, so a query or a transformation can treat every expression alike, or each kind on its own.
+            }
+
+            @Step {
+                Import the module again, with every sum type as classes.
+
+                @Code(name: "Terminal", file: gram-01-step-05-enumerations.sh)
+
+                `--asdl-enumerations never` turns `op` into an abstract class with a subclass for each operator, as `expr` is. The default, `all-nullary`, makes an enumeration of every sum type whose constructors have no fields. Choose `never` when the operators may gain fields later, or when the tools that use the metamodel expect classes.
+            }
+        }
+    }
+
+    @Section(title: "Describing a Language as a Stratego Signature") {
+        @ContentAndMedia {
+            A Stratego signature declares **sorts** and **constructors**. A constructor such as `BinOp : Expr * Op * Expr -> Expr` names the sorts of its arguments, separated by `*`, and the sort it builds after `->`. `Option(T)` is an optional argument and `List(T)` a sequence.
+
+            swift-ecore reads signatures with its SDF3 importer, as Spoofax derives them from SDF3 grammars. It imports a sort as an abstract class and each constructor as a concrete class that extends the class of its sort. An argument becomes a containment reference to the class of its sort, or an attribute when its sort is lexical, such as an identifier or a number. Signatures do not name their arguments, so the features get names made from their sorts, numbered in order.
+        }
+
+        @Steps {
+            @Step {
+                Describe the same language as a Stratego signature.
+
+                @Code(name: "Arith-sig.str", file: gram-01-step-06-arith-sig.str)
+
+                The signature uses the sorts `INT` and `ID` for numbers and names, as signatures generated from a grammar do. They are defined in another module, which this file does not import.
+            }
+
+            @Step {
+                Inspect the metamodel that the signature describes.
+
+                @Code(name: "Terminal", file: gram-01-step-07-inspect-sig.sh)
+
+                `inspect` recognises the signature by its contents. The module `signatures/Arith-sig` becomes the package `Arith_sig`: the last part of the module name, with the hyphen, which a package name cannot contain, replaced. Each warning on standard error gives the file, the line and the column it is about. Two warnings say that `INT` and `ID` are not defined in this module, so they are taken to be lexical sorts and become data types. The constructor `Program` has the name of its sort, so it is renamed, and a warning gives its new name. Warnings do not change the exit status; an error, such as a syntax error in the signature, is reported in the same way, starting with `error:`, and makes the command fail with exit status 1.
+            }
+
+            @Step {
+                Convert the signature to Ecore and list the names in the result.
+
+                @Code(name: "Terminal", file: gram-01-step-08-convert-sig.sh)
+
+                Like `inspect`, `convert` recognises the signature by its contents, although `.str` names no metamodel format; `--input-format sdf3` would name the reader explicitly. The features have generated names, such as `expr1` and `expr2` for the two operands of `BinOp`, where the ASDL module named them `left` and `right`.
+            }
+        }
+    }
+
+    @Section(title: "Comparing the Imports") {
+        @ContentAndMedia {
+            Both files describe the same language, but each notation says some things the other cannot. `swift-ecore compare` shows where the two metamodels differ. It matches the single root packages of the two files even though their names differ, and it matches classes and features by name.
+        }
+
+        @Steps {
+            @Step {
+                Compare the two imports.
+
+                @Code(name: "Terminal", file: gram-01-step-09-compare.sh)
+
+                Most differences come from names. The ASDL types are in lower case and the sorts of the signature are capitalised, so `expr` and `Expr` are different classes, and the features of the signature have generated names rather than `left`, `operator` and `right`. The operators are an enumeration in one metamodel and an abstract class with four subclasses in the other. Numbers and names are built-in Ecore data types in one, and data types named after the lexical sorts in the other. Choose the notation whose names and types suit the tools that will use the metamodel.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What does the ASDL sum type `op = Add | Sub | Mul | Div` become?
+
+            @Choice(isCorrect: true) {
+                An enumeration with the literals `Add`, `Sub`, `Mul` and `Div`
+
+                @Justification(reaction: "Correct!") {
+                    None of the constructors has fields, so by default it becomes an enumeration. With `--asdl-enumerations never`, it would be an abstract class with four subclasses.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                An abstract class with four subclasses
+
+                @Justification(reaction: "Not quite!") {
+                    That is what a sum type with fields becomes, such as `expr`, and what `op` becomes only with `--asdl-enumerations never`.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                A data type named `op`
+
+                @Justification(reaction: "Try again!") {
+                    Data types come from built-in types, such as `int`, not from types that the module defines.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Why do the features imported from the Stratego signature have names such as `expr1`?
+
+            @Choice(isCorrect: false) {
+                Because Ecore features must not be named `left` or `right`
+
+                @Justification(reaction: "Incorrect!") {
+                    Those are valid feature names, and the ASDL import uses them.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                Because the arguments of a constructor in a signature have no names
+
+                @Justification(reaction: "Correct!") {
+                    A signature only lists the sorts of the arguments, so the importer makes names from the sorts and numbers them.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Because the signature does not import the module that defines `INT` and `ID`
+
+                @Justification(reaction: "Not quite!") {
+                    That is why `INT` and `ID` are reported. The names of the features would be generated either way.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What do the importers in this tutorial read?
+
+            @Choice(isCorrect: true) {
+                The description of a language, which they turn into a metamodel
+
+                @Justification(reaction: "Correct!") {
+                    The importers create metamodels only. They do not parse programs written in the language.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Programs written in the language, which they turn into models
+
+                @Justification(reaction: "Not quite!") {
+                    Reading programs needs a parser for the language itself, which the importers do not build.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Ecore metamodels, which they turn into ASDL or signatures
+
+                @Justification(reaction: "Try again!") {
+                    The importers read the notations of language tools and write Ecore.
+                }
+            }
+        }
+    }
+}

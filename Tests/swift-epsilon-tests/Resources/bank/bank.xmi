@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bank:Bank xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:bank="http://www.example.org/bank" name="River Bank">
+  <accounts name="savings" owner="Alice" balance="120"/>
+  <accounts name="cheque" owner="Bob" balance="-30"/>
+  <accounts name="holiday" owner="" balance="0"/>
+</bank:Bank>

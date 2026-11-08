@@ -6,6 +6,7 @@
 //
 import ATL
 import ECore
+import EMFBase
 import Foundation
 
 /// The settings of an import of Ecore models into a generator model.
@@ -118,6 +119,17 @@ public struct GenModelImportOptions: Sendable, Equatable {
     /// generator model with this scope as its default. With `nil`, the default, the resource set
     /// configures no scope and its resources keep the behaviour of a resource set without one.
     public var containerLookupScope: ContainerLookupScope? = nil
+
+    /// The character encoding in which a transformation given with ``transformation`` is read,
+    /// if one is chosen.
+    ///
+    /// With `nil`, the default, the transformation is read as UTF-8, and a transformation that
+    /// is not valid UTF-8 is read as ISO-8859-1 instead, which accepts every byte, with a
+    /// warning in ``GenModelResult/decodingWarnings``. With an encoding, the transformation is
+    /// read in that encoding alone, without a warning, and a transformation that is not valid
+    /// in it stops the import with ``GenerationError/transformationUnavailable(_:)``. The
+    /// bundled transformation is always read as UTF-8.
+    public var transformationEncoding: TextEncoding? = nil
 
     /// Creates options with the importer's defaults and the ATL behaviour of version 0.6.
     ///

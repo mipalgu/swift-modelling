@@ -22,6 +22,9 @@ struct GenModelTransformation {
     /// The behaviours of the ATL language with which the transformation is parsed and run.
     let atlOptions: ATLOptions
 
+    /// The warnings of decoding the file of the transformation.
+    var decodingWarnings: [SourceDiagnostic] = []
+
     /// The location of the bundled transformation.
     ///
     /// - Returns: The file URL of the transformation, or `nil` if the bundle does not contain it.
@@ -61,12 +64,15 @@ struct GenModelTransformation {
     ///   - replacement: A transformation file or a directory that holds one, used instead of the
     ///     bundled transformation; `nil` selects the bundled transformation.
     ///   - atlOptions: The behaviours of the ATL language in which the transformation is written.
-    /// - Returns: The parsed transformation.
+    ///   - encoding: The encoding of a replacement transformation, or `nil` (the default) to read
+    ///     UTF-8 and fall back to ISO-8859-1 with a decoding warning.
+    /// - Returns: The parsed transformation with the warnings of decoding its file.
     /// - Throws: ``GenerationError/transformationUnavailable(_:)`` if the transformation is
-    ///   missing or cannot be parsed.
+    ///   missing, cannot be parsed or is not valid in an explicit encoding.
     @MainActor
     static func load(
-        generatorMetamodel: EPackage, replacement: URL? = nil, atlOptions: ATLOptions = .standard
+        generatorMetamodel: EPackage, replacement: URL? = nil, atlOptions: ATLOptions = .standard,
+        encoding: TextEncoding? = nil
     ) async throws
         -> GenModelTransformation
     {
@@ -79,9 +85,15 @@ struct GenModelTransformation {
             throw GenerationError.transformationUnavailable("the bundled transformation is missing")
         }
         let registry = ATLMetamodelRegistry(packages: [EcorePackage.instance, generatorMetamodel])
+        let parser = ATLParser(options: atlOptions)
+        let encoding = replacement == nil ? nil : encoding
         do {
-            let module = try await ATLParser(options: atlOptions).parse(url, metamodelRegistry: registry)
-            return GenModelTransformation(module: module, atlOptions: atlOptions)
+            let module = try await parser.parse(url, metamodelRegistry: registry, encoding: encoding)
+            return GenModelTransformation(
+                module: module, atlOptions: atlOptions, decodingWarnings: await parser.decodingWarnings)
+        } catch ATLParseError.invalidEncoding {
+            let name = (encoding ?? .utf8).name
+            throw GenerationError.transformationUnavailable("\(url.path) is not valid \(name) text")
         } catch {
             throw GenerationError.transformationUnavailable(String(describing: error))
         }

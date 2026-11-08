@@ -61,7 +61,7 @@ public struct GrammarImportOptions: ParsableArguments, Sendable {
         /// How a Langium grammar types its rules.
         public static let langiumTypes = "langium-types"
 
-        /// Whether SDF3 constructor labels name the classes of an import.
+        /// Whether the argument labels of an SDF3 grammar name the features of an import.
         public static let sdf3Labels = "sdf3-labels"
     }
 
@@ -128,14 +128,15 @@ public struct GrammarImportOptions: ParsableArguments, Sendable {
             valueName: GrammarImportOptions.langiumTypesValueList))
     public var explicitLangiumTypes: LangiumTypeMode?
 
-    /// Whether SDF3 constructor labels name classes, as given on the command line, if at all.
+    /// Whether the argument labels of an SDF3 grammar name features, as given on the command
+    /// line, if at all.
     @Flag(
         name: .customLong(OptionName.sdf3Labels),
         inversion: .prefixedNo,
         help: ArgumentHelp(
-            "Whether the constructor labels of an SDF3 grammar name the classes of the metamodel; "
-                + "--\(GrammarImportOptions.inversionPrefix)\(OptionName.sdf3Labels) (the default) "
-                + "names them after their sorts"))
+            "Whether the labels of an SDF3 grammar name the features of the metamodel, as <lhs:Exp> "
+                + "names lhs; --\(GrammarImportOptions.inversionPrefix)\(OptionName.sdf3Labels) (the default) "
+                + "names them after their sorts, such as exp1 and exp2"))
     public var explicitSDF3Labels: Bool?
 
     /// Creates the options with nothing given.

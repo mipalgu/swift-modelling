@@ -92,6 +92,14 @@ struct ConstraintCheck: Codable, Sendable, Equatable {
 
     /// Why the invariant could not be evaluated, or what it evaluated to if not a Boolean.
     var detail: String?
+
+    /// The message of a violated invariant that declares one, evaluated for the object.
+    ///
+    /// An invariant declares a message in OCLinEcore or Complete OCL as
+    /// `inv Name('message'): expression`, which Eclipse OCL stores as a tuple of the message
+    /// and the status. It is `nil` unless the invariant is violated and its message evaluates
+    /// to a string.
+    var message: String?
 }
 
 /// Evaluates the OCL invariants of a metamodel for every object of a model.
@@ -104,6 +112,8 @@ struct ConstraintCheck: Codable, Sendable, Equatable {
 /// a construct without a counterpart in AQL, such as `iterate`, is reported as
 /// ``ConstraintCheck/Outcome/untranslated`` instead of being evaluated. Text that is not OCL is
 /// evaluated as AQL, as before. OCL's `String::indexOf`, which AQL does not offer, is added.
+/// An invariant with a message is evaluated by its status, and the message of a violation is
+/// evaluated for the object and reported in ``ConstraintCheck/message``.
 @MainActor
 struct OCLInvariantChecker {
     /// The model to check.
@@ -131,7 +141,7 @@ struct OCLInvariantChecker {
         let context = await makeContext()
         let translator = OCLToAQLTranslator(packages: document.describingPackages)
         let progress = GenerationProgressBar(verbose: false)
-        var parsed: [String: Result<any AQLExpression, ParseFailure>] = [:]
+        var parsed: [String: Result<CompiledInvariant, ParseFailure>] = [:]
         var checks: [ConstraintCheck] = []
         for (index, (entry, invariants)) in pending.enumerated() {
             progress.show(GenerationProgressUpdate(message: OCLVocabulary.progressMessage, completed: index, total: pending.count))
@@ -144,6 +154,16 @@ struct OCLInvariantChecker {
         }
         progress.finish()
         return checks
+    }
+
+    /// The AQL expressions that check an invariant and describe its violation.
+    struct CompiledInvariant {
+        /// The expression that every instance of the class must satisfy.
+        let status: any AQLExpression
+
+        /// The expression of the message of a violation, if the invariant declares one that
+        /// has a translation.
+        let message: (any AQLExpression)?
     }
 
     /// Why an expression could not be parsed or translated.
@@ -164,18 +184,19 @@ struct OCLInvariantChecker {
     /// - Parameters:
     ///   - source: The OCL text of the invariant.
     ///   - translator: The translator, which knows the packages of the metamodels.
-    /// - Returns: The parsed AQL expression, or why there is none.
-    static func parse(_ source: String, translator: OCLToAQLTranslator) -> Result<any AQLExpression, ParseFailure> {
+    /// - Returns: The parsed AQL expressions of the status and the message, or why there are none.
+    static func parse(_ source: String, translator: OCLToAQLTranslator) -> Result<CompiledInvariant, ParseFailure> {
         let translation = translator.translate(source)
         if let aql = translation.aql, case .success(let expression) = parse(aql) {
-            return .success(expression)
+            let message = translation.message.flatMap { try? parse($0).get() }
+            return .success(CompiledInvariant(status: expression, message: message))
         }
         let untranslatable = translation.diagnostics.filter { $0.code == OCLDiagnosticCode.untranslatable }
         guard untranslatable.isEmpty else {
             return .failure(
                 ParseFailure(message: untranslatable.map(\.message).joined(separator: "; "), isUntranslatable: true))
         }
-        return parse(source)
+        return parse(source).map { CompiledInvariant(status: $0, message: nil) }
     }
 
     /// Parses an AQL expression.
@@ -197,9 +218,9 @@ struct OCLInvariantChecker {
         return context
     }
 
-    /// Evaluates one invariant for one object.
+    /// Evaluates one invariant for one object, and its message if the object violates it.
     private func evaluate(
-        _ invariant: OCLInvariant, _ expression: Result<any AQLExpression, ParseFailure>,
+        _ invariant: OCLInvariant, _ expression: Result<CompiledInvariant, ParseFailure>,
         for entry: ModelCatalogue.Entry, in context: AQLExecutionContext
     ) async -> ConstraintCheck {
         var check = ConstraintCheck(
@@ -209,10 +230,10 @@ struct OCLInvariantChecker {
         case .failure(let failure):
             if failure.isUntranslatable { check.outcome = .untranslated }
             check.detail = failure.message
-        case .success(let expression):
+        case .success(let compiled):
             context.setVariable(OCLVocabulary.selfVariable, value: entry.object)
             do {
-                let value = try await expression.evaluate(in: context)
+                let value = try await compiled.status.evaluate(in: context)
                 if let satisfied = value as? Bool {
                     check.outcome = satisfied ? .satisfied : .violated
                 } else {
@@ -221,6 +242,9 @@ struct OCLInvariantChecker {
                 }
             } catch {
                 check.detail = error.localizedDescription
+            }
+            if check.outcome == .violated, let message = compiled.message {
+                check.message = (try? await message.evaluate(in: context)) as? String
             }
         }
         return check

@@ -1,0 +1,5 @@
+rule Account2Text transform account : Account {
+  parameters : Map{"account" = account}
+  template : "account.egl"
+  target : "accounts/" + account.name + ".txt"
+}

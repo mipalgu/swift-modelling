@@ -167,3 +167,13 @@ enum OCLVocabulary {
     /// The name of the variable that holds the object an invariant is evaluated for.
     static let selfVariable = "self"
 }
+
+// MARK: - Encodings
+
+/// The words with which the commands describe the encoding of the documents they read.
+enum EncodingVocabulary {
+    /// The documents to which `--encoding` applies, for the discussion of a command.
+    static let encodedDocuments = "the documents in text formats that the command reads, including its metamodels "
+        + "and Complete OCL documents, such as KM3, Emfatic, Xcore, OCLinEcore, Complete OCL, ASDL, Langium, "
+        + "Xtext, SDF3 and MetaDepth"
+}

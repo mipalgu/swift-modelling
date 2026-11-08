@@ -77,10 +77,24 @@ KM3, the textual metamodel notation of the ATL tool chain, has no namespace URIs
 of a KM3 metamodel is therefore registered under its name, with a warning, and a model refers to it
 by a namespace declaration with that name, such as `xmlns:Library="Library"`. A syntax error in a
 KM3 file is reported on standard error as a line that starts with `error:`, with its line and
-column. `--km3-primitives <ecore|declared>`, which every command that reads metamodels accepts,
+column, as are the syntax errors of the other textual formats and grammars. When the file with
+such an error is the one that `inspect`, `validate`, `compare`, `statistics`, `query` or `convert`
+reads, the command then stops with exit status 1 and a final line such as
+`Error: Failed to read Arith.asdl: 1 error(s)`; warnings do not change the exit status.
+`--km3-primitives <ecore|declared>`, which every command that reads metamodels accepts,
 chooses how the data types that a KM3 metamodel declares are read: as the built-in Ecore data types
 of the same meaning, such as `EString` for `String` (`ecore`, the default), or as data types of
 their own package, as the KM32EMF transformation makes them (`declared`).
+
+Documents in text formats, such as KM3, Emfatic, Xcore, OCLinEcore, Complete OCL, ASDL, Langium,
+Xtext, SDF3 and MetaDepth, are read as UTF-8, and a file that is not valid UTF-8 is read as
+ISO-8859-1 with a warning on standard error. `--encoding <name>`, which `inspect`, `validate`,
+`compare`, `statistics`, `query` and `convert` accept, names the encoding of the file they read, of
+the metamodels given with `--metamodel` and of the Complete OCL documents given with `--ocl`, such
+as `ISO-8859-1` (alias `latin1`) or `windows-1252`. They are then read in that encoding alone,
+without a warning, and a file that is not valid in it is an error. XMI, Ecore, EMOF, UML and JSON
+documents are decoded as their own rules prescribe. These commands read no configuration file, so
+the option is given on the command line.
 
 A UML class model (`.uml`, or an `.xmi` file in an OMG UML namespace) is also accepted as a
 metamodel: `--metamodel garden.uml` registers the Ecore metamodel that it describes, converted as
@@ -101,8 +115,9 @@ that name. Every command that reads metamodels accepts these options for the imp
 - `--langium-types <normal|strict>` - Whether the classes of a Langium grammar are inferred from its
   rules (`normal`, the default) or come only from the types and interfaces that it declares
   (`strict`)
-- `--sdf3-labels`, `--no-sdf3-labels` - Whether the constructor labels of an SDF3 grammar name the
-  classes of the metamodel (off by default)
+- `--sdf3-labels`, `--no-sdf3-labels` - Whether the argument labels of an SDF3 grammar, such as
+  `lhs` in `<lhs:Exp>`, name the features of the metamodel (off by default: features are named
+  after their sorts, such as `exp1` and `exp2`)
 
 The options do not change metamodels in other formats. Langium, Xtext and SDF3 are only read: a
 metamodel imported from them can be written in any other metamodel format.
@@ -149,9 +164,10 @@ swift-ecore convert products.mdepth products.xmi
 swift-ecore convert products.mdepth bookstore.ecore --level 1
 ```
 
-`convert --level <level>` writes the Ecore metamodel of one level in any metamodel format: the
-classes of that level and the levels above, annotated with their levels and potencies. The export
-is one-way, as Ecore cannot hold instances of instances. Without `--level`, a multi-level model
+`convert --level <level>` writes, in any metamodel format, the Ecore metamodel whose instances live
+at that level: with `--level 0`, for example, its classes are the types of level 1, with the
+features that they and the levels above give them, annotated with their levels and potencies. The
+export is one-way, as Ecore cannot hold instances of instances. Without `--level`, a multi-level model
 cannot be written in a metamodel format, and the error lists its levels.
 
 `swift-aql` and `swift-mtl generate` present a multi-level model as the deep view of one level with
@@ -178,7 +194,8 @@ swift-ecore convert <input-file> --output <output-file> [options]
 - `--validate` - Check the model or metamodel as `validate` does, and write nothing if it has an
   error
 - `--input-format <format>` - Input format, such as `xmi`, `json`, `ecore`, `km3`, `emof` or
-  `asdl` (inferred from the extension, and for XMI from the contents, if not specified)
+  `asdl` (chosen from the extension and the contents of the file, as for the other commands, if
+  not specified, so a Stratego signature in a `.str` file is recognised by its contents)
 - `--output-format <format>` - Output format, one of the formats that can be written (inferred
   from the extension if not specified)
 - `-m, --metamodel <file.ecore>` - A metamodel of the model, in any metamodel format (can be given
@@ -187,10 +204,13 @@ swift-ecore convert <input-file> --output <output-file> [options]
   times; see Complete OCL above)
 - `--km3-primitives <ecore|declared>` - How the data types of a KM3 metamodel are read (default
   `ecore`; see Files and Metamodels above)
+- `--encoding <name>` - The character encoding of the documents in text formats, such as
+  `ISO-8859-1` (default: UTF-8, and ISO-8859-1 with a warning for a file that is not valid UTF-8;
+  see Files and Metamodels above)
 - `--package-name`, `--ns-uri`, `--ns-prefix`, `--asdl-enumerations`, `--langium-types`,
   `--sdf3-labels` - How a metamodel is imported from a grammar (see Grammar Imports above)
-- `--level <level>` - Write the Ecore metamodel of this level of a multi-level model (see
-  Multi-level Models above)
+- `--level <level>` - Write the Ecore metamodel whose instances live at this level of a
+  multi-level model (see Multi-level Models above)
 - `--level-crossing <strict|declared|non-strict>` - Which references of a multi-level model may cross
   levels when `--validate` checks it (default `declared`)
 - `--reference-style <encoded|plain>` - How an XMI output spells references into itself
@@ -209,9 +229,11 @@ and references are resolved against the metamodels in use, here as well as in
 
 Whatever the conversion cannot keep, such as a class that no metamodel defines or a reference
 that cannot be written as a fragment, is reported once on standard error as a line starting
-with `warning:`. Without `--metamodel`, the warnings are followed by a `hint:` line suggesting
-it. Warnings do not change the exit status, and the completion message stays on standard
-output.
+with `warning:`. Without `--metamodel`, the warnings of converting a model are followed by a
+`hint:` line suggesting it. Warnings do not change the exit status, and the completion message
+stays on standard output. An error of reading the input, such as a syntax error of a grammar, is
+reported as a line starting with `error:` and stops the conversion with exit status 1, and
+nothing is written.
 
 A metamodel (`.ecore`) is written as a JSON metamodel, in which every object names its Ecore
 metaclass in `eClass`, contained elements are nested, and references are `{"$ref": ...}` objects
@@ -282,6 +304,8 @@ swift-ecore validate <file>... [options]
   several times)
 - `--ocl <file.ocl>` - A Complete OCL document that constrains the metamodels (can be given several
   times; see Complete OCL above)
+- `--encoding <name>` - The character encoding of the documents in text formats, such as
+  `ISO-8859-1` (see Files and Metamodels above)
 - `--level-crossing <strict|declared|non-strict>` - Which references of a multi-level model may cross
   levels (default `declared`; see Multi-level Models above)
 - `--check-abstract-classes` - For a metamodel, list every abstract class and interface with the
@@ -333,7 +357,12 @@ swift-ecore validate orders.xmi -m Orders.ecore --require-explicit-values
 Every problem is printed as a line starting with `error:`, `warning:` or `information:`, with the
 element and its location in the model, such as `//@employees.0`. A violated OCL invariant is
 printed as a line starting with `Checking constraint:`, followed by the number of satisfied
-checks. The command prints `Validation completed successfully` and exits with status 0 if there
+checks. An invariant declared with a message, such as
+`invariant PositiveCapacity('Course ' + code + ' needs places'): capacity > 0` in OCLinEcore or
+the same form after `inv` in Complete OCL, is checked by its status, and the line of a violation
+ends with the message, evaluated for the object that violates it, as in
+`Checking constraint: PositiveCapacity (Course 'Painting', //@courses.1) ... violated: Course ART101 needs places`.
+The command prints `Validation completed successfully` and exits with status 0 if there
 is no error (and, with `--strict`, no warning); otherwise it fails with status 1 and a summary on
 standard error.
 
@@ -400,6 +429,8 @@ swift-ecore inspect <file> [options]
   several times)
 - `--ocl <file.ocl>` - A Complete OCL document that constrains the metamodels (can be given several
   times; see Complete OCL above)
+- `--encoding <name>` - The character encoding of the documents in text formats, such as
+  `ISO-8859-1` (see Files and Metamodels above)
 - `--level-crossing <strict|declared|non-strict>` - Which references of a multi-level model may cross
   levels (default `declared`; see Multi-level Models above)
 - `-v, --verbose` - Show progress
@@ -438,6 +469,8 @@ swift-ecore compare <original> <revised> [options]
   several times)
 - `--ocl <file.ocl>` - A Complete OCL document that constrains the metamodels (can be given several
   times; see Complete OCL above)
+- `--encoding <name>` - The character encoding of the documents in text formats, such as
+  `ISO-8859-1` (see Files and Metamodels above)
 - `--summary` - Show the numbers of objects of each class, or of metamodel elements, in both files
   instead of every difference
 - `--ignore <name>` - Leave out a feature, metamodel element or property of that name, or one
@@ -452,9 +485,10 @@ packages, classifiers, features, operations and enumeration literals are matched
 metamodel with a single root package is compared with the single root package of the other even if
 it was renamed. Added and removed elements are reported, as are changes of namespace URIs and
 prefixes, of the kind of a classifier or feature, of abstract and interface flags, supertypes,
-feature types, multiplicities, containment, opposites, the `id`, `derived`, `transient` and
-`read-only` flags, default values, literal values, operation signatures and data type instance
-classes.
+feature types, multiplicities, containment, opposites, the `id`, `derived`, `transient`,
+`read-only`, `ordered`, `unique`, `volatile` and `unsettable` flags of features, the
+`resolve proxies` flag of references, default values, literal values, operation signatures and
+data type instance classes.
 
 Two models are compared object by object. Objects are matched by class and identity: the value of
 the identifying attribute of their class, else the value that names them (such as `name`), else
@@ -518,6 +552,8 @@ swift-ecore statistics <file> [options]
   several times)
 - `--ocl <file.ocl>` - A Complete OCL document that constrains the metamodels (can be given several
   times; see Complete OCL above)
+- `--encoding <name>` - The character encoding of the documents in text formats, such as
+  `ISO-8859-1` (see Files and Metamodels above)
 - `--format <text|json>` - The format of the report (default `text`)
 - `-o, --output <file>` - Write the report to a file instead of standard output
 - `-v, --verbose` - Show progress
@@ -648,6 +684,7 @@ Every language has a template set (`c`, `cpp`, `java` and `swift` are bundled, a
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`) for every behaviour option above; a behaviour option that is given overrides it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--encoding <name>` - The character encoding of the templates and the modules they import, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8, naming the template by its path within the template set); the `encoding` key of the configuration file names it too, and a template that is not valid in the encoding given is an error
 - `-v, --verbose` - Show every progress report; without it a progress bar appears on an interactive terminal
 
 **Languages.** The bundled template sets write:
@@ -742,6 +779,8 @@ and every element of a metamodel.
   several times); without one, the classes of a model are inferred from the document
 - `--ocl <file.ocl>` - A Complete OCL document that constrains the metamodels (can be given several
   times; see Complete OCL above)
+- `--encoding <name>` - The character encoding of the documents in text formats, such as
+  `ISO-8859-1` (see Files and Metamodels above)
 - `-v, --verbose` - Show the file and the query before the result
 
 **Queries:**

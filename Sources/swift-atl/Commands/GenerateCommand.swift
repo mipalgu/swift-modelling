@@ -54,6 +54,8 @@ struct GenerateCommand: AsyncParsableCommand {
 
             \(ATLSemanticsOptions.discussion(reader: "a transformation given with --transformations"))
 
+            \(SourceEncodingOptions.discussion(reader: "a transformation given with --transformations, the templates and the modules they import"))
+
             \(SemanticsOptions.discussion())
 
             Bundled languages: \(availableLanguageList()). Verification targets: \
@@ -149,6 +151,10 @@ struct GenerateCommand: AsyncParsableCommand {
     /// The preset of the behaviours, standard or that of version 0.6.
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
+
+    /// The character encoding of a transformation given with `--transformations`, of the
+    /// templates and of the modules they import.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
 
     /// Directories whose template files replace the bundled templates.
     @Option(
@@ -265,6 +271,7 @@ struct GenerateCommand: AsyncParsableCommand {
             }
             options.transformation = URL(fileURLWithPath: transformations)
         }
+        options.transformationEncoding = encodingOptions.encoding(settings: settings)
         return options
     }
 
@@ -288,6 +295,7 @@ struct GenerateCommand: AsyncParsableCommand {
             ecoreURLs: [inputURL], options: options,
             progress: { reporter(GenerationProgressUpdate(message: $0)) })
         bar.finish()
+        FileDiagnosticReport.write(result.decodingWarnings)
         if verbose {
             print(
                 "Packages: \(result.packageCount), classes: \(result.classCount), "
@@ -327,6 +335,7 @@ struct GenerateCommand: AsyncParsableCommand {
         unsetFeatureOptions.apply(to: &options, settings: settings)
         letTypeMismatchOptions.apply(to: &options, settings: settings)
         settings.apply(to: &options)
+        options.templateEncoding = encodingOptions.encoding(settings: settings)
         let directory = URL(fileURLWithPath: output ?? Self.defaultOutputDirectory)
         if verbose {
             print("Generating \(language) code from: \(inputURL.path)")
@@ -336,6 +345,7 @@ struct GenerateCommand: AsyncParsableCommand {
             inputURL: inputURL, language: language, outputDirectory: directory,
             importOptions: try importOptions(settings: settings), options: options, progress: bar.reporter)
         bar.finish()
+        FileDiagnosticReport.write(result.decodingWarnings)
         GenerationWarningReport.write(result.warnings)
         let noun = result.files.count == 1 ? "file" : "files"
         print("Generated \(result.files.count) \(noun) in: \(result.outputDirectory.path)")

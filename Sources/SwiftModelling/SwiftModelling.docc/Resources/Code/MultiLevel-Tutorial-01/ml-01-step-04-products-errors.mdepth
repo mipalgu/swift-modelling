@@ -1,0 +1,29 @@
+Model Catalogue@2 {
+  Node ProductType {
+    gst@1 : double = 10.0;
+    price : double = 0.0;
+    positivePrice@2 : $self.price > 0$
+  }
+}
+
+Catalogue Bookshop {
+  ProductType Book {
+    gst = 0.0;
+    pages : int;
+  }
+  ProductType Magazine {
+    issue : int;
+  }
+}
+
+Bookshop Shelf {
+  Book manual {
+    price = 35.0;
+    pages = 120;
+  }
+  Magazine monthly {
+    price = 0.0;
+    gst = 5.0;
+    issue = 42;
+  }
+}

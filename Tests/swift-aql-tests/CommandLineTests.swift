@@ -133,7 +133,7 @@ struct CommandLineTests {
         let configuration = SwiftAQLCommand.configuration
         #expect(configuration.commandName == SwiftAQLVocabulary.toolName)
         #expect(configuration.version == SwiftAQLVocabulary.version)
-        #expect(configuration.subcommands.map { $0.configuration.commandName } == ["evaluate", "query"])
+        #expect(configuration.subcommands.map { $0.configuration.commandName } == ["evaluate", "query", "check-compat"])
     }
 }
 

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:tt="http://www.example.org/timetable">
+  <tt:Timetable>
+    <rooms name="Lecture Theatre" seats="120"/>
+    <rooms name="Seminar Room" seats="24"/>
+    <sessions courseCode="CS101" startHour="9" durationHours="2" attendees="95" room="//@rooms.0"/>
+    <sessions courseCode="CS201" startHour="14" durationHours="1" attendees="20" room="//@rooms.1"/>
+    <sessions courseCode="CS301" startHour="16" durationHours="2" attendees="18" room="//@rooms.1"/>
+  </tt:Timetable>
+</xmi:XMI>

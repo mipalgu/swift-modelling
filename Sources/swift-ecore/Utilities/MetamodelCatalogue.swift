@@ -182,6 +182,18 @@ struct FeatureShape: Sendable {
     /// Whether the value of the feature can be set.
     let changeable: Bool
 
+    /// Whether the values of the feature are ordered.
+    let ordered: Bool
+
+    /// Whether the values of the feature are unique.
+    let unique: Bool
+
+    /// Whether the value of the feature is computed when it is read rather than stored.
+    let volatile: Bool
+
+    /// Whether the feature distinguishes being unset from holding its default value.
+    let unsettable: Bool
+
     /// The default value of the feature as text, if it declares one.
     let defaultValueLiteral: String?
 
@@ -200,6 +212,10 @@ struct FeatureShape: Sendable {
             derived = attribute.derived
             transient = attribute.transient
             changeable = attribute.changeable
+            ordered = attribute.ordered
+            unique = attribute.unique
+            volatile = attribute.volatile
+            unsettable = attribute.unsettable
             defaultValueLiteral = attribute.defaultValueLiteral
         case let reference as EReference:
             type = reference.eType
@@ -208,6 +224,10 @@ struct FeatureShape: Sendable {
             derived = reference.derived
             transient = reference.transient
             changeable = reference.changeable
+            ordered = reference.ordered
+            unique = reference.unique
+            volatile = reference.volatile
+            unsettable = reference.unsettable
             defaultValueLiteral = reference.defaultValueLiteral
         default:
             type = EDataType(name: feature.name)
@@ -216,6 +236,10 @@ struct FeatureShape: Sendable {
             derived = false
             transient = false
             changeable = true
+            ordered = true
+            unique = true
+            volatile = false
+            unsettable = false
             defaultValueLiteral = nil
         }
     }

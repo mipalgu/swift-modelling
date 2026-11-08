@@ -46,6 +46,8 @@ struct CompareCommand: AsyncParsableCommand {
 
             The command succeeds whether or not the documents differ; with \
             --\(ComparisonVocabulary.exitCodeOption) it exits with status 1 if they do.
+
+            \(SourceEncodingOptions.discussion(reader: EncodingVocabulary.encodedDocuments, configurable: false))
             """
     )
 
@@ -62,6 +64,13 @@ struct CompareCommand: AsyncParsableCommand {
 
     /// How metamodels in KM3 and in grammar formats are read.
     @OptionGroup var formatOptions: MetamodelFormatOptions
+
+    /// The character encoding of the documents in text formats.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// The options with which the documents and metamodels are read, in the encoding of
+    /// `--encoding`.
+    private var loadOptions: EcoreLoadOptions { formatOptions.ecoreLoadOptions(encoding: encodingOptions.explicitEncoding) }
 
     /// The Complete OCL documents that constrain the metamodels.
     @OptionGroup var completeOCLOptions: CompleteOCLOptions
@@ -114,9 +123,9 @@ struct CompareCommand: AsyncParsableCommand {
             print("Revised: \(revisedPath)")
         }
         let original = try await ModelDocument.load(path: originalPath, metamodelOptions: metamodelOptions, verbose: verbose,
-            ecoreLoadOptions: formatOptions.ecoreLoadOptions, completeOCL: completeOCLOptions.documents)
+            ecoreLoadOptions: loadOptions, completeOCL: completeOCLOptions.documents)
         let revised = try await ModelDocument.load(path: revisedPath, metamodelOptions: metamodelOptions, verbose: verbose,
-            ecoreLoadOptions: formatOptions.ecoreLoadOptions, completeOCL: completeOCLOptions.documents)
+            ecoreLoadOptions: loadOptions, completeOCL: completeOCLOptions.documents)
         try checkKinds(original.format, revised.format)
         let report = await compare(original, revised)
         withExtendedLifetime((original, revised)) {}

@@ -10,7 +10,7 @@
 
     @Section(title: "Understanding MTL Templates") {
         @ContentAndMedia {
-            MTL (Model-to-Text Language) is the OMG MOFM2T (MOF Model-to-Text Transformation) standard for generating code and text from models. Templates combine static text with dynamic expressions to produce output.
+            MTL (Model-to-Text Language) is the [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec/MOFM2T/1.0) standard for generating code and text from models. Templates combine static text with dynamic expressions to produce output.
 
             Every MTL template starts with a module declaration and contains at least one template definition. Think of templates as functions that generate text instead of returning values.
 
@@ -23,7 +23,7 @@
 
                 @Code(name: "HelloWorld.mtl", file: mtl-step-01-module.mtl)
 
-                The module declaration defines the template's namespace and metamodel URI. The URI can be any valid identifier—for simple templates without models, use a placeholder like `'http://example.com'`.
+                The module declaration defines the template's namespace and metamodel URI. The URI can be any valid identifier; for simple templates without models, use a placeholder like `'http://example.com'`.
             }
 
             @Step {
@@ -31,7 +31,7 @@
 
                 @Code(name: "HelloWorld.mtl", file: mtl-step-02-template.mtl)
 
-                The `[template main()]` directive defines a template named `main`. This is the entry point—the template that will be executed when you run swift-mtl.
+                The `[template main()]` directive defines a template named `main`. This is the entry point: the template that will be executed when you run swift-mtl.
             }
 
             @Step {
@@ -57,7 +57,7 @@
 
                 @Code(name: "Terminal", file: mtl-step-04-generate-console.sh)
 
-                The `generate` command executes the template. Without `--output`, it prints to standard output—perfect for testing small templates.
+                The `generate` command executes the template. Without `--output`, it prints to standard output, which is perfect for testing small templates.
             }
 
             @Step {
@@ -73,7 +73,7 @@
 
                 @Code(name: "HelloWorld.txt", file: mtl-step-06-output.txt)
 
-                The generated file contains exactly what you wrote in the template—MTL copied the static text to the output file.
+                The generated file contains exactly what you wrote in the template; MTL copied the static text to the output file.
             }
         }
     }
@@ -91,7 +91,7 @@
 
                 @Code(name: "HelloWorld.mtl", file: mtl-step-07-with-comments.mtl)
 
-                MTL comments use `[comment]` blocks. Comments are ignored during generation—use them to explain what your template does and how to use it.
+                MTL comments use `[comment]` blocks. Comments are ignored during generation, so use them to explain what your template does and how to use it.
             }
 
             @Step {
@@ -140,7 +140,7 @@
                 It's copied literally to the generated output
 
                 @Justification {
-                    Correct! Static text outside of MTL directives (the `[brackets]`) is generated exactly as written. This makes MTL templates readable—most of the template looks like the output you want.
+                    Correct! Static text outside of MTL directives (the `[brackets]`) is generated exactly as written. This makes MTL templates readable: most of the template looks like the output you want.
                 }
             }
 
@@ -156,7 +156,7 @@
                 It causes a syntax error
 
                 @Justification {
-                    Incorrect. Static text is a fundamental feature of MTL—templates are mostly static text with dynamic expressions inserted where needed.
+                    Incorrect. Static text is a fundamental feature of MTL: templates are mostly static text with dynamic expressions inserted where needed.
                 }
             }
         }

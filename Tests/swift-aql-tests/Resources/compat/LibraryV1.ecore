@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="library" nsURI="http://example.org/library/1.0" nsPrefix="lib">
+  <eClassifiers xsi:type="ecore:EClass" name="Library">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="books" upperBound="-1" eType="#//Book" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="writers" upperBound="-1" eType="#//Writer" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Item" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="id" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Book" eSuperTypes="#//Item">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="title" lowerBound="1" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="pages" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isbn" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="genre" eType="#//Genre"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="authors" lowerBound="1" upperBound="-1" eType="#//Writer" eOpposite="#//Writer/books"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Writer">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="born" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//ELong"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="books" upperBound="-1" eType="#//Book" eOpposite="#//Book/authors"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="Genre">
+    <eLiterals name="fiction"/>
+    <eLiterals name="nonFiction" value="1"/>
+    <eLiterals name="poetry" value="2"/>
+  </eClassifiers>
+</ecore:EPackage>

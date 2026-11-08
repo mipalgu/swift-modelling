@@ -1,0 +1,31 @@
+@namespace(uri="http://www.example.org/lending", prefix="lend")
+package lending;
+
+class Library {
+	attr String[1] name;
+	val Item[*] items;
+	val Writer[*] writers;
+}
+
+abstract class Item {
+	id attr String[1] identifier;
+	attr String[1] title;
+	attr int copies = 1;
+	op boolean isLoanable();
+}
+
+class Book extends Item {
+	attr Genre genre;
+	ref Writer[+]#books authors;
+}
+
+class Writer {
+	attr String[1] name;
+	ref Book[*]#authors books;
+}
+
+enum Genre {
+	fiction = 0;
+	poetry = 1;
+	reference = 2;
+}

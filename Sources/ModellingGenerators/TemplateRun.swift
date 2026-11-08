@@ -83,18 +83,64 @@ package enum TemplateRun {
         return result
     }
 
+    /// The parsed main module of a template set with the warnings of reading its files.
+    package struct ParsedModule {
+        /// The parsed module, with its imports resolved.
+        package var module: MTLModule
+
+        /// The warnings of decoding the files of the module and its imports.
+        ///
+        /// The document of each warning is the path of its file relative to the directory of
+        /// the template set, or to the search path that holds it.
+        package var decodingWarnings: [SourceDiagnostic]
+    }
+
     /// Parses the main module of a template set.
     ///
-    /// - Parameter set: The assembled template set.
-    /// - Returns: The parsed module, with its imports resolved through the search paths of the set.
-    /// - Throws: ``GenerationError/templateSetInvalid(_:_:)`` if the templates cannot be parsed.
-    package static func parseMainModule(of set: TemplateSet) async throws -> MTLModule {
+    /// - Parameters:
+    ///   - set: The assembled template set.
+    ///   - encoding: The encoding of the templates, or `nil` (the default) to read UTF-8 and
+    ///     fall back to ISO-8859-1 with a decoding warning.
+    /// - Returns: The parsed module, with its imports resolved through the search paths of the
+    ///   set, and the warnings of decoding its files.
+    /// - Throws: ``GenerationError/templateSetInvalid(_:_:)`` if the templates cannot be parsed
+    ///   or are not valid in an explicit encoding.
+    package static func parseMainModule(of set: TemplateSet, encoding: TextEncoding? = nil) async throws
+        -> ParsedModule
+    {
+        let parser = MTLParser(searchPaths: set.searchPaths, encoding: encoding)
         do {
-            return try await MTLParser(searchPaths: set.searchPaths).parse(set.mainModuleURL)
+            let module = try await parser.parse(set.mainModuleURL)
+            let warnings = await parser.decodingWarnings.map { relative($0, within: set.searchPaths) }
+            return ParsedModule(module: module, decodingWarnings: warnings)
         } catch {
             throw GenerationError.templateSetInvalid(
                 set.descriptor.name, "the templates cannot be parsed: \(error)")
         }
+    }
+
+    /// A diagnostic whose document names its file relative to the directory that holds it.
+    ///
+    /// The files of an assembled template set are copies in a scratch directory, so the path
+    /// within the set names a file more usefully than the location of its copy.
+    ///
+    /// - Parameters:
+    ///   - diagnostic: The diagnostic, whose document is the URL or path of a file.
+    ///   - directories: The directories that may hold the file, in order of preference.
+    /// - Returns: The diagnostic with the relative path as its document, or unchanged if no
+    ///   directory holds the file.
+    static func relative(_ diagnostic: SourceDiagnostic, within directories: [URL]) -> SourceDiagnostic {
+        guard let document = diagnostic.document else { return diagnostic }
+        let file = (URL(string: document).flatMap { $0.isFileURL ? $0 : nil } ?? URL(fileURLWithPath: document))
+            .standardizedFileURL.resolvingSymlinksInPath().pathComponents
+        for directory in directories {
+            let root = directory.standardizedFileURL.resolvingSymlinksInPath().pathComponents
+            guard file.count > root.count, Array(file.prefix(root.count)) == root else { continue }
+            var result = diagnostic
+            result.document = file.dropFirst(root.count).joined(separator: "/")
+            return result
+        }
+        return diagnostic
     }
 
     /// The number of files that a template set will write, from its file count template.

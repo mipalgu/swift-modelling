@@ -54,6 +54,8 @@ struct GenerateCommand: AsyncParsableCommand {
 
             \(MTLSemanticsOptions.discussion(reader: "the templates"))
 
+            \(SourceEncodingOptions.discussion(reader: "the templates and the modules they import"))
+
             \(SemanticsOptions.discussion())
             """
     )
@@ -138,6 +140,9 @@ struct GenerateCommand: AsyncParsableCommand {
     /// The preset of the behaviours, standard or that of version 0.6.
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
+
+    /// The character encoding of the templates and the modules they import.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
 
     /// Directories whose template files replace the bundled templates.
     @Option(
@@ -241,6 +246,7 @@ struct GenerateCommand: AsyncParsableCommand {
         unsetFeatureOptions.apply(to: &options, settings: settings)
         letTypeMismatchOptions.apply(to: &options, settings: settings)
         settings.apply(to: &options)
+        options.templateEncoding = encodingOptions.encoding(settings: settings)
         var importOptions = GenModelImportOptions(atlOptions: preset.atlOptions)
         genModelDefaults.apply(to: &importOptions)
         unsetFeatureOptions.apply(to: &importOptions, settings: settings)
@@ -260,6 +266,7 @@ struct GenerateCommand: AsyncParsableCommand {
             throw error
         }
         bar.finish()
+        FileDiagnosticReport.write(result.decodingWarnings)
         GenerationWarningReport.write(result.warnings)
         let exported = try await exportModels(metamodel: input, options: options, verbose: verbose)
         let count = result.files.count + exported
@@ -290,6 +297,7 @@ struct GenerateCommand: AsyncParsableCommand {
                 throw error
             }
             bar.finish()
+            FileDiagnosticReport.write(result.decodingWarnings)
             GenerationWarningReport.write(result.warnings)
             count += result.files.count
         }

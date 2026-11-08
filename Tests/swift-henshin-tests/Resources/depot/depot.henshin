@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<henshin:Module xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" xmlns:henshin="http://www.eclipse.org/emf/2011/Henshin" xmi:id="module" name="depotRules" description="Rules over a small depot whose bins hold parcels and pass tokens around a ring">
+  <imports href="Depot.ecore#/"/>
+
+  <!-- addParcel: puts a new parcel into the bin of the given name. -->
+  <units xsi:type="henshin:Rule" xmi:id="r_add" name="addParcel">
+    <parameters xmi:id="p_add_bin" name="binName" kind="IN"><type xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EString"/></parameters>
+    <parameters xmi:id="p_add_code" name="code" kind="IN"><type xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EString"/></parameters>
+    <parameters xmi:id="p_add_weight" name="weight" kind="IN"><type xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EInt"/></parameters>
+    <lhs xmi:id="add_l" name="Lhs">
+      <nodes xmi:id="add_l_s" name="store"><type href="Depot.ecore#//Depot"/></nodes>
+      <nodes xmi:id="add_l_b" name="target">
+        <type href="Depot.ecore#//Bin"/>
+        <attributes xmi:id="add_l_b_name" value="binName"><type href="Depot.ecore#//Bin/name"/></attributes>
+      </nodes>
+      <edges xmi:id="add_l_e1" source="add_l_s" target="add_l_b"><type href="Depot.ecore#//Depot/bins"/></edges>
+    </lhs>
+    <rhs xmi:id="add_r" name="Rhs">
+      <nodes xmi:id="add_r_s" name="store"><type href="Depot.ecore#//Depot"/></nodes>
+      <nodes xmi:id="add_r_b" name="target">
+        <type href="Depot.ecore#//Bin"/>
+        <attributes xmi:id="add_r_b_name" value="binName"><type href="Depot.ecore#//Bin/name"/></attributes>
+      </nodes>
+      <nodes xmi:id="add_r_p" name="parcel">
+        <type href="Depot.ecore#//Parcel"/>
+        <attributes xmi:id="add_r_p_code" value="code"><type href="Depot.ecore#//Parcel/code"/></attributes>
+        <attributes xmi:id="add_r_p_weight" value="weight"><type href="Depot.ecore#//Parcel/weight"/></attributes>
+      </nodes>
+      <edges xmi:id="add_r_e1" source="add_r_s" target="add_r_b"><type href="Depot.ecore#//Depot/bins"/></edges>
+      <edges xmi:id="add_r_e2" source="add_r_s" target="add_r_p"><type href="Depot.ecore#//Depot/parcels"/></edges>
+      <edges xmi:id="add_r_e3" source="add_r_b" target="add_r_p"><type href="Depot.ecore#//Bin/holds"/></edges>
+    </rhs>
+    <mappings xmi:id="add_m1" origin="add_l_s" image="add_r_s"/>
+    <mappings xmi:id="add_m2" origin="add_l_b" image="add_r_b"/>
+  </units>
+
+  <!-- removeParcel: deletes the parcel with the given code from the depot. -->
+  <units xsi:type="henshin:Rule" xmi:id="r_rem" name="removeParcel">
+    <parameters xmi:id="p_rem_code" name="code" kind="IN"><type xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EString"/></parameters>
+    <lhs xmi:id="rem_l" name="Lhs">
+      <nodes xmi:id="rem_l_s" name="store"><type href="Depot.ecore#//Depot"/></nodes>
+      <nodes xmi:id="rem_l_p" name="parcel">
+        <type href="Depot.ecore#//Parcel"/>
+        <attributes xmi:id="rem_l_p_code" value="code"><type href="Depot.ecore#//Parcel/code"/></attributes>
+      </nodes>
+      <edges xmi:id="rem_l_e1" source="rem_l_s" target="rem_l_p"><type href="Depot.ecore#//Depot/parcels"/></edges>
+    </lhs>
+    <rhs xmi:id="rem_r" name="Rhs">
+      <nodes xmi:id="rem_r_s" name="store"><type href="Depot.ecore#//Depot"/></nodes>
+    </rhs>
+    <mappings xmi:id="rem_m1" origin="rem_l_s" image="rem_r_s"/>
+  </units>
+
+  <!-- move: passes one token from a bin to the next bin of the ring. -->
+  <units xsi:type="henshin:Rule" xmi:id="r_mv" name="move">
+    <parameters xmi:id="p_mv_n" name="n" kind="VAR"><type xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EInt"/></parameters>
+    <parameters xmi:id="p_mv_m" name="m" kind="VAR"><type xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EInt"/></parameters>
+    <lhs xmi:id="mv_l" name="Lhs">
+      <nodes xmi:id="mv_l_s" name="source">
+        <type href="Depot.ecore#//Bin"/>
+        <attributes xmi:id="mv_l_s_t" value="n"><type href="Depot.ecore#//Bin/tokens"/></attributes>
+      </nodes>
+      <nodes xmi:id="mv_l_t" name="target">
+        <type href="Depot.ecore#//Bin"/>
+        <attributes xmi:id="mv_l_t_t" value="m"><type href="Depot.ecore#//Bin/tokens"/></attributes>
+      </nodes>
+      <edges xmi:id="mv_l_e1" source="mv_l_s" target="mv_l_t"><type href="Depot.ecore#//Bin/next"/></edges>
+    </lhs>
+    <rhs xmi:id="mv_r" name="Rhs">
+      <nodes xmi:id="mv_r_s" name="source">
+        <type href="Depot.ecore#//Bin"/>
+        <attributes xmi:id="mv_r_s_t" value="n-1"><type href="Depot.ecore#//Bin/tokens"/></attributes>
+      </nodes>
+      <nodes xmi:id="mv_r_t" name="target">
+        <type href="Depot.ecore#//Bin"/>
+        <attributes xmi:id="mv_r_t_t" value="m+1"><type href="Depot.ecore#//Bin/tokens"/></attributes>
+      </nodes>
+      <edges xmi:id="mv_r_e1" source="mv_r_s" target="mv_r_t"><type href="Depot.ecore#//Bin/next"/></edges>
+    </rhs>
+    <attributeConditions xmi:id="mv_cond" conditionText="n &gt; 0"/>
+    <mappings xmi:id="mv_m1" origin="mv_l_s" image="mv_r_s"/>
+    <mappings xmi:id="mv_m2" origin="mv_l_t" image="mv_r_t"/>
+  </units>
+
+  <!-- drain: takes one token out of a bin. -->
+  <units xsi:type="henshin:Rule" xmi:id="r_dr" name="drain">
+    <parameters xmi:id="p_dr_n" name="n" kind="VAR"><type xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EInt"/></parameters>
+    <lhs xmi:id="dr_l" name="Lhs">
+      <nodes xmi:id="dr_l_b" name="bin">
+        <type href="Depot.ecore#//Bin"/>
+        <attributes xmi:id="dr_l_b_t" value="n"><type href="Depot.ecore#//Bin/tokens"/></attributes>
+      </nodes>
+    </lhs>
+    <rhs xmi:id="dr_r" name="Rhs">
+      <nodes xmi:id="dr_r_b" name="bin">
+        <type href="Depot.ecore#//Bin"/>
+        <attributes xmi:id="dr_r_b_t" value="n-1"><type href="Depot.ecore#//Bin/tokens"/></attributes>
+      </nodes>
+    </rhs>
+    <attributeConditions xmi:id="dr_cond" conditionText="n &gt; 0"/>
+    <mappings xmi:id="dr_m1" origin="dr_l_b" image="dr_r_b"/>
+  </units>
+
+  <!-- emptyBin: a pattern that matches a bin without tokens. -->
+  <units xsi:type="henshin:Rule" xmi:id="r_eb" name="emptyBin">
+    <lhs xmi:id="eb_l" name="Lhs">
+      <nodes xmi:id="eb_l_b" name="bin">
+        <type href="Depot.ecore#//Bin"/>
+        <attributes xmi:id="eb_l_b_t" value="0"><type href="Depot.ecore#//Bin/tokens"/></attributes>
+      </nodes>
+    </lhs>
+    <rhs xmi:id="eb_r" name="Rhs">
+      <nodes xmi:id="eb_r_b" name="bin">
+        <type href="Depot.ecore#//Bin"/>
+        <attributes xmi:id="eb_r_b_t" value="0"><type href="Depot.ecore#//Bin/tokens"/></attributes>
+      </nodes>
+    </rhs>
+    <mappings xmi:id="eb_m1" origin="eb_l_b" image="eb_r_b"/>
+  </units>
+
+  <!-- clearBin: takes every token out of the given bin. -->
+  <units xsi:type="henshin:Rule" xmi:id="r_cl" name="clearBin">
+    <parameters xmi:id="p_cl_target" name="target" kind="IN"><type href="Depot.ecore#//Bin"/></parameters>
+    <parameters xmi:id="p_cl_n" name="n" kind="VAR"><type xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EInt"/></parameters>
+    <lhs xmi:id="cl_l" name="Lhs">
+      <nodes xmi:id="cl_l_t" name="target">
+        <type href="Depot.ecore#//Bin"/>
+        <attributes xmi:id="cl_l_t_t" value="n"><type href="Depot.ecore#//Bin/tokens"/></attributes>
+      </nodes>
+    </lhs>
+    <rhs xmi:id="cl_r" name="Rhs">
+      <nodes xmi:id="cl_r_t" name="target">
+        <type href="Depot.ecore#//Bin"/>
+        <attributes xmi:id="cl_r_t_t" value="0"><type href="Depot.ecore#//Bin/tokens"/></attributes>
+      </nodes>
+    </rhs>
+    <mappings xmi:id="cl_m1" origin="cl_l_t" image="cl_r_t"/>
+  </units>
+
+  <!-- touch: matches the depot and changes nothing. -->
+  <units xsi:type="henshin:Rule" xmi:id="r_tc" name="touch">
+    <lhs xmi:id="tc_l" name="Lhs">
+      <nodes xmi:id="tc_l_s" name="store"><type href="Depot.ecore#//Depot"/></nodes>
+    </lhs>
+    <rhs xmi:id="tc_r" name="Rhs">
+      <nodes xmi:id="tc_r_s" name="store"><type href="Depot.ecore#//Depot"/></nodes>
+    </rhs>
+    <mappings xmi:id="tc_m1" origin="tc_l_s" image="tc_r_s"/>
+  </units>
+
+  <!-- restock: adds a parcel to a bin, then passes a token on. -->
+  <units xsi:type="henshin:SequentialUnit" xmi:id="u_rs" name="restock" subUnits="r_add r_mv">
+    <parameters xmi:id="p_rs_bin" name="binName" kind="IN"><type xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EString"/></parameters>
+    <parameters xmi:id="p_rs_code" name="code" kind="IN"><type xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EString"/></parameters>
+    <parameters xmi:id="p_rs_weight" name="weight" kind="IN"><type xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EInt"/></parameters>
+    <parameterMappings source="p_rs_bin" target="p_add_bin"/>
+    <parameterMappings source="p_rs_code" target="p_add_code"/>
+    <parameterMappings source="p_rs_weight" target="p_add_weight"/>
+  </units>
+
+  <!-- spin: applies touch for as long as it applies, which is forever. -->
+  <units xsi:type="henshin:LoopUnit" xmi:id="u_sp" name="spin" subUnit="r_tc"/>
+</henshin:Module>

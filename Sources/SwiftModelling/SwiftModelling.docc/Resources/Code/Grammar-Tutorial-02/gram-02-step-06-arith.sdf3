@@ -1,0 +1,19 @@
+module Arith
+
+context-free sorts Program Expr Op
+lexical sorts ID INT
+
+lexical syntax
+  ID  = [a-zA-Z] [a-zA-Z0-9]*
+  INT = [0-9]+
+
+context-free syntax
+  Program.Program = <<title:ID?> <statements:Expr*>>
+  Expr.Num   = <<value:INT>>
+  Expr.Var   = <<name:ID>>
+  Expr.BinOp = <(<left:Expr> <operator:Op> <right:Expr>)>
+  Expr.Let   = <let <name:ID> = <init:Expr> in <body:Expr>>
+  Op.Add = <+>
+  Op.Sub = <->
+  Op.Mul = <*>
+  Op.Div = </>

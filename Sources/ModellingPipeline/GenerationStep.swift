@@ -71,6 +71,15 @@ public struct GenerationStep: Sendable {
         /// its value does not conform to the declared type of its variable.
         public let warnings: [SourceDiagnostic]
 
+        /// The warnings of reading the templates, in the order in which the templates were read.
+        ///
+        /// A template that is not valid UTF-8, and was therefore read as ISO-8859-1 because
+        /// ``GenerationStep/templateEncoding`` names no encoding, has a warning whose code is
+        /// `TextDecodingDiagnostic.decodedAsISOLatin1`. Its document is the path of the template
+        /// within the template set, such as `generate.mtl`, or the location of a single module,
+        /// and its range points at the first byte that is not UTF-8.
+        public internal(set) var decodingWarnings: [SourceDiagnostic] = []
+
         /// Creates the description of a generation.
         ///
         /// - Parameters:
@@ -154,6 +163,14 @@ public struct GenerationStep: Sendable {
         get { mtlOptions.unsetFeatureReads }
         set { mtlOptions.unsetFeatureReads = newValue }
     }
+
+    /// The character encoding in which the templates are read, if one is chosen.
+    ///
+    /// With `nil`, the default, every template is read as UTF-8, and a template that is not
+    /// valid UTF-8 is read as ISO-8859-1 instead, which accepts every byte, with a warning in
+    /// ``Result/decodingWarnings``. With an encoding, every template is read in that encoding
+    /// alone, without a warning, and a template that is not valid in it stops the step.
+    public var templateEncoding: TextEncoding? = nil
 
     /// Creates a generation step whose templates behave as in version 0.6.
     ///
@@ -247,29 +264,35 @@ public struct GenerationStep: Sendable {
             if let layout = try set.descriptor.layoutConfiguration(forStyle: codeStyle) { options.layout = layout }
             if let delimiter = set.descriptor.options.lineDelimiter { options.lineDelimiter = delimiter }
             let data = try await TemplateRun.loadDataModels(of: set, into: resourceSet)
-            let module = try await TemplateRun.parseMainModule(of: set)
+            let parsed = try await TemplateRun.parseMainModule(of: set, encoding: templateEncoding)
+            let module = parsed.module
             let services: [any AQLServiceProvider] =
                 [TemplateDataServices(roots: data.roots), parameterServices] + serviceProviders
             let setModels = models.merging(data.models) { model, _ in model }
             let total = try await TemplateRun.expectedFileCount(
                 of: module, descriptor: set.descriptor, arguments: arguments, services: services,
                 models: setModels, mtlOptions: mtlOptions, prepare: parameterServices.bind(to:))
-            return try await generate(
+            var result = try await generate(
                 module: module, mainTemplate: set.descriptor.mainTemplate, arguments: arguments,
                 models: setModels, services: services, options: options, total: total,
                 templateSet: set.descriptor.name, parameters: parameterServices, progress: progress)
+            result.decodingWarnings = parsed.decodingWarnings
+            return result
         case .module(let url, let requested):
+            let parser = MTLParser(searchPaths: templatePaths, encoding: templateEncoding)
             let module: MTLModule
             do {
-                module = try await MTLParser(searchPaths: templatePaths).parse(url)
+                module = try await parser.parse(url)
             } catch {
                 throw ModelPipelineError.templatesUnreadable(url.path, String(describing: error))
             }
             let mainTemplate = try Self.mainTemplate(of: module, requested: requested)
-            return try await generate(
+            var result = try await generate(
                 module: module, mainTemplate: mainTemplate, arguments: arguments, models: models,
                 services: [parameterServices] + serviceProviders, options: options, total: nil,
                 templateSet: nil, parameters: parameterServices, progress: progress)
+            result.decodingWarnings = await parser.decodingWarnings
+            return result
         }
     }
 

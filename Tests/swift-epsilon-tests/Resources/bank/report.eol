@@ -1,0 +1,4 @@
+// Lists the accounts of the bank with their balances.
+for (account in Account.all) {
+  (account.owner + ': ' + account.balance).println();
+}

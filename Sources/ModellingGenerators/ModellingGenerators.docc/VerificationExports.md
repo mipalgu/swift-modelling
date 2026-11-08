@@ -60,7 +60,7 @@ Operations and their bodies, derived and volatile features, the order and repeti
 
 ### Alloy
 
-The `alloy` set writes an Alloy 6 module for each package (`library.als`) and a module for each model (`branch_instance.als`). The mapping follows the relational reading of class diagrams by Jackson (*Software Abstractions*, MIT Press, revised edition 2012), UML2Alloy (Anastasakis, Bordbar, Georg and Ray, MODELS 2007) and Echo (Macedo and Cunha, FASE 2013).
+The `alloy` set writes an Alloy 6 module for each package (`library.als`) and a module for each model (`branch_instance.als`). The mapping follows the relational reading of class diagrams by Jackson (*[Software Abstractions](https://softwareabstractions.org/)*, MIT Press, revised edition 2012), UML2Alloy ([Anastasakis, Bordbar, Georg and Ray, MODELS 2007](https://doi.org/10.1007/978-3-540-75209-7_30)) and Echo ([Macedo and Cunha, FASE 2013](https://doi.org/10.1007/978-3-642-37057-1_22)).
 
 | Ecore | Alloy 6 |
 | --- | --- |
@@ -85,7 +85,7 @@ Fields are sets, integers are bounded by the bit width and wrap around on overfl
 
 ### TLA+
 
-The `tla` set writes a TLA+ module for each package (`library.tla`), and a module with a TLC configuration for each model (`branch_instance.tla` and `branch_instance.cfg`). It follows the TLA+ idiom of an object store, a function from identifiers to records (Lamport, *Specifying Systems*, Addison-Wesley 2002), with a type invariant `TypeOK` that states the structure of the metamodel.
+The `tla` set writes a TLA+ module for each package (`library.tla`), and a module with a TLC configuration for each model (`branch_instance.tla` and `branch_instance.cfg`). It follows the TLA+ idiom of an object store, a function from identifiers to records (Lamport, *[Specifying Systems](https://lamport.azurewebsites.net/tla/book.html)*, Addison-Wesley 2002), with a type invariant `TypeOK` that states the structure of the metamodel.
 
 | Ecore | TLA+ |
 | --- | --- |
@@ -105,7 +105,7 @@ The export is structural: the store never changes. A behavioural specification, 
 
 ### Event-B
 
-The `eventb` set writes CamilleX text files: a context (`library_ctx.bucx`) and a machine (`library_machine.bumx`) for each package, and an instance context and machine for each model, in the Unicode notation of Rodin. The mapping follows the class-diagram translation of UML-B and iUML-B (Snook and Butler, ACM TOSEM 15(1), 2006; Said, Butler and Snook, SoSyM 14(4), 2015) on Event-B as defined by Abrial (*Modeling in Event-B*, Cambridge University Press, 2010).
+The `eventb` set writes CamilleX text files: a context (`library_ctx.bucx`) and a machine (`library_machine.bumx`) for each package, and an instance context and machine for each model, in the Unicode notation of Rodin. The mapping follows the class-diagram translation of UML-B and iUML-B ([Snook and Butler, ACM TOSEM 15(1), 2006](https://doi.org/10.1145/1125808.1125811); [Said, Butler and Snook, SoSyM 14(4), 2015](https://doi.org/10.1007/s10270-013-0391-z)) on Event-B as defined by Abrial (*[Modeling in Event-B](https://doi.org/10.1017/CBO9781139195881)*, Cambridge University Press, 2010).
 
 | Ecore | Event-B |
 | --- | --- |

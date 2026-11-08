@@ -17,12 +17,15 @@ import ModellingCommandLine
 ///
 /// - **evaluate**: evaluate an expression against the models given with `--model`
 /// - **query**: evaluate a query against the model given as an argument
+/// - **check-compat**: check whether an expression can be used with another metamodel
 ///
 /// ## Example Usage
 ///
 /// ```bash
 /// swift-aql evaluate --model company.xmi --expression "company.departments.name"
 /// swift-aql query company.xmi --query "self.employees->size()" --context company1
+/// swift-aql check-compat -e "self.books.title" --variable self=library::Library \
+///     --metamodel library=Library.ecore --target-metamodel library=LibraryV2.ecore
 /// ```
 @main
 struct SwiftAQLCommand: AsyncParsableCommand {
@@ -42,6 +45,7 @@ struct SwiftAQLCommand: AsyncParsableCommand {
         subcommands: [
             EvaluateCommand.self,
             QueryCommand.self,
+            CheckCompatCommand.self,
         ]
     )
 

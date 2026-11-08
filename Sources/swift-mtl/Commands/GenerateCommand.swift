@@ -60,7 +60,7 @@ struct GenerateCommand: AsyncParsableCommand {
 
             \(MTLSemanticsOptions.discussion(reader: "the templates"))
 
-            \(SourceEncodingOptions.discussion(reader: "the template file and the modules it imports"))
+            \(SourceEncodingOptions.discussion(reader: "the template file or the templates of the template set, and the modules they import"))
 
             \(SemanticsOptions.discussion())
 
@@ -220,7 +220,8 @@ struct GenerateCommand: AsyncParsableCommand {
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
 
-    /// The character encoding of the template file and the modules it imports.
+    /// The character encoding of the template file or the templates of the template set, and of
+    /// the modules they import.
     @OptionGroup var encodingOptions: SourceEncodingOptions
 
     /// How metamodels in KM3 and in grammar formats are read.
@@ -447,14 +448,16 @@ struct GenerateCommand: AsyncParsableCommand {
         if verbose {
             print("\n=== Executing Generation ===")
         }
-        let step = GenerationStep(
+        var step = GenerationStep(
             templates: .templateSet(templateSet, codeStyle: codeStyle.codeStyle), templatePaths: templateURLs,
             parameters: parameters, outputDirectory: URL(fileURLWithPath: output),
             generatorOptions: generatorOptions, mtlOptions: mtlOptions(settings: settings))
+        step.templateEncoding = encodingOptions.encoding(settings: settings)
         let verbose = self.verbose
         let result = try await step.run(
             arguments: inputs.arguments, models: inputs.models, resourceSet: inputs.resourceSet,
             progress: { update in if verbose { print("  \(update.message)") } })
+        FileDiagnosticReport.write(result.decodingWarnings)
         GenerationWarningReport.write(result.warnings)
         let standardOutputFile = standardOutputURL.standardizedFileURL
         try writeStandardOutput(

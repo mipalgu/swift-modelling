@@ -1,0 +1,3 @@
+Account [%= account.name %]
+Owner: [%= account.owner %]
+Balance: [%= account.balance %]

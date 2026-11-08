@@ -1,0 +1,9 @@
+// Creates a summary entry in the ledger for each account.
+var ledger = new Ledger!Ledger;
+ledger.title = 'Summary';
+for (account in Bank!Account.all) {
+  var entry = new Ledger!Entry;
+  entry.label = account.name;
+  entry.overdrawn = account.balance < 0;
+  ledger.entries.add(entry);
+}

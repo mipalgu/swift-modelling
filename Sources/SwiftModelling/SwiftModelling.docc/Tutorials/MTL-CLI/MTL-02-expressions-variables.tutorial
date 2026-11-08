@@ -3,7 +3,7 @@
 
         Learn how to use dynamic expressions and variables in MTL templates to generate computed values.
 
-        In this tutorial, you'll explore arithmetic operations, string concatenation, variable bindings, and query definitions—the building blocks of dynamic code generation.
+        In this tutorial, you'll explore arithmetic operations, string concatenation, variable bindings, and query definitions, the building blocks of dynamic code generation.
 
         @Image(source: "mtl-code-generation.svg", alt: "MTL Expressions")
     }
@@ -110,7 +110,7 @@
                 With a closing bracket: ]
 
                 @Justification {
-                    Incorrect. A closing bracket alone doesn't work—MTL needs the forward slash to distinguish expressions from other directives.
+                    Incorrect. A closing bracket alone doesn't work; MTL needs the forward slash to distinguish expressions from other directives.
                 }
             }
 
@@ -138,7 +138,7 @@
                 To encapsulate reusable logic that returns a computed value
 
                 @Justification {
-                    Correct! Queries are like functions—they take parameters, compute a result, and return it. They make templates maintainable by avoiding code duplication.
+                    Correct! Queries are like functions: they take parameters, compute a result, and return it. They make templates maintainable by avoiding code duplication.
                 }
             }
 
@@ -182,7 +182,7 @@
                 It imports a variable from another template
 
                 @Justification {
-                    Incorrect. Let creates local variables—it doesn't import from other templates. For sharing logic between templates, use queries or macros.
+                    Incorrect. Let creates local variables; it doesn't import from other templates. For sharing logic between templates, use queries or macros.
                 }
             }
         }

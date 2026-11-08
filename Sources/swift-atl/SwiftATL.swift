@@ -24,6 +24,7 @@ import ArgumentParser
 /// - **transform**: Execute model transformations using compiled ATL modules
 /// - **query**: Evaluate ATL query units and write the files they produce
 /// - **generate**: Create generator models and generate code from Ecore models with the shared pipeline
+/// - **check-compat**: Check whether a transformation can be used with other metamodels
 ///
 /// ## Example Usage
 ///
@@ -52,6 +53,10 @@ import ArgumentParser
 ///
 /// # Generate Java from an Ecore model
 /// swift-atl generate library.ecore --language java --output src-gen
+///
+/// # Check whether a transformation can be used with a revised source metamodel
+/// swift-atl check-compat Families2Persons.atl --metamodel Families=Families.ecore \
+///   --metamodel Persons=Persons.ecore --target-metamodel Families=FamiliesV2.ecore
 /// ```
 @main
 struct SwiftATLCommand: AsyncParsableCommand {
@@ -81,6 +86,7 @@ struct SwiftATLCommand: AsyncParsableCommand {
             TransformCommand.self,
             QueryCommand.self,
             GenerateCommand.self,
+            CheckCompatCommand.self,
         ],
         defaultSubcommand: nil
     )

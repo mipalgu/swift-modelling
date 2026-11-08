@@ -12,6 +12,9 @@ SwiftModelling provides a comprehensive suite of CLI tools for Model-Driven Engi
 - **ATL**: Atlas Transformation Language for model-to-model transformations
 - **MTL**: Model-to-Text Language for code generation
 - **AQL**: Acceleo Query Language for model analysis
+- **Henshin**: graph transformation rules and units, with critical pair analysis and state-space exploration
+- **Epsilon**: the Epsilon Object, Validation, Transformation and Generation Languages (EOL, EVL, ETL and EGL)
+- **Xtend**: Xtend classes and their methods and generators
 
 ### CLI Tools
 
@@ -19,22 +22,28 @@ SwiftModelling provides a comprehensive suite of CLI tools for Model-Driven Engi
 - swift-atl: Model transformation execution and generation from Ecore models
 - swift-mtl: Template-based code generation
 - swift-aql: Evaluation of AQL queries against models
+- swift-henshin: Henshin graph transformation: applying rules and units, validation, conflict and dependency analysis, and state-space exploration
+- swift-epsilon: Epsilon languages: EOL programs, EVL constraints, ETL transformations and EGL templates
+- swift-xtend: Xtend methods and generators run on models
 
 The documentation of each tool lists its commands and options, and describes its features in detail.
 
 ### Architecture
 
-The tools are built on four packages, each a pure Swift implementation without Java dependencies:
+The tools `swift-ecore`, `swift-atl`, `swift-mtl` and `swift-aql` are built on four packages, each a pure Swift implementation without Java dependencies:
 
 - **swift-ecore**: the Ecore metamodel, resources, and XMI and JSON serialisation
 - **swift-atl**: the ATL parser and execution engine
 - **swift-mtl**: the MTL parser, runtime and generation engine
 - **swift-aql**: the AQL expression language that templates and queries share
 
-Besides the four tools, this package offers these library products:
+The tools `swift-henshin`, `swift-epsilon` and `swift-xtend` build on the packages of the same names, which implement Henshin, the Epsilon languages and Xtend in pure Swift on swift-ecore.
+
+Besides the tools, this package offers these library products:
 
 - **ModellingGenerators**: the generator model pipeline and the bundled template sets for Swift, Java, C and C++
 - **ModellingPipeline**: steps for running ATL transformations and MTL generations on models in memory, a locator for template sets in the resource directories of other packages, and a pipeline that loads, transforms, generates from and saves models in sequence
+- **ModelTyping**: model types and the checks of `check-compat` that decide whether an ATL transformation, an MTL template or an AQL expression written for one metamodel can be reused with another
 - **ModellingCommandLine**: the option groups that the tools share, such as `--param`, `--template-path`, `--metamodel`, `--code-style`, `--encoding` and `--semantics`, and a parser for families of `name=value` options, for command-line tools of other packages
 
 All model types are value types (structs) for thread safety, with ID-based reference resolution for bidirectional relationships. Resources provide object ownership and cross-reference resolution as in the Eclipse Modeling Framework, using actor-based concurrency.
@@ -128,7 +137,7 @@ Sources 3 to 6 choose the preset, and the preset chooses each behaviour that sou
 
 #### Source File Encodings
 
-ATL transformations and queries, MTL templates with the modules they import, and AQL expression files are read as UTF-8. A file that is not valid UTF-8 is read as ISO-8859-1 instead, which accepts every byte, so that sources written with older tools still load, and a warning on standard error names the file and the line and column of the first byte that is not UTF-8:
+ATL transformations and queries, MTL templates and template sets with the modules they import, and AQL expression files are read as UTF-8. A file that is not valid UTF-8 is read as ISO-8859-1 instead, which accepts every byte, so that sources written with older tools still load, and a warning on standard error names the file and the line and column of the first byte that is not UTF-8:
 
 ```
 warning: Families2Persons.atl: line 3, column 12: The text is not valid UTF-8 and was read as ISO-8859-1
@@ -138,11 +147,13 @@ warning: Families2Persons.atl: line 3, column 12: The text is not valid UTF-8 an
 
 | Tool | Commands that take `--encoding` | Source files |
 |--|--|--|
-| `swift-atl` | `parse`, `validate`, `analyze`, `compile`, `test`, `transform`, `query` | the ATL transformations and queries |
-| `swift-mtl` | `generate` (with a template file), `parse`, `validate` | the template file and the modules it imports |
-| `swift-aql` | `evaluate`, `query` | an expression or query file |
+| `swift-atl` | `parse`, `validate`, `analyze`, `compile`, `test`, `transform`, `query`, `check-compat` | the ATL transformations and queries |
+| `swift-atl` | `generate` | a transformation given with `--transformations`, and the templates of the template set with the modules they import |
+| `swift-mtl` | `generate`, `parse`, `validate`, `check-compat` | the template file, or the templates of a template set given with `--template-set`, and the modules they import |
+| `swift-ecore` | `generate` | the templates of the template set and the modules they import |
+| `swift-aql` | `evaluate`, `query`, `check-compat` | an expression or query file |
 
-`swift-mtl parse` and `validate` read no configuration file, so only `--encoding` applies to them. Models and metamodels are XML or JSON documents, whose encoding follows from the document itself, and have no such option.
+The files of a template set are copied together with the files that `--template-path` puts in their place before they are read, so a warning names a template by its path within the set, such as `warning: Header.mtl: line 2, column 4: ...`. `swift-mtl parse` and `validate` and the `check-compat` commands read no configuration file, so only `--encoding` applies to them. Models and metamodels are XML or JSON documents, whose encoding follows from the document itself, and have no such option.
 
 #### Warnings of Reading Metamodels
 
@@ -164,7 +175,7 @@ Wherever a metamodel is accepted, with `--metamodel`, `--source-metamodel` or `-
 
 The format registry of swift-ecore reads metamodels in Ecore, JSON, KM3, EMOF, Emfatic, Xcore and OCLinEcore, imports metamodels from ASDL, Langium, Xtext and SDF3 grammars, and reads models in XMI, JSON and UML. It chooses the format of a file from its extension and its contents, so a format that recognises its documents takes precedence over XMI: an EMOF metamodel saved as `shop.xmi` counts as a metamodel wherever a command decides whether a file is one, such as for `--metamodel`, a metamodel given with `swift-mtl generate --model`, and the metamodels that `swift-aql` finds beside a model. A model file with the extension `uml` is read and written as a UML model, in the layout of Eclipse UML2, rather than as generic XMI.
 
-`--package-name`, `--ns-uri` and `--ns-prefix` name the package of a metamodel imported from a grammar (the name only for a grammar that declares none), `--asdl-enumerations <all-nullary|never>` chooses which ASDL sum types become enumerations, `--langium-types <normal|strict>` whether the classes of a Langium grammar come only from its declared types, and `--sdf3-labels` whether SDF3 constructor labels name the classes. Every command that reads metamodels accepts them, and the configuration file keys of the same names choose them too, for the tools that read a configuration file. Langium, Xtext and SDF3 are only read: writing a document in one of them is an error that lists the formats that can hold the document.
+`--package-name`, `--ns-uri` and `--ns-prefix` name the package of a metamodel imported from a grammar (the name only for a grammar that declares none), `--asdl-enumerations <all-nullary|never>` chooses which ASDL sum types become enumerations, `--langium-types <normal|strict>` whether the classes of a Langium grammar come only from its declared types, and `--sdf3-labels` whether the argument labels of an SDF3 grammar name the features. Every command that reads metamodels accepts them, and the configuration file keys of the same names choose them too, for the tools that read a configuration file. Langium, Xtext and SDF3 are only read: writing a document in one of them is an error that lists the formats that can hold the document.
 
 A UML class model (`.uml`) is accepted wherever a metamodel is, such as with `--metamodel`, `--source-metamodel` or `--target-metamodel`: the Ecore metamodel that it describes is derived as the Eclipse UML2 tools derive it. Multi-level models in the MetaDepth notation (`.mdepth`) are read by every tool: `swift-ecore` inspects, validates and converts them, with `--level-crossing <strict|declared|non-strict>` choosing which references may cross levels (`declared` by default), and `swift-aql` and `swift-mtl generate` present them as the deep view of a level with `--deep-view <level>`.
 
@@ -179,6 +190,7 @@ The libraries keep the API of version 0.6, and with it the behaviour of version 
 - `GenerationStep.Result` and `GenerationResult` also report the warnings of the templates, such as `let` blocks skipped with `MTLLetTypeMismatches.skip`.
 - `ModellingCommandLine` offers the option groups `SemanticsOptions`, `MTLSemanticsOptions` and `ATLSemanticsOptions` for other command-line tools. `SemanticsOptions.settings(environment:currentDirectory:)` combines the command line, the environment variable and the configuration file into `SemanticsSettings`, which the option groups take in `mtlOptions(settings:)`, `atlOptions(settings:)` and `apply(to:settings:)`; `ModellingConfiguration` reads and finds configuration files.
 - `GenerationOptions` and `GenModelImportOptions` have a `containerLookupScope`, which the generation pipelines give the resource sets they create. It is `nil` by default, which leaves the resource sets without a configured scope.
+- `GenerationOptions.templateEncoding` and `GenerationStep.templateEncoding` name the encoding of the templates, and `GenModelImportOptions.transformationEncoding` that of a transformation that replaces the bundled one. They are `nil` by default, which reads UTF-8 with a fallback to ISO-8859-1; the warnings of the fallback are reported in `decodingWarnings` of `GenerationResult`, `GenerationStep.Result` and `GenModelResult`.
 - `ModellingCommandLine` offers `SourceEncodingOptions` for `--encoding`, `SourceFile` to read a source file in the chosen encoding, and `FileDiagnosticReport` to write the warnings and errors of reading a file to standard error. `MetamodelRegistration.registerMetamodels(at:into:announcement:verbose:debug:options:diagnosticOutput:)` registers every root package of a metamodel file in any metamodel format, as `--metamodel` does, `KM3Options` offers `--km3-primitives`, `GrammarImportOptions` the options of grammar imports and `MetamodelFormatOptions` both together, `CompleteOCLOptions` offers `--ocl`, `LevelCrossingOptions` and `DeepViewOptions` offer `--level-crossing` and `--deep-view`, `MultiLevelSupport` reads multi-level models and their deep views, `MetamodelRegistration.holdsMetamodel(at:registry:)` decides with the format registry whether a file is a metamodel, and `ModelFileFormat.detectedInstanceFormat(of:explicit:)` chooses the format in which a model is read, from its contents when its extension names no format.
 
 ## Topics

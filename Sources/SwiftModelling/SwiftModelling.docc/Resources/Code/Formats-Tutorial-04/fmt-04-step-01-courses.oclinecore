@@ -1,0 +1,46 @@
+package courses : crs = 'http://www.example.org/courses'
+{
+	enum Level
+	{
+		literal introductory;
+		literal intermediate;
+		literal advanced;
+	}
+
+	class Faculty
+	{
+		invariant UniqueCodes: courses->isUnique(c | c.code);
+		attribute name : String;
+		property courses#faculty : Course[*] { composes, ordered };
+		property students : Student[*] { composes, ordered };
+	}
+
+	class Course
+	{
+		invariant PositiveCapacity: capacity > 0;
+		invariant NotOverfull: enrolled->size() <= capacity;
+		invariant AdvancedNeedsPrerequisite: level = courses::Level::advanced implies prerequisites->notEmpty();
+		attribute code : String;
+		attribute title : String;
+		attribute level : Level;
+		attribute capacity : Integer;
+		property faculty#courses : Faculty[?];
+		property prerequisites : Course[*];
+		property enrolled#courses : Student[*];
+		attribute freePlaces : Integer { derived, readonly, transient, volatile }
+		{
+			derivation: capacity - enrolled->size();
+		}
+		operation isFull() : Boolean
+		{
+			body: enrolled->size() >= capacity;
+		}
+	}
+
+	class Student
+	{
+		invariant HasName: name.size() > 0;
+		attribute name : String;
+		property courses#enrolled : Course[*];
+	}
+}

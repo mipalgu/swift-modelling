@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<org:Company xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:org="http://www.example.org/organisation" name="Example Office">
+  <departments name="Engineering" code="ENG" capacity="3"
+      members="//@employees.0 //@employees.1" manager="//@employees.0"/>
+  <departments name="Operations" code="OPS" capacity="2"
+      members="//@employees.2 //@employees.3" manager="//@employees.2"/>
+  <employees name="Alice" kind="FULL_TIME" department="//@departments.0"/>
+  <employees name="Bob" kind="PART_TIME" department="//@departments.0"/>
+  <employees name="Carol" kind="FULL_TIME" department="//@departments.1"/>
+  <employees name="Dan" kind="FULL_TIME" department="//@departments.1"/>
+</org:Company>

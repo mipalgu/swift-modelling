@@ -1,0 +1,31 @@
+digraph GrammarImport {
+    bgcolor="white"
+    rankdir=LR
+    node [shape=box, style="rounded,filled", fontname="Arial", fontsize=12, fillcolor="#f4e8f8"]
+    edge [fontname="Arial", fontsize=10]
+
+    subgraph cluster_abstract {
+        label="Abstract syntax"
+        style=rounded
+        bgcolor="#e8f4f8"
+        asdl [label="ASDL"]
+        stratego [label="Stratego\nsignature"]
+    }
+
+    subgraph cluster_concrete {
+        label="Grammars"
+        style=rounded
+        bgcolor="#e8f8f5"
+        xtext [label="Xtext"]
+        langium [label="Langium"]
+        sdf3 [label="SDF3"]
+    }
+
+    ecore [label="Ecore\nMetamodel" shape=box3d fillcolor="#f8f4e8"]
+
+    asdl -> ecore [label="import"]
+    stratego -> ecore
+    xtext -> ecore
+    langium -> ecore
+    sdf3 -> ecore
+}

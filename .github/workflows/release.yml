@@ -133,6 +133,9 @@ jobs:
           echo '    system "#{bin}/swift-ecore", "--help"' >> Formula/swift-modelling.rb
           echo '    system "#{bin}/swift-atl", "--help"' >> Formula/swift-modelling.rb
           echo '    system "#{bin}/swift-mtl", "--help"' >> Formula/swift-modelling.rb
+          echo '    system "#{bin}/swift-henshin", "--help"' >> Formula/swift-modelling.rb
+          echo '    system "#{bin}/swift-epsilon", "--help"' >> Formula/swift-modelling.rb
+          echo '    system "#{bin}/swift-xtend", "--help"' >> Formula/swift-modelling.rb
           echo '    assert_equal "3\n", shell_output("#{bin}/swift-aql evaluate --expression 1+2")' >> Formula/swift-modelling.rb
           echo '    assert_match "java", shell_output("#{bin}/swift-atl generate --help")' >> Formula/swift-modelling.rb
           echo '  end' >> Formula/swift-modelling.rb

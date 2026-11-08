@@ -6,6 +6,7 @@
 //
 import ArgumentParser
 import ECore
+import EMFBase
 
 /// The command line options that choose how metamodels in the formats that need them are read.
 ///
@@ -31,6 +32,21 @@ public struct MetamodelFormatOptions: ParsableArguments, Sendable {
     public var ecoreLoadOptions: EcoreLoadOptions {
         var options = km3.ecoreLoadOptions
         grammar.apply(to: &options)
+        return options
+    }
+
+    /// The options with which documents and metamodels are loaded from the command line alone,
+    /// in a character encoding.
+    ///
+    /// Commands that read no configuration file and take ``SourceEncodingOptions`` for the
+    /// documents they read use these options.
+    ///
+    /// - Parameter encoding: The encoding of documents in text formats, such as the
+    ///   `explicitEncoding` of ``SourceEncodingOptions``, or `nil` to detect it.
+    /// - Returns: ``ecoreLoadOptions`` with the encoding.
+    public func ecoreLoadOptions(encoding: TextEncoding?) -> EcoreLoadOptions {
+        var options = ecoreLoadOptions
+        options.textEncoding = encoding
         return options
     }
 
