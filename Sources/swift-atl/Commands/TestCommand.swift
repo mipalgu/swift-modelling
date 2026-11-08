@@ -54,7 +54,9 @@ struct TestCommand: AsyncParsableCommand, ATLSourceReading {
     /// Test timeout in seconds.
     ///
     /// Maximum time allowed for each test to complete before being
-    /// marked as failed due to timeout. Default is 60 seconds.
+    /// marked as failed due to timeout. Default is 60 seconds.  A time limit
+    /// longer than ``longestTimeLimit`` is not kept, and the checks of each
+    /// file then run until they finish.
     @Option(name: .shortAndLong, help: "Test timeout in seconds (default: 60)")
     var timeout: TimeInterval = 60.0
 
@@ -249,6 +251,9 @@ struct TestCommand: AsyncParsableCommand, ATLSourceReading {
     /// - Returns: The value of the operation, if it finishes within the time limit.
     /// - Throws: `TestError.timeout` if the time limit passes first, the error of the
     ///   operation if it fails first, or `CancellationError` if the caller is cancelled.
+    ///
+    /// A time limit longer than ``longestTimeLimit`` is not kept: the operation then runs
+    /// until it finishes.
     static func firstOutcome<Value: Sendable>(
         withinSeconds seconds: TimeInterval,
         operation: @escaping @Sendable () async throws -> Value
@@ -261,17 +266,19 @@ struct TestCommand: AsyncParsableCommand, ATLSourceReading {
                 sink.yield(.failure(error))
             }
         }
-        let timer = Task {
-            do {
-                try await Task.sleep(nanoseconds: nanoseconds(for: seconds))
-                sink.yield(.failure(TestError.timeout))
-            } catch {
-                return
+        let timer = nanoseconds(for: seconds).map { limit in
+            Task {
+                do {
+                    try await Task.sleep(nanoseconds: limit)
+                    sink.yield(.failure(TestError.timeout))
+                } catch {
+                    return
+                }
             }
         }
         defer {
             work.cancel()
-            timer.cancel()
+            timer?.cancel()
             sink.finish()
         }
         var iterator = outcomes.makeAsyncIterator()
@@ -281,14 +288,22 @@ struct TestCommand: AsyncParsableCommand, ATLSourceReading {
         return try outcome.get()
     }
 
-    /// The number of nanoseconds in a time limit, capped at the longest sleep available.
+    /// The longest time limit that is kept, in seconds: one hundred years.
+    ///
+    /// A time limit is kept by sleeping for its length.  The concurrency runtime of some
+    /// platforms ends a sleep at once if its length in nanoseconds does not fit a signed
+    /// 64-bit number, which is the case for about 292 years or more.  A time limit longer
+    /// than this one is no practical limit and is not kept at all.
+    static let longestTimeLimit: TimeInterval = 100 * 365.25 * 24 * 60 * 60
+
+    /// The number of nanoseconds in a time limit, if the time limit is kept.
     ///
     /// - Parameter seconds: The time limit in seconds, which must be positive.
-    /// - Returns: The time limit in nanoseconds.
-    static func nanoseconds(for seconds: TimeInterval) -> UInt64 {
-        let nanoseconds = seconds * 1_000_000_000
-        guard nanoseconds < Double(UInt64.max) else { return UInt64.max }
-        return UInt64(nanoseconds)
+    /// - Returns: The time limit in nanoseconds, or `nil` if it is longer than
+    ///   ``longestTimeLimit`` and is therefore not kept.
+    static func nanoseconds(for seconds: TimeInterval) -> UInt64? {
+        guard seconds <= longestTimeLimit else { return nil }
+        return UInt64(seconds * 1_000_000_000)
     }
 
     /// A number of seconds as the timeout message shows it.

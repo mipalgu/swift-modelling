@@ -166,7 +166,7 @@ struct CompareCommand: AsyncParsableCommand {
             return report
         }
         if let warning = Self.untypedFormatsWarning(original, revised) {
-            FileHandle.standardError.write(Data((warning + "\n").utf8))
+            StandardStreams.writeToStandardError(warning + "\n")
         }
         let comparer = ModelComparer(
             original: await ModelCatalogue.build(for: original), revised: await ModelCatalogue.build(for: revised),

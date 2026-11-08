@@ -342,7 +342,7 @@ swift-atl test [<atl-files> ...] [options]
 **Options:**
 
 - `-d, --directory <directory>` - Directory containing ATL test files
-- `-t, --timeout <seconds>` - The time limit for checking each file, a positive number of seconds (default: 60); a file whose checks take longer is reported as failed with 'Test timed out after N seconds', and testing continues with the next file. Each file is reported as soon as its checks finish. Parsing cannot be interrupted, so a file whose parsing overruns the limit keeps using processor time until its parsing ends or the command exits
+- `-t, --timeout <seconds>` - The time limit for checking each file, a positive number of seconds (default: 60), and a limit of more than one hundred years is not kept; a file whose checks take longer is reported as failed with 'Test timed out after N seconds', and testing continues with the next file. Each file is reported as soon as its checks finish. Parsing cannot be interrupted, so a file whose parsing overruns the limit keeps using processor time until its parsing ends or the command exits
 - `-o, --output <file>` - Write the test results to a file
 - `-v, --verbose` - Enable verbose output
 - `--fail-fast` - Stop on the first test failure

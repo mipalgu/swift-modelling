@@ -2,6 +2,8 @@ import Foundation
 import Subprocess
 import Testing
 
+@testable import swift_atl
+
 #if canImport(System)
     import System
 #else
@@ -198,5 +200,56 @@ struct TestCommandTests {
 
         #expect(result.exitCode == 64)
         #expect(result.stderr.contains("--timeout"))
+    }
+}
+
+// MARK: - Time Limit Tests
+
+/// Tests of how `swift-atl test` keeps the time limit of each file.
+///
+/// A time limit is kept by sleeping for its length, which the concurrency runtime of some
+/// platforms cannot do for every length that a number of seconds can express.  A time limit
+/// longer than ``TestCommand/longestTimeLimit`` is therefore not kept at all.
+@Suite("swift-atl test - Time limits that are kept")
+struct TimeLimitTests {
+
+    @Test("an ordinary time limit is kept to the nanosecond")
+    func ordinaryTimeLimitIsKept() {
+        #expect(TestCommand.nanoseconds(for: 60) == 60_000_000_000)
+        #expect(TestCommand.nanoseconds(for: 0.001) == 1_000_000)
+        #expect(TestCommand.nanoseconds(for: 1.5) == 1_500_000_000)
+    }
+
+    @Test("the longest time limit is kept, and fits a signed number of nanoseconds")
+    func longestTimeLimitIsKept() throws {
+        let nanoseconds = try #require(TestCommand.nanoseconds(for: TestCommand.longestTimeLimit))
+        #expect(nanoseconds < UInt64(Int64.max))
+    }
+
+    @Test(
+        "a time limit longer than the longest one is not kept",
+        arguments: [TestCommand.longestTimeLimit * 2, Double(Int64.max), Double(UInt64.max), 1e300]
+    )
+    func longerTimeLimitIsNotKept(seconds: TimeInterval) {
+        #expect(TestCommand.nanoseconds(for: seconds) == nil)
+    }
+
+    @Test("an operation runs to its end under a time limit that is not kept")
+    func operationEndsUnderUnkeptTimeLimit() async throws {
+        let value = try await TestCommand.firstOutcome(withinSeconds: 1e300) {
+            try await Task.sleep(for: .milliseconds(50))
+            return 42
+        }
+        #expect(value == 42)
+    }
+
+    @Test("an operation that overruns a time limit that is kept times out")
+    func operationOverrunsKeptTimeLimit() async {
+        await #expect(throws: swift_atl.TestError.timeout) {
+            try await TestCommand.firstOutcome(withinSeconds: 0.001) {
+                try await Task.sleep(for: .seconds(30))
+                return 42
+            }
+        }
     }
 }

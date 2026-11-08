@@ -337,6 +337,6 @@ struct QueryCommand: AsyncParsableCommand, ATLSourceReading {
 
     /// Writes a line to standard error.
     private func writeError(_ message: String) {
-        FileHandle.standardError.write(Data((message + "\n").utf8))
+        StandardStreams.writeToStandardError(message + "\n")
     }
 }

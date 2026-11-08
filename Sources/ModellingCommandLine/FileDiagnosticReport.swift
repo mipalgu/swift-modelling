@@ -78,11 +78,12 @@ public enum FileDiagnosticReport {
     /// Writes text to standard error.
     ///
     /// This is the writer through which the diagnostics of reading a file are reported, unless
-    /// a caller supplies another one.
+    /// a caller supplies another one. The text follows everything that the command printed
+    /// on standard output before it, see ``StandardStreams/writeToStandardError(_:)``.
     ///
     /// - Parameter text: The text to write, unchanged.
     public static func writeToStandardError(_ text: String) {
-        FileHandle.standardError.write(Data(text.utf8))
+        StandardStreams.writeToStandardError(text)
     }
 
     /// The text that starts the line of a diagnostic of a severity.

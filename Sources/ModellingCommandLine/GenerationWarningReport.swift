@@ -38,10 +38,13 @@ public enum GenerationWarningReport {
 
     /// Writes the warnings of a template run to standard error.
     ///
+    /// The warnings follow everything that the command printed on standard output before
+    /// them, see ``StandardStreams/writeToStandardError(_:)``.
+    ///
     /// - Parameter warnings: The warnings, in the order in which they were reported.
     public static func write(_ warnings: [SourceDiagnostic]) {
         let lines = lines(for: warnings)
         guard !lines.isEmpty else { return }
-        FileHandle.standardError.write(Data((lines.joined(separator: "\n") + "\n").utf8))
+        StandardStreams.writeToStandardError(lines.joined(separator: "\n") + "\n")
     }
 }

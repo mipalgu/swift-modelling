@@ -244,7 +244,7 @@ struct GenerateCommand: AsyncParsableCommand {
             throw error
         } catch {
             bar.finish()
-            FileHandle.standardError.write(Data("Code generation failed: \(error)\n".utf8))
+            StandardStreams.writeToStandardError("Code generation failed: \(error)\n")
             throw ExitCode.failure
         }
     }

@@ -302,6 +302,32 @@ func executeSwiftEcore(
     )
 }
 
+/// Executes a swift-ecore command with its standard error merged into its standard output.
+///
+/// Both streams of the tool share one pipe, as with `2>&1` in a shell, so the output shows
+/// the lines of both streams in the order in which the tool wrote them.
+///
+/// - Parameters:
+///   - command: The command to execute (e.g., "inspect", "convert").
+///   - arguments: Additional arguments for the command.
+/// - Returns: The subprocess execution result, whose `stdout` holds the combined output and
+///   whose `stderr` is empty.
+/// - Throws: Errors from subprocess execution or executable path resolution.
+@MainActor
+func executeSwiftEcoreWithCombinedOutput(command: String, arguments: [String] = []) async throws -> SubprocessResult {
+    let executablePath = try swiftEcoreExecutablePath()
+    let result = try await withProcessSlot {
+        try await Subprocess.run(
+            .path(FilePath(executablePath)),
+            arguments: Arguments([command] + arguments),
+            environment: childEnvironment([:]),
+            output: .string(limit: 16384),
+            error: .combinedWithOutput
+        )
+    }
+    return SubprocessResult(terminationStatus: result.terminationStatus, stdout: result.standardOutput ?? "", stderr: "")
+}
+
 // MARK: - Child Environment
 
 /// The environment variable that chooses the semantics of the tools.

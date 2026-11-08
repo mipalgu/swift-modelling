@@ -101,6 +101,43 @@ struct LoadWarningTests {
         }
     }
 
+    @Test(
+        "load warnings follow the lines printed before them when both streams share a pipe",
+        arguments: [
+            (command: "inspect", output: nil, before: "Inspecting: "),
+            (command: "convert", output: "People.km3", before: "Reading Ecore"),
+        ] as [(command: String, output: String?, before: String)])
+    @MainActor
+    func warningsFollowEarlierOutput(command: String, output: String?, before: String) async throws {
+        let files = try Files()
+        defer { files.remove() }
+        let target = output.map { files.directory.appendingPathComponent($0).path }
+
+        let result = try await executeSwiftEcoreWithCombinedOutput(
+            command: command, arguments: ["--verbose", files.metamodel.path] + (target.map { [$0] } ?? []))
+
+        #expect(result.succeeded, "\(command): \(result.stdout)")
+        let lines = result.stdout.split(whereSeparator: \.isNewline).map(String.init)
+        let earlier = try #require(lines.firstIndex { $0.hasPrefix(before) }, "\(command): \(result.stdout)")
+        let warning = try #require(lines.firstIndex { $0.hasPrefix("warning: ") }, "\(command): \(result.stdout)")
+        #expect(earlier < warning, "\(command): \(result.stdout)")
+    }
+
+    @Test("an inspection report follows the load warnings when both streams share a pipe")
+    @MainActor
+    func reportFollowsWarnings() async throws {
+        let files = try Files()
+        defer { files.remove() }
+
+        let result = try await executeSwiftEcoreWithCombinedOutput(command: "inspect", arguments: [files.metamodel.path])
+
+        #expect(result.succeeded, "\(result.stdout)")
+        let lines = result.stdout.split(whereSeparator: \.isNewline).map(String.init)
+        let warning = try #require(lines.lastIndex { $0.hasPrefix("warning: ") }, "\(result.stdout)")
+        let report = try #require(lines.firstIndex { $0.hasPrefix("Metamodel: ") }, "\(result.stdout)")
+        #expect(warning < report, "\(result.stdout)")
+    }
+
     @Test("compares metamodels whose root package has no namespace, warning on standard error")
     @MainActor
     func compareWithoutNamespace() async throws {

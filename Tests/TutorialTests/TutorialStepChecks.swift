@@ -18,6 +18,9 @@ struct ToolInvocationRecord: Sendable, Equatable {
     let status: Int32?
 
     /// What the tool wrote on its standard error, whether or not the script showed it.
+    ///
+    /// When the standard output of the tool led to the same place as its standard error, the
+    /// text also holds the standard output, in the order in which the tool wrote both.
     let standardError: String
 
     /// The command line of the invocation, for messages.
@@ -36,7 +39,8 @@ struct ToolInvocationRecord: Sendable, Equatable {
 /// The logs in which the wrappers of the tools record their invocations during a step.
 ///
 /// A wrapper creates an empty file named after the tool with a unique suffix when the tool starts,
-/// copies the standard error of the tool into a file with the extension
+/// copies the standard error of the tool, together with its standard output if both lead to the
+/// same place, into a file with the extension
 /// ``TutorialReplayConfiguration/toolLogStandardErrorExtension``, and writes the exit status and
 /// the arguments into a file with the extension ``TutorialReplayConfiguration/toolLogStatusExtension``
 /// when the tool has finished.

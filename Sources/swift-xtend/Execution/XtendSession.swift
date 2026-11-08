@@ -124,6 +124,6 @@ struct XtendSession {
     ///
     /// - Parameter message: The message.
     nonisolated static func report(_ message: String) {
-        FileHandle.standardError.write(Data((message + "\n").utf8))
+        StandardStreams.writeToStandardError(message + "\n")
     }
 }
