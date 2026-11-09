@@ -7,6 +7,7 @@
 import ArgumentParser
 import Henshin
 import HenshinAnalysis
+import ModellingCommandLine
 
 extension SwiftHenshinVocabulary.Granularity: ExpressibleByArgument {
     /// The level of the analysis that the value names.
@@ -66,6 +67,8 @@ struct AnalyseCommand: AsyncParsableCommand {
 
             \(SwiftHenshinCommand.encodingDiscussion)
 
+            \(SwiftHenshinCommand.configurationDiscussion)
+
             Exit statuses: 0 on success, whether or not rules interact, 1 if the module cannot \
             be read or names no such rule, and 64 for an invalid command line.
 
@@ -122,8 +125,17 @@ struct AnalyseCommand: AsyncParsableCommand {
 
     /// The options of the analysis that the command line asks for.
     var analysisOptions: AnalysisOptions {
+        analysisOptions(settings: SemanticsSettings())
+    }
+
+    /// The options of the analysis of a run.
+    ///
+    /// - Parameter settings: The settings of the run, whose configuration file gives the
+    ///   dangling condition that the command line leaves open.
+    /// - Returns: The analysis options.
+    func analysisOptions(settings: SemanticsSettings) -> AnalysisOptions {
         AnalysisOptions(
-            respectsMultiplicities: !noMultiplicities, checkDangling: matchingOptions.dangling?.checks,
+            respectsMultiplicities: !noMultiplicities, checkDangling: matchingOptions.checksDangling(settings: settings),
             essentialOnly: essential)
     }
 
@@ -143,12 +155,13 @@ struct AnalyseCommand: AsyncParsableCommand {
     ///   reading the module.
     @MainActor
     func run() async throws {
-        let loader = moduleOptions.loader
+        let settings = try moduleOptions.settings()
+        let loader = moduleOptions.loader(settings: settings)
         let loaded = try await loader.load(module)
         let names = NameList.names(rules)
         let selected = try names.isEmpty ? loaded.module.rules : names.map(loaded.rule(named:))
         guard !selected.isEmpty else { throw SwiftHenshinError.noRules }
-        let analyser = CriticalPairAnalyser(options: analysisOptions)
+        let analyser = CriticalPairAnalyser(options: analysisOptions(settings: settings))
         var tables: [InteractionTable] = []
         for direction in directions {
             loader.log.progress("analysing \(direction.rawValue)s of \(selected.count) rule(s) at \(granularity.rawValue)")

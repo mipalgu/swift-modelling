@@ -23,6 +23,12 @@ struct CreateCommand: AsyncParsableCommand {
             names, with no features set. The class must be a concrete class of one of the \
             metamodels given with --\(MetamodelOptions.optionName). The output format follows \
             from the extension of the output file unless --output-format is given.
+
+            \(OutputEncodingOptions.discussion(writer: OutputEncodingVocabulary.created))
+
+            \(SourceEncodingOptions.discussion(reader: EncodingVocabulary.createdMetamodels))
+
+            \(ConfigurationFileOptions.discussion(keys: ConfigurationVocabulary.creationKeys))
             """
     )
 
@@ -31,6 +37,15 @@ struct CreateCommand: AsyncParsableCommand {
 
     /// How metamodels in KM3 and in grammar formats are read.
     @OptionGroup var formatOptions: MetamodelFormatOptions
+
+    /// The character encoding of the metamodels in text formats.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// The configuration file whose keys give the options that the command line leaves open.
+    @OptionGroup var configurationOptions: ConfigurationFileOptions
+
+    /// The character encoding of the files that the command writes.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
 
     /// The name of the class of the root object.
     @Option(help: "The class of the root object")
@@ -65,7 +80,11 @@ struct CreateCommand: AsyncParsableCommand {
     ///
     /// - Throws: ``CreationError`` if the output exists, the class is unknown or abstract, or the
     ///   format cannot hold a model, or the error of a metamodel, the serialiser or the file system.
+    ///   Also ``ModellingConfigurationError`` if the configuration file cannot be read or is not valid,
+    ///   and `OutputFileError` if the encoding of the model cannot hold one of its characters.
     func run() async throws {
+        let settings = try configurationOptions.settings()
+        let loadOptions = formatOptions.ecoreLoadOptions(settings: settings, encodingOptions: encodingOptions)
         let url = URL(fileURLWithPath: output)
         if FileManager.default.fileExists(atPath: output) && !force {
             throw CreationError.outputExists(output)
@@ -75,7 +94,7 @@ struct CreateCommand: AsyncParsableCommand {
             throw CreationError.unsupportedFormat(formatName)
         }
         let resourceSet =
-            try await metamodelOptions.resourceSet(verbose: verbose, options: formatOptions.ecoreLoadOptions) ?? ResourceSet()
+            try await metamodelOptions.resourceSet(verbose: verbose, options: loadOptions) ?? ResourceSet()
         let catalogue = MetamodelCatalogue(roots: await ModelDocument.registeredMetamodels(of: resourceSet))
         guard let eClass = catalogue.classes.first(where: { $0.name == rootClass }) else {
             let concrete = catalogue.classes.filter { !$0.isAbstract && !$0.isInterface }.map(\.name)
@@ -86,7 +105,8 @@ struct CreateCommand: AsyncParsableCommand {
         }
         let resource = await resourceSet.createResource(uri: url.absoluteString)
         _ = await resource.add(DynamicEObject(eClass: eClass))
-        try await ModelIO.save(resource, to: url, format: format)
+        try await OutputFile.save(
+            resource, to: url, format: format, encoding: outputEncodingOptions.encoding(settings: settings))
         if verbose { print("Created a \(eClass.name) as the root object") }
         print("Model created: \(output)")
     }

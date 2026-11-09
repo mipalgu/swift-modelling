@@ -39,6 +39,8 @@ struct ETLTransformCommand: AsyncParsableCommand {
 
             \(SourceEncodingOptions.discussion(reader: "the transformation and the modules it imports"))
 
+            \(OutputEncodingOptions.discussion(writer: "the target and stored models"))
+
             \(SwiftEpsilonCommand.exitDiscussion)
             """
     )

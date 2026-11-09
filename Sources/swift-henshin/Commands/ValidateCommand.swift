@@ -7,6 +7,7 @@
 import ArgumentParser
 import EMFBase
 import Henshin
+import ModellingCommandLine
 
 /// The command that checks a module without applying it.
 ///
@@ -38,6 +39,8 @@ struct ValidateCommand: AsyncParsableCommand {
 
             \(SwiftHenshinCommand.encodingDiscussion)
 
+            \(SwiftHenshinCommand.configurationDiscussion)
+
             Exit statuses: 0 if the module has no errors (warnings allowed), 1 if it has errors \
             or cannot be read, and 64 for an invalid command line.
 
@@ -59,7 +62,7 @@ struct ValidateCommand: AsyncParsableCommand {
     /// - Throws: `ExitCode` 1 if the module has errors, and the errors of reading it.
     @MainActor
     func run() async throws {
-        let loaded = try await moduleOptions.loader.read(module)
+        let loaded = try await moduleOptions.loader(settings: try moduleOptions.settings()).read(module)
         let findings = Self.findings(of: loaded)
         for finding in findings where finding.severity != .information || moduleOptions.verbose {
             print(FindingFormatter.line(finding, file: module))

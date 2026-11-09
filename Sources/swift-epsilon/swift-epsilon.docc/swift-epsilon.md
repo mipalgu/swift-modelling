@@ -118,7 +118,8 @@ When every constraint and critique holds, the command prints
   or critique, validate the models again and print what remains, after
   a line `applied: <title>` for each fix applied; give `--store` to keep
   the repaired models
-- `--strict` - Fail when a critique is unsatisfied as well
+- `--strict`, `--no-strict` - Fail when a critique is unsatisfied as well, or not (off by
+  default; the `strict` key of the configuration file sets it too)
 
 ### etl transform
 
@@ -140,7 +141,8 @@ once the transformation has succeeded.
 - `--reference-style <encoded|plain>` - How an XMI model that is
   written spells references into its own document (default `encoded`);
   `plain` writes them as Eclipse writes XMI model files. The option
-  applies to every model that a command writes.
+  applies to every model that a command writes, and the
+  `reference-style` key of the configuration file chooses it too.
 
 ### egl generate
 
@@ -200,10 +202,22 @@ as they are written.
   and models loaded, the program run and the models stored
 - `--encoding <name>` - The character encoding of the source files,
   such as `ISO-8859-1` or `windows-1252`: the program, the modules it
-  imports and the templates that EGX rules name (default: UTF-8, and
+  imports and the templates that EGX rules name, and the metamodels and
+  models in text formats, such as KM3, Emfatic, Xcore, OCLinEcore,
+  grammar formats or MetaDepth (default: UTF-8, and
   ISO-8859-1 with a warning on standard error for a file that is not
   valid UTF-8); the `encoding` key of the configuration file names it
   too, and a file that is not valid in the encoding named is an error
+- `--output-encoding <name>` - The character encoding of the files
+  written, such as `ISO-8859-1` or `windows-1252`: the files that EGX
+  rules and `egl generate --output` write, and the stored and target
+  models (default: UTF-8); the `output-encoding` key of the configuration
+  file names it too. An XML model names the encoding in its declaration
+  and writes a character that the encoding cannot hold as a numeric
+  character reference; in generated text, such a character is an error
+  that names the file, line and column, and the file is not written.
+  JSON is always written in UTF-8, with a warning on standard error.
+  Standard output is not affected
 - `--km3-primitives <ecore|declared>`, `--package-name <name>`,
   `--ns-uri <uri>`, `--ns-prefix <prefix>`,
   `--asdl-enumerations <all-nullary|never>`,
@@ -231,6 +245,10 @@ as `Error: report.eol:5:1: <message>`.
 A program may import modules with `import 'library.eol';`. A relative
 path is read from the directory of the file that imports it, in the
 encoding of the run.
+
+Files are written in UTF-8 unless `--output-encoding` names another encoding. An existing
+output file that a template or an EGX rule merges protected regions into is read in that
+encoding too.
 
 ## Exit Statuses
 

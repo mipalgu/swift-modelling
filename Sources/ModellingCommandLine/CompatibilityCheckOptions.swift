@@ -6,6 +6,7 @@
 //
 import ArgumentParser
 import ECore
+import EMFBase
 import Foundation
 import ModelTyping
 
@@ -565,11 +566,14 @@ public struct CompatibilityCheckOptions: ParsableArguments, Sendable {
     /// Every root package of a file belongs to its model type. A file named more than once is
     /// read once, and a metamodel without a target metamodel is its own target.
     ///
+    /// - Parameter encoding: The encoding of metamodels in text formats, such as KM3, or `nil`
+    ///   (the default) to read UTF-8 with a fallback to ISO-8859-1.
     /// - Returns: The required and the provided model types.
-    /// - Throws: `MetamodelRegistrationError.fileNotFound(_:)` if a file does not exist, or the
-    ///   error of the reader if a file cannot be loaded.
-    public func loadMetamodels() async throws -> CompatibilityMetamodels {
-        let loadOptions = formatOptions.ecoreLoadOptions
+    /// - Throws: `MetamodelRegistrationError.fileNotFound(_:)` if a file does not exist,
+    ///   ``SourceFileError/malformed(path:encoding:)`` if a metamodel is not valid in the
+    ///   encoding, or the error of the reader if a file cannot be loaded.
+    public func loadMetamodels(encoding: TextEncoding? = nil) async throws -> CompatibilityMetamodels {
+        let loadOptions = formatOptions.ecoreLoadOptions(encoding: encoding)
         var loaded: [String: ModelType] = [:]
         func modelType(at path: String) async throws -> ModelType {
             if let modelType = loaded[path] { return modelType }
@@ -616,18 +620,22 @@ public struct CompatibilityCheckOptions: ParsableArguments, Sendable {
     ///
     /// - Parameters:
     ///   - isolation: The actor the check runs on, by default that of the caller.
+    ///   - encoding: The encoding of metamodels in text formats, such as the `explicitEncoding`
+    ///     of ``SourceEncodingOptions``, or `nil` (the default) to read UTF-8 with a fallback
+    ///     to ISO-8859-1.
     ///   - check: Parses the module and checks it against the loaded metamodels.
     /// - Throws: `ExitCode` with the status of the verdict unless it is compatible, or with
     ///   ``CompatibilityVerdict/failureExitStatus`` if the check could not be made.
     public func run(
         isolation: isolated (any Actor)? = #isolation,
+        encoding: TextEncoding? = nil,
         _ check: (CompatibilityMetamodels) async throws -> CompatibilityReport
     ) async throws {
         for warning in ignoredOptionWarnings { FileDiagnosticReport.writeToStandardError(warning + "\n") }
         let output: String
         let verdict: CompatibilityVerdict
         do {
-            let report = try await check(try await loadMetamodels())
+            let report = try await check(try await loadMetamodels(encoding: encoding))
             output = try render(report)
             verdict = CompatibilityVerdict(report)
         } catch {

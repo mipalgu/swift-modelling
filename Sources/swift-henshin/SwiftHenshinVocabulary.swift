@@ -58,7 +58,7 @@ enum SwiftHenshinVocabulary {
         static let nondeterministic = "nondeterministic"
 
         /// The flag that checks the dangling condition for every rule.
-        static let checkDangling = "check-dangling"
+        static let checkDangling = MatchingOptionName.checkDangling
 
         /// The flag that turns the dangling condition off for every rule.
         static let noDanglingCheck = "no-dangling-check"
@@ -67,7 +67,7 @@ enum SwiftHenshinVocabulary {
         static let noDangling = "no-dangling"
 
         /// The flag that makes matching injective for every rule.
-        static let injective = "injective"
+        static let injective = MatchingOptionName.injective
 
         /// The flag that makes matching non-injective for every rule.
         static let nonInjective = "non-injective"

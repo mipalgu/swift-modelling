@@ -50,6 +50,8 @@ struct EGLGenerateCommand: AsyncParsableCommand {
 
             \(SourceEncodingOptions.discussion(reader: "the template, the EGX module and the templates it names"))
 
+            \(OutputEncodingOptions.discussion(writer: "the generated files and the stored models"))
+
             \(SwiftEpsilonCommand.exitDiscussion)
             """
     )
@@ -116,7 +118,8 @@ struct EGLGenerateCommand: AsyncParsableCommand {
         } else {
             let text = try await EGLRun.render(template: template, workspace: workspace)
             if let output {
-                let written = try EGLRun.write(text, to: output, merging: !noMerge)
+                let written = try EGLRun.write(
+                    text, to: output, merging: !noMerge, encoding: workspace.configuration.outputEncoding)
                 FileDiagnosticReport.write(written.diagnostics)
                 Console.writeLines([SwiftEpsilonVocabulary.FileStatus.word(for: written.status) + SwiftEpsilonVocabulary.FileStatus.separator + output])
             } else {
@@ -141,7 +144,7 @@ struct EGLGenerateCommand: AsyncParsableCommand {
             result = try await EGLRun.generate(
                 coordination: template, workspace: workspace,
                 outputDirectory: output ?? SwiftEpsilonVocabulary.defaultOutputDirectory,
-                allowsPathsOutsideOutput: allowOutsideOutput,
+                allowsPathsOutsideOutput: allowOutsideOutput, encoding: workspace.configuration.outputEncoding,
                 progress: { count in
                     if showsProgress { bar.show(GenerationProgressUpdate(message: message, completed: count)) }
                 })

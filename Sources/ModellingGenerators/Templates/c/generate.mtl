@@ -20,7 +20,7 @@
  * Writes the support header and the files of every package of a generator model, nested packages included.
  **/]
 [template public generate(genModel : GenModel)]
-[file (supportHeaderName(), false, 'UTF-8')][supportHeader()/][/file]
+[file (supportHeaderName(), false)][supportHeader()/][/file]
 [for (genPackage : GenPackage | genModel.allGenPackages())]
 [genPackage.generatePackage()/]
 [/for]
@@ -31,8 +31,8 @@
  **/]
 [template public generatePackage(genPackage : GenPackage)]
 [if (genPackage.hasClassifiers())]
-[file (genPackage.headerPath(), false, 'UTF-8')][genPackage.packageHeader()/][/file]
-[file (genPackage.sourcePath(), false, 'UTF-8')][genPackage.packageSource()/][/file]
+[file (genPackage.headerPath(), false)][genPackage.packageHeader()/][/file]
+[file (genPackage.sourcePath(), false)][genPackage.packageSource()/][/file]
 [/if]
 [/template]
 

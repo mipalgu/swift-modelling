@@ -62,6 +62,8 @@ struct GenerateCommand: AsyncParsableCommand {
 
             \(SourceEncodingOptions.discussion(reader: "the template file or the templates of the template set, and the modules they import"))
 
+            \(OutputEncodingOptions.discussion(writer: "the generated files, including the stdout file"))
+
             \(SemanticsOptions.discussion())
 
             Examples:
@@ -223,6 +225,9 @@ struct GenerateCommand: AsyncParsableCommand {
     /// The character encoding of the template file or the templates of the template set, and of
     /// the modules they import.
     @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// The character encoding of the generated files.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
 
     /// How metamodels in KM3 and in grammar formats are read.
     @OptionGroup var formatOptions: MetamodelFormatOptions
@@ -395,7 +400,7 @@ struct GenerateCommand: AsyncParsableCommand {
         // Execute generation
         let standardOutputBefore = FileState(of: standardOutputURL)
         let strategy = MTLFileSystemStrategy(
-            basePath: output, options: generatorOptions, standardOutput: .capture)
+            basePath: output, options: generatorOptions(settings: settings), standardOutput: .capture)
         let generator = MTLGenerator(
             module: mtlModule, generationStrategy: strategy, options: mtlOptions(settings: settings),
             serviceProviders: [parameters] + inputs.services)
@@ -412,7 +417,8 @@ struct GenerateCommand: AsyncParsableCommand {
             throw ValidationError.generationFailed(error.localizedDescription)
         }
         GenerationWarningReport.write(generator.statistics.warnings)
-        try await writeStandardOutput(of: strategy, before: standardOutputBefore)
+        try await writeStandardOutput(
+            of: strategy, before: standardOutputBefore, encoding: outputEncodingOptions.encoding(settings: settings))
 
         // Display results
         if verbose {
@@ -449,10 +455,11 @@ struct GenerateCommand: AsyncParsableCommand {
             print("\n=== Executing Generation ===")
         }
         var step = GenerationStep(
-            templates: .templateSet(templateSet, codeStyle: codeStyle.codeStyle), templatePaths: templateURLs,
+            templates: .templateSet(templateSet, codeStyle: codeStyle.codeStyle(settings: settings)), templatePaths: templateURLs,
             parameters: parameters, outputDirectory: URL(fileURLWithPath: output),
-            generatorOptions: generatorOptions, mtlOptions: mtlOptions(settings: settings))
+            generatorOptions: generatorOptions(settings: settings), mtlOptions: mtlOptions(settings: settings))
         step.templateEncoding = encodingOptions.encoding(settings: settings)
+        step.codeStyleIsConfigured = codeStyle.codeStyleIsConfigured(settings: settings)
         let verbose = self.verbose
         let result = try await step.run(
             arguments: inputs.arguments, models: inputs.models, resourceSet: inputs.resourceSet,
@@ -462,7 +469,8 @@ struct GenerateCommand: AsyncParsableCommand {
         let standardOutputFile = standardOutputURL.standardizedFileURL
         try writeStandardOutput(
             result.standardOutput,
-            writtenByRun: result.files.contains { $0.standardizedFileURL == standardOutputFile })
+            writtenByRun: result.files.contains { $0.standardizedFileURL == standardOutputFile },
+            encoding: outputEncodingOptions.encoding(settings: settings))
 
         if verbose {
             print("\n=== Generation Complete ===")
@@ -475,12 +483,17 @@ struct GenerateCommand: AsyncParsableCommand {
         }
     }
 
-    /// The options of the generator, from the command line.
-    private var generatorOptions: MTLGeneratorOptions {
-        MTLGeneratorOptions(
+    /// The options of the generator, from the command line and the settings of a run.
+    ///
+    /// - Parameter settings: The preset, configuration file and container scope of the run.
+    /// - Returns: The options, whose default charset is the output encoding of the run.
+    private func generatorOptions(settings: SemanticsSettings) -> MTLGeneratorOptions {
+        var options = MTLGeneratorOptions(
             forceOverwrite: forceOverwrite,
             redirectionPattern: diff && !forceOverwrite ? TemplateSetConstants.diffRedirectionPattern : nil,
             templateSearchPaths: templatePathOptions.templatePaths)
+        options.defaultCharset = outputEncodingOptions.encoding(settings: settings).name
+        return options
     }
 
     /// Creates the output directory if it does not exist.
@@ -529,7 +542,7 @@ struct GenerateCommand: AsyncParsableCommand {
             }
 
             // First pass: register metamodels (--metamodel files and metamodel --model files)
-            let metamodelOptions = formatOptions.ecoreLoadOptions(settings: settings)
+            let metamodelOptions = formatOptions.ecoreLoadOptions(settings: settings, encodingOptions: encodingOptions)
             await MultiLevelSupport.registerFormats()
             var metamodelModels = Set<Int>()
             for (index, modelPath) in model.enumerated() where await MetamodelRegistration.holdsMetamodel(at: modelPath) {
@@ -571,9 +584,10 @@ struct GenerateCommand: AsyncParsableCommand {
                 }
 
                 let options = ModelIO.LoadOptions(requiresMetamodel: false, enableDebugging: debugOptions.debug)
-                var resource = try await ModelIO.load(
-                    url: modelURL, format: format,
-                    resourceSet: format == .json ? settings.makeResourceSet() : resourceSet, options: options
+                var resource = try await TextDocumentLoading.load(
+                    url: modelURL, path: modelPath, format: format,
+                    resourceSet: format == .json ? settings.makeResourceSet() : resourceSet, options: options,
+                    encoding: metamodelOptions.textEncoding
                 ).resource
                 var isDeepView = false
                 if let level = deepViewOptions.level,
@@ -670,10 +684,14 @@ extension GenerateCommand {
     /// - Parameters:
     ///   - strategy: The file system strategy used for generation.
     ///   - before: The state of the standard output file before the generation.
+    ///   - encoding: The encoding of the file (default: UTF-8).
     /// - Throws: An error if the file cannot be written.
-    func writeStandardOutput(of strategy: MTLFileSystemStrategy, before: FileState) async throws {
+    func writeStandardOutput(
+        of strategy: MTLFileSystemStrategy, before: FileState, encoding: TextEncoding = .utf8
+    ) async throws {
         try writeStandardOutput(
-            await strategy.standardOutput, writtenByRun: FileState(of: standardOutputURL) != before)
+            await strategy.standardOutput, writtenByRun: FileState(of: standardOutputURL) != before,
+            encoding: encoding)
     }
 
     /// Writes the text written outside any file block to the standard output file, or prints it.
@@ -686,15 +704,18 @@ extension GenerateCommand {
     /// - Parameters:
     ///   - text: The text written outside any file block, or `nil` if none was kept.
     ///   - writtenByRun: Whether the run wrote the standard output file with a `[file]` block.
-    /// - Throws: An error if the file cannot be written.
-    func writeStandardOutput(_ text: String?, writtenByRun: Bool) throws {
+    ///   - encoding: The encoding of the file (default: UTF-8). The text printed on standard
+    ///     output is not affected.
+    /// - Throws: An error if the file cannot be written, or if the encoding cannot hold a
+    ///   character of the text.
+    func writeStandardOutput(_ text: String?, writtenByRun: Bool, encoding: TextEncoding = .utf8) throws {
         guard let text, text.contains(where: { !$0.isWhitespace }) else { return }
         if printStandardOutput {
             print(text, terminator: "")
             return
         }
         guard !writtenByRun else { return }
-        try text.write(to: standardOutputURL, atomically: true, encoding: .utf8)
+        try OutputFile.write(text, to: standardOutputURL.path, encoding: encoding)
     }
 }
 

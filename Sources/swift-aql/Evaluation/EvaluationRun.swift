@@ -61,7 +61,8 @@ struct EvaluationRun: Sendable {
         let text = try source.text(encoding: options.encodingOptions.encoding(settings: settings))
         var loader = ModelLoader(
             metamodels: options.metamodelOptions.metamodels, settings: settings,
-            metamodelOptions: options.formatOptions.ecoreLoadOptions(settings: settings))
+            metamodelOptions: options.formatOptions.ecoreLoadOptions(
+                settings: settings, encodingOptions: options.encodingOptions))
         loader.deepViewLevel = options.deepViewOptions.level
         let loaded = try await loader.load(models)
         let evaluator = await ExpressionEvaluator(

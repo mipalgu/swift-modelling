@@ -52,6 +52,10 @@ struct ApplyCommand: AsyncParsableCommand {
 
             \(SwiftHenshinCommand.encodingDiscussion)
 
+            \(SwiftHenshinCommand.configurationDiscussion)
+
+            \(SwiftHenshinCommand.outputEncodingDiscussion)
+
             Exit statuses: 0 if the unit applied, 2 if it did not (nothing is written), 1 for \
             any other error, such as a missing parameter or an expression that cannot be \
             evaluated (the model is then left as it was), and 64 for an invalid command line.
@@ -126,6 +130,9 @@ struct ApplyCommand: AsyncParsableCommand {
     /// The options with which the module is read.
     @OptionGroup var moduleOptions: ModuleOptions
 
+    /// The character encoding of the model file written.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
+
     /// Checks the combination of options.
     ///
     /// - Throws: A validation error if the iteration limit is not positive, or
@@ -141,9 +148,19 @@ struct ApplyCommand: AsyncParsableCommand {
 
     /// The engine options that the command line asks for.
     var engineOptions: EngineOptions {
+        engineOptions(settings: SemanticsSettings())
+    }
+
+    /// The engine options of a run.
+    ///
+    /// - Parameter settings: The settings of the run, whose configuration file gives the
+    ///   overrides of matching that the command line leaves open.
+    /// - Returns: The engine options.
+    func engineOptions(settings: SemanticsSettings) -> EngineOptions {
         matchingOptions.engineOptions(
             EngineOptions(
-                deterministic: !(nondeterministic || seed != nil), randomSeed: seed, iterationLimit: iterationLimit))
+                deterministic: !(nondeterministic || seed != nil), randomSeed: seed, iterationLimit: iterationLimit),
+            settings: settings)
     }
 
     /// Applies the unit and writes the result.
@@ -152,7 +169,8 @@ struct ApplyCommand: AsyncParsableCommand {
     ///   `HenshinError` for other failures.
     @MainActor
     func run() async throws {
-        let loader = moduleOptions.loader
+        let settings = try moduleOptions.settings()
+        let loader = moduleOptions.loader(settings: settings)
         let log = loader.log
         let loaded = try await loader.load(module)
         let transformationUnit = try loaded.unit(named: unit)
@@ -162,7 +180,7 @@ struct ApplyCommand: AsyncParsableCommand {
         let values = try await ParameterArguments.values(
             arguments, parameters: transformationUnit.parameters, in: target.resource)
         log.progress("applying \(unit)")
-        let result = try await HenshinEngine(options: engineOptions).apply(
+        let result = try await HenshinEngine(options: engineOptions(settings: settings)).apply(
             unit: transformationUnit.id, of: loaded.module, to: target.resource, parameters: values)
         log.report(result.diagnostics, file: module)
         let formatter = await ValueFormatter.current(target.resource)
@@ -180,7 +198,9 @@ struct ApplyCommand: AsyncParsableCommand {
         if dryRun {
             parameterLines.forEach { print($0) }
         } else if let output {
-            try await ModelFile.save(target.resource, to: output)
+            try await ModelFile.save(
+                target.resource, to: output,
+                encoding: outputEncodingOptions.encoding(configuration: settings.configuration))
             log.progress("wrote \(output)")
             parameterLines.forEach { print($0) }
         } else {

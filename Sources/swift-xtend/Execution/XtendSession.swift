@@ -26,6 +26,9 @@ struct XtendSession {
     /// The program that the sources declare.
     let program: XtendProgram
 
+    /// The character encoding of the files that the command writes.
+    let outputEncoding: TextEncoding
+
     /// The classes that the sources declare, in source order.
     var classes: [XtendClass] { program.parseResults.flatMap(\.file.classes) }
 
@@ -47,7 +50,8 @@ struct XtendSession {
         for path in options.models where !FileManager.default.fileExists(atPath: path) {
             throw SwiftXtendError.modelNotFound(path)
         }
-        let loadOptions = options.formatOptions.ecoreLoadOptions(settings: settings)
+        var loadOptions = options.formatOptions.ecoreLoadOptions(settings: settings)
+        loadOptions.textEncoding = encoding
         let resourceSet = settings.makeResourceSet()
         for metamodel in options.metamodelOptions.metamodels {
             if options.verbose { report("Registering metamodel \(metamodel)") }
@@ -71,7 +75,9 @@ struct XtendSession {
         FileDiagnosticReport.write(program.diagnostics)
         let errors = program.errors.count
         guard errors == 0 else { throw SwiftXtendError.invalidProgram(errors) }
-        return XtendSession(resourceSet: resourceSet, models: models, program: program)
+        return XtendSession(
+            resourceSet: resourceSet, models: models, program: program,
+            outputEncoding: options.outputEncodingOptions.encoding(settings: settings))
     }
 
     /// Loads one model into a resource set.
@@ -95,9 +101,9 @@ struct XtendSession {
             return resource
         }
         let format = try ModelFileFormat.detectedInstanceFormat(of: url)
-        return try await ModelIO.load(
-            url: url, format: format, resourceSet: resourceSet,
-            options: ModelIO.LoadOptions(requiresMetamodel: false)
+        return try await TextDocumentLoading.load(
+            url: url, path: path, format: format, resourceSet: resourceSet,
+            options: ModelIO.LoadOptions(requiresMetamodel: false), encoding: options.textEncoding
         ).resource
     }
 

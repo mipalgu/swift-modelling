@@ -46,7 +46,8 @@ extension GenerationPipeline {
         progress(GenerationProgressUpdate(message: "Assembling the \(language) templates"))
         let templateSet = try TemplateSet.assemble(language: language, templatePaths: options.templatePaths)
         defer { templateSet.remove() }
-        let layout = try templateSet.descriptor.layoutConfiguration(forStyle: options.codeStyle)
+        let layout = try templateSet.descriptor.layoutConfiguration(
+            forStyle: options.codeStyle, isConfigured: options.codeStyleIsConfigured)
 
         progress(GenerationProgressUpdate(message: "Loading \(source.lastPathComponent)"))
         let resourceSet = ResourceSet(defaultContainerLookupScope: options.containerLookupScope)
@@ -89,6 +90,7 @@ extension GenerationPipeline {
             templateSearchPaths: options.templatePaths.map(\.path))
         if options.forceOverwrite { generatorOptions.redirectionPattern = nil }
         generatorOptions.layout = layout
+        generatorOptions.defaultCharset = options.outputEncoding.name
 
         progress(GenerationProgressUpdate(message: "Generating \(language) code", total: total))
         let output = try await TemplateRun.run(

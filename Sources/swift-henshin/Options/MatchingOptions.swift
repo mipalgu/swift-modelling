@@ -6,6 +6,7 @@
 //
 import ArgumentParser
 import Henshin
+import ModellingCommandLine
 
 /// Whether the dangling condition of every rule is overridden, and how.
 ///
@@ -91,9 +92,38 @@ struct MatchingOptions: ParsableArguments, Sendable {
     /// - Parameter options: The options to start from (default options).
     /// - Returns: The options with the dangling condition and injectivity overridden as given.
     func engineOptions(_ options: EngineOptions = EngineOptions()) -> EngineOptions {
+        engineOptions(options, settings: SemanticsSettings())
+    }
+
+    /// Whether every rule checks the dangling condition in a run.
+    ///
+    /// - Parameter settings: The settings of the run, whose configuration file is consulted.
+    /// - Returns: The override of the command line, else the `check-dangling` key of the
+    ///   configuration file, else `nil`, which leaves the condition to each rule.
+    func checksDangling(settings: SemanticsSettings) -> Bool? {
+        dangling?.checks ?? settings.configuration.checksDangling
+    }
+
+    /// Whether every rule matches injectively in a run.
+    ///
+    /// - Parameter settings: The settings of the run, whose configuration file is consulted.
+    /// - Returns: The override of the command line, else the `injective` key of the
+    ///   configuration file, else `nil`, which leaves injectivity to each rule.
+    func matchesInjectively(settings: SemanticsSettings) -> Bool? {
+        injectivity?.isInjective ?? settings.configuration.injectiveMatching
+    }
+
+    /// Engine options with the overrides of a run.
+    ///
+    /// - Parameters:
+    ///   - options: The options to start from.
+    ///   - settings: The settings of the run, whose configuration file is consulted.
+    /// - Returns: The options with the dangling condition and injectivity overridden as the
+    ///   command line, else the configuration file, says.
+    func engineOptions(_ options: EngineOptions = EngineOptions(), settings: SemanticsSettings) -> EngineOptions {
         var result = options
-        result.checkDangling = dangling?.checks
-        result.injectiveMatching = injectivity?.isInjective
+        result.checkDangling = checksDangling(settings: settings)
+        result.injectiveMatching = matchesInjectively(settings: settings)
         return result
     }
 }

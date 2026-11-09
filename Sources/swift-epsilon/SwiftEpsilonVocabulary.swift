@@ -5,6 +5,7 @@
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
 import EGL
+import ModellingCommandLine
 
 /// The names, markers and spellings that the swift-epsilon tool relies on.
 ///
@@ -72,7 +73,7 @@ enum SwiftEpsilonVocabulary {
         static let fix = "fix"
 
         /// The flag that makes unsatisfied critiques fail validation as well.
-        static let strict = "strict"
+        static let strict = ValidationOptionName.strict
 
         /// The flag that prints the trace of a transformation.
         static let trace = "trace"

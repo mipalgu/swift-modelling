@@ -59,6 +59,9 @@ struct ProgramOptions: ParsableArguments, Sendable {
     /// The character encoding of the Xtend source files.
     @OptionGroup var encodingOptions: SourceEncodingOptions
 
+    /// The character encoding of the files written.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
+
     /// Whether progress is reported on standard error.
     @Flag(name: [.customShort("v"), .customLong(SwiftXtendVocabulary.OptionName.verbose)], help: "Report progress on standard error")
     var verbose: Bool = false

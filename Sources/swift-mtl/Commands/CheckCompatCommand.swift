@@ -73,7 +73,7 @@ struct CheckCompatCommand: AsyncParsableCommand {
     ///   metamodels cannot be read.
     @MainActor
     func run() async throws {
-        try await compatibility.run { metamodels in
+        try await compatibility.run(encoding: encodingOptions.explicitEncoding) { metamodels in
             let sole = try metamodels.requireSole()
             try CompatibilityCheckOptions.requireModule(at: template)
             let parser = MTLParser(enableDebugging: false, encoding: encodingOptions.explicitEncoding)

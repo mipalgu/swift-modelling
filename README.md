@@ -17,16 +17,17 @@ the Acceleo Query Language (AQL), and aims to stay compatible with the Eclipse t
 ## Features
 
 - **swift-ecore**: validate, inspect, compare, measure, query, create and convert Ecore
-  metamodels and models in XMI and JSON, including their OCL invariants
+  metamodels and models in XMI and JSON, including their OCL invariants, and read metamodels in
+  KM3, EMOF, Emfatic, OCLinEcore, Xcore, and MetaDepth notations
 - **Code generation**: Eclipse-compatible generator models (`.genmodel`) and model code in Java,
-  Swift, C and C++, from template sets that a new language can join without Swift code
+  Swift, C and C++, from template sets
 - **swift-atl**: run, check and analyse ATL transformations and queries written for Eclipse ATL
 - **swift-mtl**: generate text from MTL templates and template sets, merging with existing files
 - **swift-aql**: evaluate AQL expressions against models, interactively or in scripts
-- **swift-henshin**: apply, validate, analyse and explore Henshin graph transformations
-- **swift-epsilon**: run Epsilon EOL programs, EVL constraints, ETL transformations and EGL templates
+- **swift-henshin**: apply, validate, analyse, and explore Henshin graph transformations
+- **swift-epsilon**: run Epsilon EOL programs, EVL constraints, ETL transformations, and EGL templates
 - **swift-xtend**: run Xtend methods and generators on models
-- **Cross-platform**: macOS, Linux, Windows and WebAssembly
+- **Cross-platform**: macOS, Linux, Windows, and WebAssembly
 
 ## Requirements
 
@@ -42,7 +43,8 @@ brew tap mipalgu/tap
 brew install swift-modelling
 ```
 
-This installs `swift-ecore`, `swift-atl`, `swift-mtl` and `swift-aql`.
+This installs `swift-ecore`, `swift-atl`, `swift-mtl`, `swift-aql`, `swift-henshin`,
+`swift-epsilon` and `swift-xtend`.
 
 ### Windows
 
@@ -53,18 +55,18 @@ executables to your PATH.
 ### WebAssembly (WASI)
 
 Download `swift-modelling-vX.Y.Z-wasm32-wasi.tar.gz` and its SHA256 file from
-[GitHub Releases](https://github.com/mipalgu/swift-modelling/releases). The archive holds
-`swift-ecore.wasm`, `swift-atl.wasm`, `swift-mtl.wasm`, `swift-aql.wasm` and their resource
-directories; keep these directories beside the modules. Run a module with a WASI runtime, such as
-the `wasmkit` runtime of the Swift 6.4 toolchain:
+[GitHub Releases](https://github.com/mipalgu/swift-modelling/releases).
+The archive has one `.wasm` module for each of the seven tools and their resource directories.
+Run a module with a WASI runtime, such as the `wasmkit` runtime of the Swift 6.4 toolchain:
 
 ```bash
 cd swift-modelling-vX.Y.Z-wasm32-wasi
 wasmkit run --stack-size 67108864 --env TMPDIR=. --dir . swift-ecore.wasm --help
 ```
 
-`--dir .` grants access to the extracted resources and to the models in that directory, and
-`TMPDIR=.` keeps generation scratch files there. Grant access to other directories as needed.
+`--dir .` grants access to the models and their extracted resources.
+`TMPDIR=.` keeps generation scratch files there.
+Grant access to other directories as needed.
 
 ## Building from Source
 
@@ -148,6 +150,47 @@ swift-aql evaluate --model company-data.xmi --expression "company.departments.na
 swift-aql query company-model.xmi --query "self.employees" --context company1
 ```
 
+### swift-henshin
+
+```bash
+# Apply a rule of a Henshin module to a model and write the result
+swift-henshin apply depot.henshin depot.xmi -u addParcel \
+  --param binName=A --param code=P3 --param weight=4 -o depot-out.xmi
+
+# Check a module without applying it
+swift-henshin validate depot.henshin
+
+# Find the conflicts and dependencies of its rules
+swift-henshin analyse depot.henshin
+```
+
+### swift-epsilon
+
+```bash
+# Run an EOL program against a model
+swift-epsilon eol run report.eol --model Bank=bank.xmi -m Bank.ecore
+
+# Check a model against EVL constraints
+swift-epsilon evl validate rules.evl --model Bank=bank.xmi -m Bank.ecore
+
+# Transform a model with ETL
+swift-epsilon etl transform bank2ledger.etl --model Bank=bank.xmi \
+  --target Ledger=ledger.xmi -m Bank.ecore -m Ledger.ecore
+
+# Generate text from an EGL template
+swift-epsilon egl generate accounts.egl --model Bank=bank.xmi -m Bank.ecore -o accounts.txt
+```
+
+### swift-xtend
+
+```bash
+# Call a method of an Xtend class on a model and print its result
+swift-xtend run Report.xtend --model library.xmi --metamodel Library.ecore --method describe
+
+# Run an Xtend generator over a model
+swift-xtend generate Catalogue.xtend --model library.xmi --metamodel Library.ecore --output out
+```
+
 ## Documentation
 
 The [Swift Modelling documentation](https://mipalgu.github.io/swift-modelling/) describes every
@@ -162,6 +205,12 @@ introduce each tool step by step.
   MTL templates and template sets
 - [swift-aql](https://mipalgu.github.io/swift-modelling/documentation/swift_aql/index.html):
   AQL queries
+- [swift-henshin](https://mipalgu.github.io/swift-modelling/documentation/swift_henshin/index.html):
+  Henshin graph transformations and their analysis
+- [swift-epsilon](https://mipalgu.github.io/swift-modelling/documentation/swift_epsilon/index.html):
+  Epsilon EOL, EVL, ETL and EGL programs
+- [swift-xtend](https://mipalgu.github.io/swift-modelling/documentation/swift_xtend/index.html):
+  Xtend methods and generators
 - [SwiftModelling](https://mipalgu.github.io/swift-modelling/documentation/swiftmodelling/swiftmodelling/index.html):
   architecture, interoperability, and compatibility with earlier releases
 - [ModellingGenerators](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/index.html):

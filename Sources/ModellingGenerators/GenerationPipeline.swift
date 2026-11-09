@@ -122,13 +122,32 @@ public enum GenerationPipeline {
         do {
             try FileManager.default.createDirectory(
                 at: output.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try await GenModelResource.save(target, to: output)
+            try await save(target, to: output, encoding: options.outputEncoding)
         } catch {
             throw GenerationError.outputFailed(output.path, String(describing: error))
         }
         var result = await summary(of: target, resourceSet: resourceSet, url: output, reloaded: reloaded)
         result.decodingWarnings = transformation.decodingWarnings
         return result
+    }
+
+    /// Writes a generator model in an encoding.
+    ///
+    /// UTF-8 writes the generator model as `GenModelResource.save(_:to:rootLayout:)` does. Any
+    /// other encoding names itself in the XML declaration and refers to a character that it
+    /// cannot hold by number; the document is encoded completely before the file is written.
+    ///
+    /// - Parameters:
+    ///   - resource: The resource holding the generator model.
+    ///   - url: The file to write.
+    ///   - encoding: The encoding of the file.
+    /// - Throws: `TextEncodingError` if a character that the encoding cannot hold stands where
+    ///   XML allows no character reference, or the error of the serialiser or the file system.
+    private static func save(_ resource: Resource, to url: URL, encoding: TextEncoding) async throws {
+        guard encoding != .utf8 else { return try await GenModelResource.save(resource, to: url) }
+        let text = try await GenModelResource.serialised(resource, for: url)
+        let data = try encoding.encode(xmlDocument: text)
+        try data.write(to: url, options: FileURIHandler.writesAtomically ? .atomic : [])
     }
 
     /// The compliance levels that generator models support.

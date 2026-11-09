@@ -35,6 +35,8 @@ struct EOLRunCommand: AsyncParsableCommand {
 
             \(SourceEncodingOptions.discussion(reader: "the program and the modules it imports"))
 
+            \(OutputEncodingOptions.discussion(writer: "the stored models"))
+
             \(SwiftEpsilonCommand.exitDiscussion)
             """
     )

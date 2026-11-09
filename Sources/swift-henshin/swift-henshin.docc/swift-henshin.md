@@ -61,7 +61,14 @@ swift-henshin apply <module> <model> --unit <name> [options]
   rule match the same object
 - `-m`, `--metamodel <file.ecore>` - A metamodel to register before the module is read
   (repeatable)
+- `--output-encoding <name>` - The character encoding of the model file that `--output`
+  writes, such as `ISO-8859-1` or `windows-1252` (default: UTF-8). An XML model names the
+  encoding in its declaration and writes a character that the encoding cannot hold as a numeric
+  character reference; JSON is always written in UTF-8, with a warning on standard error
 - `--encoding <name>` - The character encoding of a `.henshin_text` module
+- `--config <file>`, `--no-config` - Read the named configuration file instead of the
+  `.swift-modelling.json` found from the current directory, or read none (see Configuration File
+  below)
 - `-v`, `--verbose` - Report progress on standard error
 
 **Parameters.** A value is converted to the declared type of its parameter: an integer for
@@ -271,6 +278,8 @@ swift-henshin explore <module> <model> [options]
   application conditions (repeatable)
 - `--deadlock` - Check that no state is a deadlock
 - `--dot <file.dot>` - Write the state space as a Graphviz graph
+- `--output-encoding <name>` - The character encoding of the Graphviz file (default: UTF-8); a
+  character that the encoding cannot hold is an error that names the file, line and column
 - `--workers <n>` - The number of states expanded at once (default: 4)
 - `--check-dangling`, `--no-dangling-check`, `--injective`, `--non-injective` - As for `apply`
 - `-m`, `--metamodel <file.ecore>`, `--encoding <name>`, `-v`, `--verbose` - As for `apply`
@@ -341,6 +350,9 @@ swift-henshin convert <module> [<output.henshin_text>] [options]
 - `-o`, `--output <file>` - The Henshin Text file to write, instead of the second argument;
   without either, the document is printed on standard output
 - `--force` - Replace the output file if it exists
+- `--output-encoding <name>` - The character encoding of the file written (default: UTF-8); a
+  character that the encoding cannot hold is an error that names the file, line and column, and
+  no file is written
 - `-m`, `--metamodel <file.ecore>`, `--encoding <name>`, `-v`, `--verbose` - As for `apply`
 
 A `.henshin` or `.henshin_text` module is written as a `.henshin_text` document in canonical
@@ -372,6 +384,37 @@ its extension names, or else in the format of its contents.
 A `.henshin_text` module is read as UTF-8; a file that is not valid UTF-8 is read as
 ISO-8859-1 instead, with a warning on standard error that names the place of the first byte that
 is not UTF-8. `--encoding` names the encoding instead, such as `ISO-8859-1` or `windows-1252`.
+
+Files are written in UTF-8. `--output-encoding` names another encoding for the model that
+`apply` writes, the Henshin Text document that `convert` writes and the Graphviz file that
+`explore` writes; standard output is not affected.
+
+## Configuration File
+
+`apply`, `explore`, `analyse`, `convert` and `validate` read the first `.swift-modelling.json` in
+the current directory or a parent directory, up to the directory that holds `.git`, as the other
+modelling tools do; `--config <file>` reads the named file instead, and `--no-config` reads none.
+`translate` reads no module and no configuration file. The keys of the file give the options of
+the same names, and an option given on the command line overrides its key:
+
+| Key | Option | Commands |
+|--|--|--|
+| `encoding` | `--encoding <name>` | `apply`, `explore`, `analyse`, `convert`, `validate` |
+| `output-encoding` | `--output-encoding <name>` | `apply`, `explore`, `convert` |
+| `check-dangling` | `--check-dangling` (`true`), `--no-dangling-check` (`false`) | `apply`, `explore`, `analyse` |
+| `injective` | `--injective` (`true`), `--non-injective` (`false`) | `apply`, `explore` |
+
+```json
+{
+  "check-dangling": true,
+  "injective": true,
+  "output-encoding": "ISO-8859-1"
+}
+```
+
+The other keys of the file, such as those of `swift-atl` and `swift-mtl`, are ignored, but an
+unknown key or an invalid value stops the command with an error that names the file, the key and
+the value. Without a configuration file, or with `--no-config`, only the command line applies.
 
 ## Exit Statuses
 

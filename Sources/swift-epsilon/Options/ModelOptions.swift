@@ -71,8 +71,8 @@ struct TargetOptions: ParsableArguments, Sendable {
 /// The command line options that control how a program runs.
 ///
 /// They pass parameters to the program, limit the depth of its operation calls, choose the
-/// configuration file and the character encoding of its source files, and turn on verbose
-/// output.
+/// configuration file, the character encoding of its source files and of the files written,
+/// and turn on verbose output.
 struct ExecutionOptions: ParsableArguments, Sendable {
     /// The parameters of the program, as `name=value`.
     @Option(
@@ -108,6 +108,9 @@ struct ExecutionOptions: ParsableArguments, Sendable {
 
     /// The character encoding of the source files.
     @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// The character encoding of the files written.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
 
     /// Creates the options with nothing given.
     init() {}

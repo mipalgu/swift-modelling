@@ -84,7 +84,7 @@ struct CheckCompatCommand: AsyncParsableCommand {
     ///   ``ModellingCommandLine/CompatibilityVerdict/failureExitStatus`` if the transformation
     ///   or a metamodel cannot be read, or a metamodel is not one of the module header.
     func run() async throws {
-        try await compatibility.run { metamodels in
+        try await compatibility.run(encoding: encodingOptions.explicitEncoding) { metamodels in
             let module = try await module()
             try metamodels.requireDeclared(in: ATLFootprintExtractor.roles(of: module).keys)
             return ReuseChecker.check(

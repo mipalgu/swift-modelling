@@ -53,7 +53,7 @@ public enum SourceFile {
 }
 
 /// An error that prevents a source file from being read.
-public enum SourceFileError: Error, Sendable, Equatable, LocalizedError {
+public enum SourceFileError: Error, Sendable, Equatable, LocalizedError, CustomStringConvertible {
     /// The file is not valid text in the encoding that was given for it.
     ///
     /// - Parameters:
@@ -68,4 +68,8 @@ public enum SourceFileError: Error, Sendable, Equatable, LocalizedError {
             return "Cannot read \(path): the file is not valid \(encoding.name) text"
         }
     }
+
+    /// The message of ``errorDescription``, so that a tool that prints the error as it is
+    /// names the file and the encoding too.
+    public var description: String { errorDescription ?? "" }
 }

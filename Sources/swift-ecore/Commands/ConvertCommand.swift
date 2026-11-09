@@ -60,7 +60,11 @@ struct ConvertCommand: AsyncParsableCommand {
 
             \(ReferenceStyleOptions.discussion(written: "outputs"))
 
-            \(SourceEncodingOptions.discussion(reader: EncodingVocabulary.encodedDocuments, configurable: false))
+            \(SourceEncodingOptions.discussion(reader: EncodingVocabulary.encodedDocuments))
+
+            \(OutputEncodingOptions.discussion(writer: OutputEncodingVocabulary.converted))
+
+            \(ConfigurationVocabulary.conversionDiscussion)
             """
     )
 
@@ -109,9 +113,23 @@ struct ConvertCommand: AsyncParsableCommand {
     /// The character encoding of the documents in text formats.
     @OptionGroup var encodingOptions: SourceEncodingOptions
 
-    /// The options with which the documents and metamodels are read, in the encoding of
-    /// `--encoding`.
-    private var loadOptions: EcoreLoadOptions { formatOptions.ecoreLoadOptions(encoding: encodingOptions.explicitEncoding) }
+    /// The configuration file whose keys give the options that the command line leaves open.
+    @OptionGroup var configurationOptions: ConfigurationFileOptions
+
+    /// The character encoding of the files that the command writes.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
+
+    /// The options with which the documents and metamodels are read.
+    ///
+    /// Each option is the one given on the command line, else the value of its key in the
+    /// configuration file, else its default.
+    ///
+    /// - Returns: The options of the readers, in the encoding of the run.
+    /// - Throws: ``ModellingConfigurationError`` if the configuration file cannot be read or is
+    ///   not valid.
+    private func configuredLoadOptions() throws -> EcoreLoadOptions {
+        formatOptions.ecoreLoadOptions(settings: try configurationOptions.settings(), encodingOptions: encodingOptions)
+    }
 
     /// The Complete OCL documents that constrain the metamodels.
     @OptionGroup var completeOCLOptions: CompleteOCLOptions
@@ -141,7 +159,11 @@ struct ConvertCommand: AsyncParsableCommand {
     ///
     /// - Throws: `ConversionError` if conversion fails, or the output format does not suit a
     ///   metamodel or a model.
+    ///   Also ``ModellingConfigurationError`` if the configuration file cannot be read or is not valid,
+    ///   and `OutputFileError` if the encoding of the output cannot hold one of its characters.
     func run() async throws {
+        let loadOptions = try configuredLoadOptions()
+        let oclDocuments = completeOCLOptions.documents(settings: try configurationOptions.settings())
         let outputPath = try resolvedOutputPath()
         if verbose {
             print("Converting: \(inputPath) -> \(outputPath)")
@@ -189,7 +211,7 @@ struct ConvertCommand: AsyncParsableCommand {
         // Register metamodels, if any, for both reading and writing
         await MultiLevelSupport.registerFormats()
         var resourceSet = try await metamodelOptions.resourceSet(
-            applying: completeOCLOptions.documents, verbose: verbose, options: loadOptions)
+            applying: oclDocuments, verbose: verbose, options: loadOptions)
         let linguistic = MultiLevelSupport.holdsLinguisticInstances(inputURL)
         if linguistic {
             let linguisticSet = resourceSet ?? ResourceSet()
@@ -232,9 +254,9 @@ struct ConvertCommand: AsyncParsableCommand {
         }
         let isMetamodel = level != nil || convertedToMetamodel || !loaded.packages.isEmpty
         try Self.checkOutput(writeFormat, isMetamodel: isMetamodel, input: inputURL.lastPathComponent)
-        if completeOCLOptions.isGiven && !metamodelOptions.isGiven {
+        if !oclDocuments.isEmpty && !metamodelOptions.isGiven {
             try await MetamodelRegistration.applyCompleteOCL(
-                completeOCLOptions.documents, to: loaded.packages.isEmpty ? [] : [resource],
+                oclDocuments, to: loaded.packages.isEmpty ? [] : [resource],
                 in: resourceSet ?? ResourceSet(), verbose: verbose, encoding: loadOptions.textEncoding)
         }
         if validate {
@@ -243,9 +265,10 @@ struct ConvertCommand: AsyncParsableCommand {
 
         // Save output
         if verbose { print("Writing \(writeFormat.description)...") }
-        try await ModelIO.save(
-            resource, to: outputURL, format: writeFormat,
-            xmiOptions: referenceStyleOptions.serializationOptions, diagnostics: &diagnostics)
+        diagnostics.merge(
+            try await OutputFile.save(
+                resource, to: outputURL, format: writeFormat, xmiOptions: referenceStyleOptions.serializationOptions(settings: try configurationOptions.settings()),
+                encoding: outputEncodingOptions.encoding(settings: try configurationOptions.settings())))
         withExtendedLifetime(resourceSet) {}
         ConversionWarningReport.write(
             diagnostics, metamodelGiven: metamodelOptions.isGiven || deepModel != nil || isMetamodel)
@@ -341,7 +364,7 @@ struct ConvertCommand: AsyncParsableCommand {
             packages: loaded.packages, metamodels: await ModelDocument.registeredMetamodels(of: resourceSet),
             diagnostics: loaded.diagnostics)
         document.deepModel = deepModel
-        let options = ValidationOptions(levelCrossing: levelCrossingOptions.mode)
+        let options = ValidationOptions(levelCrossing: levelCrossingOptions.mode(settings: try configurationOptions.settings()))
         let outcome = await ModelChecker(document: document, options: options).check()
         let report = ValidationReport(
             document: document, metamodelPaths: metamodelOptions.metamodels, strict: false,

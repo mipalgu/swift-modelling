@@ -8,9 +8,9 @@
         - Use Melanee potency, which separates how long a feature lasts from where its value may change
         - Choose which references may cross levels
         - Convert the model to XMI and back, and export the metamodel of one level to Ecore
-        - Query the model with swift-aql and generate text from it with swift-mtl through a deep view
+        - Query the model with swift-aql, generate text from it with swift-mtl and transform it with swift-atl through a deep view
 
-        The tutorial assumes that swift-ecore, swift-aql and swift-mtl are on your search path and that you know the basics of Ecore metamodels, AQL and MTL. Every command runs in one directory, which starts empty.
+        The tutorial assumes that swift-ecore, swift-aql, swift-mtl and swift-atl are on your search path and that you know the basics of Ecore metamodels, AQL, MTL and ATL. Every command runs in one directory, which starts empty.
 
         @Image(source: "multi-level.svg", alt: "A chain of levels, each an instance of the level above")
     }
@@ -190,7 +190,7 @@
         }
     }
 
-    @Section(title: "Deep Views for AQL and MTL") {
+    @Section(title: "Deep Views for AQL, MTL and ATL") {
         @ContentAndMedia {
             Queries and templates written for Ecore models know classes and instances. A deep view presents one level of a multi-level model in these terms: every type above the level becomes a class, and the supertypes of a class include its type, so that `ProductType.allInstances()` finds the deep instances of `ProductType`, the products on the shelf. The package of the view is named after the level that types the chosen level. The services `clabjectName()`, `ontologicalType()` and `linguisticType()` give the name of a clabject, its type and its linguistic kind.
         }
@@ -226,6 +226,30 @@
                 @Code(name: "Terminal", file: ml-01-step-20-generate.sh)
 
                 `--deep-view 0` presents the model to the template as the deep view of the bottom level, so the template reads like any other MTL template over an Ecore model.
+            }
+
+            @Step {
+                Write the metamodel of a price list, whose entries name a product, its kind, its price and its GST.
+
+                @Code(name: "PriceList.ecore", file: ml-01-step-21-price-list.ecore)
+
+                The price list is an ordinary Ecore metamodel with one level of types.
+            }
+
+            @Step {
+                Write an ATL transformation that turns every product into an entry of the price list.
+
+                @Code(name: "Shelf2PriceList.atl", file: ml-01-step-22-shelf2pricelist.atl)
+
+                The source metamodel needs no `-- @path` directive: `--deep-view` binds it to the package of the view, whatever its name. Here it is named `Bookshop`, after that package. The rule matches the deep instances of `ProductType`, and calls `clabjectName()` and `ontologicalType()` as the template does.
+            }
+
+            @Step {
+                Run the transformation over the deep view of the bottom level.
+
+                @Code(name: "Terminal", file: ml-01-step-23-transform.sh)
+
+                `--deep-view 0` replaces the multi-level source model by the deep view of level 0 and binds the source metamodel to its package. The view is read-only: the transformation reads the products and writes an ordinary model of the price list.
             }
         }
     }

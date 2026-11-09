@@ -57,12 +57,13 @@ enum ModelFile {
     /// - Parameters:
     ///   - resource: The resource that holds the model.
     ///   - path: The path of the file to write.
-    /// - Throws: The error of the serialiser or of the file system.
-    static func save(_ resource: Resource, to path: String) async throws {
+    ///   - encoding: The character encoding of the file (default: UTF-8).
+    /// - Throws: ``OutputFileError`` if the encoding cannot hold a character of the model, and
+    ///   the error of the serialiser or of the file system.
+    static func save(_ resource: Resource, to path: String, encoding: TextEncoding = .utf8) async throws {
         let url = URL(fileURLWithPath: path)
-        var diagnostics = ConversionDiagnostics()
-        try await ModelIO.save(
-            resource, to: url, format: ModelFileFormat.instanceFormat(of: url), diagnostics: &diagnostics)
+        let diagnostics = try await OutputFile.save(
+            resource, to: url, format: ModelFileFormat.instanceFormat(of: url), encoding: encoding)
         ConversionWarningReport.write(diagnostics, metamodelGiven: true)
     }
 

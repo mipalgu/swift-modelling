@@ -102,6 +102,15 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
             the source models that are given, without running the transformation or writing \
             targets.
 
+            --deep-view <level> presents each multi-level source model, such as a MetaDepth \
+            document (.mdepth) or an XMI or JSON document of its linguistic instances, as the \
+            read-only deep view of that level, and binds its source metamodel to the package of \
+            the view, whatever name the module header gives that metamodel. The helpers \
+            clabjectName(), ontologicalType(), linguisticType(), level(), potency(), \
+            deepTypes(), typeAtLevel(n), slotValue(name) and isDeepInstanceOf(type) on objects, \
+            and deepInstances() and instancesAtLevel(n) on types, are available. Other source \
+            models are read as usual; at least one source model must hold a multi-level model.
+
             The Ecore and generator model metamodels are built in: a transformation can name them \
             with -- @nsURI directives, without a metamodel file. Targets that are instances of a \
             built-in metamodel are written in the layout of the Eclipse Modeling Framework, with \
@@ -117,6 +126,8 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
             \(ATLSemanticsOptions.discussion(reader: "the transformation"))
 
             \(SourceEncodingOptions.discussion(reader: "the transformation"))
+
+            \(OutputEncodingOptions.discussion(writer: "the target models"))
 
             \(SemanticsOptions.discussion())
             """
@@ -251,8 +262,14 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
     /// The character encoding of the ATL source.
     @OptionGroup var encodingOptions: SourceEncodingOptions
 
+    /// The character encoding of the target models.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
+
     /// How metamodels in KM3 and in grammar formats are read.
     @OptionGroup var formatOptions: MetamodelFormatOptions
+
+    /// The level whose deep view replaces each multi-level source model, if any.
+    @OptionGroup var deepViewOptions: DeepViewOptions
 
     /// Checks that the command line does not ask for both quiet and verbose output.
     ///
@@ -294,17 +311,31 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
                 print("\n=== Loading Transformation Module ===")
             }
 
+            // Handle deprecated --sources/--targets flags
+            let sourceFiles = source.isEmpty ? sources : source
+            let targetFiles = target.isEmpty ? targets : target
+
             let atlSource = try readATLSource(at: transformation)
+            let deepViews = try await deepViewSources(for: sourceFiles, settings: settings)
+            var registry = try await builtInMetamodelRegistry()
             let parser = ATLParser(options: atlOptions, enableDebugging: debug)
-            let parsed = try await parser.parseContent(
+            if let deepViews {
+                let header = await parser.parseDiagnosing(
+                    atlSource, name: URL(fileURLWithPath: transformation).path, metamodelRegistry: registry
+                ).module
+                deepViews.register(in: &registry, header: header, sourceArguments: sourceFiles)
+            }
+            var parsed = try await parser.parseContent(
                 atlSource,
                 filename: URL(fileURLWithPath: transformation).path,
                 searchPaths: searchPaths,
                 continueAfterErrors: continueAfterErrors || metamodelFiles.isGiven,
-                metamodelRegistry: try await builtInMetamodelRegistry())
+                metamodelRegistry: registry)
+            parsed = try deepViews?.binding(parsed, mapping: deepViewMapping(parsed, sourceFiles: sourceFiles)) ?? parsed
             var module = try await metamodelFiles.bind(
                 parsed, requiresAll: metamodelFiles.isGiven && !continueAfterErrors, verbose: verbose,
-                options: formatOptions.ecoreLoadOptions(settings: settings))
+                options: formatOptions.ecoreLoadOptions(settings: settings, encodingOptions: encodingOptions))
+            module = try deepViews?.binding(module, mapping: deepViewMapping(module, sourceFiles: sourceFiles)) ?? module
             if refining && !module.isRefining {
                 module = module.refining()
             }
@@ -327,10 +358,6 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
                 print("  - Helpers: \(module.helpers.count)")
             }
 
-            // Handle deprecated --sources/--targets flags
-            let sourceFiles = source.isEmpty ? sources : source
-            let targetFiles = target.isEmpty ? targets : target
-
             if !sources.isEmpty || !targets.isEmpty {
                 if verbose {
                     print("\nNote: --sources and --targets flags are deprecated. Use --source and --target instead.")
@@ -338,7 +365,9 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
             }
 
             if validateOnly {
-                try await checkOnly(module, sourceFiles: sourceFiles, targetFiles: targetFiles, settings: settings)
+                try await checkOnly(
+                    module, sourceFiles: sourceFiles, targetFiles: targetFiles, settings: settings,
+                    deepViews: deepViews)
                 return
             }
 
@@ -358,14 +387,22 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
                 verbose: verbose
             )
 
-            let sourceModels = try await loadModelsFromMapping(
-                sourceMapping,
-                metamodels: module.sourceMetamodels,
-                containerLookupScope: settings.containerLookupScope,
-                explicitFormat: inputFormat,
-                verbose: verbose,
-                debug: debug
-            )
+            let sourceModels: OrderedDictionary<String, Resource>
+            if let deepViews {
+                sourceModels = try await deepViews.loadSources(
+                    sourceMapping, metamodels: module.sourceMetamodels,
+                    containerLookupScope: settings.containerLookupScope, explicitFormat: inputFormat,
+                    verbose: verbose, debug: debug)
+            } else {
+                sourceModels = try await loadModelsFromMapping(
+                    sourceMapping,
+                    metamodels: module.sourceMetamodels,
+                    containerLookupScope: settings.containerLookupScope,
+                    explicitFormat: inputFormat,
+                    verbose: verbose,
+                    debug: debug
+                )
+            }
 
             if verbose {
                 print("Loaded \(sourceModels.count) source model(s)")
@@ -406,8 +443,11 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
             }
 
             let unsetFeatureReads = unsetFeatureOptions.unsetFeatures(settings: settings)
+            let nativeHelpers = deepViews?.helpers ?? []
             let virtualMachine = await MainActor.run {
-                ATLVirtualMachine(module: module, options: atlOptions, unsetFeatureReads: unsetFeatureReads)
+                ATLVirtualMachine(
+                    module: module, options: atlOptions, unsetFeatureReads: unsetFeatureReads,
+                    nativeHelpers: nativeHelpers)
             }
 
             // Enable debug mode if requested
@@ -436,7 +476,8 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
                 verbose: verbose,
                 emfLayoutAliases: Set(
                     module.targetMetamodels.filter { isBuiltIn($0.value) }.map(\.key)),
-                xmiOptions: referenceStyleOptions.serializationOptions
+                xmiOptions: referenceStyleOptions.serializationOptions(settings: settings),
+                encoding: outputEncodingOptions.encoding(settings: settings)
             )
             withExtendedLifetime(targetResourceSet) {}
 
@@ -470,10 +511,12 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
     ///   - sourceFiles: The source model files from the command line, possibly none.
     ///   - targetFiles: The target model files from the command line, possibly none.
     ///   - settings: The settings of the run, whose container lookup scope applies.
+    ///   - deepViews: The deep views that `--deep-view` presents for the source models, if any.
     /// - Throws: ``TransformationError/invalidTransformation(_:)`` for problems of the module,
     ///   and the errors of mapping and loading the models.
     private func checkOnly(
-        _ module: ATLModule, sourceFiles: [String], targetFiles: [String], settings: SemanticsSettings
+        _ module: ATLModule, sourceFiles: [String], targetFiles: [String], settings: SemanticsSettings,
+        deepViews: ATLDeepViewSources? = nil
     ) async throws {
         let problems = TransformationCheck.problems(of: module)
         guard problems.isEmpty else { throw TransformationError.invalidTransformation(problems) }
@@ -482,10 +525,17 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
             let mapping = try mapFilesToAliases(
                 filePaths: sourceFiles, aliases: Array(module.sourceMetamodels.keys), modelType: "source",
                 verbose: verbose)
-            loadedModels = try await loadModelsFromMapping(
-                mapping, metamodels: module.sourceMetamodels, containerLookupScope: settings.containerLookupScope,
-                explicitFormat: inputFormat, verbose: verbose, debug: debug
-            ).count
+            if let deepViews {
+                loadedModels = try await deepViews.loadSources(
+                    mapping, metamodels: module.sourceMetamodels, containerLookupScope: settings.containerLookupScope,
+                    explicitFormat: inputFormat, verbose: verbose, debug: debug
+                ).count
+            } else {
+                loadedModels = try await loadModelsFromMapping(
+                    mapping, metamodels: module.sourceMetamodels, containerLookupScope: settings.containerLookupScope,
+                    explicitFormat: inputFormat, verbose: verbose, debug: debug
+                ).count
+            }
         }
         if !targetFiles.isEmpty {
             _ = try mapFilesToAliases(
@@ -502,5 +552,33 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
             print("  Refining mode")
         }
         print("  Source models loaded: \(loadedModels)")
+    }
+
+    /// Reads the multi-level source models when `--deep-view` is given.
+    ///
+    /// - Parameters:
+    ///   - sourceFiles: The source model arguments of the command line.
+    ///   - settings: The settings of the run.
+    /// - Returns: The deep views of the multi-level source models, or `nil` without `--deep-view`.
+    /// - Throws: The errors of ``ATLDeepViewSources/load(level:sourceArguments:explicitFormat:settings:encoding:verbose:)``.
+    private func deepViewSources(for sourceFiles: [String], settings: SemanticsSettings) async throws
+        -> ATLDeepViewSources?
+    {
+        guard let level = deepViewOptions.level else { return nil }
+        return try await ATLDeepViewSources.load(
+            level: level, sourceArguments: sourceFiles, explicitFormat: inputFormat, settings: settings,
+            encoding: encodingOptions.encoding(settings: settings), verbose: verbose)
+    }
+
+    /// Maps the source model arguments to the source models of a module, without printing.
+    ///
+    /// - Parameters:
+    ///   - module: The module whose header declares the source models.
+    ///   - sourceFiles: The source model arguments of the command line.
+    /// - Returns: The path of each source model, by alias.
+    /// - Throws: `TransformationError.invalidModelArgument` if the arguments do not fit the module.
+    private func deepViewMapping(_ module: ATLModule, sourceFiles: [String]) throws -> OrderedDictionary<String, String> {
+        try mapFilesToAliases(
+            filePaths: sourceFiles, aliases: Array(module.sourceMetamodels.keys), modelType: "source", verbose: false)
     }
 }

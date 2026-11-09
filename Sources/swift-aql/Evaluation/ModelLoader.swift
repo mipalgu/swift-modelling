@@ -105,9 +105,9 @@ struct ModelLoader {
                 if format != .metadepth, MultiLevelSupport.holdsLinguisticInstances(url) {
                     await MultiLevelSupport.registerLinguisticMetamodel(in: resourceSet)
                 }
-                resource = try await ModelIO.load(
-                    url: url, format: format, resourceSet: resourceSet,
-                    options: ModelIO.LoadOptions(requiresMetamodel: false)
+                resource = try await TextDocumentLoading.load(
+                    url: url, path: path, format: format, resourceSet: resourceSet,
+                    options: ModelIO.LoadOptions(requiresMetamodel: false), encoding: metamodelOptions.textEncoding
                 ).resource
             }
             let identifiers = XMIIdentifierIndex(data: (try? Data(contentsOf: url)) ?? Data())

@@ -1,0 +1,13 @@
+-- @path PriceList=PriceList.ecore
+module Shelf2PriceList;
+create OUT : PriceList from IN : Bookshop;
+
+rule Product2Entry {
+  from p : Bookshop!ProductType
+  to e : PriceList!Entry (
+    product <- p.clabjectName(),
+    kind <- p.ontologicalType().name,
+    price <- p.price,
+    gst <- p.gst
+  )
+}

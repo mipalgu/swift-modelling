@@ -35,6 +35,8 @@ struct RunCommand: AsyncParsableCommand {
 
             \(SourceEncodingOptions.discussion(reader: "the Xtend source files"))
 
+            \(OutputEncodingOptions.discussion(writer: "the model written by --output"))
+
             \(SemanticsOptions.discussion())
 
             \(SwiftXtendCommand.statusDiscussion)
@@ -119,7 +121,8 @@ struct RunCommand: AsyncParsableCommand {
                 }
                 if programOptions.verbose { XtendSession.report("Writing \(output)") }
                 let url = URL(fileURLWithPath: output)
-                try await ModelIO.save(resource, to: url, format: ModelFileFormat.instanceFormat(of: url))
+                try await OutputFile.save(
+                    resource, to: url, format: ModelFileFormat.instanceFormat(of: url), encoding: session.outputEncoding)
             }
         } catch {
             throw SwiftXtendError.execution(error)

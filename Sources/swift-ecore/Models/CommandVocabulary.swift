@@ -6,6 +6,7 @@
 //
 import ArgumentParser
 import ECore
+import ModellingCommandLine
 
 // MARK: - Output Formats
 
@@ -176,4 +177,59 @@ enum EncodingVocabulary {
     static let encodedDocuments = "the documents in text formats that the command reads, including its metamodels "
         + "and Complete OCL documents, such as KM3, Emfatic, Xcore, OCLinEcore, Complete OCL, ASDL, Langium, "
         + "Xtext, SDF3 and MetaDepth"
+
+    /// The documents to which `--encoding` applies for the create command.
+    static let createdMetamodels = "the metamodels in text formats given with --\(MetamodelOptions.optionName), "
+        + "such as KM3, Emfatic, Xcore, OCLinEcore, ASDL, Langium, Xtext and SDF3"
+}
+
+// MARK: - Configuration file
+
+/// The keys of the configuration file that the commands honour, and the words that describe them.
+enum ConfigurationVocabulary {
+    /// The keys of the options that choose how metamodels in KM3 and in grammar formats are read.
+    static let metamodelFormatKeys = [
+        KM3Options.optionName, GrammarImportOptions.OptionName.packageName, GrammarImportOptions.OptionName.nsURI,
+        GrammarImportOptions.OptionName.nsPrefix, GrammarImportOptions.OptionName.asdlEnumerations,
+        GrammarImportOptions.OptionName.langiumTypes, GrammarImportOptions.OptionName.sdf3Labels,
+    ]
+
+    /// The keys that the commands which read documents in text formats honour.
+    static let readingKeys = [SourceEncodingOptions.optionName] + metamodelFormatKeys + [CompleteOCLOptions.optionName]
+
+    /// The keys that the validate command honours.
+    static let validationKeys = readingKeys + [
+        MTLSemanticsOptions.OptionName.strictAQL, LevelCrossingOptions.optionName, OutputEncodingOptions.optionName,
+        ValidationOptionName.strict, ValidationOptionName.requireExplicitValues,
+    ]
+
+    /// The keys that the genmodel command honours.
+    static let genModelKeys = [
+        SemanticsOptions.OptionName.semantics, SemanticsOptions.OptionName.containerScope, UnsetFeatureOptions.optionName,
+        OutputEncodingOptions.optionName, GenModelDefaultsOptions.OptionName.defaults,
+        GenModelDefaultsOptions.OptionName.rootExtendsClass, GenModelDefaultsOptions.OptionName.operationReflection,
+        GenModelDefaultsOptions.OptionName.importOrganizing, GenModelDefaultsOptions.OptionName.basePackage,
+        GenModelDefaultsOptions.OptionName.prefix, GenModelDefaultsOptions.OptionName.jdkLevel,
+    ]
+
+    /// The keys that the create command honours.
+    static let creationKeys = [SourceEncodingOptions.optionName] + metamodelFormatKeys + [OutputEncodingOptions.optionName]
+
+    /// The keys that the commands which read documents in text formats and write files honour.
+    static let writingKeys = readingKeys + [OutputEncodingOptions.optionName]
+
+    /// The paragraph on the configuration file of the commands that read documents in text formats.
+    static let readingDiscussion = ConfigurationFileOptions.discussion(keys: readingKeys)
+
+    /// The paragraph on the configuration file of the commands that read documents in text
+    /// formats and write files.
+    static let writingDiscussion = ConfigurationFileOptions.discussion(keys: writingKeys)
+
+    /// The paragraph on the configuration file of the commands that also read multi-level models.
+    static let multiLevelDiscussion = ConfigurationFileOptions.discussion(
+        keys: writingKeys + [LevelCrossingOptions.optionName])
+
+    /// The paragraph on the configuration file of the convert command, which also writes XMI.
+    static let conversionDiscussion = ConfigurationFileOptions.discussion(
+        keys: writingKeys + [LevelCrossingOptions.optionName, ReferenceStyleOptions.optionName])
 }

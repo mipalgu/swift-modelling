@@ -17,7 +17,7 @@
  **/]
 [template public generate(genModel : GenModel)]
 [for (p : OclAny | genModel.allGenPackages()->collect(g | g.ecorePackage))]
-[file (p.moduleName() + '.tla', false, 'UTF-8')][p.metamodelModule()/][/file]
+[file (p.moduleName() + '.tla', false)][p.metamodelModule()/][/file]
 [/for]
 [/template]
 
@@ -25,8 +25,8 @@
  * Writes the module of a model and its TLC configuration, named after the model file.
  **/]
 [template public generateModel(p : EPackage, root : EObject)]
-[file (instanceModuleName(modelName) + '.tla', false, 'UTF-8')][p.modelModule(root, instanceModuleName(modelName))/][/file]
-[file (instanceModuleName(modelName) + '.cfg', false, 'UTF-8')][p.modelConfiguration(root, instanceModuleName(modelName))/][/file]
+[file (instanceModuleName(modelName) + '.tla', false)][p.modelModule(root, instanceModuleName(modelName))/][/file]
+[file (instanceModuleName(modelName) + '.cfg', false)][p.modelConfiguration(root, instanceModuleName(modelName))/][/file]
 [/template]
 
 [**

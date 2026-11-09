@@ -32,7 +32,7 @@
  **/]
 [template public generateXMLProcessorFile(genPackage : GenPackage)]
 [if (genPackage.hasXMLProcessor())]
-[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.xmlProcessorClassName() + '.java', false, 'UTF-8')][genPackage.xmlProcessorClass()/][/file]
+[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.xmlProcessorClassName() + '.java', false)][genPackage.xmlProcessorClass()/][/file]
 [/if]
 [/template]
 
@@ -41,8 +41,8 @@
  **/]
 [template public generateResourceFiles(genPackage : GenPackage)]
 [if (genPackage.hasResource())]
-[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.resourceFactoryClassName() + '.java', false, 'UTF-8')][genPackage.resourceFactoryClass()/][/file]
-[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.resourceClassName() + '.java', false, 'UTF-8')][genPackage.resourceClass()/][/file]
+[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.resourceFactoryClassName() + '.java', false)][genPackage.resourceFactoryClass()/][/file]
+[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.resourceClassName() + '.java', false)][genPackage.resourceClass()/][/file]
 [/if]
 [/template]
 
@@ -62,7 +62,7 @@
  **/]
 [template public generateProjectFiles(genModel : GenModel)]
 [if (genModel.hasModelPluginClass())]
-[file (genModel.modelPluginPackageName().packagePath() + '/' + genModel.modelPluginClassName() + '.java', false, 'UTF-8')][genModel.pluginClass()/][/file]
+[file (genModel.modelPluginPackageName().packagePath() + '/' + genModel.modelPluginClassName() + '.java', false)][genModel.pluginClass()/][/file]
 [/if]
 [if (genModel.hasPluginSupport() and layoutIncludesSourceRoot())]
 [file (genModel.projectFilePath(genModel.modelBundleLocalization() + '.properties'), createUnlessForced(), 'ISO-8859-1', 'merge=false')][genModel.pluginProperties()/][/file]

@@ -74,6 +74,10 @@ struct ExploreCommand: AsyncParsableCommand {
 
             \(SwiftHenshinCommand.encodingDiscussion)
 
+            \(SwiftHenshinCommand.configurationDiscussion)
+
+            \(SwiftHenshinCommand.outputEncodingDiscussion)
+
             Exit statuses: 0 if every property holds (or none is given), 2 if a property does \
             not hold, 3 if none fails but an outcome is inconclusive because the state space \
             is incomplete, 1 for any other error, and 64 for an invalid command line.
@@ -181,6 +185,9 @@ struct ExploreCommand: AsyncParsableCommand {
     /// The options with which the module is read.
     @OptionGroup var moduleOptions: ModuleOptions
 
+    /// The character encoding of the Graphviz file written.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
+
     /// Checks that the bounds are positive.
     ///
     /// - Throws: A validation error for a bound or a number of workers below 1, or a negative
@@ -199,7 +206,8 @@ struct ExploreCommand: AsyncParsableCommand {
     ///   exploration and of the checks.
     @MainActor
     func run() async throws {
-        let loader = moduleOptions.loader
+        let settings = try moduleOptions.settings()
+        let loader = moduleOptions.loader(settings: settings)
         let log = loader.log
         let loaded = try await loader.load(module)
         let ruleNames = NameList.names(rules)
@@ -212,14 +220,14 @@ struct ExploreCommand: AsyncParsableCommand {
             maximumStates: maxStates ?? ExplorationOptions().maximumStates, maximumDepth: maxDepth,
             maximumObjects: maxObjects, equivalence: identity.equivalence,
             parameterValues: try await parameterValues(of: loaded, in: start.resource),
-            engineOptions: matchingOptions.engineOptions(), concurrency: workers ?? ExplorationOptions().concurrency)
+            engineOptions: matchingOptions.engineOptions(settings: settings), concurrency: workers ?? ExplorationOptions().concurrency)
         let explorer = try StateSpaceExplorer(
             module: loaded.module, rules: ruleNames.isEmpty && !unitNames.isEmpty ? [] : ruleNames.nilIfEmpty,
             units: unitNames, options: options)
         let ticker = ProgressTicker(verbose: moduleOptions.verbose)
         let space = try await ticker.run("exploring the state space") { try await explorer.explore(from: start.resource) }
         let checker = ModelChecker(
-            stateSpace: space, resourceSet: loaded.resourceSet, engineOptions: matchingOptions.engineOptions())
+            stateSpace: space, resourceSet: loaded.resourceSet, engineOptions: matchingOptions.engineOptions(settings: settings))
         var results: [CheckResult] = []
         for expression in invariant { results.append(try await checker.checkInvariant(.aql(expression))) }
         for pattern in patterns { results.append(try await checker.checkInvariant(.forbidden(pattern))) }
@@ -228,8 +236,9 @@ struct ExploreCommand: AsyncParsableCommand {
         let report = ExplorationReport(space: space, results: results)
         report.lines.forEach { print($0) }
         if let dot {
-            try space.dot(highlighted: report.highlightedStates).appending("\n").write(
-                to: URL(fileURLWithPath: dot), atomically: true, encoding: .utf8)
+            try OutputFile.write(
+                space.dot(highlighted: report.highlightedStates).appending("\n"), to: dot,
+                encoding: outputEncodingOptions.encoding(configuration: settings.configuration))
             log.progress("wrote \(dot)")
         }
         let status = report.exitStatus

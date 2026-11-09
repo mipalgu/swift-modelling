@@ -54,7 +54,11 @@ struct GenerateCommand: AsyncParsableCommand {
 
             \(MTLSemanticsOptions.discussion(reader: "the templates"))
 
-            \(SourceEncodingOptions.discussion(reader: "the templates and the modules they import"))
+            \(SourceEncodingOptions.discussion(
+                reader: "the templates, the modules they import and the models in a text format, such as KM3, "
+                    + "that --model names"))
+
+            \(OutputEncodingVocabulary.generated)
 
             \(SemanticsOptions.discussion())
             """
@@ -141,8 +145,12 @@ struct GenerateCommand: AsyncParsableCommand {
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
 
-    /// The character encoding of the templates and the modules they import.
+    /// The character encoding of the templates, the modules they import and the models in a text
+    /// format that `--model` names.
     @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// The character encoding of the generated files.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
 
     /// Directories whose template files replace the bundled templates.
     @Option(
@@ -241,14 +249,16 @@ struct GenerateCommand: AsyncParsableCommand {
             templatePaths: templateURLs, forceOverwrite: forceOverwrite, diff: diff,
             mtlOptions: preset.mtlOptions)
         if useModelDirectory { options.includeSourceRoot = true }
-        codeStyle.apply(to: &options)
+        codeStyle.apply(to: &options, settings: settings)
         mtlSemanticsOptions.apply(to: &options, settings: settings)
         unsetFeatureOptions.apply(to: &options, settings: settings)
         letTypeMismatchOptions.apply(to: &options, settings: settings)
         settings.apply(to: &options)
         options.templateEncoding = encodingOptions.encoding(settings: settings)
+        options.modelEncoding = options.templateEncoding
+        options.outputEncoding = outputEncodingOptions.encoding(settings: settings)
         var importOptions = GenModelImportOptions(atlOptions: preset.atlOptions)
-        genModelDefaults.apply(to: &importOptions)
+        genModelDefaults.apply(to: &importOptions, settings: settings)
         unsetFeatureOptions.apply(to: &importOptions, settings: settings)
         settings.apply(to: &importOptions)
         let bar = GenerationProgressBar(verbose: verbose)

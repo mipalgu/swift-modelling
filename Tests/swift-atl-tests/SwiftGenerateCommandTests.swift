@@ -120,4 +120,37 @@ struct SwiftGenerateCommandTests {
         #expect(!style.succeeded)
         #expect(style.stderr.contains("emf"))
     }
+
+    @Test("ignores the code style of the configuration file, as Swift offers none")
+    @MainActor
+    func configuredCodeStyleIgnored() async throws {
+        let fixture = try LibraryFixture.make()
+        defer { fixture.remove() }
+        try FileManager.default.createDirectory(
+            at: fixture.scratch.appendingPathComponent(".git"), withIntermediateDirectories: true)
+        try #"{ "code-style": "emf" }"#.write(
+            to: fixture.scratch.appendingPathComponent(ConfigurationTests.configurationFile),
+            atomically: true, encoding: .utf8)
+        let output = swiftOutput(fixture)
+
+        let result = try await executeSwiftATL(
+            command: "generate",
+            arguments: [fixture.ecore.path, "--language", "swift"] + Self.goldenOptions + ["-o", output.path],
+            workingDirectory: fixture.scratch)
+        let explicit = try await executeSwiftATL(
+            command: "generate",
+            arguments: [fixture.ecore.path, "--language", "swift", "--code-style", "emf", "-o", output.path + "-x"],
+            workingDirectory: fixture.scratch)
+
+        #expect(result.succeeded, "\(result.stderr)")
+        let expected = LibraryFixture.files(below: Self.expectedSwift)
+        #expect(LibraryFixture.files(below: output) == expected)
+        for path in expected {
+            let actual = try? String(contentsOf: output.appendingPathComponent(path), encoding: .utf8)
+            let golden = try String(contentsOf: Self.expectedSwift.appendingPathComponent(path), encoding: .utf8)
+            #expect(actual == golden, "\(path) differs from the golden file")
+        }
+        #expect(!explicit.succeeded)
+        #expect(explicit.stderr.contains("emf"))
+    }
 }

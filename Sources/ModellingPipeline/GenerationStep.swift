@@ -172,6 +172,16 @@ public struct GenerationStep: Sendable {
     /// alone, without a warning, and a template that is not valid in it stops the step.
     public var templateEncoding: TextEncoding? = nil
 
+    /// Whether the code style of ``Templates/templateSet(_:locator:codeStyle:)`` comes from a
+    /// configuration, such as the `code-style` key of a configuration file, rather than an
+    /// explicit choice.
+    ///
+    /// A configured code style applies only to a template set that offers code styles; a set
+    /// that offers none ignores it, whereas it rejects an explicit one. A configured name that a
+    /// set with code styles does not declare stops the step with
+    /// ``GenerationError/unknownCodeStyle(_:_:_:)``. The default is `false`.
+    public var codeStyleIsConfigured: Bool = false
+
     /// Creates a generation step whose templates behave as in version 0.6.
     ///
     /// The step carries `MTLOptions.legacy` with the given way of reading unset features.
@@ -261,7 +271,11 @@ public struct GenerationStep: Sendable {
             progress(GenerationProgressUpdate(message: "Assembling the \(reference) templates"))
             let set = try locator.assemble(templateSet: reference, templatePaths: templatePaths)
             defer { set.remove() }
-            if let layout = try set.descriptor.layoutConfiguration(forStyle: codeStyle) { options.layout = layout }
+            if let layout = try set.descriptor.layoutConfiguration(
+                forStyle: codeStyle, isConfigured: codeStyleIsConfigured)
+            {
+                options.layout = layout
+            }
             if let delimiter = set.descriptor.options.lineDelimiter { options.lineDelimiter = delimiter }
             let data = try await TemplateRun.loadDataModels(of: set, into: resourceSet)
             let parsed = try await TemplateRun.parseMainModule(of: set, encoding: templateEncoding)

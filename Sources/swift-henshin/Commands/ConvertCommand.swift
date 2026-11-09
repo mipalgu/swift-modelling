@@ -7,6 +7,7 @@
 import ArgumentParser
 import Foundation
 import Henshin
+import ModellingCommandLine
 
 /// The command that converts a module into Henshin Text.
 ///
@@ -44,6 +45,10 @@ struct ConvertCommand: AsyncParsableCommand {
 
             \(SwiftHenshinCommand.encodingDiscussion)
 
+            \(SwiftHenshinCommand.configurationDiscussion)
+
+            \(SwiftHenshinCommand.outputEncodingDiscussion)
+
             Exit statuses: 0 on success, 1 if the module cannot be read, the output exists or \
             the conversion is not supported, and 64 for an invalid command line.
 
@@ -75,6 +80,9 @@ struct ConvertCommand: AsyncParsableCommand {
     /// The options with which the module is read.
     @OptionGroup var moduleOptions: ModuleOptions
 
+    /// The character encoding of the file written.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
+
     /// The output file that the command line names, if any.
     var outputPath: String? { outputArgument ?? output }
 
@@ -103,7 +111,8 @@ struct ConvertCommand: AsyncParsableCommand {
                 throw SwiftHenshinError.outputExists(outputPath)
             }
         }
-        let loader = moduleOptions.loader
+        let settings = try moduleOptions.settings()
+        let loader = moduleOptions.loader(settings: settings)
         let loaded = try await loader.load(input)
         let writing = HenshinText.write(loaded.module, packages: loaded.packages)
         loader.log.report(writing.diagnostics, file: input)
@@ -111,7 +120,8 @@ struct ConvertCommand: AsyncParsableCommand {
             print(writing.text, terminator: writing.text.hasSuffix("\n") ? "" : "\n")
             return
         }
-        try writing.text.write(to: URL(fileURLWithPath: outputPath), atomically: true, encoding: .utf8)
+        try OutputFile.write(
+            writing.text, to: outputPath, encoding: outputEncodingOptions.encoding(configuration: settings.configuration))
         loader.log.progress("wrote \(outputPath)")
     }
 }

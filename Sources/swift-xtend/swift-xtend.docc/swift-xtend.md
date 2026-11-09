@@ -24,6 +24,7 @@ outside the documented subset is reported with its position instead of being ign
 - **Model Formats**: models in XMI, JSON and UML are read and written by file extension or contents
 - **Metamodels**: Ecore and the other metamodel formats of the registry are registered with `--metamodel`
 - **Source Encodings**: UTF-8 with a reported fallback to ISO-8859-1, or `--encoding`
+- **Output Encodings**: UTF-8, or `--output-encoding`
 
 ## Commands
 
@@ -45,7 +46,8 @@ swift-xtend run <file.xtend> --method <method> [options]
 - `--argument <value>` - A text, number or Boolean argument of the method (repeatable, in parameter order)
 - `--object <name>` - The name of the model object to pass for a parameter of a model class
 - `-o, --output <file>` - Write the model to this file, in the format that its extension names
-- `--encoding <name>` - The character encoding of the Xtend sources
+- `--encoding <name>` - The character encoding of the Xtend sources and of the metamodels and models in text formats, such as KM3
+- `--output-encoding <name>` - The character encoding of the model written with `--output` (default: UTF-8)
 - `--semantics <standard|legacy>`, `--config <file>`, `--no-config` - The behaviours of the languages and the configuration file
 - `-v, --verbose` - Report progress on standard error
 
@@ -117,7 +119,8 @@ program, such as those that `--include` adds, can then be helpers of the generat
 - `-m, --metamodel <file.ecore>` - A metamodel of the model (repeatable)
 - `--include <file.xtend>` - A further Xtend source file of the same program (repeatable)
 - `-q, --quiet` - Do not list the generated files
-- `--encoding <name>` - The character encoding of the Xtend sources
+- `--encoding <name>` - The character encoding of the Xtend sources and of the metamodels and models in text formats, such as KM3
+- `--output-encoding <name>` - The character encoding of the generated files (default: UTF-8)
 - `--semantics <standard|legacy>`, `--config <file>`, `--no-config` - The behaviours of the languages and the configuration file
 - `-v, --verbose` - Report each file as it is written on standard error
 
@@ -150,7 +153,20 @@ swift-xtend generate Generators.xtend --class SwiftGenerator --model library.xmi
 `windows-1252`. Without it, a source file is read as UTF-8, and a file that is not valid UTF-8 is
 read as ISO-8859-1 with a warning on standard error. With it, a file that is not valid in that
 encoding is an error. The `encoding` key of the configuration file names the encoding as well,
-and the option overrides it.
+and the option overrides it. The metamodels and models in text formats, such as KM3, Emfatic,
+Xcore, OCLinEcore, grammar formats or MetaDepth, are read in the same encoding, with the same
+fallback and errors; XMI, Ecore and JSON documents follow their own encoding rules.
+
+## Output Encodings
+
+Files are written in UTF-8. `--output-encoding` names another encoding, such as `latin1` or
+`windows-1252`, for the generated files of `generate` and the model that `run` writes with
+`--output`. A generated file that holds a character the encoding cannot represent is an error
+that names the file, line and column, and the file is not written. An XML model names the
+encoding in its declaration and writes such a character as a numeric character reference; a
+JSON model is always written in UTF-8, with a warning on standard error. Standard output is not
+affected. The `output-encoding` key of the configuration file names the encoding as well, and
+the option overrides it.
 
 ## Exit Statuses
 

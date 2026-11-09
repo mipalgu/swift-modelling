@@ -41,6 +41,8 @@ struct EVLValidateCommand: AsyncParsableCommand {
 
             \(SourceEncodingOptions.discussion(reader: "the module and the modules it imports"))
 
+            \(OutputEncodingOptions.discussion(writer: "the stored models"))
+
             \(SwiftEpsilonCommand.exitDiscussion) The command exits with status \
             \(SwiftEpsilonVocabulary.ExitStatus.unsatisfied) if a constraint is unsatisfied, or \
             with --\(SwiftEpsilonVocabulary.OptionName.strict) a critique, after it has printed \
@@ -58,11 +60,19 @@ struct EVLValidateCommand: AsyncParsableCommand {
         help: "Apply the first fix offered for each unsatisfied constraint or critique, then validate again")
     var fix: Bool = false
 
-    /// Whether unsatisfied critiques fail validation as well.
+    /// Whether unsatisfied critiques fail validation as well, as given on the command line, if
+    /// at all.
+    ///
+    /// `--strict` turns it on and `--no-strict` off, whatever the configuration file says.
     @Flag(
-        name: .customLong(SwiftEpsilonVocabulary.OptionName.strict),
+        name: .customLong(SwiftEpsilonVocabulary.OptionName.strict), inversion: .prefixedNo,
         help: "Fail when a critique is unsatisfied as well as when a constraint is")
-    var strict: Bool = false
+    var explicitStrict: Bool?
+
+    /// Whether `--strict` was given on the command line.
+    ///
+    /// The strictness of a run also depends on the `strict` key of the configuration file.
+    var strict: Bool { explicitStrict ?? false }
 
     /// The models to validate.
     @OptionGroup(title: "Models")
@@ -99,6 +109,7 @@ struct EVLValidateCommand: AsyncParsableCommand {
         }
         Console.writeLines(outcome.lines)
         try await workspace.store()
+        let strict = explicitStrict ?? configuration.settings.configuration.strict ?? false
         if outcome.fails(strict: strict) { throw ExitCode(SwiftEpsilonVocabulary.ExitStatus.unsatisfied) }
     }
 }

@@ -42,6 +42,8 @@ struct GenerateCommand: AsyncParsableCommand {
 
             \(SourceEncodingOptions.discussion(reader: "the Xtend source files"))
 
+            \(OutputEncodingOptions.discussion(writer: "the generated files"))
+
             \(SemanticsOptions.discussion())
 
             \(SwiftXtendCommand.statusDiscussion)
@@ -111,7 +113,8 @@ struct GenerateCommand: AsyncParsableCommand {
             let directories = try Self.configurationOption.values(from: outputConfigurations)
             let access = XtendDirectoryFileSystemAccess(
                 outputDirectory: URL(fileURLWithPath: output),
-                outputConfigurations: directories.mapValues { URL(fileURLWithPath: $0) })
+                outputConfigurations: directories.mapValues { URL(fileURLWithPath: $0) },
+                encoding: session.outputEncoding)
             let verbose = programOptions.verbose
             let log = GeneratedFileLog { update in
                 if verbose {

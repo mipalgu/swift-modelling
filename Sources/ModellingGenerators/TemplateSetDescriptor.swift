@@ -395,4 +395,28 @@ public struct TemplateSetDescriptor: Codable, Sendable, Equatable {
         }
         return style.layoutConfiguration
     }
+
+    /// The layout conversion for a code style that may come from a configuration.
+    ///
+    /// An explicit style, such as one given on the command line, is resolved as by
+    /// ``layoutConfiguration(forStyle:)``. A configured style, such as the `code-style` of a
+    /// configuration file, applies only if the set offers code styles: a set that declares none
+    /// ignores it, so that one configuration serves the template sets of several languages. A
+    /// configured style that a set with code styles does not declare is rejected like an
+    /// explicit one.
+    ///
+    /// - Parameters:
+    ///   - requested: The name of the style, or `nil` for the default style.
+    ///   - isConfigured: Whether the style comes from a configuration rather than an explicit
+    ///     choice.
+    /// - Returns: The layout conversion, or `nil` if no style applies and no default style
+    ///   exists, in which case the text stays as the templates write it.
+    /// - Throws: ``GenerationError/unknownCodeStyle(_:_:_:)`` if the style that applies is not a
+    ///   style of the set.
+    public func layoutConfiguration(
+        forStyle requested: String?, isConfigured: Bool
+    ) throws -> MTLLayoutConfiguration? {
+        let ignored = isConfigured && styles.isEmpty
+        return try layoutConfiguration(forStyle: ignored ? nil : requested)
+    }
 }

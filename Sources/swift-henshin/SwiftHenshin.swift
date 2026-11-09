@@ -70,8 +70,10 @@ struct SwiftHenshinCommand: AsyncParsableCommand {
         """
 
     /// A paragraph that describes the encoding of Henshin Text documents.
-    static let encodingDiscussion = SourceEncodingOptions.discussion(
-        reader: "a .henshin_text module", configurable: false)
+    static let encodingDiscussion = SourceEncodingOptions.discussion(reader: "a .henshin_text module")
+
+    /// A paragraph that describes the encoding of the files that a command writes.
+    static let outputEncodingDiscussion = OutputEncodingOptions.discussion(writer: "the files written")
 
     /// A paragraph that describes how parameter values are typed.
     static let parameterDiscussion = """
@@ -90,6 +92,14 @@ struct SwiftHenshinCommand: AsyncParsableCommand {
         condition of every rule: with it, a rule does not apply where deleting its objects \
         would leave a reference dangling; without it, such references are removed. \
         --injective and --non-injective override whether different nodes of a rule must \
-        match different objects. Without them, every rule keeps its own settings.
+        match different objects. Without them, every rule keeps its own settings, unless the \
+        \(MatchingOptionName.checkDangling) or \(MatchingOptionName.injective) key of the \
+        configuration file, true or false, overrides it.
         """
+
+    /// A paragraph that describes the configuration file of the commands that read modules.
+    static let configurationDiscussion = ConfigurationFileOptions.discussion(keys: [
+        SourceEncodingOptions.optionName, OutputEncodingOptions.optionName, MatchingOptionName.checkDangling,
+        MatchingOptionName.injective,
+    ]) + " A key that does not apply to the command is ignored."
 }

@@ -56,6 +56,8 @@ struct GenerateCommand: AsyncParsableCommand {
 
             \(SourceEncodingOptions.discussion(reader: "a transformation given with --transformations, the templates and the modules they import"))
 
+            \(OutputEncodingOptions.discussion(writer: "the generator model and of the generated files whose template names no charset"))
+
             \(SemanticsOptions.discussion())
 
             Bundled languages: \(availableLanguageList()). Verification targets: \
@@ -101,11 +103,15 @@ struct GenerateCommand: AsyncParsableCommand {
     var output: String?
 
     /// The base package of the root packages.
-    @Option(help: "The base package of the root packages")
+    @Option(
+        name: .customLong(GenModelDefaultsOptions.OptionName.basePackage),
+        help: "The base package of the root packages")
     var basePackage: String?
 
     /// The prefixes of packages, either `Name` or `package=Name`.
-    @Option(help: "A package prefix: Name for the root package, or package=Name for one package")
+    @Option(
+        name: .customLong(GenModelDefaultsOptions.OptionName.prefix),
+        help: "A package prefix: Name for the root package, or package=Name for one package")
     var prefix: [String] = []
 
     /// The name of the model project.
@@ -121,7 +127,9 @@ struct GenerateCommand: AsyncParsableCommand {
     var copyright: String?
 
     /// The compliance level of the generated code.
-    @Option(help: "The compliance level of the generated code, such as 17.0")
+    @Option(
+        name: .customLong(GenModelDefaultsOptions.OptionName.jdkLevel),
+        help: "The compliance level of the generated code, such as 17.0")
     var jdkLevel: String?
 
     /// The preset and the overrides of the generator model defaults.
@@ -155,6 +163,10 @@ struct GenerateCommand: AsyncParsableCommand {
     /// The character encoding of a transformation given with `--transformations`, of the
     /// templates and of the modules they import.
     @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// The character encoding of the generator model and of the generated files whose
+    /// template names no charset.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
 
     /// Directories whose template files replace the bundled templates.
     @Option(
@@ -256,13 +268,12 @@ struct GenerateCommand: AsyncParsableCommand {
     /// - Throws: ``ValidationError`` if the transformation location does not exist.
     func importOptions(settings: SemanticsSettings) throws -> GenModelImportOptions {
         var options = GenModelImportOptions(atlOptions: atlSemanticsOptions.atlOptions(settings: settings))
-        options.basePackage = basePackage
-        prefix.forEach { options.addPrefix($0) }
+        GenModelDefaultsOptions.applyProjectSettings(
+            basePackage: basePackage, prefixes: prefix, complianceLevel: jdkLevel, settings: settings, to: &options)
         options.modelProject = modelProject
         options.modelPluginID = modelPluginID
         options.copyright = copyright
-        options.complianceLevel = jdkLevel
-        genModelDefaults.apply(to: &options)
+        genModelDefaults.apply(to: &options, settings: settings)
         unsetFeatureOptions.apply(to: &options, settings: settings)
         settings.apply(to: &options)
         if let transformations {
@@ -272,6 +283,7 @@ struct GenerateCommand: AsyncParsableCommand {
             options.transformation = URL(fileURLWithPath: transformations)
         }
         options.transformationEncoding = encodingOptions.encoding(settings: settings)
+        options.outputEncoding = outputEncodingOptions.encoding(settings: settings)
         return options
     }
 
@@ -330,12 +342,13 @@ struct GenerateCommand: AsyncParsableCommand {
             templatePaths: templateURLs, forceOverwrite: forceOverwrite, diff: diff,
             mtlOptions: settings.preset.mtlOptions)
         if useModelDirectory { options.includeSourceRoot = true }
-        codeStyle.apply(to: &options)
+        codeStyle.apply(to: &options, settings: settings)
         mtlSemanticsOptions.apply(to: &options, settings: settings)
         unsetFeatureOptions.apply(to: &options, settings: settings)
         letTypeMismatchOptions.apply(to: &options, settings: settings)
         settings.apply(to: &options)
         options.templateEncoding = encodingOptions.encoding(settings: settings)
+        options.outputEncoding = outputEncodingOptions.encoding(settings: settings)
         let directory = URL(fileURLWithPath: output ?? Self.defaultOutputDirectory)
         if verbose {
             print("Generating \(language) code from: \(inputURL.path)")

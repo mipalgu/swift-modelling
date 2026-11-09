@@ -256,6 +256,12 @@ func cleanupTemporaryDirectory(_ url: URL) {
 
 // MARK: - Subprocess Execution
 
+/// The most bytes of standard output or standard error that a test reads from the tool.
+///
+/// The limit only bounds the buffer that collects the output, so it is set well above the
+/// longest help text or report that a test reads.
+let capturedOutputLimit = 1 << 20
+
 /// Executes a swift-ecore command and returns the result.
 ///
 /// - Parameters:
@@ -289,8 +295,8 @@ func executeSwiftEcore(
             arguments: Arguments(allArgs),
             environment: childEnvironment(environment),
             workingDirectory: workingDirectory.map { FilePath($0.path) },
-            output: .string(limit: 16384),
-            error: .string(limit: 16384)
+            output: .string(limit: capturedOutputLimit),
+            error: .string(limit: capturedOutputLimit)
         )
     }
 
@@ -321,7 +327,7 @@ func executeSwiftEcoreWithCombinedOutput(command: String, arguments: [String] = 
             .path(FilePath(executablePath)),
             arguments: Arguments([command] + arguments),
             environment: childEnvironment([:]),
-            output: .string(limit: 16384),
+            output: .string(limit: capturedOutputLimit),
             error: .combinedWithOutput
         )
     }

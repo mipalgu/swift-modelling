@@ -131,6 +131,15 @@ public struct GenModelImportOptions: Sendable, Equatable {
     /// bundled transformation is always read as UTF-8.
     public var transformationEncoding: TextEncoding? = nil
 
+    /// The character encoding in which the generator model is written.
+    ///
+    /// UTF-8 is the default. With another encoding, the XML declaration names it, and a
+    /// character that the encoding cannot hold is written as a numeric character reference,
+    /// such as `&#x20AC;`. A character that XML cannot refer to by number, such as one in an
+    /// element name, stops the import with ``GenerationError/outputFailed(_:_:)``, which names
+    /// the line and column of the character, and no file is written.
+    public var outputEncoding: TextEncoding = .utf8
+
     /// Creates options with the importer's defaults and the ATL behaviour of version 0.6.
     ///
     /// The options carry `ATLOptions.legacy`.

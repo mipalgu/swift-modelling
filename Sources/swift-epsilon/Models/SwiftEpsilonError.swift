@@ -4,6 +4,7 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import EMFBase
 import Foundation
 
 /// An error that stops swift-epsilon from running a program.
@@ -61,6 +62,11 @@ enum SwiftEpsilonError: Error, Equatable, CustomStringConvertible, LocalizedErro
     /// The associated value is the path as given on the command line.
     case outputNotDirectory(String)
 
+    /// An existing output file is not valid text in the encoding of the files written.
+    ///
+    /// The associated values are the path of the file and the encoding.
+    case notDecodable(String, TextEncoding)
+
     /// A description of the error for the reader of the command line.
     var description: String {
         switch self {
@@ -82,6 +88,8 @@ enum SwiftEpsilonError: Error, Equatable, CustomStringConvertible, LocalizedErro
             return "The target model '\(name)' needs a metamodel: give it with --metamodel"
         case .outputNotDirectory(let path):
             return "The output of an EGX module must be a directory: \(path)"
+        case .notDecodable(let path, let encoding):
+            return "Cannot merge into \(path): it is not valid \(encoding.name) text"
         }
     }
 

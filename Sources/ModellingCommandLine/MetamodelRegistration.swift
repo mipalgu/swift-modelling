@@ -234,8 +234,10 @@ public enum MetamodelRegistration {
     ///   URI under which each package that is registered is registered: its namespace URI or,
     ///   for a package without one in a format such as KM3, its name; the resource that holds
     ///   the packages; and the diagnostics of reading the file.
-    /// - Throws: ``MetamodelRegistrationError/fileNotFound(_:)`` if the file does not exist, or
-    ///   the error of the reader if the file cannot be loaded.
+    /// - Throws: ``MetamodelRegistrationError/fileNotFound(_:)`` if the file does not exist,
+    ///   ``SourceFileError/malformed(path:encoding:)`` if a document in a text format is not
+    ///   valid in the `textEncoding` of the options, or the error of the reader if the file
+    ///   cannot be loaded.
     private static func load(
         at path: String, options: EcoreLoadOptions, debug: Bool
     ) async throws -> LoadedMetamodel {
@@ -249,7 +251,12 @@ public enum MetamodelRegistration {
                 url: url, format: .ecore, resourceSet: resourceSet,
                 options: ModelIO.LoadOptions(ecoreLoadOptions: options, enableDebugging: true))
         }
-        let packages = try await ModelIO.registerMetamodels(at: [url], in: resourceSet, options: options)
+        let packages: [EPackage]
+        do {
+            packages = try await ModelIO.registerMetamodels(at: [url], in: resourceSet, options: options)
+        } catch TextDecodingError.malformed(let encoding) {
+            throw SourceFileError.malformed(path: path, encoding: encoding)
+        }
         let uri = URIReference.canonicalise(url.absoluteString)
         let resource = await resourceSet.getResource(uri: uri)
         let diagnostics = await resource?.loadDiagnostics ?? []
@@ -526,9 +533,14 @@ public enum MetamodelRegistration {
                 throw MetamodelRegistrationError.fileNotFound(path)
             }
             guard !resources.isEmpty else { throw MetamodelRegistrationError.nothingToConstrain(path) }
-            let applied = try await ModelIO.applyCompleteOCL(
-                at: URL(fileURLWithPath: path), to: resources, in: resourceSet,
-                options: ModelIO.LoadOptions(textEncoding: encoding))
+            let applied: CompleteOCLApplication
+            do {
+                applied = try await ModelIO.applyCompleteOCL(
+                    at: URL(fileURLWithPath: path), to: resources, in: resourceSet,
+                    options: ModelIO.LoadOptions(textEncoding: encoding))
+            } catch TextDecodingError.malformed(let malformed) {
+                throw SourceFileError.malformed(path: path, encoding: malformed)
+            }
             FileDiagnosticReport.write(applied.diagnostics, file: path, to: diagnosticOutput)
             if verbose {
                 print(appliedMessage(count: applied.appliedCount, document: path))

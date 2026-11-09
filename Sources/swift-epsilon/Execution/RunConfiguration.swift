@@ -33,6 +33,9 @@ struct RunConfiguration: Sendable {
     /// The character encoding of source files, or `nil` to read UTF-8 and fall back to ISO-8859-1.
     var encoding: TextEncoding?
 
+    /// The character encoding of the files that the run writes.
+    var outputEncoding = OutputEncodingOptions.defaultEncoding
+
     /// The settings of the run, which choose the container lookup scope of the models.
     var settings = SemanticsSettings()
 
@@ -71,7 +74,9 @@ struct RunConfiguration: Sendable {
         parameters = try ParameterValue.parameters(from: execution.parameters)
         maximumCallDepth = execution.maximumCallDepth
         encoding = execution.encodingOptions.encoding(settings: settings)
-        xmiOptions = models.referenceStyleOptions.serializationOptions
+        metamodelLoadOptions.textEncoding = encoding
+        outputEncoding = execution.outputEncodingOptions.encoding(settings: settings)
+        xmiOptions = models.referenceStyleOptions.serializationOptions(settings: settings)
         verbose = execution.verbose
     }
 }

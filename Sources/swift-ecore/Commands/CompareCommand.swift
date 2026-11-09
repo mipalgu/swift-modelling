@@ -47,7 +47,11 @@ struct CompareCommand: AsyncParsableCommand {
             The command succeeds whether or not the documents differ; with \
             --\(ComparisonVocabulary.exitCodeOption) it exits with status 1 if they do.
 
-            \(SourceEncodingOptions.discussion(reader: EncodingVocabulary.encodedDocuments, configurable: false))
+            \(SourceEncodingOptions.discussion(reader: EncodingVocabulary.encodedDocuments))
+
+            \(OutputEncodingOptions.discussion(writer: OutputEncodingVocabulary.report))
+
+            \(ConfigurationVocabulary.writingDiscussion)
             """
     )
 
@@ -68,9 +72,23 @@ struct CompareCommand: AsyncParsableCommand {
     /// The character encoding of the documents in text formats.
     @OptionGroup var encodingOptions: SourceEncodingOptions
 
-    /// The options with which the documents and metamodels are read, in the encoding of
-    /// `--encoding`.
-    private var loadOptions: EcoreLoadOptions { formatOptions.ecoreLoadOptions(encoding: encodingOptions.explicitEncoding) }
+    /// The configuration file whose keys give the options that the command line leaves open.
+    @OptionGroup var configurationOptions: ConfigurationFileOptions
+
+    /// The character encoding of the files that the command writes.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
+
+    /// The options with which the documents and metamodels are read.
+    ///
+    /// Each option is the one given on the command line, else the value of its key in the
+    /// configuration file, else its default.
+    ///
+    /// - Returns: The options of the readers, in the encoding of the run.
+    /// - Throws: ``ModellingConfigurationError`` if the configuration file cannot be read or is
+    ///   not valid.
+    private func configuredLoadOptions() throws -> EcoreLoadOptions {
+        formatOptions.ecoreLoadOptions(settings: try configurationOptions.settings(), encodingOptions: encodingOptions)
+    }
 
     /// The Complete OCL documents that constrain the metamodels.
     @OptionGroup var completeOCLOptions: CompleteOCLOptions
@@ -115,7 +133,11 @@ struct CompareCommand: AsyncParsableCommand {
     ///   ``DocumentError`` if a file cannot be read, `ExitCode` with status 1 if the documents
     ///   differ and `--exit-code` is given, or the error of the parser, the encoder or the
     ///   file system.
+    ///   Also ``ModellingConfigurationError`` if the configuration file cannot be read or is not valid,
+    ///   and `OutputFileError` if the encoding of the report cannot hold one of its characters.
     func run() async throws {
+        let loadOptions = try configuredLoadOptions()
+        let oclDocuments = completeOCLOptions.documents(settings: try configurationOptions.settings())
         try checkKinds(await MetamodelRegistration.documentHandler(at: originalPath)?.format,
                        await MetamodelRegistration.documentHandler(at: revisedPath)?.format)
         if verbose {
@@ -123,16 +145,17 @@ struct CompareCommand: AsyncParsableCommand {
             print("Revised: \(revisedPath)")
         }
         let original = try await ModelDocument.load(path: originalPath, metamodelOptions: metamodelOptions, verbose: verbose,
-            ecoreLoadOptions: loadOptions, completeOCL: completeOCLOptions.documents)
+            ecoreLoadOptions: loadOptions, completeOCL: oclDocuments)
         let revised = try await ModelDocument.load(path: revisedPath, metamodelOptions: metamodelOptions, verbose: verbose,
-            ecoreLoadOptions: loadOptions, completeOCL: completeOCLOptions.documents)
+            ecoreLoadOptions: loadOptions, completeOCL: oclDocuments)
         try checkKinds(original.format, revised.format)
         let report = await compare(original, revised)
         withExtendedLifetime((original, revised)) {}
 
         let text = format == .json ? try report.json() : report.text()
         if let output {
-            try text.write(to: URL(fileURLWithPath: output), atomically: true, encoding: .utf8)
+            let encoding = outputEncodingOptions.encoding(settings: try configurationOptions.settings())
+            try OutputFile.write(text, to: output, encoding: encoding, kind: format.documentKind)
             print(report.summary.text)
             print(ComparisonVocabulary.writtenConfirmation + output)
         } else {

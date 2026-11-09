@@ -16,7 +16,9 @@ extension GenerationPipeline {
     /// ``generate(genModelURL:language:outputDirectory:options:progress:)`` does. An Ecore model
     /// (`.ecore`) is imported into a temporary generator model first, as
     /// ``ecoreToGenModel(ecoreURLs:options:progress:)`` does, and the temporary model is removed
-    /// afterwards.
+    /// afterwards. The temporary model is written in UTF-8, whatever
+    /// ``GenModelImportOptions/outputEncoding`` says; the generated files follow
+    /// ``GenerationOptions/outputEncoding``.
     ///
     /// - Parameters:
     ///   - inputURL: The location of the `.genmodel` or `.ecore` file.
@@ -53,6 +55,7 @@ extension GenerationPipeline {
         defer { try? FileManager.default.removeItem(at: scratch) }
         var importing = importOptions
         importing.reload = nil
+        importing.outputEncoding = .utf8
         importing.output = scratch.appendingPathComponent(defaultOutput(for: inputURL).lastPathComponent)
         let imported = try await ecoreToGenModel(
             ecoreURLs: [inputURL], options: importing,

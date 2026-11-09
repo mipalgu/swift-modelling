@@ -143,7 +143,7 @@ struct CheckCompatCommand: AsyncParsableCommand {
     ///   the metamodels cannot be read.
     @MainActor
     func run() async throws {
-        try await compatibility.run { metamodels in
+        try await compatibility.run(encoding: encodingOptions.explicitEncoding) { metamodels in
             let sole = try metamodels.requireSole()
             return ReuseChecker.check(
                 aql: try parsedExpression(), variables: try variableTypes(), metamodelName: sole.name,

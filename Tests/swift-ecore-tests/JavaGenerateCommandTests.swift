@@ -283,6 +283,103 @@ struct JavaGenerateCommandTests {
         #expect(!FileManager.default.fileExists(atPath: output.path))
     }
 
+    /// Makes a directory the root of a repository whose configuration file sets a code style.
+    ///
+    /// - Parameters:
+    ///   - root: The directory.
+    ///   - style: The value of the `code-style` key.
+    private func configureCodeStyle(in root: URL, _ style: String) throws {
+        try FileManager.default.createDirectory(
+            at: root.appendingPathComponent(".git"), withIntermediateDirectories: true)
+        try #"{ "code-style": "\#(style)" }"#.write(
+            to: root.appendingPathComponent(ReadingConfigurationTests.configurationFile),
+            atomically: true, encoding: .utf8)
+    }
+
+    @Test("applies the code style of the configuration file to a set that offers code styles")
+    @MainActor
+    func configuredCodeStyle() async throws {
+        let (scratch, _, genModel) = try await libraryProject()
+        defer { cleanupTemporaryDirectory(scratch) }
+        try configureCodeStyle(in: scratch, "emf")
+        let configured = scratch.appendingPathComponent("configured")
+        let overridden = scratch.appendingPathComponent("overridden")
+
+        let fromFile = try await executeSwiftEcore(
+            command: "generate", arguments: ["--language", "java", genModel.path, "-o", configured.path],
+            workingDirectory: scratch)
+        let fromCommandLine = try await executeSwiftEcore(
+            command: "generate",
+            arguments: ["--language", "java", genModel.path, "-o", overridden.path, "--code-style", "eclipse"],
+            workingDirectory: scratch)
+
+        #expect(fromFile.succeeded, "\(fromFile.stderr)")
+        #expect(
+            try String(contentsOf: configured.appendingPathComponent(Self.bookCategory), encoding: .utf8)
+                == (try expectedBookCategory(folder: "expected-java-emf")))
+        #expect(fromCommandLine.succeeded, "\(fromCommandLine.stderr)")
+        #expect(
+            try String(contentsOf: overridden.appendingPathComponent(Self.bookCategory), encoding: .utf8)
+                == (try expectedBookCategory()))
+    }
+
+    @Test("rejects a configured code style that a set with code styles does not offer")
+    @MainActor
+    func configuredUnknownCodeStyle() async throws {
+        let (scratch, _, genModel) = try await libraryProject()
+        defer { cleanupTemporaryDirectory(scratch) }
+        try configureCodeStyle(in: scratch, "tabs")
+        let output = scratch.appendingPathComponent("java")
+
+        let result = try await executeSwiftEcore(
+            command: "generate", arguments: ["--language", "java", genModel.path, "-o", output.path],
+            workingDirectory: scratch)
+
+        #expect(!result.succeeded)
+        #expect(result.stderr.contains("tabs"))
+        #expect(result.stderr.contains("eclipse, emf"))
+    }
+
+    @Test("ignores the code style of the configuration file for sets that offer none, but not the option")
+    @MainActor
+    func configuredCodeStyleForSetsWithoutStyles() async throws {
+        let (scratch, project, _) = try await libraryProject()
+        defer { cleanupTemporaryDirectory(scratch) }
+        let ecore = project.appendingPathComponent("model/library.ecore").path
+        try configureCodeStyle(in: scratch, "emf")
+
+        for language in ["swift", "c", "cpp"] {
+            let configured = scratch.appendingPathComponent("\(language)-configured")
+            let plain = scratch.appendingPathComponent("\(language)-plain")
+            let explicit = scratch.appendingPathComponent("\(language)-explicit")
+
+            let fromFile = try await executeSwiftEcore(
+                command: "generate", arguments: ["--language", language, ecore, "-o", configured.path],
+                workingDirectory: scratch)
+            let withoutFile = try await executeSwiftEcore(
+                command: "generate", arguments: ["--language", language, ecore, "-o", plain.path, "--no-config"],
+                workingDirectory: scratch)
+            let fromCommandLine = try await executeSwiftEcore(
+                command: "generate",
+                arguments: ["--language", language, ecore, "-o", explicit.path, "--code-style", "emf"],
+                workingDirectory: scratch)
+
+            #expect(fromFile.succeeded, "\(language): \(fromFile.stderr)")
+            #expect(withoutFile.succeeded, "\(language): \(withoutFile.stderr)")
+            let files = try FileManager.default.subpathsOfDirectory(atPath: plain.path).sorted()
+            #expect(!files.isEmpty, "\(language)")
+            #expect(try FileManager.default.subpathsOfDirectory(atPath: configured.path).sorted() == files)
+            for file in files where !file.hasSuffix("/") {
+                let expected = try? Data(contentsOf: plain.appendingPathComponent(file))
+                let actual = try? Data(contentsOf: configured.appendingPathComponent(file))
+                #expect(actual == expected, "\(language): \(file)")
+            }
+            #expect(!fromCommandLine.succeeded, "\(language)")
+            #expect(fromCommandLine.stderr.contains("emf"), "\(language): \(fromCommandLine.stderr)")
+            #expect(!FileManager.default.fileExists(atPath: explicit.path), "\(language)")
+        }
+    }
+
     @Test("lists the code styles in the help")
     @MainActor
     func helpListsCodeStyles() async throws {

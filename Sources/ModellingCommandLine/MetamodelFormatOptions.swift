@@ -62,4 +62,22 @@ public struct MetamodelFormatOptions: ParsableArguments, Sendable {
         grammar.apply(to: &options, configuration: settings.configuration)
         return options
     }
+
+    /// The options with which documents and metamodels are loaded in a run, in the character
+    /// encoding of the run.
+    ///
+    /// Commands that read a configuration file and take ``SourceEncodingOptions`` for the
+    /// documents they read use these options. Each option is the one given on the command line,
+    /// else the value of its key in the configuration file, else its default.
+    ///
+    /// - Parameters:
+    ///   - settings: The settings of the run, whose configuration file is consulted.
+    ///   - encodingOptions: The encoding given on the command line, if any.
+    /// - Returns: ``ecoreLoadOptions(settings:)`` with the encoding of
+    ///   ``SourceEncodingOptions/encoding(settings:)``.
+    public func ecoreLoadOptions(settings: SemanticsSettings, encodingOptions: SourceEncodingOptions) -> EcoreLoadOptions {
+        var options = ecoreLoadOptions(settings: settings)
+        options.textEncoding = encodingOptions.encoding(settings: settings)
+        return options
+    }
 }

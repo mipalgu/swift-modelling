@@ -15,7 +15,7 @@ import ModellingCommandLine
 /// The analyse command performs comprehensive analysis of ATL transformation files,
 /// computing complexity metrics, identifying patterns, and generating detailed
 /// analysis reports for transformation quality assessment.
-struct AnalyzeCommand: AsyncParsableCommand, ATLSourceReading {
+struct AnalyzeCommand: AsyncParsableCommand, ATLSourceReading, ATLOutputWriting {
     static let configuration = CommandConfiguration(
         commandName: "analyze",
         abstract: "Analyse ATL transformation files",
@@ -27,6 +27,8 @@ struct AnalyzeCommand: AsyncParsableCommand, ATLSourceReading {
             \(ATLSemanticsOptions.discussion(reader: "the transformations"))
 
             \(SourceEncodingOptions.discussion(reader: "the transformations"))
+
+            \(OutputEncodingOptions.discussion(writer: "the file that --output names"))
 
             \(SemanticsOptions.discussion())
 
@@ -62,6 +64,9 @@ struct AnalyzeCommand: AsyncParsableCommand, ATLSourceReading {
 
     /// The character encoding of the ATL source.
     @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// The character encoding of the file that `--output` names.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
 
     /// The behaviours of the ATL source that the command line, the environment and the
     /// configuration file select.
@@ -106,8 +111,8 @@ struct AnalyzeCommand: AsyncParsableCommand, ATLSourceReading {
         let outputContent = try generateAnalysisOutput(results: analysisResults, format: format)
 
         if let outputPath = output {
-            try outputContent.write(
-                to: URL(fileURLWithPath: outputPath), atomically: true, encoding: .utf8)
+            try writeOutput(
+                outputContent, to: outputPath, kind: format.lowercased() == "json" ? .json : .text)
             print("Analysis results written to \(outputPath)")
         } else if verbose || analysisResults.count > 1 {
             print(outputContent)

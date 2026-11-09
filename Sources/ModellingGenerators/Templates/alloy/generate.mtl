@@ -16,7 +16,7 @@
  **/]
 [template public generate(genModel : GenModel)]
 [for (p : OclAny | genModel.allGenPackages()->collect(g | g.ecorePackage))]
-[file (p.moduleName() + '.als', false, 'UTF-8')][p.metamodelModule()/][/file]
+[file (p.moduleName() + '.als', false)][p.metamodelModule()/][/file]
 [/for]
 [/template]
 
@@ -24,7 +24,7 @@
  * Writes the module of a model, named after the model file.
  **/]
 [template public generateModel(p : EPackage, root : EObject)]
-[file (instanceModuleName(modelName) + '.als', false, 'UTF-8')][p.modelModule(root, instanceModuleName(modelName))/][/file]
+[file (instanceModuleName(modelName) + '.als', false)][p.modelModule(root, instanceModuleName(modelName))/][/file]
 [/template]
 
 [**

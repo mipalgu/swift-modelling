@@ -110,15 +110,17 @@ final class ModelWorkspace {
     ) async throws -> EOLModel {
         let url = URL(fileURLWithPath: binding.path)
         if await MetamodelRegistration.holdsMetamodel(at: binding.path) {
-            let loaded = try await ModelIO.load(
-                url: url, resourceSet: resourceSet,
-                options: ModelIO.LoadOptions(ecoreLoadOptions: configuration.metamodelLoadOptions))
+            let loaded = try await TextDocumentLoading.load(
+                url: url, path: binding.path, resourceSet: resourceSet,
+                options: ModelIO.LoadOptions(ecoreLoadOptions: configuration.metamodelLoadOptions),
+                encoding: configuration.metamodelLoadOptions.textEncoding)
             return EOLModel(
                 name: binding.name, resource: loaded.resource, packages: [EcorePackage.instance], aliases: binding.aliases)
         }
-        let loaded = try await ModelIO.load(
-            url: url, format: try ModelFileFormat.detectedInstanceFormat(of: url), resourceSet: resourceSet,
-            options: ModelIO.LoadOptions(requiresMetamodel: false))
+        let loaded = try await TextDocumentLoading.load(
+            url: url, path: binding.path, format: try ModelFileFormat.detectedInstanceFormat(of: url),
+            resourceSet: resourceSet, options: ModelIO.LoadOptions(requiresMetamodel: false),
+            encoding: configuration.metamodelLoadOptions.textEncoding, diagnosticOutput: { _ in })
         ConversionWarningReport.write(loaded.diagnostics, metamodelGiven: !metamodels.isEmpty)
         let contents = (try? Data(contentsOf: url)).map { String(decoding: $0, as: UTF8.self) } ?? ""
         let used = metamodels.filter { package in usedNamespaces(of: package).contains { contents.contains($0) } }
@@ -172,7 +174,8 @@ final class ModelWorkspace {
     /// writing it are reported on standard error.
     ///
     /// - Returns: The paths of the files written, in order.
-    /// - Throws: The error of the serialiser or of the file system for the first model that
+    /// - Throws: ``OutputFileError`` if the encoding of the run cannot hold a character of a
+    ///   model, and the error of the serialiser or of the file system for the first model that
     ///   cannot be written.
     @discardableResult
     func store() async throws -> [String] {
@@ -187,9 +190,9 @@ final class ModelWorkspace {
             guard let model = model(named: request.name) else { continue }
             let url = URL(fileURLWithPath: request.path)
             try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-            let diagnostics = try await ModelIO.save(
+            let diagnostics = try await OutputFile.save(
                 model.resource, to: url, format: ModelFileFormat.instanceFormat(of: url),
-                xmiOptions: configuration.xmiOptions)
+                xmiOptions: configuration.xmiOptions, encoding: configuration.outputEncoding)
             ConversionWarningReport.write(diagnostics, metamodelGiven: true)
             if log.isEnabled {
                 let count = await model.resource.count()

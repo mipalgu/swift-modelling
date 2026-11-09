@@ -172,18 +172,11 @@ public struct SemanticsOptions: ParsableArguments, Sendable {
     public var containerLookupScope: ContainerLookupScope?
 
     /// The configuration file given on the command line, if any.
-    @Option(
-        name: .customLong(OptionName.config),
-        help: ArgumentHelp(
-            "A configuration file to read instead of the \(ModellingConfiguration.fileName) found "
-                + "from the current directory",
-            valueName: SemanticsOptions.configValueName))
+    @Option(name: .customLong(OptionName.config), help: ConfigurationFileOptions.configHelp)
     public var configurationPath: String?
 
     /// Whether no configuration file is read.
-    @Flag(
-        name: .customLong(OptionName.noConfig),
-        help: ArgumentHelp("Read no configuration file"))
+    @Flag(name: .customLong(OptionName.noConfig), help: ConfigurationFileOptions.noConfigHelp)
     public var ignoresConfiguration: Bool = false
 
     /// Creates the options with nothing given, which leaves the preset to the environment, the
@@ -194,9 +187,8 @@ public struct SemanticsOptions: ParsableArguments, Sendable {
     ///
     /// - Throws: A validation error if both `--config` and `--no-config` are given.
     public func validate() throws {
-        if configurationPath != nil && ignoresConfiguration {
-            throw ValidationError("--\(OptionName.config) and --\(OptionName.noConfig) cannot be given together")
-        }
+        try ConfigurationFileOptions.validate(
+            configurationPath: configurationPath, ignoresConfiguration: ignoresConfiguration)
     }
 
     /// Reads the configuration file that the options select.
@@ -210,16 +202,8 @@ public struct SemanticsOptions: ParsableArguments, Sendable {
     /// - Returns: The settings of the file, empty if no file is read.
     /// - Throws: ``ModellingConfigurationError`` if the file cannot be read or is not valid.
     public func configuration(currentDirectory: URL) throws(ModellingConfigurationError) -> ModellingConfiguration {
-        if ignoresConfiguration { return ModellingConfiguration() }
-        if let configurationPath {
-            let base = URL(fileURLWithPath: currentDirectory.path, isDirectory: true)
-            return try ModellingConfiguration(
-                contentsOf: URL(fileURLWithPath: configurationPath, relativeTo: base).absoluteURL)
-        }
-        guard let file = ModellingConfiguration.discover(from: currentDirectory) else {
-            return ModellingConfiguration()
-        }
-        return try ModellingConfiguration(contentsOf: file)
+        try ConfigurationFileOptions.configuration(
+            path: configurationPath, ignoresConfiguration: ignoresConfiguration, currentDirectory: currentDirectory)
     }
 
     /// Resolves the settings of a run from the options, the environment and the configuration file.

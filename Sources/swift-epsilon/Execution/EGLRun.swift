@@ -8,6 +8,7 @@ import EGL
 import EMFBase
 import EOL
 import Foundation
+import ModellingCommandLine
 
 /// Renders Epsilon Generation Language templates and runs EGX coordination modules against
 /// the models of a workspace.
@@ -50,14 +51,17 @@ enum EGLRun {
     ///   - text: The generated text.
     ///   - path: The path of the file.
     ///   - merging: Whether the enabled protected regions of an existing file are kept.
+    ///   - encoding: The character encoding in which the file is read and written (default: UTF-8).
     /// - Returns: What happened to the file, and the warnings about protected regions whose
     ///   contents were lost.
-    /// - Throws: The error of the file system if the file cannot be read or written.
-    static func write(_ text: String, to path: String, merging: Bool) throws -> (
+    /// - Throws: ``OutputFileError`` if the encoding cannot hold a character of the text,
+    ///   ``SwiftEpsilonError/notDecodable(_:_:)`` if an existing file is not valid in the encoding,
+    ///   and the error of the file system if the file cannot be read or written.
+    static func write(_ text: String, to path: String, merging: Bool, encoding: TextEncoding = .utf8) throws -> (
         status: EGXFileStatus, diagnostics: [SourceDiagnostic]
     ) {
         let url = URL(fileURLWithPath: path)
-        let existing = FileManager.default.fileExists(atPath: path) ? try String(contentsOf: url, encoding: .utf8) : nil
+        let existing = FileManager.default.fileExists(atPath: path) ? try Self.read(url, encoding: encoding) : nil
         var text = text
         var diagnostics: [SourceDiagnostic] = []
         if let existing, merging {
@@ -68,9 +72,25 @@ enum EGLRun {
         let status: EGXFileStatus = existing == nil ? .created : existing == text ? .unchanged : .updated
         if status != .unchanged {
             try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try text.write(to: url, atomically: true, encoding: .utf8)
+            try OutputFile.write(text, to: path, encoding: encoding)
         }
         return (status, diagnostics)
+    }
+
+    /// Reads an existing output file in an encoding.
+    ///
+    /// - Parameters:
+    ///   - url: The location of the file.
+    ///   - encoding: The character encoding of the file.
+    /// - Returns: The text of the file.
+    /// - Throws: ``SwiftEpsilonError/notDecodable(_:_:)`` if the file is not valid in the
+    ///   encoding, and the error of the file system if it cannot be read.
+    private static func read(_ url: URL, encoding: TextEncoding) throws -> String {
+        if encoding == .utf8 { return try String(contentsOf: url, encoding: .utf8) }
+        guard let text = encoding.decode(try Data(contentsOf: url)) else {
+            throw SwiftEpsilonError.notDecodable(url.path, encoding)
+        }
+        return text
     }
 
     /// Reads, parses and runs an EGX coordination module.
@@ -83,6 +103,7 @@ enum EGLRun {
     ///   - workspace: The models of the run.
     ///   - outputDirectory: The directory against which the target paths of the rules are resolved.
     ///   - allowsPathsOutsideOutput: Whether rules may write outside the output directory.
+    ///   - encoding: The character encoding of the files that the rules write (default: UTF-8).
     ///   - progress: What is told about each file that is written, with the number written so far.
     ///   - output: Where the module and its templates print (standard output by default).
     ///   - errorOutput: Where they print errors (standard error by default).
@@ -91,6 +112,7 @@ enum EGLRun {
     ///   template raises.
     static func generate(
         coordination: String, workspace: ModelWorkspace, outputDirectory: String, allowsPathsOutsideOutput: Bool,
+        encoding: TextEncoding = .utf8,
         progress: @escaping (Int) -> Void = { _ in }, output: any EOLOutputStream = EOLStandardOutput(),
         errorOutput: any EOLOutputStream = EOLStandardOutput(error: true)
     ) async throws -> EGXResult {
@@ -104,7 +126,7 @@ enum EGLRun {
         let fileSystem = ReportingFileSystem(
             base: EGXDirectoryFileSystem(
                 base: URL(fileURLWithPath: outputDirectory, isDirectory: true),
-                allowsPathsOutsideBase: allowsPathsOutsideOutput),
+                allowsPathsOutsideBase: allowsPathsOutsideOutput, encoding: encoding),
             report: progress)
         let generator = EGXGenerator(
             interpreter: workspace.makeInterpreter(output: output, errorOutput: errorOutput),
