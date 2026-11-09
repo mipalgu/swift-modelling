@@ -147,7 +147,11 @@ public enum GenerationPipeline {
         guard encoding != .utf8 else { return try await GenModelResource.save(resource, to: url) }
         let text = try await GenModelResource.serialised(resource, for: url)
         let data = try encoding.encode(xmlDocument: text)
-        try data.write(to: url, options: FileURIHandler.writesAtomically ? .atomic : [])
+        #if os(WASI)
+        try data.write(to: url)
+        #else
+        try data.write(to: url, options: .atomic)
+        #endif
     }
 
     /// The compliance levels that generator models support.

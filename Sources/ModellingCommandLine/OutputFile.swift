@@ -104,7 +104,11 @@ public enum OutputFile {
 
     /// The options with which data replaces a file on this platform.
     private static var writingOptions: Data.WritingOptions {
-        FileURIHandler.writesAtomically ? .atomic : []
+        #if os(WASI)
+        []
+        #else
+        .atomic
+        #endif
     }
 }
 
