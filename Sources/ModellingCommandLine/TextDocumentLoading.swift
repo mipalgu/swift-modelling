@@ -46,8 +46,8 @@ public enum TextDocumentLoading {
     ///   - options: The options of the load; their `textEncoding` is replaced by `encoding`.
     ///   - encoding: The encoding of a document in a text format, or `nil` to read UTF-8 with
     ///     a fallback to ISO-8859-1.
-    ///   - diagnosticOutput: The writer that receives the report of the decoding warnings
-    ///     (standard error by default).
+    ///   - diagnosticOutput: The writer that receives the report of the decoding warnings, or
+    ///     `nil` (the default) for standard error.
     /// - Returns: The loaded document.
     /// - Throws: ``SourceFileError/malformed(path:encoding:)`` if the document is not valid in
     ///   the encoding, and the errors of the reader.
@@ -55,7 +55,7 @@ public enum TextDocumentLoading {
         isolation: isolated (any Actor)? = #isolation,
         url: URL, path: String? = nil, format: ModelFormat? = nil, resourceSet: ResourceSet,
         options: ModelIO.LoadOptions = ModelIO.LoadOptions(), encoding: TextEncoding?,
-        diagnosticOutput: (String) -> Void = FileDiagnosticReport.writeToStandardError
+        diagnosticOutput: ((String) -> Void)? = nil
     ) async throws -> ModelIO.Loaded {
         let name = path ?? url.relativePath
         var options = options
@@ -71,7 +71,8 @@ public enum TextDocumentLoading {
             return diagnostic
         }
         FileDiagnosticReport.write(
-            decodingWarnings(in: reported + (await loaded.resource.loadDiagnostics)), file: name, to: diagnosticOutput)
+            decodingWarnings(in: reported + (await loaded.resource.loadDiagnostics)), file: name,
+            to: diagnosticOutput ?? FileDiagnosticReport.writeToStandardError)
         return loaded
     }
 }
