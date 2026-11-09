@@ -106,7 +106,7 @@ enum VerificationTools {
         let deadline = Date().addingTimeInterval(timeout)
         while process.isRunning && Date() < deadline { Thread.sleep(forTimeInterval: 0.05) }
         if process.isRunning {
-            kill(process.processIdentifier, SIGTERM)
+            process.terminate()
             process.waitUntilExit()
         }
         let text = (try? String(contentsOf: output, encoding: .utf8)) ?? ""
