@@ -189,7 +189,7 @@ struct CheckCompatEndToEndTests {
                 families: "FamiliesV2.ecore", persons: "PersonsV3.ecore",
                 ["--mode", "total-non-isomorphic", "--rename", "Member.firstName=givenName", "--subtyping", semantics]))
             #expect(result.exitCode == 1)
-            let errors = result.stdout.split(separator: "\n").filter { $0.hasPrefix("error: ") }
+            let errors = result.stdout.components(separatedBy: consoleText("\n")).filter { $0.hasPrefix("error: ") }
             #expect(errors.count == 1)
             #expect(errors.first?.hasPrefix("error: Persons!Person.registration") == true)
         }

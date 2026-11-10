@@ -60,6 +60,6 @@ struct KM3MetamodelTests {
 
         #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
         #expect(result.stderr.contains("registered under its name"), "\(result.stderr)")
-        if primitives == "ecore" { #expect(result.stdout == "121\n", "\(result.stdout)") }
+        if primitives == "ecore" { #expect(result.stdout == consoleText("121\n"), "\(result.stdout)") }
     }
 }

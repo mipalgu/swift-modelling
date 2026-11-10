@@ -195,7 +195,26 @@ func runSwiftEpsilon(
         error: .string(limit: 1 << 20))
     let status: Int32
     if case .exited(let code) = result.terminationStatus { status = Int32(code) } else { status = -1 }
-    return ToolRun(status: status, output: result.standardOutput ?? "", error: result.standardError ?? "")
+    return ToolRun(
+        status: status, output: normalisedConsoleText(result.standardOutput ?? ""),
+        error: normalisedConsoleText(result.standardError ?? ""))
+}
+
+/// Text that a tool printed, with line feeds between its lines on every platform.
+///
+/// On Windows, standard output and standard error are in text mode, which ends each line
+/// that a tool prints with a carriage return and line feed. The captured text is brought
+/// back to the line feeds that the tool printed, so that tests compare the same text on
+/// every platform. Elsewhere, the text is returned unchanged.
+///
+/// - Parameter text: The text as captured from the standard output or standard error of a tool.
+/// - Returns: The text with each carriage return and line feed on Windows replaced by a line feed.
+func normalisedConsoleText(_ text: String) -> String {
+    #if os(Windows)
+    return text.replacingOccurrences(of: "\r\n", with: "\n")
+    #else
+    return text
+    #endif
 }
 
 /// The arguments that bind the bank model and both metamodels of the fixture, relative to a

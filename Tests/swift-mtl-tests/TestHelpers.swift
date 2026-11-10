@@ -230,8 +230,8 @@ func executeSwiftMTL(
     // Then
     return SubprocessResult(
         terminationStatus: result.terminationStatus,
-        stdout: captureOutput ? (result.standardOutput ?? "") : "",
-        stderr: captureOutput ? (result.standardError ?? "") : ""
+        stdout: captureOutput ? normalisedConsoleText(result.standardOutput ?? "") : "",
+        stderr: captureOutput ? normalisedConsoleText(result.standardError ?? "") : ""
     )
 }
 
@@ -239,6 +239,23 @@ func executeSwiftMTL(
 ///
 /// The help of a command with many options is longer than 16 KiB.
 let subprocessOutputLimit = 1 << 20
+
+/// Text that a tool printed, with line feeds between its lines on every platform.
+///
+/// On Windows, standard output and standard error are in text mode, which ends each line
+/// that a tool prints with a carriage return and line feed. The captured text is brought
+/// back to the line feeds that the tool printed, so that tests compare the same text on
+/// every platform. Elsewhere, the text is returned unchanged.
+///
+/// - Parameter text: The text as captured from the standard output or standard error of a tool.
+/// - Returns: The text with each carriage return and line feed on Windows replaced by a line feed.
+func normalisedConsoleText(_ text: String) -> String {
+    #if os(Windows)
+    return text.replacingOccurrences(of: "\r\n", with: "\n")
+    #else
+    return text
+    #endif
+}
 
 // MARK: - Child Environment
 
