@@ -89,8 +89,10 @@ jobs:
       - name: Swift version
         run: swift --version
 
+      # The Windows toolchains are built with assertions, and optimising
+      # the code makes them fail, so the Windows release is not optimised.
       - name: Build release
-        run: swift build -c release
+        run: swift build -c release -Xswiftc -Onone
 
       - name: Determine architecture
         shell: bash
