@@ -1,0 +1,24 @@
+-- @nsURI http://www.example.org/families
+-- @nsPrefix families
+package Families {
+
+	class Family {
+		attribute lastName : String;
+		reference father container : Member oppositeOf familyFather;
+		reference mother container : Member oppositeOf familyMother;
+		reference sons[*] container : Member oppositeOf familySon;
+		reference daughters[*] container : Member oppositeOf familyDaughter;
+	}
+
+	class Member {
+		attribute firstName : String;
+		reference familyFather[0-1] : Family oppositeOf father;
+		reference familyMother[0-1] : Family oppositeOf mother;
+		reference familySon[0-1] : Family oppositeOf sons;
+		reference familyDaughter[0-1] : Family oppositeOf daughters;
+	}
+}
+
+package PrimitiveTypes {
+	datatype String;
+}

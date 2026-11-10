@@ -36,6 +36,9 @@ extension AQLNullAddition: @retroactive ExpressibleByArgument {}
 /// Parses a command-line value into the text form of values.
 extension AQLTextForm: @retroactive ExpressibleByArgument {}
 
+/// Parses a command-line value into what a call written with a dot does on a collection.
+extension AQLDotCalls: @retroactive ExpressibleByArgument {}
+
 /// The command line options that choose the behaviours of templates and their expressions.
 ///
 /// Each option selects one behaviour of `MTLOptions` or of its expression language options,
@@ -91,6 +94,9 @@ public struct MTLSemanticsOptions: ParsableArguments, Sendable {
         /// The option that chooses `AQLOptions.textForm`.
         public static let textForm = "text-form"
 
+        /// The option that chooses `AQLOptions.dotCalls`.
+        public static let dotCalls = "dot-calls"
+
         /// The flag that sets `AQLOptions.strict`.
         public static let strictAQL = "strict-aql"
     }
@@ -99,6 +105,19 @@ public struct MTLSemanticsOptions: ParsableArguments, Sendable {
     public static let strictAQLHelp = ArgumentHelp(
         "Reject the expressions that Eclipse AQL rejects, such as a union of a sequence with a set "
             + "or a single value passed to concat, sub or union")
+
+    /// The help of the option that chooses `AQLOptions.dotCalls`, shared by every command that
+    /// offers it.
+    public static let dotCallsHelp = ArgumentHelp(
+        "What a call written with a dot does on a collection: \(AQLDotCalls.eachElement.rawValue) "
+            + "(the default), as in Eclipse AQL, or \(AQLDotCalls.collection.rawValue), as in version 0.6",
+        discussion: """
+            With \(AQLDotCalls.eachElement.rawValue), Sequence{'ab', 'c'}.size() calls size() on each \
+            element and yields Sequence{2, 1}; a warning is written when an element lacks a service \
+            that the collection has. With \(AQLDotCalls.collection.rawValue), it calls the service \
+            of the collection and yields 2. Sequence{'ab', 'c'}->size() yields 2 either way.
+            """,
+        valueName: MTLSemanticsOptions.valueList(AQLDotCalls.self))
 
     /// The prefix of the inverted form of a flag.
     public static let inversionPrefix = "no-"
@@ -240,6 +259,12 @@ public struct MTLSemanticsOptions: ParsableArguments, Sendable {
             valueName: MTLSemanticsOptions.valueList(AQLTextForm.self)))
     public var textForm: AQLTextForm?
 
+    /// What a call written with a dot does when its receiver is a collection.
+    @Option(
+        name: .customLong(OptionName.dotCalls),
+        help: MTLSemanticsOptions.dotCallsHelp)
+    public var dotCalls: AQLDotCalls?
+
     /// Whether expressions reject the arguments that Eclipse AQL rejects.
     ///
     /// `--strict-aql` turns strict mode on and `--no-strict-aql` turns it off, whatever the
@@ -288,6 +313,7 @@ public struct MTLSemanticsOptions: ParsableArguments, Sendable {
         if let value = sequenceUnion ?? file.sequenceUnion { options.sequenceUnion = value }
         if let value = nullAddition ?? file.nullAddition { options.nullAddition = value }
         if let value = textForm ?? file.textForm { options.textForm = value }
+        if let value = dotCalls ?? file.dotCalls { options.dotCalls = value }
         if let value = strictAQL ?? file.strictAQL { options.strict = value }
         return options
     }
@@ -360,7 +386,7 @@ public struct MTLSemanticsOptions: ParsableArguments, Sendable {
             + "\(OptionName.cacheContainers), --\(OptionName.collectionArguments), "
             + "--\(OptionName.collectionKinds), --\(OptionName.singleValueCollections), "
             + "--\(OptionName.containerLookup), --\(OptionName.sequenceUnion), "
-            + "--\(OptionName.nullAddition) and --\(OptionName.textForm) choose how \(reader) and their expressions behave. "
+            + "--\(OptionName.nullAddition), --\(OptionName.textForm) and --\(OptionName.dotCalls) choose how \(reader) and their expressions behave. "
             + "Each defaults to the behaviour of this release, or to that of version 0.6 with "
             + "--\(SemanticsOptions.optionName) \(SemanticsPreset.legacy.rawValue). "
             + "--\(OptionName.strictAQL) makes the expressions reject what Eclipse AQL rejects, and "

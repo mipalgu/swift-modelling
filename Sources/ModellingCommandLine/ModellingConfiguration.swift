@@ -7,8 +7,10 @@
 import AQL
 import ATL
 import ECore
+import EMFBase
 import Foundation
 import MTL
+import ModellingGenerators
 
 /// The settings of a configuration file of the modelling tools.
 ///
@@ -26,8 +28,15 @@ import MTL
 /// ```
 ///
 /// The values are the spellings of the options on the command line, as JSON strings, except
-/// for `check-let-types`, `cache-containers` and `strict-aql`, which take JSON booleans. ``keys`` lists the
-/// accepted keys.
+/// for `check-let-types`, `cache-containers`, `strict-aql`, `sdf3-labels`,
+/// `operation-reflection`, `import-organizing`, `strict`, `require-explicit-values`,
+/// `check-dangling` and `injective`, which take JSON booleans, `prefix`, which takes a JSON
+/// array of strings, and `ocl`, which takes a JSON array of paths of Complete OCL documents or
+/// directories, relative to the directory of the file. The `encoding` of source files and the `output-encoding` of written files are
+/// the name or an alias of one of the supported encodings, as for `--encoding` and
+/// `--output-encoding`, and `package-name`, `ns-uri`, `ns-prefix`, `code-style`,
+/// `root-extends-class`, `base-package` and `jdk-level` take any string.
+/// ``keys`` lists the accepted keys.
 ///
 /// A command reads the file named ``fileName`` that ``discover(from:)`` finds from the current
 /// directory, or the file that `--config` names (see ``SemanticsOptions``). An option given on
@@ -50,13 +59,20 @@ public struct ModellingConfiguration: Sendable, Equatable {
 
         /// A JSON boolean, `true` or `false`.
         case boolean = "true or false"
+
+        /// A JSON array of strings.
+        case stringList = "a list of strings"
     }
 
     /// The keys that a configuration file accepts.
     ///
     /// The keys are the long names of the options that ``SemanticsOptions``,
-    /// ``MTLSemanticsOptions``, ``ATLSemanticsOptions``, ``LetTypeMismatchOptions`` and
-    /// ``UnsetFeatureOptions`` define.
+    /// ``MTLSemanticsOptions``, ``ATLSemanticsOptions``, ``LetTypeMismatchOptions``,
+    /// ``UnsetFeatureOptions``, ``SourceEncodingOptions``, ``OutputEncodingOptions``,
+    /// ``KM3Options``, ``GrammarImportOptions``, ``LevelCrossingOptions``,
+    /// ``CompleteOCLOptions``, ``ReferenceStyleOptions``, ``CodeStyleOptions`` and
+    /// ``GenModelDefaultsOptions`` define, and the names of ``ValidationOptionName`` and
+    /// ``MatchingOptionName``.
     public static let keys: [String] = [
         SemanticsOptions.OptionName.semantics,
         MTLSemanticsOptions.OptionName.blockLineBreaks,
@@ -70,12 +86,38 @@ public struct ModellingConfiguration: Sendable, Equatable {
         MTLSemanticsOptions.OptionName.sequenceUnion,
         MTLSemanticsOptions.OptionName.nullAddition,
         MTLSemanticsOptions.OptionName.textForm,
+        MTLSemanticsOptions.OptionName.dotCalls,
         ATLSemanticsOptions.OptionName.collectionRangeSyntax,
         ATLSemanticsOptions.OptionName.integerDivision,
+        ATLSemanticsOptions.OptionName.bagRepresentation,
         SemanticsOptions.OptionName.containerScope,
         LetTypeMismatchOptions.optionName,
         UnsetFeatureOptions.optionName,
         MTLSemanticsOptions.OptionName.strictAQL,
+        SourceEncodingOptions.optionName,
+        OutputEncodingOptions.optionName,
+        KM3Options.optionName,
+        GrammarImportOptions.OptionName.packageName,
+        GrammarImportOptions.OptionName.nsURI,
+        GrammarImportOptions.OptionName.nsPrefix,
+        GrammarImportOptions.OptionName.asdlEnumerations,
+        GrammarImportOptions.OptionName.langiumTypes,
+        GrammarImportOptions.OptionName.sdf3Labels,
+        LevelCrossingOptions.optionName,
+        CompleteOCLOptions.optionName,
+        ReferenceStyleOptions.optionName,
+        CodeStyleOptions.optionName,
+        GenModelDefaultsOptions.OptionName.defaults,
+        GenModelDefaultsOptions.OptionName.rootExtendsClass,
+        GenModelDefaultsOptions.OptionName.operationReflection,
+        GenModelDefaultsOptions.OptionName.importOrganizing,
+        GenModelDefaultsOptions.OptionName.basePackage,
+        GenModelDefaultsOptions.OptionName.prefix,
+        GenModelDefaultsOptions.OptionName.jdkLevel,
+        ValidationOptionName.strict,
+        ValidationOptionName.requireExplicitValues,
+        MatchingOptionName.checkDangling,
+        MatchingOptionName.injective,
     ]
 
     /// The file that the settings were read from, or `nil` if they were not read from a file.
@@ -118,11 +160,17 @@ public struct ModellingConfiguration: Sendable, Equatable {
     /// The text of a value, as `toString()` gives it (`text-form`).
     public var textForm: AQLTextForm?
 
+    /// What a call written with a dot does when its receiver is a collection (`dot-calls`).
+    public var dotCalls: AQLDotCalls?
+
     /// Whether ATL collection literals accept integer ranges (`collection-range-syntax`).
     public var collectionRangeSyntax: ATLCollectionRangeSyntax?
 
     /// What the ATL `/` operator yields for two Integers (`integer-division`).
     public var integerDivision: ATLIntegerDivision?
+
+    /// What a Bag value is when ATL expressions evaluate (`bag-representation`).
+    public var bagRepresentation: ATLBagRepresentation?
 
     /// The objects whose containers a model answers for (`container-scope`).
     public var containerLookupScope: ContainerLookupScope?
@@ -135,6 +183,83 @@ public struct ModellingConfiguration: Sendable, Equatable {
 
     /// Whether expressions reject what Eclipse AQL rejects (`strict-aql`).
     public var strictAQL: Bool?
+
+    /// The character encoding of source files (`encoding`).
+    public var encoding: TextEncoding?
+
+    /// The character encoding of the files that the commands write (`output-encoding`).
+    public var outputEncoding: TextEncoding?
+
+    /// How the data types of KM3 metamodels are read (`km3-primitives`).
+    public var km3PrimitiveTypes: KM3PrimitiveTypeMapping?
+
+    /// The name of the package of a metamodel imported from a grammar (`package-name`).
+    public var packageName: String?
+
+    /// The namespace URI of the package of a metamodel imported from a grammar (`ns-uri`).
+    public var nsURI: String?
+
+    /// The namespace prefix of the package of a metamodel imported from a grammar (`ns-prefix`).
+    public var nsPrefix: String?
+
+    /// Which ASDL sum types become enumerations (`asdl-enumerations`).
+    public var asdlEnumerations: ASDLEnumerationsOption?
+
+    /// How a Langium grammar types its rules (`langium-types`).
+    public var langiumTypes: LangiumTypeMode?
+
+    /// Whether the argument labels of an SDF3 grammar name the features of an import
+    /// (`sdf3-labels`).
+    public var sdf3Labels: Bool?
+
+    /// Which references of a multi-level model may cross levels (`level-crossing`).
+    public var levelCrossing: LevelCrossingMode?
+
+    /// The Complete OCL documents, or directories of them, that constrain the metamodels (`ocl`).
+    ///
+    /// A relative path in the file is resolved against the directory of the file, so each path
+    /// here is absolute.
+    public var completeOCLDocuments: [String]?
+
+    /// How written XMI models spell references into themselves (`reference-style`).
+    public var referenceStyle: XMIReferenceStyle?
+
+    /// The code style of generated text (`code-style`).
+    public var codeStyle: String?
+
+    /// The preset of generator model defaults (`defaults`).
+    public var genModelDefaults: GenModelDefaults?
+
+    /// The class that generated root objects extend (`root-extends-class`).
+    public var rootExtendsClass: String?
+
+    /// Whether generated models include operation reflection (`operation-reflection`).
+    public var operationReflection: Bool?
+
+    /// Whether generated code organises its imports (`import-organizing`).
+    public var importOrganizing: Bool?
+
+    /// The base package of the root packages of a generator model (`base-package`).
+    public var basePackage: String?
+
+    /// The prefixes of the packages of a generator model, each `Name` or `package=Name` (`prefix`).
+    public var prefixes: [String]?
+
+    /// The compliance level of generated code (`jdk-level`).
+    public var complianceLevel: String?
+
+    /// Whether warnings fail a validation as errors do (`strict`).
+    public var strict: Bool?
+
+    /// Whether every required single-valued feature needs a value that the model sets
+    /// (`require-explicit-values`).
+    public var requiresExplicitValues: Bool?
+
+    /// Whether every graph transformation rule checks the dangling condition (`check-dangling`).
+    public var checksDangling: Bool?
+
+    /// Whether every graph transformation rule matches injectively (`injective`).
+    public var injectiveMatching: Bool?
 
     /// Creates settings that set nothing, as when no configuration file is read.
     public init() {}
@@ -169,7 +294,8 @@ public struct ModellingConfiguration: Sendable, Equatable {
     ///   ``ModellingConfigurationError/unknownKey(_:path:)`` for a key that is not one of
     ///   ``keys``, ``ModellingConfigurationError/wrongType(key:expected:path:)`` for a value of
     ///   the wrong JSON type, and ``ModellingConfigurationError/invalidValue(_:key:accepted:path:)``
-    ///   for a string that is not one of the spellings of its option.
+    ///   for a string that is not one of the spellings of its option or, for `encoding` and
+    ///   `output-encoding`, not the name of a supported encoding.
     public init(data: Data, url: URL) throws(ModellingConfigurationError) {
         let path = url.path
         let document: JSONValue
@@ -198,12 +324,38 @@ public struct ModellingConfiguration: Sendable, Equatable {
         sequenceUnion = try reader.value(of: MTLSemanticsOptions.OptionName.sequenceUnion)
         nullAddition = try reader.value(of: MTLSemanticsOptions.OptionName.nullAddition)
         textForm = try reader.value(of: MTLSemanticsOptions.OptionName.textForm)
+        dotCalls = try reader.value(of: MTLSemanticsOptions.OptionName.dotCalls)
         collectionRangeSyntax = try reader.value(of: ATLSemanticsOptions.OptionName.collectionRangeSyntax)
         integerDivision = try reader.value(of: ATLSemanticsOptions.OptionName.integerDivision)
+        bagRepresentation = try reader.value(of: ATLSemanticsOptions.OptionName.bagRepresentation)
         containerLookupScope = try reader.value(of: SemanticsOptions.OptionName.containerScope)
         letTypeMismatches = try reader.value(of: LetTypeMismatchOptions.optionName)
         unsetFeatures = try reader.value(of: UnsetFeatureOptions.optionName)
         strictAQL = try reader.flag(MTLSemanticsOptions.OptionName.strictAQL)
+        encoding = try reader.encoding(SourceEncodingOptions.optionName)
+        outputEncoding = try reader.encoding(OutputEncodingOptions.optionName)
+        km3PrimitiveTypes = try reader.value(of: KM3Options.optionName)
+        packageName = try reader.string(GrammarImportOptions.OptionName.packageName)
+        nsURI = try reader.string(GrammarImportOptions.OptionName.nsURI)
+        nsPrefix = try reader.string(GrammarImportOptions.OptionName.nsPrefix)
+        asdlEnumerations = try reader.value(of: GrammarImportOptions.OptionName.asdlEnumerations)
+        langiumTypes = try reader.value(of: GrammarImportOptions.OptionName.langiumTypes)
+        sdf3Labels = try reader.flag(GrammarImportOptions.OptionName.sdf3Labels)
+        levelCrossing = try reader.value(of: LevelCrossingOptions.optionName)
+        completeOCLDocuments = try reader.paths(CompleteOCLOptions.optionName, relativeTo: url.deletingLastPathComponent())
+        referenceStyle = try reader.value(of: ReferenceStyleOptions.optionName)
+        codeStyle = try reader.string(CodeStyleOptions.optionName)
+        genModelDefaults = try reader.value(of: GenModelDefaultsOptions.OptionName.defaults)
+        rootExtendsClass = try reader.string(GenModelDefaultsOptions.OptionName.rootExtendsClass)
+        operationReflection = try reader.flag(GenModelDefaultsOptions.OptionName.operationReflection)
+        importOrganizing = try reader.flag(GenModelDefaultsOptions.OptionName.importOrganizing)
+        basePackage = try reader.string(GenModelDefaultsOptions.OptionName.basePackage)
+        prefixes = try reader.strings(GenModelDefaultsOptions.OptionName.prefix)
+        complianceLevel = try reader.string(GenModelDefaultsOptions.OptionName.jdkLevel)
+        strict = try reader.flag(ValidationOptionName.strict)
+        requiresExplicitValues = try reader.flag(ValidationOptionName.requireExplicitValues)
+        checksDangling = try reader.flag(MatchingOptionName.checkDangling)
+        injectiveMatching = try reader.flag(MatchingOptionName.injective)
     }
 
     /// Finds the configuration file that applies to a directory.
@@ -369,6 +521,71 @@ private struct Reader {
             throw .invalidValue(text, key: key, accepted: Value.allCases.map(\.rawValue), path: path)
         }
         return value
+    }
+
+    /// Reads the value of a key that names a character encoding.
+    ///
+    /// - Parameter key: The key.
+    /// - Returns: The encoding, or `nil` if the key is absent.
+    /// - Throws: ``ModellingConfigurationError`` if the value is not a string, or not the name or
+    ///   an alias of a supported encoding.
+    func encoding(_ key: String) throws(ModellingConfigurationError) -> TextEncoding? {
+        guard let found = object[key] else { return nil }
+        guard case .string(let text) = found else {
+            throw .wrongType(key: key, expected: .string, path: path)
+        }
+        guard let encoding = TextEncoding(name: text) else {
+            throw .invalidValue(text, key: key, accepted: TextEncoding.allCases.map(\.name), path: path)
+        }
+        return encoding
+    }
+
+    /// Reads the value of a key that takes any string.
+    ///
+    /// - Parameter key: The key.
+    /// - Returns: The value, or `nil` if the key is absent.
+    /// - Throws: ``ModellingConfigurationError/wrongType(key:expected:path:)`` if the value is
+    ///   not a string.
+    func string(_ key: String) throws(ModellingConfigurationError) -> String? {
+        guard let found = object[key] else { return nil }
+        guard case .string(let text) = found else {
+            throw .wrongType(key: key, expected: .string, path: path)
+        }
+        return text
+    }
+
+    /// Reads the value of a key that takes a list of strings.
+    ///
+    /// - Parameter key: The key.
+    /// - Returns: The strings in the order of the list, or `nil` if the key is absent.
+    /// - Throws: ``ModellingConfigurationError/wrongType(key:expected:path:)`` if the value is
+    ///   not an array of strings.
+    func strings(_ key: String) throws(ModellingConfigurationError) -> [String]? {
+        guard let found = object[key] else { return nil }
+        guard case .array(let values) = found else {
+            throw .wrongType(key: key, expected: .stringList, path: path)
+        }
+        var strings: [String] = []
+        for value in values {
+            guard case .string(let text) = value else {
+                throw .wrongType(key: key, expected: .stringList, path: path)
+            }
+            strings.append(text)
+        }
+        return strings
+    }
+
+    /// Reads the value of a key that takes a list of file system paths.
+    ///
+    /// - Parameters:
+    ///   - key: The key.
+    ///   - directory: The directory against which relative paths are resolved.
+    /// - Returns: The absolute, standardised paths in the order of the list, or `nil` if the key
+    ///   is absent.
+    /// - Throws: ``ModellingConfigurationError/wrongType(key:expected:path:)`` if the value is
+    ///   not an array of strings.
+    func paths(_ key: String, relativeTo directory: URL) throws(ModellingConfigurationError) -> [String]? {
+        return try strings(key)?.map { URL(fileURLWithPath: $0, relativeTo: directory).standardizedFileURL.path }
     }
 
     /// Reads the value of a key that takes a boolean.

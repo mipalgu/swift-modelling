@@ -54,10 +54,15 @@ struct GenerateCommand: AsyncParsableCommand {
 
             \(ATLSemanticsOptions.discussion(reader: "a transformation given with --transformations"))
 
+            \(SourceEncodingOptions.discussion(reader: "a transformation given with --transformations, the templates and the modules they import"))
+
+            \(OutputEncodingOptions.discussion(writer: "the generator model and of the generated files whose template names no charset"))
+
             \(SemanticsOptions.discussion())
 
-            Bundled languages: \(availableLanguageList()). A directory that holds a template set and \
-            is given with --template-path adds its language.
+            Bundled languages: \(availableLanguageList()). Verification targets: \
+            \(verificationTargetList()). A directory that holds a template set and is given with \
+            --template-path adds its language.
 
             Examples:
                 # Create library.genmodel beside library.ecore
@@ -98,11 +103,15 @@ struct GenerateCommand: AsyncParsableCommand {
     var output: String?
 
     /// The base package of the root packages.
-    @Option(help: "The base package of the root packages")
+    @Option(
+        name: .customLong(GenModelDefaultsOptions.OptionName.basePackage),
+        help: "The base package of the root packages")
     var basePackage: String?
 
     /// The prefixes of packages, either `Name` or `package=Name`.
-    @Option(help: "A package prefix: Name for the root package, or package=Name for one package")
+    @Option(
+        name: .customLong(GenModelDefaultsOptions.OptionName.prefix),
+        help: "A package prefix: Name for the root package, or package=Name for one package")
     var prefix: [String] = []
 
     /// The name of the model project.
@@ -118,7 +127,9 @@ struct GenerateCommand: AsyncParsableCommand {
     var copyright: String?
 
     /// The compliance level of the generated code.
-    @Option(help: "The compliance level of the generated code, such as 17.0")
+    @Option(
+        name: .customLong(GenModelDefaultsOptions.OptionName.jdkLevel),
+        help: "The compliance level of the generated code, such as 17.0")
     var jdkLevel: String?
 
     /// The preset and the overrides of the generator model defaults.
@@ -149,6 +160,14 @@ struct GenerateCommand: AsyncParsableCommand {
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
 
+    /// The character encoding of a transformation given with `--transformations`, of the
+    /// templates and of the modules they import.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// The character encoding of the generator model and of the generated files whose
+    /// template names no charset.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
+
     /// Directories whose template files replace the bundled templates.
     @Option(
         name: .customLong("template-path"),
@@ -176,17 +195,25 @@ struct GenerateCommand: AsyncParsableCommand {
     /// The default output directory of the template languages.
     static let defaultOutputDirectory = "Generated"
 
-    /// The languages that are available without extra template paths, as text for the help.
+    /// The code languages that are available without extra template paths, as text for the help.
     static func availableLanguageList(templatePaths: [URL] = []) -> String {
-        languages(templatePaths: templatePaths).joined(separator: ", ")
+        languages(templatePaths: templatePaths).filter { !VerificationTarget.isTarget($0) }.joined(separator: ", ")
+    }
+
+    /// The verification targets that are available, as text for the help.
+    static func verificationTargetList(templatePaths: [URL] = []) -> String {
+        languages(templatePaths: templatePaths).filter(VerificationTarget.isTarget).joined(separator: ", ")
     }
 
     /// The languages that the command accepts.
     ///
     /// - Parameter templatePaths: The template directories to search in addition to the bundled ones.
-    /// - Returns: The pseudo-language `genmodel` followed by the names of the template sets.
+    /// - Returns: The pseudo-language `genmodel` followed by the names of the template sets of
+    ///   code languages, and then the names of the template sets of verification targets.
     static func languages(templatePaths: [URL] = []) -> [String] {
-        [TemplateSetConstants.genModelLanguage] + TemplateSet.availableLanguages(templatePaths: templatePaths)
+        let sets = TemplateSet.availableLanguages(templatePaths: templatePaths)
+        return [TemplateSetConstants.genModelLanguage] + sets.filter { !VerificationTarget.isTarget($0) }
+            + sets.filter(VerificationTarget.isTarget)
     }
 
     /// Executes the generate command.
@@ -229,7 +256,7 @@ struct GenerateCommand: AsyncParsableCommand {
             throw error
         } catch {
             bar.finish()
-            FileHandle.standardError.write(Data("Code generation failed: \(error)\n".utf8))
+            StandardStreams.writeToStandardError("Code generation failed: \(error)\n")
             throw ExitCode.failure
         }
     }
@@ -241,13 +268,12 @@ struct GenerateCommand: AsyncParsableCommand {
     /// - Throws: ``ValidationError`` if the transformation location does not exist.
     func importOptions(settings: SemanticsSettings) throws -> GenModelImportOptions {
         var options = GenModelImportOptions(atlOptions: atlSemanticsOptions.atlOptions(settings: settings))
-        options.basePackage = basePackage
-        prefix.forEach { options.addPrefix($0) }
+        GenModelDefaultsOptions.applyProjectSettings(
+            basePackage: basePackage, prefixes: prefix, complianceLevel: jdkLevel, settings: settings, to: &options)
         options.modelProject = modelProject
         options.modelPluginID = modelPluginID
         options.copyright = copyright
-        options.complianceLevel = jdkLevel
-        genModelDefaults.apply(to: &options)
+        genModelDefaults.apply(to: &options, settings: settings)
         unsetFeatureOptions.apply(to: &options, settings: settings)
         settings.apply(to: &options)
         if let transformations {
@@ -256,6 +282,8 @@ struct GenerateCommand: AsyncParsableCommand {
             }
             options.transformation = URL(fileURLWithPath: transformations)
         }
+        options.transformationEncoding = encodingOptions.encoding(settings: settings)
+        options.outputEncoding = outputEncodingOptions.encoding(settings: settings)
         return options
     }
 
@@ -279,6 +307,7 @@ struct GenerateCommand: AsyncParsableCommand {
             ecoreURLs: [inputURL], options: options,
             progress: { reporter(GenerationProgressUpdate(message: $0)) })
         bar.finish()
+        FileDiagnosticReport.write(result.decodingWarnings)
         if verbose {
             print(
                 "Packages: \(result.packageCount), classes: \(result.classCount), "
@@ -313,11 +342,13 @@ struct GenerateCommand: AsyncParsableCommand {
             templatePaths: templateURLs, forceOverwrite: forceOverwrite, diff: diff,
             mtlOptions: settings.preset.mtlOptions)
         if useModelDirectory { options.includeSourceRoot = true }
-        codeStyle.apply(to: &options)
+        codeStyle.apply(to: &options, settings: settings)
         mtlSemanticsOptions.apply(to: &options, settings: settings)
         unsetFeatureOptions.apply(to: &options, settings: settings)
         letTypeMismatchOptions.apply(to: &options, settings: settings)
         settings.apply(to: &options)
+        options.templateEncoding = encodingOptions.encoding(settings: settings)
+        options.outputEncoding = outputEncodingOptions.encoding(settings: settings)
         let directory = URL(fileURLWithPath: output ?? Self.defaultOutputDirectory)
         if verbose {
             print("Generating \(language) code from: \(inputURL.path)")
@@ -327,6 +358,7 @@ struct GenerateCommand: AsyncParsableCommand {
             inputURL: inputURL, language: language, outputDirectory: directory,
             importOptions: try importOptions(settings: settings), options: options, progress: bar.reporter)
         bar.finish()
+        FileDiagnosticReport.write(result.decodingWarnings)
         GenerationWarningReport.write(result.warnings)
         let noun = result.files.count == 1 ? "file" : "files"
         print("Generated \(result.files.count) \(noun) in: \(result.outputDirectory.path)")

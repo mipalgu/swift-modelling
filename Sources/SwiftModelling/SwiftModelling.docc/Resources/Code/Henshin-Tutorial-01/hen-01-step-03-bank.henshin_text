@@ -1,0 +1,76 @@
+// Rules that open accounts, move money and close accounts in a bank.
+ePackageImport bank
+
+// Open an account for a client, unless an account with the identifier exists.
+rule openAccount(IN client:EString, IN number:EInt, OUT account:Account) {
+	graph {
+		node bank:Bank
+		node owner:Client {
+			name = client
+		}
+		forbid node existing:Account {
+			id = number
+		}
+		create node account:Account {
+			id = number
+			balance = 0
+		}
+		edges [
+			(bank->owner:clients),
+			(forbid bank->existing:accounts),
+			(create bank->account:accounts),
+			(create owner->account:accounts)
+		]
+	}
+}
+
+// Add a positive amount to the balance of an account.
+rule deposit(IN number:EInt, IN amount:EInt, VAR old:EInt) {
+	conditions [amount > 0]
+	graph {
+		node account:Account {
+			id = number
+			balance = old
+			set balance = old + amount
+		}
+	}
+}
+
+// Move an amount between two accounts if the source account covers it.
+rule transfer(IN from:EInt, IN to:EInt, IN amount:EInt, VAR x:EInt, VAR y:EInt) {
+	conditions [amount > 0 AND x >= amount]
+	graph {
+		node source:Account {
+			id = from
+			balance = x
+			set balance = x - amount
+		}
+		node target:Account {
+			id = to
+			balance = y
+			set balance = y + amount
+		}
+	}
+}
+
+// Close an empty account, together with its references.
+rule closeAccount(IN number:EInt) {
+	graph {
+		node bank:Bank
+		node owner:Client
+		delete node account:Account {
+			id = number
+			balance = 0
+		}
+		edges [
+			(delete bank->account:accounts),
+			(delete owner->account:accounts)
+		]
+	}
+}
+
+// Open an account and pay a first amount into it, or do neither.
+unit openAndFund(IN client:EString, IN number:EInt, IN amount:EInt, OUT account:Account) {
+	openAccount(client, number, account)
+	deposit(number, amount)
+}

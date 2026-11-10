@@ -4,7 +4,7 @@ Add a language by adding a directory of templates and data.
 
 ## Overview
 
-A template set generates code for one language. It is a directory named after the language that holds a descriptor, template modules and, optionally, data models. The bundled sets, `java`, `swift`, `c` and `cpp`, live in the `Templates` directory of this library. A set can also come from a directory that you name when you generate, so a new language can be tried without changing or rebuilding anything.
+A template set generates code for one language. It is a directory named after the language that holds a descriptor, template modules and, optionally, data models. The bundled sets, `java`, `swift`, `c` and `cpp`, and the verification sets `alloy`, `tla`, `eventb` and `lean`, live in the `Templates` directory of this library. A set can also come from a directory that you name when you generate, so a new language can be tried without changing or rebuilding anything.
 
 The descriptor, `templateset.json`, is read into a ``TemplateSetDescriptor``. Only the name, the main module and the main template are required:
 
@@ -24,6 +24,24 @@ The descriptor, `templateset.json`, is read into a ``TemplateSetDescriptor``. On
 ```
 
 The main template runs with the generator model as its only argument and writes files with `[file (...)]` blocks. The optional file count template writes the number of files that the main template will write; the pipeline runs it first so that progress reports can show a bar.
+
+### Model exports
+
+A set can export models of a metamodel as well. The optional `modelTemplate` names a template of the main module that takes the root package of the metamodel and the root object of a model, and `modelFileCountTemplate` a template with the same arguments that writes the number of files it writes:
+
+```json
+{
+  "name": "alloy",
+  "mainModule": "generate",
+  "mainTemplate": "generate",
+  "fileCountTemplate": "fileCount",
+  "modelTemplate": "generateModel",
+  "modelFileCountTemplate": "modelFileCount",
+  "imports": ["../verification"]
+}
+```
+
+``GenerationPipeline/generate(modelURL:metamodelURL:language:outputDirectory:options:progress:)`` runs the model template with the global variable `modelName` set to the name of the model file without its extension (``TemplateSetConstants/modelNameVariable``), the model under the alias ``TemplateSetConstants/modelAlias`` and the metamodel under ``TemplateSetConstants/ecoreModelAliasPrefix`` followed by its position. Unset features of the model read as undefined. A set without a model template rejects models with ``GenerationError/noModelTemplate(_:)``; `swift-ecore generate --model` checks this before it writes anything. See <doc:VerificationExports> for the bundled sets that export models.
 
 `layout.sourceRootSetting` names the generator model setting that holds the source directory, and `layout.includeSourceRoot` decides whether that directory is included in the output path by default. ``GenerationOptions/includeSourceRoot`` (`--model-directory` on the command line) overrides that choice. Templates can call `layoutIncludesSourceRoot()` to decide whether to write files beside the source directory, such as project metadata. `options.lineDelimiter` chooses the line delimiter of generated files. See <doc:JavaGeneration> for the Java source and project layout, <doc:SwiftGeneration> for the Swift layout, <doc:CGeneration> for the C layout and <doc:CppGeneration> for the C++ layout.
 
@@ -54,7 +72,7 @@ Each style is a ``TemplateSetDescriptor/Style``. All members are optional:
 - `files` - glob patterns of the files that the style applies to; without patterns it applies to every file. A `[file]` block that passes `'layout=false'` is never converted.
 - `openerToken`, `lineComments`, `blockComments` (a list of `{ "start": ..., "end": ... }`), `quotes` and `terminators` - the lexical conventions that tell code from comments and literals, with the brace conventions as the default.
 
-A style with equal indentation units and `ownLine` selects the layout that the templates write. ``GenerationOptions/codeStyle`` chooses a style by name (`--code-style` on the command line); a name that the descriptor does not declare is rejected with ``GenerationError/unknownCodeStyle(_:_:_:)``, which lists the styles that exist, and so is any name for a set that declares none. A `defaultStyle` must be one of the declared styles. The conversion happens before the generated text is merged with an existing file, so kept members keep their layout.
+A style with equal indentation units and `ownLine` selects the layout that the templates write. ``GenerationOptions/codeStyle`` chooses a style by name (`--code-style` on the command line); a name that the descriptor does not declare is rejected with ``GenerationError/unknownCodeStyle(_:_:_:)``, which lists the styles that exist, and so is any name for a set that declares none. A style that ``GenerationOptions/codeStyleIsConfigured`` marks as coming from a configuration, such as the `code-style` key of a configuration file, is ignored by a set that declares none instead. A `defaultStyle` must be one of the declared styles. The conversion happens before the generated text is merged with an existing file, so kept members keep their layout.
 
 ### Overriding templates
 
@@ -124,6 +142,8 @@ The `c` and `cpp` sets keep their tables in `c-types.xmi` and `cpp-types.xmi`. B
 | `serialisedEcore()`, `serialisedEcore(source)` | The Ecore model of a generator package as `.ecore` text, optionally without the annotations of one source. |
 | `templateData('name')` | The root objects of a data model of the set. |
 | `layoutIncludesSourceRoot()` | Whether the output location contains the source directory of the generator model (`--model-directory`), as opposed to being that directory. |
+
+``VerificationServices`` adds the services of the verification sets, whose names start with `verification` (see ``VerificationServiceName``): the translation of OCL invariants and the identifiers of a ``VerificationTarget``. The pipeline registers them for every set.
 
 Services with parentheses win over stored references of the same name, so derived navigation is written `element.genPackage()`; `element.genPackage` would read the stored reference of the generator metamodel.
 

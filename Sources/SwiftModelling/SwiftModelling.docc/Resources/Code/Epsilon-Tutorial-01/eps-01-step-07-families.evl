@@ -1,0 +1,42 @@
+context Family {
+
+  // A family needs a last name
+  constraint HasLastName {
+    check: self.lastName.length() > 0
+    message: "A family with father " + self.father.firstName + " has no last name"
+  }
+
+  // Last names should start with a capital letter
+  critique CapitalisedLastName {
+    check: self.lastName.firstToUpperCase() = self.lastName
+    message: "Family " + self.lastName + " should start with a capital letter"
+    fix {
+      title: "Capitalise " + self.lastName
+      do {
+        self.lastName = self.lastName.firstToUpperCase();
+      }
+    }
+  }
+}
+
+context Member {
+
+  // Every member needs a first name
+  constraint HasFirstName {
+    check: self.firstName.length() > 0
+    message: "A member of family " + self.family().lastName + " has no first name"
+    fix {
+      title: "Name the member Unknown"
+      do {
+        self.firstName = "Unknown";
+      }
+    }
+  }
+}
+
+operation Member family() : Family {
+  if (self.familyFather.isDefined()) { return self.familyFather; }
+  if (self.familyMother.isDefined()) { return self.familyMother; }
+  if (self.familySon.isDefined()) { return self.familySon; }
+  return self.familyDaughter;
+}

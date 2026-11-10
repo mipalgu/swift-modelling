@@ -42,6 +42,19 @@ import MTL
 /// that a module of the set writes `[import expressions::c/]` to import the module `c.mtl` of the
 /// directory `expressions`. See ``imports``.
 ///
+/// ## Model exports
+///
+/// A template set may also export models of a metamodel, as the verification sets do. The
+/// optional `modelTemplate` names the template that does so, and `modelFileCountTemplate` the
+/// template that counts the files it writes:
+///
+/// ```json
+/// { "name": "alloy", "mainModule": "generate", "mainTemplate": "generate",
+///   "modelTemplate": "generateModel", "modelFileCountTemplate": "modelFileCount" }
+/// ```
+///
+/// See ``GenerationPipeline/generate(modelURL:metamodelURL:language:outputDirectory:options:progress:)``.
+///
 /// ## Code styles
 ///
 /// A template set writes its text in one layout. The optional `styles` section names other layouts
@@ -270,6 +283,18 @@ public struct TemplateSetDescriptor: Codable, Sendable, Equatable {
     /// file. The pipeline runs it without writing to disk and uses the number to report progress.
     public var fileCountTemplate: String?
 
+    /// The name of an optional template of the main module that exports a model of a metamodel.
+    ///
+    /// The template takes the root package of the metamodel and the root object of the model, and
+    /// reads the name of the model file, without its extension, from the global variable
+    /// ``TemplateSetConstants/modelNameVariable``. `nil` if the set cannot export models.
+    public var modelTemplate: String?
+
+    /// The name of an optional template of the main module that takes the arguments of
+    /// ``modelTemplate`` and writes the number of files that it writes, as the only content of one
+    /// file. The pipeline runs it without writing to disk and uses the number to report progress.
+    public var modelFileCountTemplate: String?
+
     /// The data models that the templates read.
     public var dataModels: [DataModel]
 
@@ -304,6 +329,8 @@ public struct TemplateSetDescriptor: Codable, Sendable, Equatable {
     ///   - mainModule: The module that holds the main template.
     ///   - mainTemplate: The main template.
     ///   - fileCountTemplate: The query that counts the files to write, if any.
+    ///   - modelTemplate: The template that exports a model, if any.
+    ///   - modelFileCountTemplate: The template that counts the files of a model export, if any.
     ///   - dataModels: The data models for the templates.
     ///   - layout: The default output layout.
     ///   - options: The generator options.
@@ -312,15 +339,17 @@ public struct TemplateSetDescriptor: Codable, Sendable, Equatable {
     ///   - imports: The directories, relative to the set, whose modules the set imports.
     public init(
         name: String, summary: String? = nil, mainModule: String, mainTemplate: String,
-        fileCountTemplate: String? = nil, dataModels: [DataModel] = [], layout: Layout = Layout(),
-        options: Options = Options(), styles: [String: Style] = [:], defaultStyle: String? = nil,
-        imports: [String] = []
+        fileCountTemplate: String? = nil, modelTemplate: String? = nil, modelFileCountTemplate: String? = nil,
+        dataModels: [DataModel] = [], layout: Layout = Layout(), options: Options = Options(),
+        styles: [String: Style] = [:], defaultStyle: String? = nil, imports: [String] = []
     ) {
         self.name = name
         self.summary = summary
         self.mainModule = mainModule
         self.mainTemplate = mainTemplate
         self.fileCountTemplate = fileCountTemplate
+        self.modelTemplate = modelTemplate
+        self.modelFileCountTemplate = modelFileCountTemplate
         self.dataModels = dataModels
         self.layout = layout
         self.options = options
@@ -337,6 +366,8 @@ public struct TemplateSetDescriptor: Codable, Sendable, Equatable {
         mainModule = try container.decode(String.self, forKey: .mainModule)
         mainTemplate = try container.decode(String.self, forKey: .mainTemplate)
         fileCountTemplate = try container.decodeIfPresent(String.self, forKey: .fileCountTemplate)
+        modelTemplate = try container.decodeIfPresent(String.self, forKey: .modelTemplate)
+        modelFileCountTemplate = try container.decodeIfPresent(String.self, forKey: .modelFileCountTemplate)
         dataModels = try container.decodeIfPresent([DataModel].self, forKey: .dataModels) ?? []
         layout = try container.decodeIfPresent(Layout.self, forKey: .layout) ?? Layout()
         options = try container.decodeIfPresent(Options.self, forKey: .options) ?? Options()
@@ -363,5 +394,29 @@ public struct TemplateSetDescriptor: Codable, Sendable, Equatable {
             throw GenerationError.unknownCodeStyle(name, self.name, styleNames)
         }
         return style.layoutConfiguration
+    }
+
+    /// The layout conversion for a code style that may come from a configuration.
+    ///
+    /// An explicit style, such as one given on the command line, is resolved as by
+    /// ``layoutConfiguration(forStyle:)``. A configured style, such as the `code-style` of a
+    /// configuration file, applies only if the set offers code styles: a set that declares none
+    /// ignores it, so that one configuration serves the template sets of several languages. A
+    /// configured style that a set with code styles does not declare is rejected like an
+    /// explicit one.
+    ///
+    /// - Parameters:
+    ///   - requested: The name of the style, or `nil` for the default style.
+    ///   - isConfigured: Whether the style comes from a configuration rather than an explicit
+    ///     choice.
+    /// - Returns: The layout conversion, or `nil` if no style applies and no default style
+    ///   exists, in which case the text stays as the templates write it.
+    /// - Throws: ``GenerationError/unknownCodeStyle(_:_:_:)`` if the style that applies is not a
+    ///   style of the set.
+    public func layoutConfiguration(
+        forStyle requested: String?, isConfigured: Bool
+    ) throws -> MTLLayoutConfiguration? {
+        let ignored = isConfigured && styles.isEmpty
+        return try layoutConfiguration(forStyle: ignored ? nil : requested)
     }
 }

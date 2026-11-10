@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lend:Library xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:lend="http://www.example.org/lending"
+    name="Town Library">
+  <items xsi:type="lend:Book" identifier="B1" title="Collected Poems" copies="2"
+      genre="poetry" authors="//@writers.0"/>
+  <items xsi:type="lend:Book" identifier="B2" title="The Long Voyage" genre="fiction"
+      authors="//@writers.0 //@writers.1"/>
+  <writers name="Ada Brown" books="//@items.0 //@items.1"/>
+  <writers name="Sam Green" books="//@items.1"/>
+</lend:Library>

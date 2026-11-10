@@ -266,13 +266,16 @@ enum DocumentedCommands {
 
     /// The problems of an invocation: an unknown subcommand, or long options that its help does not list.
     ///
-    /// The first argument names a subcommand unless it is an option. When it names no subcommand,
-    /// the default subcommand of the tool, if any, receives the arguments. The implicit `help`
-    /// subcommand and placeholders such as `<command>` are accepted unchecked.
+    /// The first argument names a subcommand unless it is an option, and so does each further
+    /// argument while the help page of the subcommand named so far lists subcommands of its own, as
+    /// in `swift-epsilon eol run`. When an argument names no subcommand, the default subcommand of
+    /// that level, if any, receives the arguments. The implicit `help` subcommand and placeholders
+    /// such as `<command>` are accepted unchecked.
     ///
     /// - Parameters:
     ///   - invocation: The invocation to check.
-    ///   - help: The help page of the tool, or of one of its subcommands; `nil` if the tool is not built.
+    ///   - help: The help page of the tool, or of one of its subcommands, named by the subcommands
+    ///     from the tool down separated by spaces; `nil` if the tool is not built.
     /// - Returns: A description of every problem found.
     /// - Throws: An error if a help page cannot be obtained.
     static func problems(
@@ -284,27 +287,27 @@ enum DocumentedCommands {
         }
         var arguments = invocation.arguments[...]
         var page = root
-        var command = tool
-        if let candidate = arguments.first, !candidate.hasPrefix("-") {
+        var path: [String] = []
+        var command: String { ([tool] + path).joined(separator: " ") }
+        func descend(into subcommand: String) async throws {
+            path.append(subcommand)
+            page = try await help(tool, path.joined(separator: " ")) ?? page
+        }
+        while let candidate = arguments.first, !candidate.hasPrefix("-"), !page.subcommands.isEmpty {
             if candidate == TutorialReplayConfiguration.implicitHelpSubcommand || isPlaceholder(candidate) {
                 return []
             }
-            if root.subcommands.contains(candidate) {
-                arguments = arguments.dropFirst()
-                command = "\(tool) \(candidate)"
-                page = try await help(tool, candidate) ?? root
-            } else if let fallback = root.defaultSubcommand {
-                command = "\(tool) \(fallback)"
-                page = try await help(tool, fallback) ?? root
-            } else if !root.subcommands.isEmpty {
-                return [
-                    "'\(tool)' has no subcommand '\(candidate)' (subcommands: "
-                        + root.subcommands.joined(separator: ", ") + ")"
-                ]
-            }
-        } else if let fallback = root.defaultSubcommand {
-            command = "\(tool) \(fallback)"
-            page = try await help(tool, fallback) ?? root
+            guard page.subcommands.contains(candidate) else { break }
+            arguments = arguments.dropFirst()
+            try await descend(into: candidate)
+        }
+        if let fallback = page.defaultSubcommand {
+            try await descend(into: fallback)
+        } else if let candidate = arguments.first, !candidate.hasPrefix("-"), !page.subcommands.isEmpty {
+            return [
+                "'\(command)' has no subcommand '\(candidate)' (subcommands: "
+                    + page.subcommands.joined(separator: ", ") + ")"
+            ]
         }
         var problems: [String] = []
         for argument in arguments {
@@ -332,7 +335,8 @@ actor CommandLineHelp {
     ///
     /// - Parameters:
     ///   - tool: The name of the tool.
-    ///   - subcommand: The subcommand, or `nil` for the tool itself.
+    ///   - subcommand: The subcommand, or the nested subcommands from the tool down separated by
+    ///     spaces, such as `eol run`; `nil` for the tool itself.
     ///   - productsDirectory: The directory that holds the executables of this build.
     /// - Returns: The help page, or `nil` if this build has no executable of that name.
     /// - Throws: An error if the tool cannot be started.
@@ -346,7 +350,8 @@ actor CommandLineHelp {
                 let executable = productsDirectory.appendingPathComponent(tool)
             #endif
             guard FileManager.default.isExecutableFile(atPath: executable.path) else { return nil }
-            let arguments = (subcommand.map { [$0] } ?? []) + [TutorialReplayConfiguration.helpOption]
+            let subcommands = subcommand.map { $0.split(separator: " ").map(String.init) } ?? []
+            let arguments = subcommands + [TutorialReplayConfiguration.helpOption]
             let result = try await withProcessSlot {
                 try await Subprocess.run(
                     .path(FilePath(executable.path)),

@@ -1,0 +1,9 @@
+rule Bank2Ledger transform b : Bank!Bank to l : Ledger!Ledger {
+  l.title = b.name;
+  l.entries ::= b.accounts;
+}
+
+rule Account2Entry transform a : Bank!Account to e : Ledger!Entry {
+  e.label = a.owner + ' (' + a.name + ')';
+  e.overdrawn = a.balance < 0;
+}

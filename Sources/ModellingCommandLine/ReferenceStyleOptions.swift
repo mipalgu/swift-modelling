@@ -26,8 +26,11 @@ extension XMIReferenceStyle: @retroactive ExpressibleByArgument {}
 /// options of their XMI serialiser from ``serializationOptions`` or apply the chosen style to
 /// options of their own with ``apply(to:)``.
 public struct ReferenceStyleOptions: ParsableArguments, Sendable {
-    /// The long name of the option.
+    /// The long name of the option, and the key of the configuration file.
     public static let optionName = "reference-style"
+
+    /// The style that applies when neither the command line nor the configuration file chooses one.
+    public static let defaultStyle = XMIReferenceStyle.encoded
 
     /// The values of the option, separated as in the usage of a command.
     public static let valueList = XMIReferenceStyle.allCases.map(\.rawValue).joined(separator: "|")
@@ -42,7 +45,7 @@ public struct ReferenceStyleOptions: ParsableArguments, Sendable {
         files. Both styles load again.
         """
 
-    /// How references into the written document are spelt.
+    /// How references into the written document are spelt, as given on the command line, if at all.
     @Option(
         name: .customLong(ReferenceStyleOptions.optionName),
         help: ArgumentHelp(
@@ -50,10 +53,41 @@ public struct ReferenceStyleOptions: ParsableArguments, Sendable {
                 + "\(XMIReferenceStyle.plain.rawValue) writes them as Eclipse writes XMI model files",
             discussion: ReferenceStyleOptions.styles,
             valueName: ReferenceStyleOptions.valueList))
-    public var referenceStyle: XMIReferenceStyle = .encoded
+    public var explicitReferenceStyle: XMIReferenceStyle?
 
-    /// Creates the option with the encoded reference style.
+    /// The style given on the command line, or ``defaultStyle`` if none is.
+    ///
+    /// The style that applies to a run of a command that reads a configuration file also depends
+    /// on that file; ``serializationOptions(settings:)`` resolves it. Setting this property gives
+    /// the style as if on the command line.
+    public var referenceStyle: XMIReferenceStyle {
+        get { explicitReferenceStyle ?? Self.defaultStyle }
+        set { explicitReferenceStyle = newValue }
+    }
+
+    /// Creates the option with nothing given, which writes the encoded reference style unless
+    /// the configuration file says otherwise.
     public init() {}
+
+    /// The style that applies to a run.
+    ///
+    /// - Parameter settings: The settings of the run, whose configuration file is consulted.
+    /// - Returns: The style given on the command line, else the `reference-style` of the
+    ///   configuration file, else ``defaultStyle``.
+    public func referenceStyle(settings: SemanticsSettings) -> XMIReferenceStyle {
+        explicitReferenceStyle ?? settings.configuration.referenceStyle ?? Self.defaultStyle
+    }
+
+    /// The options with which a command writes an XMI model in the style of a run.
+    ///
+    /// - Parameter settings: The settings of the run, whose configuration file is consulted.
+    /// - Returns: The serialisation options of ``serializationOptions`` for the style of
+    ///   ``referenceStyle(settings:)``.
+    public func serializationOptions(settings: SemanticsSettings) -> XMISerializationOptions {
+        var resolved = self
+        resolved.explicitReferenceStyle = referenceStyle(settings: settings)
+        return resolved.serializationOptions
+    }
 
     /// A paragraph that describes the option in the discussion of a command.
     ///

@@ -19,7 +19,7 @@ import OrderedCollections
 /// instead of a module header, over its input models. It prints the value of the query and
 /// lets the query write files with `writeTo` and `writeToWithCharset`, confined to an output
 /// directory unless unrestricted paths are allowed explicitly.
-struct QueryCommand: AsyncParsableCommand {
+struct QueryCommand: AsyncParsableCommand, ATLSourceReading {
 
     /// The separator between a model name and its metamodel name in a `--source` argument.
     static let metamodelSeparator: Character = ":"
@@ -53,6 +53,13 @@ struct QueryCommand: AsyncParsableCommand {
             true, 42 or Sequence{'a', 'b'}. A query that ends with writeTo prints true. Use \
             --no-print-result to print nothing. Messages are written to standard error.
 
+            --deep-view <level> presents each multi-level input model, such as a MetaDepth \
+            document (.mdepth) or an XMI or JSON document of its linguistic instances, as the \
+            read-only deep view of that level. The package of the view is its metamodel and is \
+            named after the level that types the level shown, so --source shop.mdepth binds it by \
+            position, and --source IN:Products=shop.mdepth binds it under any metamodel name. \
+            The deep helpers of transform are available.
+
             Examples:
                 # Write the dot file that the query builds, below graphs/
                 swift-atl query Flow2Dot.atl --source order.xmi --output-directory graphs
@@ -67,6 +74,10 @@ struct QueryCommand: AsyncParsableCommand {
             \(UnsetFeatureOptions.discussion(reader: "the query"))
 
             \(ATLSemanticsOptions.discussion(reader: "the query"))
+
+            \(SourceEncodingOptions.discussion(reader: "the query"))
+
+            \(OutputEncodingOptions.discussion(writer: "the files that writeTo writes (writeToWithCharset keeps the charset that it names)"))
 
             \(SemanticsOptions.discussion())
             """
@@ -148,6 +159,18 @@ struct QueryCommand: AsyncParsableCommand {
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
 
+    /// The character encoding of the ATL source.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// The character encoding of the files that `writeTo` writes.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
+
+    /// How metamodels in KM3 and in grammar formats are read.
+    @OptionGroup var formatOptions: MetamodelFormatOptions
+
+    /// The level whose deep view replaces each multi-level input model, if any.
+    @OptionGroup var deepViewOptions: DeepViewOptions
+
     func run() async throws {
         let settings = try semanticsOptions.settings()
         do {
@@ -172,27 +195,36 @@ struct QueryCommand: AsyncParsableCommand {
     private func evaluate(settings: SemanticsSettings) async throws -> (any EcoreValue)? {
         let searchPaths = metamodelSearchPaths(for: query, explicit: metamodelPath)
         let atlOptions = atlSemanticsOptions.atlOptions(settings: settings)
+        let deepViews = try await deepViewSources(settings: settings)
+        var registry = try await builtInMetamodelRegistry()
+        deepViews?.register(in: &registry)
         let unit = try await ATLParser(options: atlOptions, enableDebugging: debug).parseContent(
-            String(contentsOfFile: query, encoding: .utf8),
+            readATLSource(at: query),
             filename: URL(fileURLWithPath: query).path,
             searchPaths: searchPaths,
             continueAfterErrors: false,
-            metamodelRegistry: try await builtInMetamodelRegistry())
+            metamodelRegistry: registry)
         guard unit.isQuery else {
             throw ValidationError(
                 "'\(query)' is a transformation module; run it with 'swift-atl \(TransformCommand.configuration.commandName ?? "")'"
             )
         }
         let parameterValues = try unit.parameterValues(fromText: parseParameters(param))
-        let packages = try await metamodelPackages()
+        var packages = try await metamodelPackages(
+            options: formatOptions.ecoreLoadOptions(settings: settings, encodingOptions: encodingOptions))
+        for package in deepViews?.packages ?? []
+        where packages[package.name] == nil && unit.sourceMetamodels[package.name] == nil {
+            packages[package.name] = package
+        }
 
         var metamodelNames = Array(unit.sourceMetamodels.keys)
         for name in packages.keys where !metamodelNames.contains(name) {
             metamodelNames.append(name)
         }
         let (models, files) = try inputModels(metamodelNames: metamodelNames)
-        let bound = unit.declaringSourceModels(
+        var bound = unit.declaringSourceModels(
             models, metamodels: Dictionary(uniqueKeysWithValues: packages.map { ($0.key, $0.value) }))
+        bound = deepViews?.binding(bound, mapping: files) ?? bound
         for (model, package) in bound.sourceMetamodels where package.eClassifiers.isEmpty {
             let name = bound.declaredMetamodelNames[model] ?? package.name
             throw ValidationError(
@@ -201,10 +233,17 @@ struct QueryCommand: AsyncParsableCommand {
         }
         report("Query \(bound.name) over \(models.map { "\($0.key) : \($0.value)" }.joined(separator: ", "))")
 
-        let sources = try await loadModelsFromMapping(
-            files, metamodels: bound.sourceMetamodels, containerLookupScope: settings.containerLookupScope,
-            explicitFormat: inputFormat, verbose: false, debug: debug)
-        let fileOutput = fileOutputPolicy()
+        let sources: OrderedDictionary<String, Resource>
+        if let deepViews {
+            sources = try await deepViews.loadSources(
+                files, metamodels: bound.sourceMetamodels, containerLookupScope: settings.containerLookupScope,
+                explicitFormat: inputFormat, verbose: false, debug: debug)
+        } else {
+            sources = try await loadModelsFromMapping(
+                files, metamodels: bound.sourceMetamodels, containerLookupScope: settings.containerLookupScope,
+                explicitFormat: inputFormat, verbose: false, debug: debug)
+        }
+        let fileOutput = fileOutputPolicy(encoding: outputEncodingOptions.encoding(settings: settings))
         if let directory = fileOutput.baseDirectory {
             var isDirectory: ObjCBool = false
             if FileManager.default.fileExists(atPath: directory.path, isDirectory: &isDirectory),
@@ -217,10 +256,11 @@ struct QueryCommand: AsyncParsableCommand {
         report("Writing files relative to \(fileOutput.baseDirectory?.path ?? "")")
 
         let unsetFeatureReads = unsetFeatureOptions.unsetFeatures(settings: settings)
+        let nativeHelpers = deepViews?.helpers ?? []
         let virtualMachine = await MainActor.run {
             ATLVirtualMachine(
                 module: bound, options: atlOptions, unsetFeatureReads: unsetFeatureReads,
-                fileOutput: fileOutput)
+                nativeHelpers: nativeHelpers, fileOutput: fileOutput)
         }
         if debug {
             await virtualMachine.enableDebugging(true)
@@ -232,18 +272,35 @@ struct QueryCommand: AsyncParsableCommand {
         return value
     }
 
+    /// Reads the multi-level input models when `--deep-view` is given.
+    ///
+    /// - Parameter settings: The settings of the run.
+    /// - Returns: The deep views of the multi-level input models, or `nil` without `--deep-view`.
+    /// - Throws: The errors of ``ATLDeepViewSources/load(level:sourceArguments:explicitFormat:settings:encoding:verbose:)``.
+    private func deepViewSources(settings: SemanticsSettings) async throws -> ATLDeepViewSources? {
+        guard let level = deepViewOptions.level else { return nil }
+        return try await ATLDeepViewSources.load(
+            level: level, sourceArguments: source, explicitFormat: inputFormat, settings: settings,
+            encoding: encodingOptions.encoding(settings: settings))
+    }
+
     /// Loads the metamodels given with `--metamodel`.
     ///
+    /// Each file binds its first root package.
+    ///
+    /// - Parameter options: The options with which the files are read, such as those of KM3.
     /// - Returns: The packages indexed by the metamodel name they are bound to, in command line order.
     /// - Throws: An error if a file cannot be loaded.
-    private func metamodelPackages() async throws -> OrderedDictionary<String, EPackage> {
+    private func metamodelPackages(options: EcoreLoadOptions) async throws -> OrderedDictionary<String, EPackage> {
         var packages: OrderedDictionary<String, EPackage> = [:]
         for argument in metamodel {
             let (name, path) = Self.split(argument)
             guard FileManager.default.fileExists(atPath: path) else {
                 throw TransformationError.modelFileNotFound(path)
             }
-            let package = try await EPackage(url: URL(fileURLWithPath: path))
+            guard let package = try await MetamodelRegistration.loadPackages(at: path, options: options).first else {
+                continue
+            }
             packages[name ?? package.name] = package
         }
         return packages
@@ -300,12 +357,18 @@ struct QueryCommand: AsyncParsableCommand {
     }
 
     /// The policy for the files that the query writes.
-    private func fileOutputPolicy() -> ATLFileOutputPolicy {
+    ///
+    /// - Parameter encoding: The encoding in which `writeTo` writes.
+    /// - Returns: The policy that the output directory and `--allow-unrestricted-paths` choose.
+    private func fileOutputPolicy(encoding: TextEncoding) -> ATLFileOutputPolicy {
         let directory = URL(
             fileURLWithPath: outputDirectory ?? FileManager.default.currentDirectoryPath,
             isDirectory: true)
-        return allowUnrestrictedPaths
+        var policy: ATLFileOutputPolicy =
+            allowUnrestrictedPaths
             ? .unrestricted(relativeTo: directory) : .confined(to: directory)
+        policy.defaultEncoding = encoding
+        return policy
     }
 
     /// Splits an argument of the form `NAME=path` into its name and path.
@@ -324,6 +387,6 @@ struct QueryCommand: AsyncParsableCommand {
 
     /// Writes a line to standard error.
     private func writeError(_ message: String) {
-        FileHandle.standardError.write(Data((message + "\n").utf8))
+        StandardStreams.writeToStandardError(message + "\n")
     }
 }

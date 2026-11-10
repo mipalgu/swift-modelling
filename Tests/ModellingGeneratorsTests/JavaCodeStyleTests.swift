@@ -136,6 +136,39 @@ struct JavaCodeStyleTests {
         #expect(GenerationError.unknownCodeStyle("c", "plain", []).description.hasSuffix("none"))
     }
 
+    @Test("A configured style is ignored by a set without styles, which rejects an explicit one")
+    func configuredStyleWithoutStyles() throws {
+        let json = #"{"name": "plain", "mainModule": "m", "mainTemplate": "t"}"#
+        let descriptor = try JSONDecoder().decode(TemplateSetDescriptor.self, from: Data(json.utf8))
+        #expect(try descriptor.layoutConfiguration(forStyle: "emf", isConfigured: true) == nil)
+        #expect(try descriptor.layoutConfiguration(forStyle: nil, isConfigured: true) == nil)
+        #expect(throws: GenerationError.unknownCodeStyle("emf", "plain", [])) {
+            try descriptor.layoutConfiguration(forStyle: "emf", isConfigured: false)
+        }
+    }
+
+    @Test("A configured style applies to a set with styles, which still rejects an unknown one")
+    func configuredStyleWithStyles() throws {
+        let json = """
+            {"name": "plain", "mainModule": "m", "mainTemplate": "t",
+             "styles": {"wide": {"sourceIndent": "  ", "targetIndent": "    "}, "bare": {}},
+             "defaultStyle": "bare"}
+            """
+        let descriptor = try JSONDecoder().decode(TemplateSetDescriptor.self, from: Data(json.utf8))
+        let wide = try #require(try descriptor.layoutConfiguration(forStyle: "wide", isConfigured: true))
+        #expect(wide.targetIndent == "    ")
+        #expect(try descriptor.layoutConfiguration(forStyle: nil, isConfigured: true) == MTLLayoutConfiguration())
+        #expect(throws: GenerationError.unknownCodeStyle("c", "plain", ["bare", "wide"])) {
+            try descriptor.layoutConfiguration(forStyle: "c", isConfigured: true)
+        }
+    }
+
+    @Test("Generation options mark no code style as configured by default")
+    func optionsDefaultToExplicitStyle() {
+        let options = GenerationOptions(codeStyle: "emf", mtlOptions: .standard)
+        #expect(!options.codeStyleIsConfigured)
+    }
+
     @Test("A default style that is not declared makes the descriptor invalid")
     func undeclaredDefaultStyle() {
         let json = #"{"name": "plain", "mainModule": "m", "mainTemplate": "t", "styles": {}, "defaultStyle": "x"}"#

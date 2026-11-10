@@ -1,0 +1,16 @@
+-- @nsURI http://www.example.org/persons
+-- @nsPrefix persons
+package Persons {
+
+	abstract class Person {
+		attribute fullName : String;
+	}
+
+	class Male extends Person {}
+
+	class Female extends Person {}
+}
+
+package PrimitiveTypes {
+	datatype String;
+}

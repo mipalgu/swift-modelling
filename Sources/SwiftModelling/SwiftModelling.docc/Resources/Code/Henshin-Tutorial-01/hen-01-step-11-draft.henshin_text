@@ -1,0 +1,32 @@
+// Draft rules with mistakes that validation finds.
+ePackageImport bank
+
+// Rename a client.
+rule renameClient(IN oldName:EString, IN newName:EString, IN note:EString) {
+	graph {
+		node client:Client {
+			name = oldName
+			set name = newName
+		}
+	}
+}
+
+// Remove an account.
+rule removeAccount(IN number:EInt) {
+	graph {
+		delete node account:Account {
+			id = number
+		}
+	}
+}
+
+// Pay a bonus into an account.
+rule payBonus(IN number:EInt, VAR old:EInt, VAR bonus:EInt) {
+	graph {
+		node account:Account {
+			id = number
+			balance = old
+			set balance = old + bonus
+		}
+	}
+}

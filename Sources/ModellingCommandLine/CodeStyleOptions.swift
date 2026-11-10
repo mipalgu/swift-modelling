@@ -17,9 +17,12 @@ import ModellingGenerators
 /// Commands include the option with `@OptionGroup`, and apply it to their generation options with
 /// ``apply(to:)``.
 public struct CodeStyleOptions: ParsableArguments, Sendable {
+    /// The long name of the option, and the key of the configuration file.
+    public static let optionName = "code-style"
+
     /// The name of the code style.
     @Option(
-        name: .customLong("code-style"),
+        name: .customLong(CodeStyleOptions.optionName),
         help: ArgumentHelp(
             "The code style of the generated text, one of the styles of the template set",
             discussion: """
@@ -42,6 +45,43 @@ public struct CodeStyleOptions: ParsableArguments, Sendable {
     /// - Parameter options: The generation options to update.
     public func apply(to options: inout GenerationOptions) {
         if let codeStyle { options.codeStyle = codeStyle }
+    }
+
+    /// The code style of a run.
+    ///
+    /// - Parameter settings: The settings of the run, whose configuration file is consulted.
+    /// - Returns: The style given on the command line, else the `code-style` of the
+    ///   configuration file, else `nil` for the default style of the template set.
+    public func codeStyle(settings: SemanticsSettings) -> String? {
+        codeStyle ?? settings.configuration.codeStyle
+    }
+
+    /// Whether the code style of a run comes from the configuration file.
+    ///
+    /// A style from the configuration file is a preference rather than a demand: a template set
+    /// that offers no code styles ignores it, whereas it rejects the option.
+    ///
+    /// - Parameter settings: The settings of the run, whose configuration file is consulted.
+    /// - Returns: `true` if no code style was given on the command line and the configuration
+    ///   file sets one.
+    public func codeStyleIsConfigured(settings: SemanticsSettings) -> Bool {
+        codeStyle == nil && settings.configuration.codeStyle != nil
+    }
+
+    /// Copies the code style of a run to generation options.
+    ///
+    /// A style from the configuration file is marked with
+    /// ``GenerationOptions/codeStyleIsConfigured``, so that a template set without code styles
+    /// ignores it, whereas it rejects the option.
+    ///
+    /// - Parameters:
+    ///   - options: The generation options to update.
+    ///   - settings: The settings of the run, whose configuration file is consulted.
+    public func apply(to options: inout GenerationOptions, settings: SemanticsSettings) {
+        if let style = codeStyle(settings: settings) {
+            options.codeStyle = style
+            options.codeStyleIsConfigured = codeStyleIsConfigured(settings: settings)
+        }
     }
 
     /// The code styles of the bundled template sets, as text for the help of a command.

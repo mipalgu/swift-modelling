@@ -41,6 +41,12 @@ struct GenModelCommand: AsyncParsableCommand {
             settings of either preset.
 
             \(UnsetFeatureOptions.discussion(reader: "the rules of the import transformation"))
+
+            \(OutputEncodingOptions.discussion(writer: OutputEncodingVocabulary.genModel))
+
+            \(SemanticsOptions.discussion())
+
+            \(ConfigurationFileOptions.discussion(keys: ConfigurationVocabulary.genModelKeys))
             """
     )
 
@@ -52,11 +58,15 @@ struct GenModelCommand: AsyncParsableCommand {
     var models: [String]
 
     /// The base package of the root packages.
-    @Option(help: "The base package of the root packages")
+    @Option(
+        name: .customLong(GenModelDefaultsOptions.OptionName.basePackage),
+        help: "The base package of the root packages")
     var basePackage: String?
 
     /// The prefixes of packages, either `Name` or `package=Name`.
-    @Option(help: "A package prefix: Name for the root package, or package=Name for one package")
+    @Option(
+        name: .customLong(GenModelDefaultsOptions.OptionName.prefix),
+        help: "A package prefix: Name for the root package, or package=Name for one package")
     var prefix: [String] = []
 
     /// The name of the model project.
@@ -76,7 +86,9 @@ struct GenModelCommand: AsyncParsableCommand {
     var copyright: String?
 
     /// The compliance level of the generated code.
-    @Option(help: "The compliance level of the generated code, such as 17.0")
+    @Option(
+        name: .customLong(GenModelDefaultsOptions.OptionName.jdkLevel),
+        help: "The compliance level of the generated code, such as 17.0")
     var jdkLevel: String?
 
     /// The existing generator model whose settings are kept.
@@ -95,6 +107,14 @@ struct GenModelCommand: AsyncParsableCommand {
     @OptionGroup(title: "Evaluation")
     var unsetFeatureOptions: UnsetFeatureOptions
 
+    /// The preset of the behaviours, standard or that of version 0.6, the container scope and
+    /// the configuration file.
+    @OptionGroup(title: "Evaluation")
+    var semanticsOptions: SemanticsOptions
+
+    /// The character encoding of the generator model.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
+
     /// Enable verbose output.
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose: Bool = false
@@ -103,9 +123,11 @@ struct GenModelCommand: AsyncParsableCommand {
     ///
     /// - Throws: ``GenerationError`` if a model is missing or unreadable, the import fails,
     ///   or the output cannot be written.
+    ///   Also ``ModellingConfigurationError`` if the configuration file cannot be read or is not valid,
+    ///   and `ModellingSemanticsError` if the environment variable names no preset.
     @MainActor
     func run() async throws {
-        let options = importOptions()
+        let options = importOptions(settings: try semanticsOptions.settings())
         let result: GenModelResult
         if verbose {
             result = try await GenerationPipeline.ecoreToGenModel(
@@ -126,20 +148,27 @@ struct GenModelCommand: AsyncParsableCommand {
 
     /// Converts the command line to import options.
     ///
-    /// - Returns: The options that the command line describes.
-    func importOptions() -> GenModelImportOptions {
-        var options = GenModelImportOptions(atlOptions: .standard)
-        options.basePackage = basePackage
-        prefix.forEach { options.addPrefix($0) }
+    /// An option that the command line leaves open takes the value of its key in the
+    /// configuration file of the settings, else its default. The preset of the settings gives
+    /// the behaviours of the import transformation, and the settings its container scope.
+    ///
+    /// - Parameter settings: The settings of the run, whose configuration file is consulted
+    ///   (default: none).
+    /// - Returns: The options that the command line and the configuration file describe.
+    func importOptions(settings: SemanticsSettings = SemanticsSettings()) -> GenModelImportOptions {
+        var options = GenModelImportOptions(atlOptions: settings.preset.atlOptions)
+        GenModelDefaultsOptions.applyProjectSettings(
+            basePackage: basePackage, prefixes: prefix, complianceLevel: jdkLevel, settings: settings, to: &options)
         options.modelProject = modelProject
         options.modelPluginID = modelPluginID
         options.modelDirectory = modelDirectory
         options.copyright = copyright
-        options.complianceLevel = jdkLevel
         options.reload = reload.map { URL(fileURLWithPath: $0) }
         options.output = output.map { URL(fileURLWithPath: $0) }
-        genModelDefaults.apply(to: &options)
-        unsetFeatureOptions.apply(to: &options)
+        genModelDefaults.apply(to: &options, settings: settings)
+        unsetFeatureOptions.apply(to: &options, settings: settings)
+        options.outputEncoding = outputEncodingOptions.encoding(settings: settings)
+        settings.apply(to: &options)
         return options
     }
 }

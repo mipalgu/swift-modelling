@@ -692,6 +692,21 @@ struct ConvertWarningTests {
         let lines = toJSON.stderr.split(whereSeparator: \.isNewline).map(String.init)
         #expect(lines.last == hints.first, "\(toJSON.stderr)")
     }
+
+    @Test("does not suggest --metamodel after the warnings of writing a metamodel as KM3")
+    @MainActor
+    func noHintForMetamodel() async throws {
+        let tempDir = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(tempDir) }
+        let metamodel = try loadTestResource(named: "classifiers.ecore", subdirectory: "ecore")
+        let km3 = tempDir.appendingPathComponent("classifiers.km3")
+
+        let result = try await executeSwiftEcore(command: "convert", arguments: [metamodel.path, km3.path])
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+        #expect(!Self.lines(of: result.stderr, startingWith: Self.warningPrefix + "KM3 cannot express").isEmpty, "\(result.stderr)")
+        #expect(Self.lines(of: result.stderr, startingWith: Self.hintPrefix).isEmpty, "\(result.stderr)")
+    }
 }
 
 // MARK: - Reference Style Tests
@@ -803,5 +818,65 @@ struct ConvertReferenceStyleTests {
         #expect(result.stdout.contains("encoded"))
         #expect(result.stdout.contains("plain"))
         #expect(result.stdout.contains("Eclipse"))
+    }
+}
+
+// MARK: - UML Round Trip Tests
+
+@Suite("swift-ecore convert - UML through JSON")
+struct ConvertUMLRoundTripTests {
+    /// A small UML class model with a generalisation, an enumeration and a composite association.
+    static let model = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <uml:Model xmi:version="20131001" xmlns:xmi="http://www.omg.org/spec/XMI/20131001"
+            xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML" xmi:id="_model" name="Garden">
+          <packagedElement xmi:type="uml:Class" xmi:id="_Bed" name="Bed">
+            <ownedAttribute xmi:id="_Bed_plants" name="plants" type="_Plant" aggregation="composite"
+                association="_Bed_plants_association">
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_Bed_plants_upper" value="*"/>
+            </ownedAttribute>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Class" xmi:id="_Plant" name="Plant" isAbstract="true">
+            <ownedAttribute xmi:id="_Plant_name" name="name">
+              <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+            </ownedAttribute>
+            <ownedAttribute xmi:id="_Plant_season" name="season" type="_Season"/>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Class" xmi:id="_Rose" name="Rose">
+            <generalization xmi:id="_Rose_generalization" general="_Plant"/>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Enumeration" xmi:id="_Season" name="Season">
+            <ownedLiteral xmi:id="_Season_spring" name="Spring"/>
+            <ownedLiteral xmi:id="_Season_autumn" name="Autumn"/>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Association" xmi:id="_Bed_plants_association" name="bed_plants"
+              memberEnd="_Bed_plants _Bed_plants_bed">
+            <ownedEnd xmi:id="_Bed_plants_bed" name="bed" type="_Bed" association="_Bed_plants_association"/>
+          </packagedElement>
+        </uml:Model>
+        """
+
+    @Test("keeps the UML classes when a UML model is converted to JSON and back")
+    @MainActor
+    func roundTrip() async throws {
+        let directory = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(directory) }
+        let original = directory.appendingPathComponent("Garden.uml")
+        let json = directory.appendingPathComponent("Garden.json")
+        let copy = directory.appendingPathComponent("Garden-copy.uml")
+        try Self.model.write(to: original, atomically: true, encoding: .utf8)
+
+        let toJSON = try await executeSwiftEcore(command: "convert", arguments: [original.path, json.path])
+        let back = try await executeSwiftEcore(command: "convert", arguments: [json.path, copy.path])
+        let compare = try await executeSwiftEcore(command: "compare", arguments: [original.path, copy.path])
+
+        #expect(toJSON.succeeded, "\(toJSON.stdout)\(toJSON.stderr)")
+        #expect(back.succeeded, "\(back.stdout)\(back.stderr)")
+        #expect(back.stderr.isEmpty, "\(back.stderr)")
+        let text = try String(contentsOf: copy, encoding: .utf8)
+        #expect(text.contains("xmlns:uml=\"http://www.eclipse.org/uml2/5.0.0/UML\""), "\(text)")
+        #expect(text.contains("<packagedElement xmi:type=\"uml:Class\""), "\(text)")
+        #expect(compare.succeeded, "\(compare.stdout)\(compare.stderr)")
+        #expect(compare.stdout == "Comparing models: Garden.uml -> Garden-copy.uml\nNo differences\n", "\(compare.stdout)")
     }
 }

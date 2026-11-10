@@ -1,0 +1,170 @@
+[comment encoding = UTF-8 /]
+[**
+ * Queries over Ecore metamodels and models that the verification template sets share.
+ *
+ * The verification exports work on the Ecore view of a metamodel: classes, their features, enumerations and data
+ * types. Derived and volatile features are computed from other features and are not exported; operations are not
+ * exported either. Classes are found by name within the package of the metamodel.
+ **/]
+[module VerificationQueries('http://www.eclipse.org/emf/2002/Ecore')/]
+
+[comment Classifiers /]
+
+[**
+ * The classes of a package, in declaration order.
+ **/]
+[query public classes(p : EPackage) : Sequence(EClass) = p.eClassifiers->select(c | c.oclIsKindOf(EClass))/]
+
+[**
+ * The enumerations of a package, in declaration order.
+ **/]
+[query public enumerations(p : EPackage) : Sequence(EEnum) = p.eClassifiers->select(c | c.oclIsKindOf(EEnum))/]
+
+[**
+ * The class of a package with a given name, or nothing if the package has no such class.
+ **/]
+[query public classNamed(p : EPackage, name : String) : OclAny = p.classes()->select(c | c.name = name)->first()/]
+
+[**
+ * Whether a class can have direct instances.
+ **/]
+[query public isConcrete(c : EClass) : Boolean = not c.abstract and not c.interface/]
+
+[**
+ * Whether a class conforms to another class: it is the class itself or one of its subclasses.
+ **/]
+[query public conformsTo(c : EClass, other : EClass) : Boolean = c.name = other.name or c.eAllSuperTypes->exists(s | s.name = other.name)/]
+
+[**
+ * The classes of a package that name a class as a direct supertype.
+ **/]
+[query public directSubclasses(p : EPackage, c : EClass) : Sequence(EClass) = p.classes()->select(x | x.eSuperTypes->exists(s | s.name = c.name))/]
+
+[**
+ * The concrete classes of a package that conform to a class, which together hold all of its instances.
+ **/]
+[query public concreteConforming(p : EPackage, c : EClass) : Sequence(EClass) = p.classes()->select(x | x.isConcrete() and x.conformsTo(c))/]
+
+[**
+ * Whether two classes can share an instance: one conforms to the other, or a class of the package conforms to both.
+ **/]
+[query public canOverlap(p : EPackage, a : EClass, b : EClass) : Boolean = p.classes()->exists(x | x.conformsTo(a) and x.conformsTo(b))/]
+
+[**
+ * The classes of a package that have no supertypes.
+ **/]
+[query public rootClasses(p : EPackage) : Sequence(EClass) = p.classes()->select(c | c.eSuperTypes->isEmpty())/]
+
+[comment Features /]
+
+[**
+ * Whether a feature is exported: it is neither derived nor volatile.
+ **/]
+[query public isExported(f : EStructuralFeature) : Boolean = not f.derived and not f.volatile/]
+
+[**
+ * The exported features that a class declares itself, in declaration order.
+ **/]
+[query public exportedFeatures(c : EClass) : Sequence(EStructuralFeature) = c.eStructuralFeatures->select(f | f.isExported())/]
+
+[**
+ * The exported features of a class, inherited features first.
+ **/]
+[query public allExportedFeatures(c : EClass) : Sequence(EStructuralFeature) = c.eAllStructuralFeatures->select(f | f.isExported())/]
+
+[**
+ * The features of the classes of a package that are not exported, as text such as 'Member.loanCount'.
+ **/]
+[query public omittedFeatures(p : EPackage) : Sequence(String) = p.classes()->collect(c | c.eStructuralFeatures->reject(f | f.isExported())->collect(f | c.name + '.' + f.name))->flatten()/]
+
+[**
+ * The operations of the classes of a package, which are not exported, as text such as 'Member.canBorrow'.
+ **/]
+[query public omittedOperations(p : EPackage) : Sequence(String) = p.classes()->collect(c | c.eOperations->collect(o | c.name + '.' + o.name))->flatten()/]
+
+[**
+ * Whether a feature is a reference.
+ **/]
+[query public isReference(f : EStructuralFeature) : Boolean = f.oclIsKindOf(EReference)/]
+
+[**
+ * Whether a feature is a containment reference.
+ **/]
+[query public isContainmentReference(f : EStructuralFeature) : Boolean = f.oclIsKindOf(EReference) and f.containment/]
+
+[**
+ * Whether a feature holds several values.
+ **/]
+[query public isMany(f : EStructuralFeature) : Boolean = f.upperBound <> 1/]
+
+[**
+ * Whether a feature holds at most one value that may be absent.
+ **/]
+[query public isOptional(f : EStructuralFeature) : Boolean = f.upperBound = 1 and f.lowerBound = 0/]
+
+[**
+ * Whether a feature holds exactly one value.
+ **/]
+[query public isRequiredSingle(f : EStructuralFeature) : Boolean = f.upperBound = 1 and f.lowerBound >= 1/]
+
+[**
+ * Whether a many-valued feature has bounds beyond those of a plain collection: a lower bound above zero or an upper
+ * bound.
+ **/]
+[query public hasCardinalityBounds(f : EStructuralFeature) : Boolean = f.isMany() and (f.lowerBound > 0 or f.upperBound > 1)/]
+
+[**
+ * How the exports interpret the values of a feature: integer, boolean, string, enumeration, object or uninterpreted.
+ **/]
+[query public valueKind(f : EStructuralFeature) : String = f.eType.verificationKind()/]
+
+[**
+ * The class of a package that declares the opposite of a reference.
+ **/]
+[query public oppositeOwner(p : EPackage, f : EStructuralFeature) : OclAny = p.classes()->select(c | c.eStructuralFeatures->exists(g | g.name = f.eOpposite.name) and p.classNamed(f.eType.name).conformsTo(c))->first()/]
+
+[**
+ * Whether a reference has an opposite that the export relates to it, and whether this reference is the one of the pair
+ * that writes the relation, so that each pair is written once.
+ **/]
+[query public writesOpposite(p : EPackage, c : EClass, f : EStructuralFeature) : Boolean = f.oclIsKindOf(EReference) and f.isExported() and not f.eOpposite.oclIsUndefined() and (c.name + '.' + f.name) < (p.oppositeOwner(f).name + '.' + f.eOpposite.name)/]
+
+[**
+ * The containment references of the classes of a package, each with the class that declares it.
+ **/]
+[query public containmentOwners(p : EPackage) : Sequence(EClass) = p.classes()->select(c | c.exportedFeatures()->exists(f | f.isContainmentReference()))/]
+
+[comment Invariants /]
+
+[**
+ * The names of the invariants of a class that translate to a target.
+ **/]
+[query public translatedInvariants(p : EPackage, c : EClass, target : String) : Sequence(String) = p.verificationInvariants(c)->select(n | not p.verificationFormula(c, n, target).oclIsUndefined())/]
+
+[**
+ * The invariants of the classes of a package that do not translate to a target, each with the reason, as text such as
+ * 'Named.NonEmptyName: string operations are not supported'.
+ **/]
+[query public untranslatedInvariants(p : EPackage, target : String) : Sequence(String) = p.classes()->collect(c | p.verificationInvariants(c)->select(n | p.verificationFormula(c, n, target).oclIsUndefined())->collect(n | c.name + '.' + n + ': ' + p.verificationProblem(c, n, target)))->flatten()/]
+
+[**
+ * The name of an invariant as an identifier: its class and its name.
+ **/]
+[query public invariantIdentifier(c : EClass, name : String) : String = c.name + '_' + name/]
+
+[comment Models /]
+
+[**
+ * All objects of a model: the root object followed by its contents in document order.
+ **/]
+[query public modelObjects(root : EObject) : Sequence(EObject) = Sequence{root}->union(root.eAllContents()->asSequence())/]
+
+[**
+ * The class of a package that an object is a direct instance of.
+ **/]
+[query public classOf(p : EPackage, o : EObject) : OclAny = p.classNamed(o.eClass().name)/]
+
+[**
+ * The values of a feature of an object, as a sequence that is empty if the feature is unset.
+ **/]
+[query public valuesOf(o : EObject, f : EStructuralFeature) : Sequence(OclAny) = if o.eGet(f.name).oclIsUndefined() then Sequence{} else o.eGet(f.name)->asSequence() endif/]

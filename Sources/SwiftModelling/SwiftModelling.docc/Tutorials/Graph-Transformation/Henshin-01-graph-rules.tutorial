@@ -1,0 +1,264 @@
+@Tutorial(time: 40) {
+    @Intro(title: "Graph Transformation Rules with Henshin") {
+        Write rules that change a model in place, apply them with parameters, and check them before you use them.
+
+        ATL creates a target model from a source model. Many changes are better described in place: open an account, move money between two accounts, close an account. Graph transformation describes such a change as a rule with a left-hand side, the pattern that must match in the model, and a right-hand side, what the matched part becomes. Whatever the right-hand side adds is created, whatever it leaves out is deleted, and attribute values can be computed from the values that matched. [Eclipse Henshin](https://eclipse.dev/henshin/) is such a language for Ecore models, and `swift-henshin` runs its rules and units without Java. In this tutorial, you'll:
+        - Write rules and a unit in Henshin Text
+        - Apply them to a bank with `apply`, passing parameters and tracing the matches
+        - Translate the JavaScript expressions of rules into AQL with `translate`
+        - Find mistakes and what Henshin's clean-up would tidy with `validate`
+        - Read a Henshin module in XMI and write it as Henshin Text with `convert`
+
+        The tutorial assumes that `swift-henshin` is on your search path and that you know the basics of Ecore metamodels. Every command runs in one directory, which starts empty.
+
+        @Image(source: "graph-transformation.svg", alt: "A Henshin module and a model, with the commands of swift-henshin and what they produce")
+    }
+
+    @Section(title: "A Bank and Its Rules") {
+        @ContentAndMedia {
+            Rules match and change objects of a metamodel, so they start from one. The bank holds its clients and accounts, and each account knows its owner.
+
+            A Henshin Text document (`.henshin_text`) starts by importing the packages that its rules use, here `ePackageImport bank`. A rule declares its parameters with their kinds: an `IN` parameter receives a value when the rule is applied, an `OUT` parameter reports a value back, and a `VAR` parameter is bound by matching. Inside `graph`, a plain `node` is preserved, a `create node` is only in the right-hand side, a `delete node` only in the left-hand side, and a `forbid node` belongs to a negative application condition: the rule applies only where no such node exists. `set balance = ...` changes an attribute, and `conditions` adds attribute conditions over the parameters.
+        }
+
+        @Steps {
+            @Step {
+                Save the metamodel of the bank.
+
+                @Code(name: "Bank.ecore", file: hen-01-step-01-bank.ecore)
+
+                The package is named `bank`, which is the name that the rules import.
+            }
+
+            @Step {
+                Save a bank with two clients, each with one account.
+
+                @Code(name: "bank.xmi", file: hen-01-step-02-bank.xmi)
+            }
+
+            @Step {
+                Write four rules and a unit in Henshin Text.
+
+                @Code(name: "bank.henshin_text", file: hen-01-step-03-bank.henshin_text)
+
+                `openAccount` creates an account for a client unless an account with the same number exists, and returns it in `account`. `deposit` reads the old balance into the variable `old` and sets it to `old + amount`. `transfer` matches two accounts and only applies if the source covers the amount; Henshin Text joins conditions with `AND`. `closeAccount` deletes an empty account together with the two references to it. The unit `openAndFund` runs `openAccount` and then `deposit`, passing its own parameters on.
+            }
+
+            @Step {
+                Validate the module.
+
+                @Code(name: "Terminal", file: hen-01-step-04-validate.sh)
+
+                Without `--metamodel`, the tool finds the package that `ePackageImport` names among the Ecore documents beside the module, here `Bank.ecore`. The summary line counts what validation found, and the command fails only for errors.
+            }
+        }
+    }
+
+    @Section(title: "Applying Rules and Units") {
+        @ContentAndMedia {
+            `apply` applies one rule or unit to a model. `--param name=value` gives each `IN` parameter a value, converted to the declared type of the parameter. The model file itself never changes: with `--output`, the result is written to a new file, and without it, it is printed on standard output.
+
+            Matching is deterministic, as in Henshin. If a rule or unit cannot be applied, nothing is written and the command exits with status 2, so a script can tell that apart from an error.
+        }
+
+        @Steps {
+            @Step {
+                Pay 15 dollars into account 2.
+
+                @Code(name: "Terminal", file: hen-01-step-05-deposit.sh)
+
+                The parameters that the rule reports are printed as `name = value` lines, and the new model holds the changed balance. The variable `old` is bound by matching and not reported.
+            }
+
+            @Step {
+                Trace a transfer without writing anything.
+
+                @Code(name: "Terminal", file: hen-01-step-06-trace.sh)
+
+                `--trace` prints each rule application on standard error, with the objects that its nodes matched and the values of its parameters, including the variables `x` and `y`. An object is shown as its class and a label: its name, or here, as accounts have no name, its number. `--dry-run` applies the rule without writing or printing the model.
+            }
+
+            @Step {
+                Apply the unit that opens and funds an account.
+
+                @Code(name: "Terminal", file: hen-01-step-07-unit.sh)
+
+                The unit passes `client` and `number` to `openAccount`, which creates the account and returns it, and then `number` and `amount` to `deposit`. Its `OUT` parameter reports the new account. A sequential unit is strict: if a step fails, everything it did is rolled back.
+            }
+
+            @Step {
+                Try a transfer that the condition of the rule rejects.
+
+                @Code(name: "Terminal", file: hen-01-step-08-not-applicable.sh)
+
+                Account 2 holds 20 dollars, so `x >= amount` does not hold for the only match. The command reports that the unit could not be applied, writes nothing and exits with status 2.
+            }
+        }
+    }
+
+    @Section(title: "Expressions") {
+        @ContentAndMedia {
+            Henshin writes attribute values, attribute conditions and iteration counts in JavaScript. `swift-henshin` evaluates them as AQL, the query language of the other tools, after translating them. `translate` shows the translation, so you can check what a rule will compute.
+        }
+
+        @Steps {
+            @Step {
+                Translate three expressions.
+
+                @Code(name: "Terminal", file: hen-01-step-09-translate.sh)
+
+                `--variables` names the parameters that an expression may use; any other name is an error. Every operation is parenthesised, `&&` becomes `and`, and `toUpperCase()` becomes `toUpper()`. `--verbose` adds the names that the expression uses and its form: a literal, a lone variable or a query. Division always divides real numbers, as JavaScript does.
+            }
+
+            @Step {
+                Look at the start of the translation table.
+
+                @Code(name: "Terminal", file: hen-01-step-10-table.sh)
+
+                Each line holds a JavaScript construct, its AQL translation and a note, separated by tabs. The full table lists every construct that the engine supports.
+            }
+        }
+    }
+
+    @Section(title: "Validation and Clean-Up") {
+        @ContentAndMedia {
+            `validate` reports what the engine would reject or cannot interpret, Henshin's checks of well-definedness, and, as warnings, what Henshin's clean-up operation would remove or repair. Each finding names its severity, the module, the problem and a code in brackets.
+        }
+
+        @Steps {
+            @Step {
+                Save a module of draft rules with three mistakes.
+
+                @Code(name: "draft.henshin_text", file: hen-01-step-11-draft.henshin_text)
+
+                `renameClient` declares a parameter `note` that it never uses, `removeAccount` deletes an account without the containment edge that holds it, and `payBonus` adds a `VAR` parameter `bonus` that nothing matches.
+            }
+
+            @Step {
+                Validate the draft.
+
+                @Code(name: "Terminal", file: hen-01-step-12-validate-draft.sh)
+
+                The unused parameter and the deletion without its containment edge are warnings: the first is what clean-up removes, and the second means that the dangling condition will usually stop the rule from applying. A `VAR` parameter that the left-hand side never binds is an error, because the value that the rule sets cannot be computed, so validation fails with status 1.
+            }
+        }
+    }
+
+    @Section(title: "Henshin Modules in XMI") {
+        @ContentAndMedia {
+            The Henshin editors of Eclipse save modules as XMI documents (`.henshin`). Their rules hold the left-hand and right-hand sides as separate graphs, with mappings between the nodes that are preserved. `swift-henshin` reads them like Henshin Text, and `convert` writes any module as Henshin Text.
+        }
+
+        @Steps {
+            @Step {
+                Save a module in XMI with a rule that charges a fee.
+
+                @Code(name: "fees.henshin", file: hen-01-step-13-fees.henshin)
+
+                The module imports the package from `Bank.ecore`. The node `account` of the left-hand side is mapped onto the node of the right-hand side, so it is preserved, and only its balance changes. The attribute condition `covered` makes sure that the account covers the fee.
+            }
+
+            @Step {
+                Validate the module and apply its rule.
+
+                @Code(name: "Terminal", file: hen-01-step-14-xmi-module.sh)
+
+                `--metamodel` registers the metamodel before the module is read, instead of relying on the location that the module names.
+            }
+
+            @Step {
+                Convert the module into Henshin Text and validate the result.
+
+                @Code(name: "Terminal", file: hen-01-step-15-convert.sh)
+
+                The two graphs and their mapping become one `graph` with a `set` for the changed balance, the attribute condition becomes `conditions`, and the description of the rule becomes a comment. Reading the document back gives a module with the same behaviour. What Henshin Text cannot express would be reported as warnings on standard error.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            In a Henshin Text rule, what does `forbid node existing:Account` inside `graph` declare?
+
+            @Choice(isCorrect: false) {
+                A node that the rule deletes
+
+                @Justification(reaction: "Not quite!") {
+                    Deleted nodes are declared with `delete node`.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                A negative application condition: the rule only applies where no such account exists
+
+                @Justification(reaction: "Correct!") {
+                    `openAccount` uses it to refuse an account number that is already taken.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                An account that must exist before the rule applies
+
+                @Justification(reaction: "Try again!") {
+                    That is a positive condition, written with `require node`, or simply a preserved `node`.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            `swift-henshin apply` exits with status 2. What happened?
+
+            @Choice(isCorrect: false) {
+                The module has a syntax error
+
+                @Justification(reaction: "Not quite!") {
+                    A module that cannot be read is an error with status 1.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The command line names an unknown option
+
+                @Justification(reaction: "Incorrect!") {
+                    An invalid command line exits with status 64.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                The unit could not be applied, so nothing was written
+
+                @Justification(reaction: "Correct!") {
+                    Status 2 tells a script that the rule or unit found no applicable match, as for the transfer that the condition rejected.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Why does `validate` report the `VAR` parameter `bonus` of `payBonus` as an error rather than a warning?
+
+            @Choice(isCorrect: true) {
+                No node of the left-hand side binds it, so the new balance cannot be computed
+
+                @Justification(reaction: "Correct!") {
+                    A `VAR` parameter takes its value from matching. Without a binding, `old + bonus` has no value.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Henshin's clean-up would remove it
+
+                @Justification(reaction: "Not quite!") {
+                    Clean-up removes unused parameters, such as `note`, which are only warnings.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `VAR` parameters are not allowed in rules that change attributes
+
+                @Justification(reaction: "Try again!") {
+                    `deposit` and `transfer` use `VAR` parameters for the old balances.
+                }
+            }
+        }
+    }
+}

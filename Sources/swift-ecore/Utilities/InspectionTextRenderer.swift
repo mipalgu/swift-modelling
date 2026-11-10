@@ -19,9 +19,10 @@ enum InspectionTextRenderer {
     /// - Returns: The text, ending with a line break.
     static func render(_ report: InspectionReport) -> String {
         var lines: [String] = []
-        let title = (report.kind == .metamodel ? "Metamodel: " : "Model: ") + "\(report.file) (\(report.format))"
+        let title = Self.titlePrefix(of: report.kind) + "\(report.file) (\(report.format))"
         lines.append(title)
         lines.append(String(repeating: "=", count: title.count))
+        if let multiLevel = report.multiLevel { render(multiLevel, into: &lines) }
         for package in report.packages ?? [] {
             lines.append("")
             render(package, depth: 0, into: &lines)
@@ -39,6 +40,44 @@ enum InspectionTextRenderer {
             for edge in graph { lines.append(indent + text(of: edge)) }
         }
         return lines.joined(separator: "\n") + "\n"
+    }
+
+    /// The text that starts the title of a report.
+    ///
+    /// - Parameter kind: The kind of document.
+    /// - Returns: `Metamodel: `, `Model: ` or `Multi-level model: `.
+    static func titlePrefix(of kind: InspectionReport.Kind) -> String {
+        switch kind {
+        case .metamodel: return "Metamodel: "
+        case .model: return "Model: "
+        case .multiLevelModel: return "Multi-level model: "
+        }
+    }
+
+    // MARK: - Multi-level models
+
+    /// Adds the lines of the levels of a multi-level model.
+    ///
+    /// - Parameters:
+    ///   - report: The levels of the model.
+    ///   - lines: The lines to add to.
+    private static func render(_ report: MultiLevelReport, into lines: inout [String]) {
+        lines.append("")
+        lines.append("Potency scheme: \(report.potencyVariant)")
+        lines.append("Level crossing: \(report.levelCrossing)")
+        for level in report.levels {
+            lines.append("")
+            let instantiates = level.typeModel.map { " (instance of \($0))" } ?? ""
+            lines.append("Level \(level.level): \(level.name)\(instantiates)")
+            if level.clabjects.isEmpty { lines.append(indent + "(no clabjects)") }
+            for clabject in level.clabjects {
+                var line = indent + (clabject.isAbstract ? "abstract " : "") + (clabject.isEdge ? "Edge " : "")
+                line += clabject.name + (clabject.type.map { " : \($0)" } ?? "")
+                if let potency = clabject.potency { line += " @\(potency)" }
+                if !clabject.features.isEmpty { line += " { " + clabject.features.joined(separator: ", ") + " }" }
+                lines.append(line)
+            }
+        }
     }
 
     // MARK: - Metamodels

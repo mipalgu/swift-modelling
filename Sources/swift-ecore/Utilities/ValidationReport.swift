@@ -165,10 +165,13 @@ struct ValidationReport: Codable, Sendable, Equatable {
     /// The line of one evaluated invariant.
     ///
     /// - Parameter check: The evaluation.
-    /// - Returns: For example `Checking constraint: validEmail (Customer 'Tommy Young', //@customers.0) ... violated`.
+    /// - Returns: For example `Checking constraint: validEmail (Customer 'Tommy Young', //@customers.0) ... violated`,
+    ///   followed by the message of the violation if the invariant declares one, such as
+    ///   `: Tommy Young needs a valid email address`.
     static func text(of check: ConstraintCheck) -> String {
         var line = "Checking constraint: \(check.constraint) (\(check.object), \(check.location)) ... \(check.outcome.rawValue)"
         if let detail = check.detail { line += " (\(detail))" }
+        if let message = check.message { line += ": " + message }
         return line
     }
 }

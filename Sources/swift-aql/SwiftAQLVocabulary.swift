@@ -5,6 +5,7 @@
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
 import AQL
+import ModellingCommandLine
 
 /// The names, markers and spellings that the swift-aql tool relies on.
 ///
@@ -15,7 +16,7 @@ enum SwiftAQLVocabulary {
     static let toolName = "swift-aql"
 
     /// The version that `--version` reports.
-    static let version = "0.7.0"
+    static let version = "0.8.0"
 
     /// The names of the subcommands.
     enum Command {
@@ -24,6 +25,9 @@ enum SwiftAQLVocabulary {
 
         /// The subcommand that evaluates a query against a model given as an argument.
         static let query = "query"
+
+        /// The subcommand that checks whether an expression can be used with another metamodel.
+        static let checkCompat = CompatibilityCheckOptions.commandName
     }
 
     /// The long names of the options.
@@ -45,6 +49,9 @@ enum SwiftAQLVocabulary {
 
         /// The option that selects the object bound to `self`.
         static let context = "context"
+
+        /// The option that gives the type of a variable of an expression to check.
+        static let variable = "variable"
     }
 
     /// The names of the values of the options in the usage of a command.
@@ -60,6 +67,18 @@ enum SwiftAQLVocabulary {
 
         /// The value of the context option.
         static let context = "id-or-name"
+
+        /// The value of the option that gives the type of a variable.
+        static let variable = "name=type"
+    }
+
+    /// The words with which the variables of an expression to check are named in messages.
+    enum VariableType {
+        /// The word that names a member of the family of variable options.
+        static let noun = "variable"
+
+        /// The reason why a variable is given without a type.
+        static let missingType = "expected the type of the variable, such as library::Library"
     }
 
     /// The variables that a run binds before it evaluates an expression.

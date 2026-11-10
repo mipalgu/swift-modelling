@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:crs="http://www.example.org/courses">
+  <!--
+    A faculty that violates each invariant once:
+
+    1. UniqueCodes: two courses have the code ART101
+    2. PositiveCapacity: Painting has no places
+    3. NotOverfull: Drawing has one place but two students
+    4. AdvancedNeedsPrerequisite: Studio Practice is advanced
+       but has no prerequisite
+    5. HasName: the second student has an empty name
+  -->
+  <crs:Faculty name="Faculty of Arts">
+    <courses code="ART101" title="Drawing" level="introductory" capacity="1"
+        enrolled="//@students.0 //@students.1"/>
+    <courses code="ART101" title="Painting" level="introductory" capacity="0"/>
+    <courses code="ART301" title="Studio Practice" level="advanced" capacity="5"/>
+    <students name="Jordan Lee" courses="//@courses.0"/>
+    <students name="" courses="//@courses.0"/>
+  </crs:Faculty>
+</xmi:XMI>

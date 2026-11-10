@@ -1,0 +1,49 @@
+[comment encoding = UTF-8 /]
+[**
+ * The main module of the Event-B template set.
+ *
+ * It writes an Event-B context and machine for each root package of a generator model, and a context and machine for
+ * a model of such a package, all in the CamilleX notation of Rodin: contexts in '.bucx' files and machines in '.bumx'
+ * files, each named after the component it holds.
+ **/]
+[module generate('http://www.eclipse.org/emf/2002/GenModel', 'http://www.eclipse.org/emf/2002/Ecore')/]
+[import verification::VerificationQueries/]
+[import EventBNames/]
+[import EventBMetamodel/]
+[import EventBModel/]
+
+[**
+ * Writes the context and machine of each root package of a generator model.
+ **/]
+[template public generate(genModel : GenModel)]
+[for (p : OclAny | genModel.allGenPackages()->collect(g | g.ecorePackage))]
+[file (p.contextName() + '.bucx', false, 'UTF-8')][p.metamodelContext()/][/file]
+[file (p.machineName() + '.bumx', false, 'UTF-8')][p.metamodelMachine()/][/file]
+[/for]
+[/template]
+
+[**
+ * Writes the context and machine of a model, named after the model file.
+ **/]
+[template public generateModel(p : EPackage, root : EObject)]
+[let objects : Sequence(EObject) = root.modelObjects()]
+[let strings : Sequence(String) = p.modelStrings(objects)]
+[file (instanceContextName(modelName) + '.bucx', false, 'UTF-8')][p.modelContext(objects, strings, modelName)/][/file]
+[file (instanceMachineName(modelName) + '.bumx', false, 'UTF-8')][p.modelMachine(objects, strings, modelName)/][/file]
+[/let]
+[/let]
+[/template]
+
+[**
+ * Writes the number of files that the main template writes: a context and a machine for each package.
+ **/]
+[template public fileCount(genModel : GenModel)]
+[file ('count', false, 'UTF-8')][2 * genModel.allGenPackages()->size()/][/file]
+[/template]
+
+[**
+ * Writes the number of files that the model template writes for a model: a context and a machine.
+ **/]
+[template public modelFileCount(p : EPackage, root : EObject)]
+[file ('count', false, 'UTF-8')]2[/file]
+[/template]

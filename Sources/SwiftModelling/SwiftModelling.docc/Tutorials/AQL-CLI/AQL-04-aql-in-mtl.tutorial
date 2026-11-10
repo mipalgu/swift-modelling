@@ -9,7 +9,7 @@
 
     @Section(title: "Understanding AQL-MTL Integration") {
         @ContentAndMedia {
-            AQL serves as the expression language within MTL templates. Every dynamic expression in an MTL template—from simple property access to complex model queries—uses AQL syntax.
+            AQL serves as the expression language within MTL templates. Every dynamic expression in an MTL template (from simple property access to complex model queries) uses AQL syntax.
 
             This tight integration makes MTL templates both powerful and intuitive: you can navigate models naturally while generating code, creating templates that adapt to model structure and content.
 
@@ -243,13 +243,13 @@
                 They require special AQL import statements
 
                 @Justification(reaction: "Incorrect!") {
-                    AQL is the native expression language for MTL templates. No special imports are needed—AQL expressions work directly within template syntax.
+                    AQL is the native expression language for MTL templates. No special imports are needed: AQL expressions work directly within template syntax.
                 }
             }
         }
 
         @MultipleChoice {
-            What happens when you use `[for (item : Type | collection.select(x | x.property > 5))]` in an MTL template?
+            What happens when you use `[for (item : Type | collection->select(x | x.property > 5))]` in an MTL template?
 
             @Choice(isCorrect: true) {
                 It iterates over only the collection elements where property > 5

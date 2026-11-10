@@ -83,7 +83,7 @@
                 The template fails with an error
 
                 @Justification {
-                    Incorrect. False conditions are normal—they just skip content. Templates only fail on syntax errors or invalid operations.
+                    Incorrect. False conditions are normal: they just skip content. Templates only fail on syntax errors or invalid operations.
                 }
             }
 

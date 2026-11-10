@@ -1,0 +1,44 @@
+[comment encoding = UTF-8 /]
+[**
+ * The main module of the Lean template set.
+ *
+ * It writes a Lean 4 module for each root package of a generator model, which declares the objects of the package and
+ * decidable propositions for the well-formedness of a model and for each translated invariant, and a Lean 4 module for
+ * a model of such a package, which imports the module of the package, lists every object of the model and states a
+ * theorem for its well-formedness and for each invariant, each proved by evaluation.
+ **/]
+[module generate('http://www.eclipse.org/emf/2002/GenModel', 'http://www.eclipse.org/emf/2002/Ecore')/]
+[import verification::VerificationQueries/]
+[import LeanNames/]
+[import LeanMetamodel/]
+[import LeanModel/]
+
+[**
+ * Writes the module of each root package of a generator model.
+ **/]
+[template public generate(genModel : GenModel)]
+[for (p : OclAny | genModel.allGenPackages()->collect(g | g.ecorePackage))]
+[file (p.moduleFileName() + '.lean', false, 'UTF-8')][p.metamodelModule()/][/file]
+[/for]
+[/template]
+
+[**
+ * Writes the module of a model, named after the model file.
+ **/]
+[template public generateModel(p : EPackage, root : EObject)]
+[file (instanceModuleName(modelName) + '.lean', false, 'UTF-8')][p.modelModule(root, instanceModuleName(modelName))/][/file]
+[/template]
+
+[**
+ * Writes the number of files that the main template writes: one for each package.
+ **/]
+[template public fileCount(genModel : GenModel)]
+[file ('count', false, 'UTF-8')][genModel.allGenPackages()->size()/][/file]
+[/template]
+
+[**
+ * Writes the number of files that the model template writes for a model: one file.
+ **/]
+[template public modelFileCount(p : EPackage, root : EObject)]
+[file ('count', false, 'UTF-8')]1[/file]
+[/template]

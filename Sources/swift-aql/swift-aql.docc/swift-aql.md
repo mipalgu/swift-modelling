@@ -51,15 +51,82 @@ swift-aql query <file> --query-file <file.aql> [options]
 ### Options of both commands
 
 - `--context <id-or-name>` - The object to bind to `self` (see below)
-- `-m, --metamodel <file.ecore>` - An Ecore metamodel of the models (repeatable); without it, the metamodels beside the models are found automatically
+- `-m, --metamodel <file.ecore>` - A metamodel of the models in any metamodel format, such as Ecore, JSON, KM3 or EMOF (repeatable); without it, the metamodels beside the models are found automatically
+- `--km3-primitives <ecore|declared>` - Whether the data types that a KM3 metamodel declares, such as `String` or `Integer`, are the built-in Ecore data types of the same meaning (`ecore`, the default) or data types of their own package (`declared`); the `km3-primitives` key of the configuration file chooses it too
+- `--package-name <name>`, `--ns-uri <uri>`, `--ns-prefix <prefix>`, `--asdl-enumerations <all-nullary|never>`, `--langium-types <normal|strict>`, `--sdf3-labels` / `--no-sdf3-labels` - How a metamodel is imported from an ASDL, Langium, Xtext or SDF3 grammar: the name of the package of a grammar that declares none, its namespace URI and prefix, whether ASDL sum types whose constructors have no fields become enumerations, whether Langium classes come only from declared types, and whether SDF3 constructor labels name the classes; the configuration file keys of the same names choose them too (see the `swift-ecore` article)
+- `--deep-view <level>` - Present each multi-level model, such as a MetaDepth document (`.mdepth`), as the deep view of that level, so that `Type.allInstances()` finds the deep instances of a type at the level and the services `clabjectName()`, `ontologicalType()` and `linguisticType()` are available; without it, a multi-level model is read as instances of the linguistic metamodel of multi-level models
 - `--unset-features <defaults|undefined>` - Whether unset features read as their defaults (`defaults`, the default, as in the Eclipse Modeling Framework) or as undefined
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`) for every behaviour option below; an option that is given overrides it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models that it holds in containment references
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
-- `--collection-arguments <whole|first-element>`, `--collection-kinds <distinguished|sequences>`, `--single-value-collections <set|sequence>`, `--container-lookup <resources|registered-objects>`, `--sequence-union <concatenation|distinct>`, `--null-addition <empty-text|null>`, `--text-form <joined|bracketed>` - The behaviours of expressions, with the same meaning and defaults as for `swift-mtl`
+- `--encoding <name>` - The character encoding of an expression or query file and of the metamodels and models in text formats, such as KM3, Emfatic, Xcore, OCLinEcore, grammar formats or MetaDepth, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8); the `encoding` key of the configuration file names it too, and a file that is not valid in the encoding named is an error
+- `--collection-arguments <whole|first-element>`, `--collection-kinds <distinguished|sequences>`, `--single-value-collections <set|sequence>`, `--container-lookup <resources|registered-objects>`, `--sequence-union <concatenation|distinct>`, `--null-addition <empty-text|null>`, `--text-form <joined|bracketed>`, `--dot-calls <each-element|collection>` - The behaviours of expressions, with the same meaning and defaults as for `swift-mtl`
 - `--strict-aql`, `--no-strict-aql` - Reject the expressions that Eclipse AQL rejects, such as `Sequence{'a'}->union(Set{'b'})` or `Sequence{'a'}->concat('b')`, with a type error instead of accepting them, or accept them (the default); neither preset sets it, and without either flag the `strict-aql` key of the configuration file (`true` or `false`) chooses
 
 The Compatibility with 0.6 section of the [SwiftModelling documentation](https://mipalgu.github.io/swift-modelling/documentation/swiftmodelling/swiftmodelling/index.html) lists every behaviour option with its default and its version 0.6 behaviour, and describes the `SWIFT_MODELLING_SEMANTICS` environment variable and the `.swift-modelling.json` configuration file.
+
+### check-compat
+
+Check whether an expression can be used with another metamodel, such as a revised version of the
+metamodel that it was written against, without evaluating it. Unlike `evaluate` and `query`, the
+command reads no model and takes only the options below.
+
+```bash
+swift-aql check-compat --expression <expression> --variable <name=type> ... --metamodel <name=file> --target-metamodel <name=file> [options]
+swift-aql check-compat --expression-file <file.aql> --variable <name=type> ... --metamodel <name=file> --target-metamodel <name=file> [options]
+```
+
+The command extracts the footprint of the expression, the classes, features and enumeration
+literals that it reads, and checks the target metamodel against it by structural model
+subtyping. An expression is checked against one metamodel; the name of `--metamodel` is the name
+under which the findings refer to it, conventionally the name of its package, which also
+qualifies the types of the expression, such as `library` in `library::Book`. The library behind
+the command is described in the ModelTyping documentation.
+
+**Options:**
+
+- `-e, --expression <expression>` - The expression to check
+- `-f, --expression-file <file.aql>` - A file that holds the expression to check; give either this or `--expression`
+- `--variable <name=type>` - The type of a variable of the expression, such as `self=library::Library` or `books=Sequence(library::Book)` (repeatable); the uses of a variable without a type make the verdict inconclusive
+- `-m, --metamodel <name=file>` - The metamodel that the expression was written against, named conventionally after its package (give exactly one); the file may be in any metamodel format, such as Ecore, JSON, KM3 or EMOF
+- `--target-metamodel <name=file>` - The metamodel to check the expression against, under the name of the `--metamodel`
+- `--mode <total-isomorphic|total-non-isomorphic|partial-isomorphic|partial>` - The subtyping relation to decide (default: `partial`): whether every element of the metamodel (`total-...`) or only the elements the expression uses (`partial...`) must exist in the target metamodel, and whether under the same names (`...isomorphic`) or after the renamings of `--rename`
+- `--subtyping <access-refined|object-type-matching|mof-class-matching>` - How model subtyping matches classes and features (default: `access-refined`, which compares each element by how the expression reads, writes or instantiates it); `object-type-matching` (alias `steel-jezequel`) and `mof-class-matching` (alias `guy`) are the published definitions of [Steel and Jézéquel (2007)](https://doi.org/10.1007/s10270-006-0036-6) and [Guy et al. (2012)](https://doi.org/10.1007/978-3-642-31491-9_30)
+- `--rename <required=provided>` - Map a name of the original metamodel to a name of the target metamodel, as `Class=NewClass` for a class, enumeration or data type, or `Owner.member=newMember` for a feature or literal (repeatable, or separated by commas); renamings apply in the modes `partial` and `total-non-isomorphic`, and the other modes ignore them with a warning on standard error
+- `--allow-widening` - Let numeric types widen in the direction of use: an attribute that is read may have a narrower type in the target metamodel, such as `EInt` where `ELong` was declared, and one that is written a wider type; an extension of the `access-refined` semantics, which the published semantics and the isomorphic modes ignore with a warning, since the published definitions relate no data types by subtyping
+- `--lenient-lower-bounds` - Report lower bounds that do not conform as warnings instead of errors; like widening, an extension of the `access-refined` semantics
+- `--format <text|json>` - The format of the report (default: `text`); `json` writes one object with the flags `compatible` and `conclusive`, the mode, the findings, the footprint and the renaming hints; in the footprint, features and literals are arrays of objects, and each access is an array of names such as `["read", "write"]`
+- `--encoding <name>` - The character encoding of the expression file and of the metamodels in text formats, such as KM3 (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8)
+- `--km3-primitives`, `--package-name`, `--ns-uri`, `--ns-prefix`, `--asdl-enumerations`, `--langium-types`, `--sdf3-labels` - How metamodels in KM3 and grammar formats are read, as for the other commands
+
+The report is printed to standard output. Its first line states the verdict, the mode and the
+numbers of errors and warnings, such as `incompatible (partial): 1 error(s), 0 warning(s)`;
+each finding follows on a line of its own, starting with `error:` or `warning:` and naming the
+element, such as `library!Book.pages`, then each `uncertain:` use whose type could not be inferred, and
+each hint, such as `hint: --rename Writer=Author`, with the reason for it in parentheses, that would
+reconcile a missing element.
+
+**Exit status:**
+
+- `0` - The target metamodels are compatible
+- `1` - The target metamodels are not compatible
+- `2` - No incompatibility was found, but the types of some expressions could not be inferred, so the verdict is inconclusive
+- `3` - The check could not be made, such as for a file that cannot be read or parsed
+- `64` - The arguments are invalid, such as a `--target-metamodel` whose name no `--metamodel` gives, or several `--metamodel` options
+
+**Examples:**
+
+```bash
+# Check an expression on a library against a revised metamodel
+swift-aql check-compat -e "self.books->collect(b | b.title)" \
+    --variable self=library::Library \
+    --metamodel library=Library.ecore --target-metamodel library=LibraryV2.ecore
+
+# Read the expression from a file, apply renamings and write JSON
+swift-aql check-compat -f titles.aql --variable self=library::Library \
+    --metamodel library=Library.ecore --target-metamodel library=LibraryV2.ecore \
+    --rename Writer=Author,Library.writers=authors --allow-widening --format json
+```
 
 ## Variables
 
@@ -85,16 +152,44 @@ is reported as an error.
 ## Metamodels
 
 A model refers to its metamodels by their namespace URIs. Without
-`--metamodel`, the tool registers each Ecore file in the directory of
-a model whose namespace URI the model uses, so that the attributes of
+`--metamodel`, the tool registers each metamodel file in the directory
+of a model whose namespace URI the model uses, so that the attributes of
 the model have the types that the metamodel declares: a `budget` of
 type `EDouble` is the real number `500000.0`, not a string. If several
 Ecore files beside a model declare the same namespace URI, the tool
 asks you to choose one with `--metamodel`. With `--metamodel`, only
-the metamodels given are registered.
+the metamodels given are registered, each with every root package that
+has a namespace URI. A root package without one is loaded with a
+warning on standard error, but not registered. KM3 has no namespace
+URIs, so each root package of a KM3 metamodel is registered under its
+name instead, and a model refers to it by a namespace declaration with
+that name, such as `xmlns:Library="Library"`.
 
-An Ecore file can itself be given as the model, so that its package
-can be queried, as in `self.eClassifiers.name`.
+The format registry of swift-ecore decides from the extension and the
+contents of each file whether it is a metamodel: an Ecore, JSON, KM3,
+EMOF, Emfatic, Xcore or OCLinEcore file, or a grammar from which a
+metamodel is imported. An EMOF metamodel saved with the extension
+`xmi` is therefore found as a metamodel, while an XMI model is not.
+A grammar declares the namespace URI that its import gives, so
+`--ns-uri` and its configuration key apply to discovery as well.
+
+A model is read as XMI or JSON by its extension, `xmi` or `json`, and
+a file with any other extension in the format of its contents. A file
+whose contents are neither XML nor JSON is reported with the supported
+formats.
+
+A metamodel file in any metamodel format can itself be given as the
+model, so that its first package can be queried, as in
+`self.eClassifiers.name`.
+
+A UML class model given with `--metamodel` registers the Ecore
+metamodel that it describes. A multi-level model in the MetaDepth
+notation (`.mdepth`) is queried as the deep view of a level with
+`--deep-view`:
+
+```bash
+swift-aql query products.mdepth 'BookStore::ProductType.allInstances()->collect(p | p.clabjectName())' --deep-view 0
+```
 
 ## Output
 
@@ -119,7 +214,11 @@ editors of the Eclipse Modeling Framework.
 A command exits with status 0 when the expression has been evaluated.
 A missing file, an invalid expression, an unknown variable or a failed
 operation is reported on standard error, and the command exits with a
-non-zero status, so scripts can rely on `set -e`.
+non-zero status, so scripts can rely on `set -e`. Warnings are printed on
+standard error as `warning: line <line>, column <column>: <message>` and do
+not change the exit status: for example, `Sequence{1, 2}.size()` applies
+`size` to each integer and warns that `Sequence{1, 2}->size()` calls the
+`size` of the collection.
 
 ## Examples
 

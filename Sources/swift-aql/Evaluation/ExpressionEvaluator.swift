@@ -33,10 +33,21 @@ final class ExpressionEvaluator {
     /// The formatter whose labels identify objects by name.
     let formatter = ResultFormatter()
 
+    /// The distinct warnings of the last evaluation, in the order in which they were reported.
+    ///
+    /// The warnings are those that the execution context reports while evaluating an
+    /// expression, such as a call written with a dot on a collection whose elements lack the
+    /// service that the collection has. Each evaluation starts without warnings, and the
+    /// warnings remain available when an evaluation fails.
+    var warnings: [SourceDiagnostic] {
+        context.diagnostics.filter { $0.severity == .warning }
+    }
+
     /// Creates an evaluator.
     ///
     /// - Parameters:
-    ///   - models: The models against which expressions are evaluated.
+    ///   - models: The models against which expressions are evaluated; the deep views of a
+    ///     multi-level model contribute the services of `AQLMultiLevelServices`.
     ///   - options: The behaviours of expressions.
     ///   - unsetFeatureReads: How expressions read features that a model does not set.
     init(models: [LoadedModel], options: AQLOptions, unsetFeatureReads: UnsetFeatureReads = .defaults) async {
@@ -45,7 +56,9 @@ final class ExpressionEvaluator {
         for (index, model) in models.enumerated() {
             await engine.registerResource(model.resource, alias: Self.alias(of: model, at: index))
         }
-        context = AQLExecutionContext(executionEngine: engine, options: options)
+        context = AQLExecutionContext(
+            executionEngine: engine, options: options,
+            serviceProviders: models.compactMap { $0.deepViews.map { $0.services } })
         for model in models { context.addResource(model.resource) }
     }
 
@@ -157,6 +170,7 @@ final class ExpressionEvaluator {
         for binding in bindings(self: selfObject) {
             context.setVariable(binding.name, value: binding.value)
         }
+        context.clearDiagnostics()
         do {
             return try await expression.evaluate(in: context)
         } catch let error as LocalizedError {

@@ -27,6 +27,8 @@ struct EvaluateCommand: AsyncParsableCommand {
               swift-aql evaluate --model company.xmi --expression-file report.aql
               swift-aql evaluate --expression "Sequence{1, 2, 3}->sum()"
 
+            \(SourceEncodingOptions.discussion(reader: "an expression file"))
+
             \(SemanticsOptions.discussion())
             """
     )

@@ -21,7 +21,9 @@ enum TutorialReplayConfiguration {
     /// The replay puts the build products directory first on the search path, so these names
     /// resolve to the executables of this build. A tool that this package does not build yet, such
     /// as `swift-aql`, is then reported as a missing command rather than taken from elsewhere.
-    static let toolNames = ["swift-ecore", "swift-atl", "swift-mtl", "swift-aql"]
+    static let toolNames = [
+        "swift-ecore", "swift-atl", "swift-mtl", "swift-aql", "swift-henshin", "swift-epsilon", "swift-xtend",
+    ]
 
     /// The subcommand that the argument parser of every tool with subcommands provides implicitly.
     static let implicitHelpSubcommand = "help"

@@ -15,7 +15,7 @@ import ModellingCommandLine
 /// The analyse command performs comprehensive analysis of ATL transformation files,
 /// computing complexity metrics, identifying patterns, and generating detailed
 /// analysis reports for transformation quality assessment.
-struct AnalyzeCommand: AsyncParsableCommand {
+struct AnalyzeCommand: AsyncParsableCommand, ATLSourceReading, ATLOutputWriting {
     static let configuration = CommandConfiguration(
         commandName: "analyze",
         abstract: "Analyse ATL transformation files",
@@ -25,6 +25,10 @@ struct AnalyzeCommand: AsyncParsableCommand {
             transformation pattern detection.
 
             \(ATLSemanticsOptions.discussion(reader: "the transformations"))
+
+            \(SourceEncodingOptions.discussion(reader: "the transformations"))
+
+            \(OutputEncodingOptions.discussion(writer: "the file that --output names"))
 
             \(SemanticsOptions.discussion())
 
@@ -57,6 +61,12 @@ struct AnalyzeCommand: AsyncParsableCommand {
     /// The preset of the behaviours, standard or that of version 0.6.
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
+
+    /// The character encoding of the ATL source.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// The character encoding of the file that `--output` names.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
 
     /// The behaviours of the ATL source that the command line, the environment and the
     /// configuration file select.
@@ -101,8 +111,8 @@ struct AnalyzeCommand: AsyncParsableCommand {
         let outputContent = try generateAnalysisOutput(results: analysisResults, format: format)
 
         if let outputPath = output {
-            try outputContent.write(
-                to: URL(fileURLWithPath: outputPath), atomically: true, encoding: .utf8)
+            try writeOutput(
+                outputContent, to: outputPath, kind: format.lowercased() == "json" ? .json : .text)
             print("Analysis results written to \(outputPath)")
         } else if verbose || analysisResults.count > 1 {
             print(outputContent)
@@ -127,7 +137,7 @@ struct AnalyzeCommand: AsyncParsableCommand {
             throw ValidationError("File not found: \(filePath)")
         }
 
-        let atlSource = try String(contentsOfFile: filePath, encoding: .utf8)
+        let atlSource = try readATLSource(at: filePath)
         let parser = ATLParser(options: atlOptions)
         let module = try await parser.parseContent(
             atlSource, filename: URL(fileURLWithPath: filePath).lastPathComponent)

@@ -1,0 +1,282 @@
+@Tutorial(time: 35) {
+    @Intro(title: "Metamodels in KM3") {
+        Write metamodels in KM3, the compact textual notation of the ATL tools, and use them wherever an Ecore metamodel is expected.
+
+        KM3 (Kernel MetaMetaModel) describes packages, classes, attributes, references and enumerations in a few lines of text. Many published ATL transformations come with their metamodels in KM3. In this tutorial, you'll:
+        - Write the Families and Persons metamodels of the first ATL tutorial in KM3
+        - Inspect, validate and convert KM3 metamodels with swift-ecore
+        - Choose how KM3 primitive types map to Ecore data types
+        - Write an Ecore metamodel as KM3 and see what KM3 cannot express
+        - Run an ATL transformation with KM3 metamodels
+        - Read files that were saved in an older character encoding
+
+        Every command in this tutorial runs in one directory, which starts empty.
+
+        @Image(source: "metamodel-formats.svg", alt: "A KM3 metamodel is read like an Ecore metamodel and can be converted to and from Ecore")
+    }
+
+    @Section(title: "Writing a Metamodel in KM3") {
+        @ContentAndMedia {
+            A KM3 document holds one or more packages. A package contains classes, enumerations and data types. A class has attributes, references and operations, and may be abstract and extend other classes.
+
+            A multiplicity follows the name of a feature in square brackets: `[0-1]` is optional, `[*]` is any number, and a feature without brackets is required and single-valued. `container` marks a containment reference, and `oppositeOf` names the reference that goes the other way. Comments start with `--`, and the comments `-- @nsURI` and `-- @nsPrefix` before a package give its namespace URI and prefix.
+        }
+
+        @Steps {
+            @Step {
+                Write the Families metamodel in KM3.
+
+                @Code(name: "Families.km3", file: fmt-01-step-01-families.km3)
+
+                This is the metamodel of the first ATL tutorial. A `Family` contains its father, mother, sons and daughters, and each `Member` refers back to its family through the opposite references. The `PrimitiveTypes` package declares the data type `String` that the attributes use.
+            }
+
+            @Step {
+                Write the Persons metamodel in KM3.
+
+                @Code(name: "Persons.km3", file: fmt-01-step-02-persons.km3)
+
+                `Person` is abstract, and `Male` and `Female` extend it with `extends`. Each KM3 file declares the primitive types it uses.
+            }
+        }
+    }
+
+    @Section(title: "Inspecting and Converting KM3") {
+        @ContentAndMedia {
+            swift-ecore reads a KM3 file wherever it reads an Ecore metamodel. It recognises the format by the extension `.km3`, so the same commands inspect, validate, query and convert both.
+        }
+
+        @Steps {
+            @Step {
+                Inspect the Families metamodel.
+
+                @Code(name: "Terminal", file: fmt-01-step-03-inspect.sh)
+
+                The report lists the package with its namespace URI and prefix, and every class with its attributes and references. `String` appears as the Ecore data type `EString`: by default, the KM3 primitive types map to the built-in Ecore data types.
+            }
+
+            @Step {
+                Validate both metamodels.
+
+                @Code(name: "Terminal", file: fmt-01-step-04-validate.sh)
+
+                Validation checks what the text says: that every type a feature names is declared, that opposite references name each other, and that no class inherits from itself. With several files, each is validated on its own and a summary line counts the results.
+            }
+
+            @Step {
+                Convert both metamodels to Ecore.
+
+                @Code(name: "Terminal", file: fmt-01-step-05-convert.sh)
+
+                The output format follows the extension of the output file. The Ecore files can be opened by any tool of the Eclipse Modeling Framework.
+            }
+
+            @Step {
+                Save the Families metamodel of the first ATL tutorial, written as Ecore XMI.
+
+                @Code(name: "Families-atl.ecore", file: fmt-01-step-06-families-atl.ecore)
+            }
+
+            @Step {
+                Compare it with the metamodel converted from KM3.
+
+                @Code(name: "Terminal", file: fmt-01-step-07-compare.sh)
+
+                `swift-ecore compare` matches the packages, classes and features by name and reports every difference in kind, type, multiplicity, containment and opposite. The KM3 text and the Ecore file describe the same metamodel.
+            }
+        }
+    }
+
+    @Section(title: "Primitive Types") {
+        @ContentAndMedia {
+            KM3 has no built-in types: every document declares the data types it uses, such as `datatype String;`. swift-ecore offers two ways to read these declarations.
+
+            - **ecore** (the default) maps the KM3 primitive types `Boolean`, `Integer`, `String`, `Double` and the others to the built-in Ecore data types such as `EBoolean`, `EInt`, `EString` and `EDouble`. A package that only declared primitive types is left out.
+            - **declared** keeps every declaration as an Ecore data type of its own, as the original KM3 to Ecore transformation of the ATL tools does.
+        }
+
+        @Steps {
+            @Step {
+                Convert the Families metamodel with the declared data types and inspect the result.
+
+                @Code(name: "Terminal", file: fmt-01-step-08-declared.sh)
+
+                The result has a second package, `PrimitiveTypes`, with a data type `String`, and `--show-attributes` shows that the attributes are typed by it rather than by `EString`. KM3 has no namespaces, so the warning tells you that this package has no namespace URI and is registered under its name. Choose `declared` when you exchange metamodels with tools that expect this layout, and the default otherwise, so that attribute values have their usual types.
+            }
+        }
+    }
+
+    @Section(title: "Writing Ecore as KM3") {
+        @ContentAndMedia {
+            KM3 is smaller than Ecore. It has no annotations, default values or identifier flags, and it numbers the literals of an enumeration from 1. When swift-ecore writes a metamodel as KM3, it reports each piece of information that KM3 cannot hold, so nothing is lost silently.
+        }
+
+        @Steps {
+            @Step {
+                Save a small library metamodel written in Ecore.
+
+                @Code(name: "Library.ecore", file: fmt-01-step-09-library.ecore)
+
+                The package has a documentation annotation, `isbn` is an identifier, `pages` has the default value `100`, and the literals of `BookCategory` are numbered from 0.
+            }
+
+            @Step {
+                Convert it to KM3 and look at the result.
+
+                @Code(name: "Terminal", file: fmt-01-step-10-to-km3.sh)
+
+                The warnings on standard error name each element and what was dropped from it, including the values of the enumeration literals, which KM3 renumbers from 1. The KM3 text uses tabs for indentation, writes the namespace as `-- @nsURI` and `-- @nsPrefix` comments, spells out `ordered` and `unique` for every feature, and collects the data types it uses in a `PrimitiveTypes` package. Warnings do not change the exit status.
+            }
+        }
+    }
+
+    @Section(title: "Transforming with KM3 Metamodels") {
+        @ContentAndMedia {
+            The ATL tools read KM3 metamodels as well. `--source-metamodel` and `--target-metamodel` take the place of the `-- @path` directives of a transformation, so a transformation written for Ecore files runs unchanged with KM3 files.
+        }
+
+        @Steps {
+            @Step {
+                Save the sample Families model of the first ATL tutorial.
+
+                @Code(name: "sample-Families.xmi", file: fmt-01-step-11-sample-families.xmi)
+            }
+
+            @Step {
+                Save the Families2Persons transformation of the first ATL tutorial.
+
+                @Code(name: "Families2Persons.atl", file: fmt-01-step-12-families2persons.atl)
+
+                Its `-- @path` directives name Ecore files in an Eclipse workspace. The next step gives the KM3 files instead.
+            }
+
+            @Step {
+                Run the transformation with the KM3 metamodels.
+
+                @Code(name: "Terminal", file: fmt-01-step-13-transform.sh)
+
+                The metamodels are given by position, in the order of the module header: `Families` for the source and `Persons` for the target.
+            }
+
+            @Step {
+                Query the result with the Persons metamodel in KM3.
+
+                @Code(name: "Terminal", file: fmt-01-step-14-query.sh)
+
+                `--metamodel` accepts a KM3 file in every command, so the attributes of the persons have their declared types.
+            }
+        }
+    }
+
+    @Section(title: "Files in Older Encodings") {
+        @ContentAndMedia {
+            Many KM3 files and ATL transformations were written before UTF-8 became the norm, and some are saved in ISO-8859-1 (Latin-1). The tools read a text metamodel as UTF-8. A file that is not valid UTF-8 is read as ISO-8859-1 instead, and a warning names the file and the position of the first byte that is not UTF-8.
+
+            For the source files that a tool runs, such as an ATL transformation, an MTL template or an AQL expression file, `--encoding` of swift-atl, swift-mtl and swift-aql names the encoding instead. The file is then read in that encoding alone, without the warning.
+        }
+
+        @Steps {
+            @Step {
+                Create a KM3 file whose first comment is saved in ISO-8859-1, and inspect it.
+
+                @Code(name: "Terminal", file: fmt-01-step-15-legacy-file.sh)
+
+                `printf` writes the byte `0xE9`, which is `é` in ISO-8859-1 but not valid on its own in UTF-8. The metamodel is still read, and the warning tells you that its encoding was guessed.
+            }
+
+            @Step {
+                Save a copy of the transformation with a comment in ISO-8859-1, and run it with its encoding named.
+
+                @Code(name: "Terminal", file: fmt-01-step-16-encoding.sh)
+
+                `latin1` is an alias of `ISO-8859-1`. With the encoding named, the transformation is read without a warning. A file that is not valid in the encoding you name is an error, so a script notices a file in an unexpected encoding. The `--encoding` of `swift-atl` applies to the source files of the tool, not to the metamodels and models it reads, which keep the fallback of the previous step. `swift-ecore` takes `--encoding` for the documents that it reads in text formats, so `swift-ecore inspect Legacy.km3 --encoding latin1` reads the metamodel of the previous step without a warning.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            How do you write a reference that contains any number of `Member` objects in KM3?
+
+            @Choice(isCorrect: true) {
+                `reference sons[*] container : Member;`
+
+                @Justification(reaction: "Correct!") {
+                    `[*]` allows any number of values, and `container` makes the reference a containment.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `reference sons container : Member;`
+
+                @Justification(reaction: "Not quite!") {
+                    Without a multiplicity, a feature is required and single-valued, so this reference contains exactly one member.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                `reference sons : Member[0..*];`
+
+                @Justification(reaction: "Try again!") {
+                    That is closer to Emfatic. In KM3 the multiplicity follows the name, and its bounds are separated by a hyphen.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What does the default primitive type mapping do with `datatype String;`?
+
+            @Choice(isCorrect: false) {
+                It creates an Ecore data type named `String` in a `PrimitiveTypes` package
+
+                @Justification(reaction: "Not quite!") {
+                    That is what the `declared` mapping does.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                It maps `String` to the built-in Ecore data type `EString`
+
+                @Justification(reaction: "Correct!") {
+                    The default mapping uses the built-in Ecore data types, so attribute values have their usual types.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                It reports an error, because KM3 has no built-in types
+
+                @Justification(reaction: "Incorrect!") {
+                    Declaring the data types a document uses is the usual KM3 style, and both mappings read them.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            What happens to a default value when an Ecore metamodel is written as KM3?
+
+            @Choice(isCorrect: false) {
+                It is written as a comment
+
+                @Justification(reaction: "Not quite!") {
+                    The KM3 writer only writes the namespace URI and prefix as comments.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                It is dropped, and a warning names the feature
+
+                @Justification(reaction: "Correct!") {
+                    KM3 cannot express default values, so the writer drops them and reports each one on standard error.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The conversion fails
+
+                @Justification(reaction: "Incorrect!") {
+                    The conversion succeeds. Warnings do not change the exit status.
+                }
+            }
+        }
+    }
+}

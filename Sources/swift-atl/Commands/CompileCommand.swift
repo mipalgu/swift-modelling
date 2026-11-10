@@ -15,7 +15,7 @@ import ModellingCommandLine
 /// The compile command processes ATL source files and compiles them into
 /// executable transformation modules that can be run efficiently by the
 /// ATL virtual machine.
-struct CompileCommand: AsyncParsableCommand {
+struct CompileCommand: AsyncParsableCommand, ATLSourceReading {
     static let configuration = CommandConfiguration(
         commandName: "compile",
         abstract: "Compile ATL transformation files",
@@ -25,6 +25,8 @@ struct CompileCommand: AsyncParsableCommand {
             checking, and optimisation for efficient transformation execution.
 
             \(ATLSemanticsOptions.discussion(reader: "the transformation"))
+
+            \(SourceEncodingOptions.discussion(reader: "the transformation"))
 
             \(SemanticsOptions.discussion())
 
@@ -69,6 +71,9 @@ struct CompileCommand: AsyncParsableCommand {
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
 
+    /// The character encoding of the ATL source.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
     /// The behaviours of the ATL source that the command line, the environment and the
     /// configuration file select.
     ///
@@ -97,7 +102,7 @@ struct CompileCommand: AsyncParsableCommand {
 
         do {
             // Load and parse the ATL file
-            let atlSource = try String(contentsOfFile: atlFile, encoding: .utf8)
+            let atlSource = try readATLSource(at: atlFile)
 
             if verbose {
                 print("Loaded ATL source (\(atlSource.count) characters)")

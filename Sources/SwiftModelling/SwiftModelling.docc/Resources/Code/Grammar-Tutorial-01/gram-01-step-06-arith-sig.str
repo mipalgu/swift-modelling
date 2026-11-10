@@ -1,0 +1,14 @@
+module signatures/Arith-sig
+
+signature
+  sorts Program Expr Op
+  constructors
+    Program : Option(ID) * List(Expr) -> Program
+    Num     : INT -> Expr
+    Var     : ID -> Expr
+    BinOp   : Expr * Op * Expr -> Expr
+    Let     : ID * Expr * Expr -> Expr
+    Add     : Op
+    Sub     : Op
+    Mul     : Op
+    Div     : Op

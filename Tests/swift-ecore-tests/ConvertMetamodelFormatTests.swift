@@ -164,7 +164,7 @@ struct ConvertMetamodelFormatTests {
 
         #expect(!result.succeeded)
         #expect(result.stderr.contains("catalogue.ecore is a metamodel"), "\(result.stderr)")
-        #expect(result.stderr.contains("ecore or json"), "\(result.stderr)")
+        #expect(result.stderr.contains("convert it to one of: ecore, json"), "\(result.stderr)")
         #expect(!FileManager.default.fileExists(atPath: output.path))
     }
 
@@ -181,7 +181,7 @@ struct ConvertMetamodelFormatTests {
 
         #expect(!result.succeeded)
         #expect(result.stderr.contains("\(parts[1]) is a model"), "\(result.stderr)")
-        #expect(result.stderr.contains("xmi or json"), "\(result.stderr)")
+        #expect(result.stderr.contains("convert it to one of: xmi, json"), "\(result.stderr)")
         #expect(!FileManager.default.fileExists(atPath: output.path))
     }
 

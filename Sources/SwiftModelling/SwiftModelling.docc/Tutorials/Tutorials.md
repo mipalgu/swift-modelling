@@ -14,7 +14,15 @@ Follow these tutorial series to build expertise across all Swift MDE technologie
 2. **ATL Transformations** - Master model-to-model transformations
 3. **MTL Code Generation** - Generate code from models using templates
 4. **AQL Query Language** - Query and navigate models effectively
-5. **Integrated Workflows** - Combine technologies for complete MDE solutions
+5. **Metamodel Languages and Formats** - Write metamodels in KM3, EMOF, Emfatic, Xcore and OCLinEcore
+6. **From Grammars to Metamodels** - Import the abstract syntax of a language from its grammar
+7. **Formal Verification Exports** - Check metamodels and models with Alloy, TLA+, Event-B and Lean
+8. **Multi-Level Modelling** - Model domains with more than two levels
+9. **Graph Transformation with Henshin** - Transform models with graph rules, and analyse and explore them
+10. **Epsilon Languages** - Query, validate, transform and generate text with EOL, EVL, ETL and EGL
+11. **Code Generation with Xtend** - Generate files with rich strings and call dispatch methods on models
+12. **Model Typing** - Check whether transformations, templates and queries suit a revised metamodel
+13. **Integrated Workflows** - Combine technologies for complete MDE solutions
 
 ## Topics
 
@@ -89,6 +97,76 @@ Define and validate model constraints with the Object Constraint Language.
 
 @Links(visualStyle: detailedGrid) {
    - <doc:OCL-01-constraints>
+}
+
+### Metamodel Languages and Formats
+
+Write metamodels in KM3, EMOF, Emfatic, Xcore and OCLinEcore, and read UML class models.
+
+@Links(visualStyle: detailedGrid) {
+   - <doc:Formats-01-km3>
+   - <doc:Formats-02-uml-emof>
+   - <doc:Formats-03-emfatic-xcore>
+   - <doc:Formats-04-ocl-languages>
+}
+
+### From Grammars to Metamodels
+
+Import the abstract syntax of a language from ASDL, Stratego, Xtext, Langium and SDF3.
+
+@Links(visualStyle: detailedGrid) {
+   - <doc:Grammar-01-abstract-syntax>
+   - <doc:Grammar-02-concrete-syntax>
+}
+
+### Formal Verification Exports
+
+Export metamodels, constraints and models to Alloy, TLA+, Event-B and Lean.
+
+@Links(visualStyle: detailedGrid) {
+   - <doc:Verification-01-alloy>
+}
+
+### Multi-Level Modelling
+
+Model domains with more than two levels, with clabjects, potency and deep views.
+
+@Links(visualStyle: detailedGrid) {
+   - <doc:MultiLevel-01-deep-modelling>
+}
+
+### Graph Transformation with Henshin
+
+Apply, validate and convert Henshin rules, find their conflicts and dependencies, and explore the states they reach.
+
+@Links(visualStyle: detailedGrid) {
+   - <doc:Henshin-01-graph-rules>
+   - <doc:Henshin-02-analysis-exploration>
+}
+
+### Epsilon Languages
+
+Query, validate, transform and generate text from models with EOL, EVL, ETL and EGL.
+
+@Links(visualStyle: detailedGrid) {
+   - <doc:Epsilon-01-eol-evl>
+   - <doc:Epsilon-02-etl-egl>
+}
+
+### Code Generation with Xtend
+
+Generate files from models with Xtend rich strings, and call dispatch methods on models.
+
+@Links(visualStyle: detailedGrid) {
+   - <doc:Xtend-01-code-generation>
+}
+
+### Model Typing
+
+Check whether ATL transformations, MTL templates and AQL queries can be reused with a revised metamodel.
+
+@Links(visualStyle: detailedGrid) {
+   - <doc:Typing-01-check-compat>
 }
 
 ### Integrated Workflows

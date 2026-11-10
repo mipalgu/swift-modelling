@@ -1,0 +1,10 @@
+// Add a daughter to the family named by the parameter
+var family = Family.all.selectOne(f | f.lastName = lastName);
+var child = new Member;
+child.firstName = firstName;
+family.daughters.add(child);
+(child.firstName + " " + family.lastName + " joins a family of " + family.familyMembers().size()).println();
+
+operation Family familyMembers() : Sequence {
+  return Sequence{self.father, self.mother}.includingAll(self.sons).includingAll(self.daughters);
+}

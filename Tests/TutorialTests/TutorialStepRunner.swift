@@ -58,7 +58,8 @@ struct ScriptRun: Sendable {
 /// reports the tool as missing and exits with status 127, as the shell does for an unknown command.
 /// A wrapper copies the standard error of the tool into the log directory named by
 /// ``TutorialReplayConfiguration/toolLogVariable`` before passing it on, so that a failure stays
-/// visible even when a script sends the standard error elsewhere. The build products directory,
+/// visible even when a script sends the standard error elsewhere, and keeps the order of the lines
+/// of both streams when they lead to the same place. The build products directory,
 /// the directories of the base system and the remaining directories of the search path of the
 /// test process follow. An installed release of a tool, for example from a package manager, can
 /// therefore neither shadow nor stand in for the tools of this build, while other commands that a
@@ -127,7 +128,13 @@ struct TutorialReplayEnvironment: Sendable {
     /// extension ``TutorialReplayConfiguration/toolLogStandardErrorExtension`` while passing it on,
     /// and finally writes the exit status and the arguments into a companion file with the
     /// extension ``TutorialReplayConfiguration/toolLogStatusExtension``. Standard input and standard
-    /// output pass through unchanged, and the wrapper exits with the status of the tool. A stand-in
+    /// output pass through unchanged, and the wrapper exits with the status of the tool.
+    ///
+    /// When standard output and standard error lead to the same place, as they do for a command
+    /// whose output the step shows, both streams of the tool pass through the copy together, so
+    /// that their lines keep the order in which the tool wrote them, and the companion file holds
+    /// both. Otherwise only the standard error is copied, and the order of the lines of the two
+    /// streams is not observable anyway. A stand-in
     /// records and reports ``TutorialReplayConfiguration/missingToolMessage`` and exits with
     /// ``TutorialReplayConfiguration/missingToolStatus``.
     ///
@@ -165,7 +172,11 @@ struct TutorialReplayEnvironment: Sendable {
         let real = quoted(executable)
         return header + """
             if [ -z "$record" ]; then exec \(real) "$@"; fi
-            { \(real) "$@" 2>&1 1>&3 3>&- | tee \(errorFile) >&2; status=${PIPESTATUS[0]}; } 3>&1
+            if [ /dev/fd/1 -ef /dev/fd/2 ]; then
+                \(real) "$@" 2>&1 | tee \(errorFile); status=${PIPESTATUS[0]}
+            else
+                { \(real) "$@" 2>&1 1>&3 3>&- | tee \(errorFile) >&2; status=${PIPESTATUS[0]}; } 3>&1
+            fi
             { printf '%s\\n' "$status"; printf '%s ' "$@"; printf '\\n'; } > \(statusFile)
             exit "$status"
 

@@ -46,7 +46,8 @@ extension GenerationPipeline {
         progress(GenerationProgressUpdate(message: "Assembling the \(language) templates"))
         let templateSet = try TemplateSet.assemble(language: language, templatePaths: options.templatePaths)
         defer { templateSet.remove() }
-        let layout = try templateSet.descriptor.layoutConfiguration(forStyle: options.codeStyle)
+        let layout = try templateSet.descriptor.layoutConfiguration(
+            forStyle: options.codeStyle, isConfigured: options.codeStyleIsConfigured)
 
         progress(GenerationProgressUpdate(message: "Loading \(source.lastPathComponent)"))
         let resourceSet = ResourceSet(defaultContainerLookupScope: options.containerLookupScope)
@@ -62,19 +63,21 @@ extension GenerationPipeline {
         }
 
         let data = try await TemplateRun.loadDataModels(of: templateSet, into: resourceSet)
-        let module = try await TemplateRun.parseMainModule(of: templateSet)
+        let parsed = try await TemplateRun.parseMainModule(of: templateSet, encoding: options.templateEncoding)
+        let module = parsed.module
         let base = outputBase(
             for: genModel, descriptor: templateSet.descriptor, in: outputDirectory, options: options)
         let services: [any AQLServiceProvider] = [
             GenModelServices(context: context), TemplateDataServices(roots: data.roots),
             OutputLayoutServices(
                 includesSourceRoot: includesSourceRoot(descriptor: templateSet.descriptor, options: options)),
+            VerificationServices(),
         ]
         var models: [String: Resource] = [TemplateSetConstants.genModelAlias: document.resource]
         models.merge(data.models) { _, data in data }
         for (index, package) in document.foreignPackages.sorted(by: { $0.key.path < $1.key.path }).enumerated() {
             if let resource = await resourceSet.getResource(uri: package.key.absoluteString) {
-                models["ECORE_\(index)"] = resource
+                models[TemplateSetConstants.ecoreModelAliasPrefix + String(index)] = resource
             }
         }
         let total = try await TemplateRun.expectedFileCount(
@@ -87,6 +90,7 @@ extension GenerationPipeline {
             templateSearchPaths: options.templatePaths.map(\.path))
         if options.forceOverwrite { generatorOptions.redirectionPattern = nil }
         generatorOptions.layout = layout
+        generatorOptions.defaultCharset = options.outputEncoding.name
 
         progress(GenerationProgressUpdate(message: "Generating \(language) code", total: total))
         let output = try await TemplateRun.run(
@@ -97,7 +101,8 @@ extension GenerationPipeline {
         progress(GenerationProgressUpdate(message: "Done", completed: files.count, total: total ?? files.count))
         return GenerationResult(
             outputDirectory: base, files: files, language: templateSet.descriptor.name,
-            packageCount: genModel.allGenPackages.count, warnings: output.warnings)
+            packageCount: genModel.allGenPackages.count, warnings: output.warnings,
+            decodingWarnings: parsed.decodingWarnings)
     }
 
     // MARK: - Loading

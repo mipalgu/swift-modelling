@@ -31,10 +31,10 @@ struct ModelLoaderTests {
     }
 
     @Test("Metamodels given on the command line replace discovery")
-    func effectiveMetamodels() throws {
+    func effectiveMetamodels() async throws {
         let model = try Fixture.shop(Fixture.shopModel).path
-        #expect(try ModelLoader(metamodels: ["X.ecore"], settings: .init()).effectiveMetamodels(for: [model]) == ["X.ecore"])
-        let discovered = try ModelLoader(metamodels: [], settings: .init()).effectiveMetamodels(for: [model])
+        #expect(try await ModelLoader(metamodels: ["X.ecore"], settings: .init()).effectiveMetamodels(for: [model]) == ["X.ecore"])
+        let discovered = try await ModelLoader(metamodels: [], settings: .init()).effectiveMetamodels(for: [model])
         #expect(discovered.map { URL(fileURLWithPath: $0).lastPathComponent } == [Fixture.shopMetamodel])
     }
 

@@ -1,0 +1,10 @@
+[module catalogue('http://www.example.org/library/1.0')/]
+
+[template public main(library : library::Library)]
+[file ('catalogue.md', false, 'UTF-8')]
+# [library.name/]
+[for (book : library::Book | library.books)]
+- [book.title/], ISBN [book.isbn/][if (book.genre = library::Genre::history)] (history)[/if]
+[/for]
+[/file]
+[/template]

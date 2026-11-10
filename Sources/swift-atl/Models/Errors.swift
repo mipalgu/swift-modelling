@@ -90,6 +90,26 @@ enum TransformationError: Error, LocalizedError {
     /// - Parameter problems: One sentence for each problem, in the order of the module
     case invalidTransformation([String])
 
+    /// A multi-level source model cannot be presented as the deep view that `--deep-view` asks for.
+    ///
+    /// - Parameter message: The path of the model and the reason, such as a level that the
+    ///   model does not have
+    case invalidDeepView(String)
+
+    /// `--deep-view` was given, but no source model holds a multi-level model.
+    ///
+    /// - Parameters:
+    ///   - level: The level given with `--deep-view`
+    ///   - paths: The paths of the source models
+    case noMultiLevelSource(Int, [String])
+
+    /// The deep views of two source models present packages of the same name.
+    ///
+    /// - Parameters:
+    ///   - name: The name of the packages
+    ///   - paths: The paths of the source models
+    case ambiguousDeepView(String, [String])
+
     /// Provides a localised description of the transformation error.
     ///
     /// Generates user-friendly error messages with context about the failure,
@@ -114,6 +134,14 @@ enum TransformationError: Error, LocalizedError {
             return "No file or directive gives the metamodel '\(name)': give it with --\(TransformMetamodelOptions.sourceOptionName), --\(TransformMetamodelOptions.targetOptionName) or --\(MetamodelOptions.optionName), or with an -- @path or -- @nsURI directive"
         case .invalidTransformation(let problems):
             return "The transformation is not valid:\n" + problems.map { "  - \($0)" }.joined(separator: "\n")
+        case .invalidDeepView(let message):
+            return "--\(DeepViewOptions.optionName): \(message)"
+        case .noMultiLevelSource(let level, let paths):
+            let verb = paths.count == 1 ? "holds" : "hold"
+            let models = paths.isEmpty ? "no source model is given" : "\(paths.joined(separator: ", ")) \(verb) no multi-level model"
+            return "--\(DeepViewOptions.optionName) \(level) needs a multi-level source model, such as a MetaDepth document (.mdepth): \(models)"
+        case .ambiguousDeepView(let name, let paths):
+            return "--\(DeepViewOptions.optionName): the deep views of \(paths.joined(separator: " and ")) both present the package '\(name)'; give one of them as a source model"
         }
     }
 }

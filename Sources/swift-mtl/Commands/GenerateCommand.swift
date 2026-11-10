@@ -6,6 +6,7 @@
 //  Copyright © 2025 Rene Hexel. All rights reserved.
 //
 
+import AQL
 import ArgumentParser
 import ECore
 import EMFBase
@@ -58,6 +59,10 @@ struct GenerateCommand: AsyncParsableCommand {
             \(LetTypeMismatchOptions.discussion(reader: "the templates"))
 
             \(MTLSemanticsOptions.discussion(reader: "the templates"))
+
+            \(SourceEncodingOptions.discussion(reader: "the template file or the templates of the template set, and the modules they import"))
+
+            \(OutputEncodingOptions.discussion(writer: "the generated files, including the stdout file"))
 
             \(SemanticsOptions.discussion())
 
@@ -217,6 +222,19 @@ struct GenerateCommand: AsyncParsableCommand {
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
 
+    /// The character encoding of the template file or the templates of the template set, and of
+    /// the modules they import.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// The character encoding of the generated files.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
+
+    /// How metamodels in KM3 and in grammar formats are read.
+    @OptionGroup var formatOptions: MetamodelFormatOptions
+
+    /// The level whose deep view presents each multi-level model.
+    @OptionGroup var deepViewOptions: DeepViewOptions
+
     /// The behaviours of the templates that the command line and the settings of a run select.
     ///
     /// - Parameter settings: The preset, configuration file and container scope of the run.
@@ -334,10 +352,12 @@ struct GenerateCommand: AsyncParsableCommand {
 
         let searchURLs = try templatePathOptions.directories()
         let parameters = try parameterOptions.services
-        let parser = MTLParser(enableDebugging: debugOptions.debug, searchPaths: searchURLs)
+        let parser = MTLParser(
+            enableDebugging: debugOptions.debug, searchPaths: searchURLs,
+            encoding: encodingOptions.encoding(settings: settings))
         let mtlModule: MTLModule
         do {
-            mtlModule = try await parser.parse(templateURL)
+            mtlModule = try await parser.parseReportingWarnings(templateURL)
         } catch {
             throw ValidationError.parseFailed(templateFile, error.localizedDescription)
         }
@@ -380,10 +400,10 @@ struct GenerateCommand: AsyncParsableCommand {
         // Execute generation
         let standardOutputBefore = FileState(of: standardOutputURL)
         let strategy = MTLFileSystemStrategy(
-            basePath: output, options: generatorOptions, standardOutput: .capture)
+            basePath: output, options: generatorOptions(settings: settings), standardOutput: .capture)
         let generator = MTLGenerator(
             module: mtlModule, generationStrategy: strategy, options: mtlOptions(settings: settings),
-            serviceProviders: [parameters])
+            serviceProviders: [parameters] + inputs.services)
         parameters.bind(to: generator)
 
         do {
@@ -397,7 +417,8 @@ struct GenerateCommand: AsyncParsableCommand {
             throw ValidationError.generationFailed(error.localizedDescription)
         }
         GenerationWarningReport.write(generator.statistics.warnings)
-        try await writeStandardOutput(of: strategy, before: standardOutputBefore)
+        try await writeStandardOutput(
+            of: strategy, before: standardOutputBefore, encoding: outputEncodingOptions.encoding(settings: settings))
 
         // Display results
         if verbose {
@@ -433,19 +454,23 @@ struct GenerateCommand: AsyncParsableCommand {
         if verbose {
             print("\n=== Executing Generation ===")
         }
-        let step = GenerationStep(
-            templates: .templateSet(templateSet, codeStyle: codeStyle.codeStyle), templatePaths: templateURLs,
+        var step = GenerationStep(
+            templates: .templateSet(templateSet, codeStyle: codeStyle.codeStyle(settings: settings)), templatePaths: templateURLs,
             parameters: parameters, outputDirectory: URL(fileURLWithPath: output),
-            generatorOptions: generatorOptions, mtlOptions: mtlOptions(settings: settings))
+            generatorOptions: generatorOptions(settings: settings), mtlOptions: mtlOptions(settings: settings))
+        step.templateEncoding = encodingOptions.encoding(settings: settings)
+        step.codeStyleIsConfigured = codeStyle.codeStyleIsConfigured(settings: settings)
         let verbose = self.verbose
         let result = try await step.run(
             arguments: inputs.arguments, models: inputs.models, resourceSet: inputs.resourceSet,
             progress: { update in if verbose { print("  \(update.message)") } })
+        FileDiagnosticReport.write(result.decodingWarnings)
         GenerationWarningReport.write(result.warnings)
         let standardOutputFile = standardOutputURL.standardizedFileURL
         try writeStandardOutput(
             result.standardOutput,
-            writtenByRun: result.files.contains { $0.standardizedFileURL == standardOutputFile })
+            writtenByRun: result.files.contains { $0.standardizedFileURL == standardOutputFile },
+            encoding: outputEncodingOptions.encoding(settings: settings))
 
         if verbose {
             print("\n=== Generation Complete ===")
@@ -458,12 +483,17 @@ struct GenerateCommand: AsyncParsableCommand {
         }
     }
 
-    /// The options of the generator, from the command line.
-    private var generatorOptions: MTLGeneratorOptions {
-        MTLGeneratorOptions(
+    /// The options of the generator, from the command line and the settings of a run.
+    ///
+    /// - Parameter settings: The preset, configuration file and container scope of the run.
+    /// - Returns: The options, whose default charset is the output encoding of the run.
+    private func generatorOptions(settings: SemanticsSettings) -> MTLGeneratorOptions {
+        var options = MTLGeneratorOptions(
             forceOverwrite: forceOverwrite,
             redirectionPattern: diff && !forceOverwrite ? TemplateSetConstants.diffRedirectionPattern : nil,
             templateSearchPaths: templatePathOptions.templatePaths)
+        options.defaultCharset = outputEncodingOptions.encoding(settings: settings).name
+        return options
     }
 
     /// Creates the output directory if it does not exist.
@@ -484,14 +514,18 @@ struct GenerateCommand: AsyncParsableCommand {
 
         /// The resource set with the registered metamodels.
         var resourceSet: ResourceSet
+
+        /// The services of the deep views that replace multi-level models, if any.
+        var services: [any AQLServiceProvider] = []
     }
 
     /// Registers the metamodels and loads the models given on the command line.
     ///
-    /// An Ecore file given with `--model` is registered as a metamodel and its package is passed
-    /// to the template. Every other model is read as JSON if its extension is `json`, and as XMI
-    /// otherwise; a JSON model is read without the registered metamodels. Every resource set
-    /// that receives a model has the container lookup scope of the settings as its default.
+    /// A metamodel file given with `--model`, such as an Ecore or a KM3 file, is registered as a
+    /// metamodel and its first root package is passed to the template. Every other model is read as JSON if its extension is `json`, as XMI if
+    /// it is `xmi`, and otherwise in the format of its contents; a JSON model is read without
+    /// the registered metamodels. Every resource set that receives a model has the container
+    /// lookup scope of the settings as its default.
     ///
     /// - Parameter settings: The settings of the run, whose container lookup scope applies.
     /// - Returns: The models, the arguments of the main template and the resource set.
@@ -507,18 +541,24 @@ struct GenerateCommand: AsyncParsableCommand {
                 print("\n=== Loading Models ===")
             }
 
-            // First pass: register metamodels (--metamodel files and .ecore --model files)
+            // First pass: register metamodels (--metamodel files and metamodel --model files)
+            let metamodelOptions = formatOptions.ecoreLoadOptions(settings: settings, encodingOptions: encodingOptions)
+            await MultiLevelSupport.registerFormats()
+            var metamodelModels = Set<Int>()
+            for (index, modelPath) in model.enumerated() where await MetamodelRegistration.holdsMetamodel(at: modelPath) {
+                metamodelModels.insert(index)
+            }
             for metamodelPath in metamodel {
                 try await MetamodelRegistration.registerMetamodel(
                     at: metamodelPath, into: resourceSet,
                     announcement: MetamodelRole.registeredOnly.announcement, verbose: verbose,
-                    debug: debugOptions.debug)
+                    debug: debugOptions.debug, options: metamodelOptions)
             }
-            for (index, modelPath) in model.enumerated() where MetamodelRegistration.isEcoreFile(modelPath) {
+            for (index, modelPath) in model.enumerated() where metamodelModels.contains(index) {
                 let package = try await MetamodelRegistration.registerMetamodel(
                     at: modelPath, into: resourceSet,
                     announcement: MetamodelRole.registeredAndInput.announcement, verbose: verbose,
-                    debug: debugOptions.debug)
+                    debug: debugOptions.debug, options: metamodelOptions)
                 let modelURL = URL(fileURLWithPath: modelPath)
                 let resource = await resourceSet.createResource(uri: modelURL.absoluteString)
                 await resource.add(package)
@@ -526,25 +566,37 @@ struct GenerateCommand: AsyncParsableCommand {
                 rootObjectsByModel[index] = await resource.getRootObjects()
             }
 
-            // Second pass: load instance models (non-ecore files)
+            // Second pass: load instance models (files that are not metamodels)
             for (index, modelPath) in model.enumerated() {
                 let modelURL = URL(fileURLWithPath: modelPath)
-                guard !MetamodelRegistration.isEcoreFile(modelPath) else { continue }
+                guard !metamodelModels.contains(index) else { continue }
                 guard FileManager.default.fileExists(atPath: modelPath) else {
                     throw ValidationError.fileNotFound(modelPath)
                 }
 
-                let format = ModelFileFormat.instanceFormat(of: modelURL)
+                let format = try ModelFileFormat.detectedInstanceFormat(of: modelURL)
+                if format != .metadepth, MultiLevelSupport.holdsLinguisticInstances(modelURL) {
+                    await MultiLevelSupport.registerLinguisticMetamodel(in: resourceSet)
+                }
 
                 if verbose {
                     print("Loading input model \(index + 1): \(modelPath) (format: \(format.rawValue))")
                 }
 
                 let options = ModelIO.LoadOptions(requiresMetamodel: false, enableDebugging: debugOptions.debug)
-                let resource = try await ModelIO.load(
-                    url: modelURL, format: format,
-                    resourceSet: format == .json ? settings.makeResourceSet() : resourceSet, options: options
+                var resource = try await TextDocumentLoading.load(
+                    url: modelURL, path: modelPath, format: format,
+                    resourceSet: format == .json ? settings.makeResourceSet() : resourceSet, options: options,
+                    encoding: metamodelOptions.textEncoding
                 ).resource
+                var isDeepView = false
+                if let level = deepViewOptions.level,
+                    let views = try await MultiLevelSupport.views(of: resource, level: level, in: resourceSet)
+                {
+                    resource = views.view.resource
+                    inputs.services.append(views.services)
+                    isDeepView = true
+                }
 
                 // Use filename without extension as model name
                 let modelName = modelURL.deletingPathExtension().lastPathComponent
@@ -552,7 +604,9 @@ struct GenerateCommand: AsyncParsableCommand {
                     print("  ! Model name '\(modelName)' is already in use: replacing the earlier model")
                 }
                 inputs.models[modelName] = resource
-                rootObjectsByModel[index] = await resource.getRootObjects()
+                // A deep view passes its first clabject, as a model passes its root object
+                let roots = await resource.getRootObjects()
+                rootObjectsByModel[index] = isDeepView ? Array(roots.prefix(1)) : roots
 
                 if verbose {
                     let count = await resource.count()
@@ -630,10 +684,14 @@ extension GenerateCommand {
     /// - Parameters:
     ///   - strategy: The file system strategy used for generation.
     ///   - before: The state of the standard output file before the generation.
+    ///   - encoding: The encoding of the file (default: UTF-8).
     /// - Throws: An error if the file cannot be written.
-    func writeStandardOutput(of strategy: MTLFileSystemStrategy, before: FileState) async throws {
+    func writeStandardOutput(
+        of strategy: MTLFileSystemStrategy, before: FileState, encoding: TextEncoding = .utf8
+    ) async throws {
         try writeStandardOutput(
-            await strategy.standardOutput, writtenByRun: FileState(of: standardOutputURL) != before)
+            await strategy.standardOutput, writtenByRun: FileState(of: standardOutputURL) != before,
+            encoding: encoding)
     }
 
     /// Writes the text written outside any file block to the standard output file, or prints it.
@@ -646,15 +704,18 @@ extension GenerateCommand {
     /// - Parameters:
     ///   - text: The text written outside any file block, or `nil` if none was kept.
     ///   - writtenByRun: Whether the run wrote the standard output file with a `[file]` block.
-    /// - Throws: An error if the file cannot be written.
-    func writeStandardOutput(_ text: String?, writtenByRun: Bool) throws {
+    ///   - encoding: The encoding of the file (default: UTF-8). The text printed on standard
+    ///     output is not affected.
+    /// - Throws: An error if the file cannot be written, or if the encoding cannot hold a
+    ///   character of the text.
+    func writeStandardOutput(_ text: String?, writtenByRun: Bool, encoding: TextEncoding = .utf8) throws {
         guard let text, text.contains(where: { !$0.isWhitespace }) else { return }
         if printStandardOutput {
             print(text, terminator: "")
             return
         }
         guard !writtenByRun else { return }
-        try text.write(to: standardOutputURL, atomically: true, encoding: .utf8)
+        try OutputFile.write(text, to: standardOutputURL.path, encoding: encoding)
     }
 }
 

@@ -1,0 +1,4 @@
+[%= title %] of [%= Bank.all.first().name %]
+[% for (account in Account.all) { %]
+- [%= account.name %]: [%= account.balance %]
+[% } %]

@@ -1,0 +1,34 @@
+digraph MultiLevel {
+    bgcolor="white"
+    rankdir=BT
+    labelloc="t"
+    node [shape=box, style="rounded,filled", fontname="Arial", fontsize=12]
+    edge [fontname="Arial", fontsize=10]
+
+    subgraph cluster_level2 {
+        label="Level 2: Catalogue"
+        style=rounded
+        bgcolor="#e8f4f8"
+        producttype [label="ProductType @2\ngst@1, price" fillcolor="#f8f4e8"]
+    }
+
+    subgraph cluster_level1 {
+        label="Level 1: Bookshop"
+        style=rounded
+        bgcolor="#e8f8f5"
+        book [label="Book @1\ngst = 0.0, pages" fillcolor="#f4e8f8"]
+    }
+
+    subgraph cluster_level0 {
+        label="Level 0: Shelf"
+        style=rounded
+        bgcolor="#fff8e8"
+        manual [label="manual @0\nprice = 35.0, pages = 120" fillcolor="#ffffff"]
+    }
+
+    views [label="Deep views for\nswift-aql and swift-mtl" shape=note fillcolor="#f4e8f8"]
+
+    book -> producttype [label="instance of"]
+    manual -> book [label="instance of"]
+    manual -> views [style=dashed label="--deep-view 0"]
+}

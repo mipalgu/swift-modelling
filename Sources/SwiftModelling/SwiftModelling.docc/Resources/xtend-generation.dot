@@ -1,0 +1,31 @@
+digraph XtendGeneration {
+    bgcolor="white"
+    rankdir=LR
+    node [shape=box, style="rounded,filled", fontname="Arial", fontsize=12, fillcolor="#f4e8f8"]
+    edge [fontname="Arial", fontsize=10]
+
+    ecore [label="Metamodel\n(Shapes.ecore)" shape=box3d fillcolor="#f8f4e8"]
+    model [label="Model\n(poster.xmi)" shape=box3d fillcolor="#e8f8f5"]
+
+    subgraph cluster_xtend {
+        label="Xtend classes"
+        style=rounded
+        bgcolor="#e8f4f8"
+        measure [label="Measure\ndispatch methods"]
+        pictures [label="Pictures\nrich strings"]
+    }
+
+    result [label="Result on\nstandard output" shape=note fillcolor="#fff8e8"]
+    changed [label="Changed model\n(poster-large.xmi)" shape=box3d fillcolor="#e8f8f5"]
+    svg [label="out/poster.svg" shape=note fillcolor="#fff8e8"]
+    md [label="docs/poster.md" shape=note fillcolor="#fff8e8"]
+
+    ecore -> model [style=dashed label="conforms to" dir=back]
+    model -> measure
+    model -> pictures
+    measure -> pictures [style=dashed label="extension"]
+    measure -> result [label="swift-xtend run"]
+    measure -> changed [label="run --output"]
+    pictures -> svg [label="swift-xtend generate"]
+    pictures -> md [label="docs output\nconfiguration"]
+}

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<depot:Depot xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:depot="http://example.org/depot" name="Central">
+  <bins name="A" tokens="2" next="//@bins.1" holds="//@parcels.0"/>
+  <bins name="B" tokens="0" next="//@bins.0"/>
+  <parcels code="P1" weight="5"/>
+  <parcels code="P2" weight="3"/>
+</depot:Depot>

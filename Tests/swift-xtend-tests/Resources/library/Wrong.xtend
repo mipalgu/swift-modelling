@@ -1,0 +1,2 @@
+class Wrong {
+    def broken( {

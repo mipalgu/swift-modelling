@@ -22,6 +22,10 @@ struct LoadedModel: Sendable {
 
     /// The identifiers that the model file declares with `xmi:id`.
     let identifiers: XMIIdentifierIndex
+
+    /// The deep views of a multi-level model presented through `--deep-view`, if the model is
+    /// one; its ``resource`` and ``roots`` are then those of the view of the level given.
+    var deepViews: DeepModelViews? = nil
 }
 
 /// Loads the models and metamodels named on the command line.
@@ -29,8 +33,8 @@ struct LoadedModel: Sendable {
 /// The metamodels are those given with `--metamodel`, or, if none is given, those that
 /// ``MetamodelDiscovery`` finds beside the models. Every metamodel is registered with one
 /// resource set before the models are read, so the models are read with the classes and data
-/// types it defines. A model may be an Ecore file itself, in which case its package is both
-/// registered and queried.
+/// types it defines. A model may be a metamodel file itself, such as an Ecore or a KM3 file, in
+/// which case its first root package is both registered and queried.
 @MainActor
 struct ModelLoader {
     /// The paths of the metamodels given on the command line.
@@ -39,25 +43,37 @@ struct ModelLoader {
     /// The settings of the run, which choose the container lookup scope of the resources.
     let settings: SemanticsSettings
 
+    /// The options with which metamodels are read, such as those of KM3.
+    let metamodelOptions: EcoreLoadOptions
+
+    /// The level whose deep view replaces each multi-level model, if any.
+    var deepViewLevel: Int? = nil
+
     /// Creates a loader.
     ///
     /// - Parameters:
     ///   - metamodels: The paths of the metamodels given on the command line, if any.
     ///   - settings: The settings of the run.
-    init(metamodels: [String], settings: SemanticsSettings) {
+    ///   - metamodelOptions: The options with which metamodels are read (default options).
+    init(metamodels: [String], settings: SemanticsSettings, metamodelOptions: EcoreLoadOptions = EcoreLoadOptions()) {
         self.metamodels = metamodels
         self.settings = settings
+        self.metamodelOptions = metamodelOptions
     }
 
     /// The metamodels with which the models are read.
     ///
     /// - Parameter models: The paths of the models.
     /// - Returns: The metamodels given on the command line, or, if none is, those found beside
-    ///   the models that are not Ecore files.
+    ///   the models that are not metamodels themselves.
     /// - Throws: ``SwiftAQLError/ambiguousMetamodels(_:_:)`` if discovery cannot choose.
-    func effectiveMetamodels(for models: [String]) throws -> [String] {
+    func effectiveMetamodels(for models: [String]) async throws -> [String] {
         guard metamodels.isEmpty else { return metamodels }
-        return try MetamodelDiscovery().metamodels(for: models.filter { !MetamodelRegistration.isEcoreFile($0) })
+        var instances: [String] = []
+        for model in models where !(await MetamodelRegistration.holdsMetamodel(at: model)) {
+            instances.append(model)
+        }
+        return try await MetamodelDiscovery(options: metamodelOptions).metamodels(for: instances)
     }
 
     /// Loads models.
@@ -71,25 +87,40 @@ struct ModelLoader {
             throw SwiftAQLError.modelNotFound(path)
         }
         let resourceSet = settings.makeResourceSet()
-        for metamodel in try effectiveMetamodels(for: models) {
-            try await MetamodelRegistration.registerMetamodel(at: metamodel, into: resourceSet)
+        await MultiLevelSupport.registerFormats()
+        for metamodel in try await effectiveMetamodels(for: models) {
+            try await MetamodelRegistration.registerMetamodel(at: metamodel, into: resourceSet, options: metamodelOptions)
         }
         var loaded: [LoadedModel] = []
         for path in models {
             let url = URL(fileURLWithPath: path)
             let resource: Resource
-            if MetamodelRegistration.isEcoreFile(path) {
-                let package = try await MetamodelRegistration.registerMetamodel(at: path, into: resourceSet)
+            if await MetamodelRegistration.holdsMetamodel(at: path) {
+                let package = try await MetamodelRegistration.registerMetamodel(
+                    at: path, into: resourceSet, options: metamodelOptions)
                 resource = await resourceSet.createResource(uri: url.absoluteString)
                 await resource.add(package)
             } else {
-                let format = ModelFileFormat.instanceFormat(of: url)
-                resource = try await ModelIO.load(
-                    url: url, format: format, resourceSet: resourceSet,
-                    options: ModelIO.LoadOptions(requiresMetamodel: false)
+                let format = try ModelFileFormat.detectedInstanceFormat(of: url)
+                if format != .metadepth, MultiLevelSupport.holdsLinguisticInstances(url) {
+                    await MultiLevelSupport.registerLinguisticMetamodel(in: resourceSet)
+                }
+                resource = try await TextDocumentLoading.load(
+                    url: url, path: path, format: format, resourceSet: resourceSet,
+                    options: ModelIO.LoadOptions(requiresMetamodel: false), encoding: metamodelOptions.textEncoding
                 ).resource
             }
             let identifiers = XMIIdentifierIndex(data: (try? Data(contentsOf: url)) ?? Data())
+            if let level = deepViewLevel,
+                let views = try await MultiLevelSupport.views(of: resource, level: level, in: resourceSet)
+            {
+                var model = LoadedModel(
+                    path: path, resource: views.view.resource, roots: await views.view.resource.getRootObjects(),
+                    identifiers: identifiers)
+                model.deepViews = views
+                loaded.append(model)
+                continue
+            }
             loaded.append(
                 LoadedModel(path: path, resource: resource, roots: await resource.getRootObjects(), identifiers: identifiers))
         }

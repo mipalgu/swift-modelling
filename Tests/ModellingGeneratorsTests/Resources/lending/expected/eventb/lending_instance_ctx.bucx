@@ -1,0 +1,37 @@
+/*
+ * Event-B context of a model of the Ecore package lending (http://example.org/lending), in CamilleX notation.
+ *
+ * Rodin compiles this file into the context lending_instance_ctx once it is in an Event-B project with the
+ * CamilleX plug-in installed, beside the files of the context lending_ctx and the machine lending_machine.
+ *
+ * Every object of the model is a constant, named after its class and its position in the model, and every distinct
+ * string of the model is a constant whose comment shows the text. The axioms state that these are all the objects
+ * there are and that the strings differ. The populations of the classes and the values of the features are variables
+ * of the machine lending_instance_machine, which assigns them.
+ */
+context lending_instance_ctx
+extends lending_ctx
+constants
+  Library1
+  Branch2
+  Branch3
+  Member4
+  Loan5
+  Member6
+  Book7
+  Periodical8
+  ReferenceBook9
+  "Riverside Library" STRING_1
+  "Central" STRING_2
+  "Northside" STRING_3
+  "Alex" STRING_4
+  "Sam" STRING_5
+  "A Field Guide to Birds" STRING_6
+  "978-0-00-000000-2" STRING_7
+  "Science Monthly" STRING_8
+  "Atlas of the World" STRING_9
+axioms
+  @objects: partition(OBJECT, {Library1}, {Branch2}, {Branch3}, {Member4}, {Loan5}, {Member6}, {Book7}, {Periodical8}, {ReferenceBook9})
+  @strings_type: {STRING_1, STRING_2, STRING_3, STRING_4, STRING_5, STRING_6, STRING_7, STRING_8, STRING_9} ⊆ STRING
+  @strings_distinct: partition({STRING_1, STRING_2, STRING_3, STRING_4, STRING_5, STRING_6, STRING_7, STRING_8, STRING_9}, {STRING_1}, {STRING_2}, {STRING_3}, {STRING_4}, {STRING_5}, {STRING_6}, {STRING_7}, {STRING_8}, {STRING_9})
+end

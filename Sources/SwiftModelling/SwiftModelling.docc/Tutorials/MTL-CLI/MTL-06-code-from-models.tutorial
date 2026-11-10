@@ -59,7 +59,7 @@
 
     @Section(title: "Navigating Model References") {
         @ContentAndMedia {
-            Models contain references to other elements. Navigate them using dot notation—the same way you access properties in Swift.
+            Models contain references to other elements. Navigate them using dot notation, the same way you access properties in Swift.
 
             MTL automatically follows containment and non-containment references, letting you traverse the entire model graph.
         }

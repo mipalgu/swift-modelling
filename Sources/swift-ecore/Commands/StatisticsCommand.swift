@@ -34,6 +34,12 @@ struct StatisticsCommand: AsyncParsableCommand {
             those into other documents and those that cannot be resolved. With \
             --\(MetamodelOptions.optionName), the concrete classes of the metamodel that have \
             no objects are listed too. \(MetamodelOptions.effect)
+
+            \(SourceEncodingOptions.discussion(reader: EncodingVocabulary.encodedDocuments))
+
+            \(OutputEncodingOptions.discussion(writer: OutputEncodingVocabulary.report))
+
+            \(ConfigurationVocabulary.writingDiscussion)
             """
     )
 
@@ -43,6 +49,33 @@ struct StatisticsCommand: AsyncParsableCommand {
 
     /// The metamodels of the model.
     @OptionGroup var metamodelOptions: MetamodelOptions
+
+    /// How metamodels in KM3 and in grammar formats are read.
+    @OptionGroup var formatOptions: MetamodelFormatOptions
+
+    /// The character encoding of the documents in text formats.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// The configuration file whose keys give the options that the command line leaves open.
+    @OptionGroup var configurationOptions: ConfigurationFileOptions
+
+    /// The character encoding of the files that the command writes.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
+
+    /// The options with which the documents and metamodels are read.
+    ///
+    /// Each option is the one given on the command line, else the value of its key in the
+    /// configuration file, else its default.
+    ///
+    /// - Returns: The options of the readers, in the encoding of the run.
+    /// - Throws: ``ModellingConfigurationError`` if the configuration file cannot be read or is
+    ///   not valid.
+    private func configuredLoadOptions() throws -> EcoreLoadOptions {
+        formatOptions.ecoreLoadOptions(settings: try configurationOptions.settings(), encodingOptions: encodingOptions)
+    }
+
+    /// The Complete OCL documents that constrain the metamodels.
+    @OptionGroup var completeOCLOptions: CompleteOCLOptions
 
     /// The format of the report.
     @Option(help: "Format of the report: \(ReportFormat.allCases.map(\.rawValue).joined(separator: " or "))")
@@ -62,14 +95,20 @@ struct StatisticsCommand: AsyncParsableCommand {
     ///
     /// - Throws: ``DocumentError`` if the file cannot be read, or the error of the parser, the
     ///   encoder or the file system.
+    ///   Also ``ModellingConfigurationError`` if the configuration file cannot be read or is not valid,
+    ///   and `OutputFileError` if the encoding of the report cannot hold one of its characters.
     func run() async throws {
+        let loadOptions = try configuredLoadOptions()
+        let oclDocuments = completeOCLOptions.documents(settings: try configurationOptions.settings())
         if verbose { print("Measuring: \(inputPath)") }
-        let document = try await ModelDocument.load(path: inputPath, metamodelOptions: metamodelOptions, verbose: verbose)
+        let document = try await ModelDocument.load(path: inputPath, metamodelOptions: metamodelOptions, verbose: verbose,
+            ecoreLoadOptions: loadOptions, completeOCL: oclDocuments)
         let report = await Statistician.measure(document)
         withExtendedLifetime(document) {}
         let text = format == .json ? try report.json() : report.text()
         if let output {
-            try text.write(to: URL(fileURLWithPath: output), atomically: true, encoding: .utf8)
+            let encoding = outputEncodingOptions.encoding(settings: try configurationOptions.settings())
+            try OutputFile.write(text, to: output, encoding: encoding, kind: format.documentKind)
             print(StatisticsVocabulary.writtenConfirmation + output)
         } else {
             print(text, terminator: "")

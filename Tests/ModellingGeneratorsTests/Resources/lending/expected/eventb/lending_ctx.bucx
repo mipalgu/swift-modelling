@@ -1,0 +1,34 @@
+/*
+ * Event-B context of the Ecore package lending (http://example.org/lending), in CamilleX notation.
+ *
+ * Rodin compiles this file into the context lending_ctx once it is in an Event-B project with the CamilleX
+ * plug-in installed.
+ *
+ * The carrier set OBJECT holds all objects that can exist, and enumerations are carrier sets partitioned by
+ * their literals. The machine lending_machine sees this context and declares the population of every class and
+ * every feature as variables, since objects come and go.
+ *
+ * Not exported:
+ *  - operations: Member.canBorrow
+ *  - derived and volatile features: Member.loanCount
+ *  - the order and repetition of the values of many-valued features: features are relations
+ *  - the structure of strings: they are elements of the carrier set STRING that only support equality
+ *  - the structure of values of the data types EDouble: they are elements of carrier sets
+ *
+ * Integers are mathematical integers without bounds. Event-B carrier sets are not empty, so there is at least one
+ * possible object, which need not belong to any class.
+ */
+context lending_ctx
+sets
+  OBJECT
+  STRING
+  Status
+  EDouble
+constants
+  Status_AVAILABLE
+  Status_ON_LOAN
+  Status_WITHDRAWN
+axioms
+  @OBJECT_finite: finite(OBJECT)
+  @Status_literals: partition(Status, {Status_AVAILABLE}, {Status_ON_LOAN}, {Status_WITHDRAWN})
+end

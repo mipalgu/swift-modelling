@@ -1,0 +1,206 @@
+[comment encoding = UTF-8 /]
+[**
+ * The Alloy module of a package.
+ *
+ * Every class becomes a signature with a field for each exported feature. A class extends the signature of its first
+ * supertype; further supertypes are subset constraints, and a class that is a further supertype is a subset signature
+ * of the signature of all objects (see isSubsetSignature). Enumerations become abstract signatures with one atom per
+ * literal, and data types that the export does not interpret become signatures of uninterpreted atoms. Facts state the
+ * bounds of many-valued features, opposite references as converse relations, and that every object has at most one
+ * container and is not contained in itself. Every translatable invariant becomes a predicate and an assertion.
+ **/]
+[module AlloyMetamodel('http://www.eclipse.org/emf/2002/Ecore')/]
+[import verification::VerificationQueries/]
+[import AlloyNames/]
+
+[**
+ * The complete text of the module of a package.
+ **/]
+[template public metamodelModule(p : EPackage)]
+[p.metamodelHeader()/]
+module [p.moduleName()/]
+
+open util/boolean
+
+/** The objects of all classes of the package. */
+abstract sig [objectSignature()/] {}
+[for (c : EClass | p.classes())]
+
+[p.signature(c)/]
+[/for]
+[for (e : EEnum | p.enumerations())]
+
+/** The literals of the enumeration [e.name/]. */
+abstract sig [id(e.name)/] {}
+one sig [e.eLiterals->collect(l | literalId(e, l.name))->sep(', ')/] extends [id(e.name)/] {}
+[/for]
+[for (t : String | p.uninterpretedTypes())]
+
+/** Values of the data type [t/], which the export does not interpret. */
+sig [id(t)/] {}
+[/for]
+[if (p.classes()->exists(c | p.needsSubsetFacts(c)))]
+
+/** The further supertypes of classes, and the classes that only their subclasses instantiate. */
+fact Inheritance {
+[for (c : EClass | p.classes())]
+[for (s : EClass | c.eSuperTypes->excluding(c.eSuperTypes->first()))]
+  [id(c.name)/] in [id(s.name)/]
+[/for]
+[if (p.isSubsetSignature(c) and not c.isConcrete())]
+[if (p.directSubclasses(c)->isEmpty())]
+  no [id(c.name)/]
+[else]
+  [id(c.name)/] in [p.directSubclasses(c)->collect(x | id(x.name))->sep(' + ')/]
+[/if]
+[/if]
+[/for]
+}
+[/if]
+[if (p.classes()->exists(c | c.exportedFeatures()->exists(f | f.hasCardinalityBounds())))]
+
+/** The bounds of many-valued features. */
+fact Multiplicities {
+[for (c : EClass | p.classes())]
+[for (f : EStructuralFeature | c.exportedFeatures()->select(f | f.hasCardinalityBounds()))]
+[if (f.lowerBound > 1)]
+  all o: [id(c.name)/] | #o.[id(f.name)/] >= [f.lowerBound/]
+[/if]
+[if (f.upperBound > 1)]
+  all o: [id(c.name)/] | #o.[id(f.name)/] <= [f.upperBound/]
+[/if]
+[/for]
+[/for]
+}
+[/if]
+[if (p.classes()->exists(c | c.exportedFeatures()->exists(f | p.writesOpposite(c, f))))]
+
+/** Opposite references are converse relations. */
+fact Opposites {
+[for (c : EClass | p.classes())]
+[for (f : EStructuralFeature | c.exportedFeatures()->select(f | p.writesOpposite(c, f)))]
+  [id(c.name)/] <: [id(f.name)/] = ~([id(p.oppositeOwner(f).name)/] <: [id(f.eOpposite.name)/])
+[/for]
+[/for]
+}
+[/if]
+[if (p.containmentOwners()->notEmpty())]
+
+/** The objects that each object contains. */
+fun contents: [objectSignature()/] -> [objectSignature()/] {
+  [p.containmentOwners()->collect(c | c.exportedFeatures()->select(f | f.isContainmentReference())->collect(f | id(c.name) + ' <: ' + id(f.name)))->flatten()->sep(' + ')/]
+}
+
+/** Every object has at most one container and does not contain itself. */
+fact Containment {
+  all o: [objectSignature()/] | lone contents.o
+  no o: [objectSignature()/] | o in o.^contents
+}
+[/if]
+[for (c : EClass | p.classes())]
+[for (n : String | p.translatedInvariants(c, target()))]
+
+/** The invariant [n/] of [c.name/]: [p.verificationInvariantBody(c, n).lines()->sep(' ')/] */
+pred [invariantIdentifier(c, n)/] {
+  [p.verificationFormula(c, n, target())/]
+}
+
+assert [invariantIdentifier(c, n)/]_holds {
+  [invariantIdentifier(c, n)/]
+}
+[/for]
+[/for]
+
+/** All translated invariants. */
+pred invariants {
+[for (c : EClass | p.classes())]
+[for (n : String | p.translatedInvariants(c, target()))]
+  [invariantIdentifier(c, n)/]
+[/for]
+[/for]
+}
+
+/** Finds an instance of the metamodel that satisfies all translated invariants. */
+run instance { invariants } for [p.commandScope()/]
+[for (c : EClass | p.classes())]
+[for (n : String | p.translatedInvariants(c, target()))]
+
+/** Looks for an instance of the structure that violates [invariantIdentifier(c, n)/]; one is expected unless the structure implies it. */
+check [invariantIdentifier(c, n)/]_holds for [p.commandScope()/]
+[/for]
+[/for]
+[/template]
+
+[**
+ * The comment that opens the module of a package, listing what the module does not express.
+ **/]
+[template public metamodelHeader(p : EPackage)]
+/*
+ * Alloy 6 module of the Ecore package [p.name/] ([p.nsURI/]).
+ *
+ * Every class is a signature with a field for each feature; facts state the multiplicities, opposite references and
+ * containment of the metamodel. Each translated invariant is a predicate with an assertion. The command 'instance'
+ * finds an instance that satisfies all invariants, and each 'check' looks for an instance of the structure that
+ * violates one invariant.
+ *
+ * Not exported:
+[if (p.omittedOperations()->notEmpty())]
+ *  - operations: [p.omittedOperations()->sep(', ')/]
+[/if]
+[if (p.omittedFeatures()->notEmpty())]
+ *  - derived and volatile features: [p.omittedFeatures()->sep(', ')/]
+[/if]
+ *  - the order and repetition of the values of many-valued features: fields are sets
+[if (p.uninterpretedTypes()->notEmpty())]
+ *  - the structure of values of the data types [p.uninterpretedTypes()->sep(', ')/]: they are uninterpreted atoms
+[/if]
+[if (p.eSubpackages->notEmpty())]
+ *  - nested packages: [p.eSubpackages->collect(s | s.name)->sep(', ')/]
+[/if]
+[if (p.untranslatedInvariants(target())->notEmpty())]
+ *  - invariants outside the translatable subset of OCL:
+[for (u : String | p.untranslatedInvariants(target()))]
+ *    - [u/]
+[/for]
+[/if]
+ *
+ * Integers are bounded by the bit width of each command and wrap around on overflow; an absent integer counts as zero
+ * in comparisons. Strings are atoms that only support equality.
+ */
+[/template]
+
+[**
+ * The signature of a class.
+ **/]
+[template public signature(p : EPackage, c : EClass)]
+/** The class [c.name/]. */
+[if (not c.isConcrete() and not p.isSubsetSignature(c))]abstract [/if]sig [id(c.name)/] [p.parentClause(c)/] {[if (c.exportedFeatures()->notEmpty())]
+[c.exportedFeatures()->collect(f | '  ' + id(f.name) + ': ' + f.multiplicity() + ' ' + f.typeName())->sep(',\n')/]
+[/if]}
+[/template]
+
+[**
+ * How a signature relates to its parent: it extends the signature of the first supertype, or is a subset of it if the
+ * class is a subset signature.
+ **/]
+[query public parentClause(p : EPackage, c : EClass) : String = (if p.isSubsetSignature(c) then 'in ' else 'extends ' endif) + (if c.eSuperTypes->isEmpty() then objectSignature() else id(c.eSuperTypes->first().name) endif)/]
+
+[**
+ * Whether the facts on inheritance mention a class.
+ **/]
+[query public needsSubsetFacts(p : EPackage, c : EClass) : Boolean = c.eSuperTypes->size() > 1 or (p.isSubsetSignature(c) and not c.isConcrete())/]
+
+[**
+ * The names of the data types of exported features that the export does not interpret.
+ **/]
+[query public uninterpretedTypes(p : EPackage) : Sequence(String) = p.classes()->collect(c | c.exportedFeatures())->flatten()->select(f | f.valueKind() = 'uninterpreted')->collect(f | f.eType.name)->asOrderedSet()->asSequence()/]
+
+[**
+ * Whether a package has features whose values are strings.
+ **/]
+[query public hasStrings(p : EPackage) : Boolean = p.classes()->exists(c | c.exportedFeatures()->exists(f | f.valueKind() = 'string'))/]
+
+[**
+ * The scope of the commands of a metamodel module.
+ **/]
+[query public commandScope(p : EPackage) : String = defaultScope().toString() + ' but ' + defaultBitWidth().toString() + ' Int' + (if p.hasStrings() then ', exactly ' + defaultStringScope().toString() + ' String' else '' endif)/]

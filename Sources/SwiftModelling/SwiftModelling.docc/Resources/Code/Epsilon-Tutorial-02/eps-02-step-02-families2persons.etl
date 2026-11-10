@@ -1,0 +1,25 @@
+// Transform every member of a family into a male or female person
+rule Member2Male
+  transform s : Families!Member
+  to t : Persons!Male {
+  guard: not s.isFemale()
+  t.fullName = s.firstName + " " + s.familyName();
+}
+
+rule Member2Female
+  transform s : Families!Member
+  to t : Persons!Female {
+  guard: s.isFemale()
+  t.fullName = s.firstName + " " + s.familyName();
+}
+
+operation Families!Member isFemale() : Boolean {
+  return self.familyMother.isDefined() or self.familyDaughter.isDefined();
+}
+
+operation Families!Member familyName() : String {
+  if (self.familyFather.isDefined()) { return self.familyFather.lastName; }
+  if (self.familyMother.isDefined()) { return self.familyMother.lastName; }
+  if (self.familySon.isDefined()) { return self.familySon.lastName; }
+  return self.familyDaughter.lastName;
+}

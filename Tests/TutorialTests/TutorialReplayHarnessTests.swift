@@ -5,7 +5,14 @@
 // Copyright © 2026 Rene Hexel. All rights reserved.
 //
 import Foundation
+import Subprocess
 import Testing
+
+#if canImport(System)
+    import System
+#else
+    import SystemPackage
+#endif
 
 /// Tests of the parts of the tutorial replay that read tutorials, scripts, help pages and documents.
 @Suite("Tutorial replay harness")
@@ -158,6 +165,85 @@ struct TutorialReplayHarnessTests {
         #expect(script.contains("'/build/it'\\''s/swift-ecore' \"$@\""))
         #expect(script.contains(TutorialReplayConfiguration.toolLogVariable))
         #expect(script.contains("PIPESTATUS[0]"))
+    }
+
+    /// Runs a script that calls a wrapped stand-in tool, whose standard error is copied by a
+    /// `tee` that only starts after a delay, as on a heavily loaded machine.
+    ///
+    /// The stand-in writes ``wrappedWarning`` on its standard error and then ``wrappedReport``
+    /// on its standard output.
+    ///
+    /// - Parameter script: The text of the script, which calls the tool as `tool`.
+    /// - Returns: The combined output of the script, the directory in which it ran, and the
+    ///   invocations that the wrapper recorded.
+    /// - Throws: An error if the files cannot be written or the shell cannot be run.
+    func runWrappedTool(_ script: String) async throws -> (output: String, directory: URL, records: [ToolInvocationRecord]) {
+        let shell = try #require(TutorialReplayConfiguration.shellCandidates.first {
+            FileManager.default.isExecutableFile(atPath: $0)
+        })
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let tools = directory.appendingPathComponent("tools")
+        let log = directory.appendingPathComponent("log")
+        try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: log, withIntermediateDirectories: true)
+        func executable(_ name: String, _ text: String) throws -> URL {
+            let url = tools.appendingPathComponent(name)
+            try text.write(to: url, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+            return url
+        }
+        let real = try executable(
+            "real-tool", "#!\(shell)\necho '\(Self.wrappedWarning)' >&2\necho '\(Self.wrappedReport)'\n")
+        _ = try executable("tee", "#!\(shell)\nsleep 1\nexec /usr/bin/tee \"$@\"\n")
+        _ = try executable(
+            "tool", TutorialReplayEnvironment.wrapperScript(for: "tool", executable: real.path, shell: shell))
+        let scriptFile = try executable("step.sh", script)
+        let result = try await Subprocess.run(
+            .path(FilePath(shell)),
+            arguments: Arguments(TutorialReplayConfiguration.shellOptions + [scriptFile.path]),
+            environment: .inherit.updating([
+                Environment.Key(stringLiteral: TutorialReplayConfiguration.searchPathVariable):
+                    ([tools.path] + TutorialReplayConfiguration.systemSearchPath)
+                    .joined(separator: String(TutorialReplayConfiguration.searchPathSeparator)),
+                Environment.Key(stringLiteral: TutorialReplayConfiguration.toolLogVariable): log.path,
+            ]),
+            workingDirectory: FilePath(directory.path),
+            output: .string(limit: 4096),
+            error: .combinedWithOutput
+        )
+        return (result.standardOutput ?? "", directory, ToolInvocationLog.records(in: log))
+    }
+
+    /// The line that the stand-in of ``runWrappedTool(_:)`` writes on its standard error.
+    static let wrappedWarning = "warning: written first"
+
+    /// The line that the stand-in of ``runWrappedTool(_:)`` writes on its standard output.
+    static let wrappedReport = "report: written second"
+
+    @Test(
+        "A wrapper passes on the output of a tool in the order written when both streams share a pipe",
+        .enabled(if: TutorialReplayConfiguration.canReplayShellScripts))
+    func wrapperKeepsOrder() async throws {
+        let (output, directory, records) = try await runWrappedTool("tool\n")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let lines = output.split(whereSeparator: \.isNewline).map(String.init)
+        #expect(lines == [Self.wrappedWarning, Self.wrappedReport])
+        #expect(records.map(\.status) == [0])
+        #expect(records.first?.standardError.contains(Self.wrappedWarning) == true)
+    }
+
+    @Test(
+        "A wrapper records the standard error of a tool whose standard output goes elsewhere",
+        .enabled(if: TutorialReplayConfiguration.canReplayShellScripts))
+    func wrapperRecordsStandardErrorAlone() async throws {
+        let (output, directory, records) = try await runWrappedTool("tool > report.txt\ntool 2> /dev/null\n")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let lines = output.split(whereSeparator: \.isNewline).map(String.init)
+        #expect(lines == [Self.wrappedWarning, Self.wrappedReport])
+        let report = try String(contentsOf: directory.appendingPathComponent("report.txt"), encoding: .utf8)
+        #expect(report == Self.wrappedReport + "\n")
+        #expect(records.map(\.status) == [0, 0])
+        #expect(records.map(\.standardError) == [Self.wrappedWarning + "\n", Self.wrappedWarning + "\n"])
     }
 
     // MARK: - Step checks
@@ -340,5 +426,30 @@ struct TutorialReplayHarnessTests {
             subcommand == nil ? defaulted : generate
         }
         #expect(found.isEmpty)
+    }
+
+    @Test("Nested subcommands are resolved level by level before their options are checked")
+    func nestedSubcommandProblems() async throws {
+        let pages: [String: CommandHelpPage] = [
+            "": CommandHelpPage(text: "SUBCOMMANDS:\n  eol\n  evl\n"),
+            "eol": CommandHelpPage(text: "SUBCOMMANDS:\n  run\n"),
+            "eol run": CommandHelpPage(text: "OPTIONS:\n  --model <name=file>   Model\n"),
+        ]
+        let help: (String, String?) async throws -> CommandHelpPage? = { tool, subcommand in
+            guard tool == "swift-epsilon" else { return nil }
+            return pages[subcommand ?? ""]
+        }
+        func problems(_ line: String) async throws -> [String] {
+            let invocation = try #require(DocumentedCommands.invocations(in: line, at: 1).first)
+            return try await DocumentedCommands.problems(of: invocation, help: help)
+        }
+        #expect(try await problems("swift-epsilon eol run p.eol --model Bank=bank.xmi").isEmpty)
+        #expect(try await problems("swift-epsilon eol run p.eol --strict") == [
+            "'swift-epsilon eol run' has no option '--strict' (not listed by 'swift-epsilon eol run --help')"
+        ])
+        #expect(try await problems("swift-epsilon eol walk p.eol") == [
+            "'swift-epsilon eol' has no subcommand 'walk' (subcommands: run)"
+        ])
+        #expect(try await problems("swift-epsilon eol <command> --help").isEmpty)
     }
 }

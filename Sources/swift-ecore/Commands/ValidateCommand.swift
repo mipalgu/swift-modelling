@@ -7,6 +7,7 @@
 //
 import ArgumentParser
 import ECore
+import EMFBase
 import Foundation
 import ModellingCommandLine
 import ModellingGenerators
@@ -31,7 +32,8 @@ struct ValidateCommand: AsyncParsableCommand {
             well-formed names, consistent bounds and opposites, and acyclic inheritance.
 
             A model (.xmi or .json) is checked for references into other documents that name \
-            no object. With --\(MetamodelOptions.optionName), it is checked against the \
+            no object; a reference into an unavailable document of the Eclipse platform, \
+            written with a pathmap: URI, such as a UML profile, is a warning instead. With --\(MetamodelOptions.optionName), it is checked against the \
             metamodel: every class and feature must be defined by it, values must fit the \
             types and bounds of their features, references must lead to objects of the right \
             class, no object may be an instance of an abstract class, and every OCL invariant \
@@ -57,6 +59,12 @@ struct ValidateCommand: AsyncParsableCommand {
             with its result; a file that cannot be read counts as invalid. A final line counts \
             the valid and invalid files, and the command fails if any file is invalid. With \
             --format json, the report is an array with one report per file.
+
+            \(SourceEncodingOptions.discussion(reader: EncodingVocabulary.encodedDocuments))
+
+            \(OutputEncodingOptions.discussion(writer: OutputEncodingVocabulary.validationReport))
+
+            \(ConfigurationFileOptions.discussion(keys: ConfigurationVocabulary.validationKeys))
             """
     )
 
@@ -67,28 +75,55 @@ struct ValidateCommand: AsyncParsableCommand {
     /// The metamodels that the model is validated against.
     @OptionGroup var metamodelOptions: MetamodelOptions
 
+    /// How metamodels in KM3 and in grammar formats are read.
+    @OptionGroup var formatOptions: MetamodelFormatOptions
+
+    /// The character encoding of the documents in text formats.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// The configuration file whose keys give the options that the command line leaves open.
+    @OptionGroup var configurationOptions: ConfigurationFileOptions
+
+    /// The character encoding of the files that the command writes.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
+
+    /// The Complete OCL documents that constrain the metamodels.
+    @OptionGroup var completeOCLOptions: CompleteOCLOptions
+
+    /// Which references of a multi-level model may cross levels.
+    @OptionGroup var levelCrossingOptions: LevelCrossingOptions
+
     /// Whether abstract classes are checked explicitly.
     @Flag(help: "List the abstract classes of a metamodel and whether concrete classes extend them, or check that no object of a model is an instance of one")
     var checkAbstractClasses = false
 
-    /// Whether warnings count as errors.
-    @Flag(help: "Fail on warnings as well as on errors")
-    var strict = false
+    /// Whether warnings count as errors, as given on the command line, if at all.
+    ///
+    /// `--strict` turns it on and `--no-strict` off, whatever the configuration file says.
+    @Flag(
+        name: .customLong(ValidationOptionName.strict), inversion: .prefixedNo,
+        help: "Fail on warnings as well as on errors")
+    var strict: Bool?
 
     /// The long name of the flag that makes required features need values of their own.
-    static let requireExplicitValuesOption = "require-explicit-values"
+    static let requireExplicitValuesOption = ValidationOptionName.requireExplicitValues
 
-    /// Whether every required single-valued feature needs a value that the model sets.
+    /// Whether every required single-valued feature needs a value that the model sets, as given
+    /// on the command line, if at all.
     @Flag(
-        name: .customLong(ValidateCommand.requireExplicitValuesOption),
+        name: .customLong(ValidateCommand.requireExplicitValuesOption), inversion: .prefixedNo,
         help: "Report required features that the model leaves unset even when they read as a default, unlike the Eclipse Modeling Framework")
-    var requireExplicitValues = false
+    var requireExplicitValues: Bool?
 
-    /// Whether OCL invariants reject the expressions that Eclipse AQL rejects.
+    /// Whether OCL invariants reject the expressions that Eclipse AQL rejects, as given on the
+    /// command line, if at all.
+    ///
+    /// `--strict-aql` turns strict mode on and `--no-strict-aql` turns it off, whatever the
+    /// configuration file says.
     @Flag(
-        name: .customLong(MTLSemanticsOptions.OptionName.strictAQL),
+        name: .customLong(MTLSemanticsOptions.OptionName.strictAQL), inversion: .prefixedNo,
         help: MTLSemanticsOptions.strictAQLHelp)
-    var strictAQL = false
+    var strictAQL: Bool?
 
     /// The format of the report.
     @Option(help: "Format of the report: \(ReportFormat.allCases.map(\.rawValue).joined(separator: " or "))")
@@ -109,9 +144,20 @@ struct ValidateCommand: AsyncParsableCommand {
     /// - Throws: ``ValidationError`` if a single file cannot be read or does not pass
     ///   validation, ``BatchValidationError`` if one of several files is invalid, or the error
     ///   of a metamodel, the encoder or the file system.
+    ///   Also ``ModellingConfigurationError`` if the configuration file cannot be read or is not valid,
+    ///   and `OutputFileError` if the encoding of the report cannot hold one of its characters.
     func run() async throws {
+        let settings = try configurationOptions.settings()
+        let runOptions = ValidationRun(
+            loadOptions: formatOptions.ecoreLoadOptions(settings: settings, encodingOptions: encodingOptions),
+            strictAQL: strictAQL ?? settings.configuration.strictAQL ?? false,
+            strict: strict ?? settings.configuration.strict ?? false,
+            requiresExplicitValues: requireExplicitValues ?? settings.configuration.requiresExplicitValues ?? false,
+            completeOCL: completeOCLOptions.documents(settings: settings),
+            levelCrossing: levelCrossingOptions.mode(settings: settings),
+            outputEncoding: outputEncodingOptions.encoding(settings: settings))
         guard inputPaths.count == 1, let inputPath = inputPaths.first else {
-            return try await validateAll()
+            return try await validateAll(runOptions)
         }
         if verbose {
             print("Validating: \(inputPath)")
@@ -119,13 +165,13 @@ struct ValidateCommand: AsyncParsableCommand {
                 print("Using metamodel: \(metamodel)")
             }
         }
-        let document = try await load(inputPath)
+        let document = try await load(inputPath, runOptions)
         if verbose { await describeContents(of: document) }
-        let result = await check(document)
+        let result = await check(document, runOptions)
 
         let rendered = format == .json ? try result.json() : result.text(verbose: verbose)
         if let report {
-            try rendered.write(to: URL(fileURLWithPath: report), atomically: true, encoding: .utf8)
+            try OutputFile.write(rendered, to: report, encoding: runOptions.outputEncoding, kind: format.documentKind)
             print(result.text(verbose: verbose), terminator: "")
             print("Validation report written: \(report)")
         } else {
@@ -133,7 +179,7 @@ struct ValidateCommand: AsyncParsableCommand {
         }
         guard result.valid else {
             StandardOutput.flush()
-            throw ValidationError.failed(errors: result.errors, warnings: result.warnings, strict: strict)
+            throw ValidationError.failed(errors: result.errors, warnings: result.warnings, strict: runOptions.strict)
         }
         if report != nil || format == .text {
             print("Validation completed successfully")
@@ -146,9 +192,10 @@ struct ValidateCommand: AsyncParsableCommand {
     /// validation. On an interactive terminal, a progress bar shows how many files have been
     /// validated.
     ///
+    /// - Parameter run: The options of the run.
     /// - Throws: ``BatchValidationError`` if a file is invalid, or the error of a metamodel, the
     ///   encoder or the file system.
-    private func validateAll() async throws {
+    private func validateAll(_ run: ValidationRun) async throws {
         if verbose {
             for metamodel in metamodelOptions.metamodels { print("Using metamodel: \(metamodel)") }
         }
@@ -166,14 +213,14 @@ struct ValidateCommand: AsyncParsableCommand {
             }
             let result: ValidationReport
             do {
-                let document = try await load(path)
+                let document = try await load(path, run)
                 if verbose { await describeContents(of: document) }
-                result = await check(document)
+                result = await check(document, run)
             } catch let error as MetamodelRegistrationError {
                 progress.finish()
                 throw error
             } catch {
-                result = ValidationReport(unreadable: path, error: error, metamodelPaths: metamodelOptions.metamodels, strict: strict)
+                result = ValidationReport(unreadable: path, error: error, metamodelPaths: metamodelOptions.metamodels, strict: run.strict)
             }
             progress.finish()
             results.append(result)
@@ -187,7 +234,7 @@ struct ValidateCommand: AsyncParsableCommand {
         if printsText { print(summary, terminator: "") }
         if let report {
             let rendered = format == .json ? try ValidationReport.json(of: results) : text
-            try rendered.write(to: URL(fileURLWithPath: report), atomically: true, encoding: .utf8)
+            try OutputFile.write(rendered, to: report, encoding: run.outputEncoding, kind: format.documentKind)
             print("Validation report written: \(report)")
         } else if format == .json {
             print(try ValidationReport.json(of: results), terminator: "")
@@ -200,34 +247,41 @@ struct ValidateCommand: AsyncParsableCommand {
 
     /// Checks a document with the options of the command.
     ///
-    /// - Parameter document: The document.
+    /// - Parameters:
+    ///   - document: The document.
+    ///   - run: The options of the run.
     /// - Returns: The report of the document.
-    private func check(_ document: ModelDocument) async -> ValidationReport {
+    private func check(_ document: ModelDocument, _ run: ValidationRun) async -> ValidationReport {
         let options = ValidationOptions(
-            strict: strict, checkAbstractClasses: checkAbstractClasses, strictAQL: strictAQL,
-            requiresExplicitValues: requireExplicitValues)
+            strict: run.strict, checkAbstractClasses: checkAbstractClasses, strictAQL: run.strictAQL,
+            requiresExplicitValues: run.requiresExplicitValues, levelCrossing: run.levelCrossing)
         let outcome = await ModelChecker(document: document, options: options).check()
         withExtendedLifetime(document) {}
         return ValidationReport(
-            document: document, metamodelPaths: metamodelOptions.metamodels, strict: strict,
+            document: document, metamodelPaths: metamodelOptions.metamodels, strict: run.strict,
             findings: outcome.findings, abstractClasses: outcome.abstractClasses, constraints: outcome.constraints)
     }
 
     /// Reads a document, reporting a file that cannot be parsed with its format.
     ///
-    /// - Parameter inputPath: The path of the file.
+    /// - Parameters:
+    ///   - inputPath: The path of the file.
+    ///   - run: The options of the run.
     /// - Returns: The document.
     /// - Throws: ``ValidationError`` if the file does not exist, has an unknown format or cannot
-    ///   be parsed, or the error of a metamodel.
-    private func load(_ inputPath: String) async throws -> ModelDocument {
+    ///   be parsed, ``DocumentError/unreadable(_:errors:)`` if its reader reports an error, or
+    ///   the error of a metamodel.
+    private func load(_ inputPath: String, _ run: ValidationRun) async throws -> ModelDocument {
         do {
             return try await ModelDocument.load(
                 path: inputPath, metamodelOptions: metamodelOptions, requiresMetamodel: metamodelOptions.isGiven,
-                verbose: verbose)
+                verbose: verbose, ecoreLoadOptions: run.loadOptions, completeOCL: run.completeOCL)
         } catch DocumentError.fileNotFound(let path) {
             throw ValidationError.fileNotFound(path)
         } catch DocumentError.unsupportedFormat(let format) {
             throw ValidationError.unsupportedFormat(format)
+        } catch let error as DocumentError {
+            throw error
         } catch let error as MetamodelRegistrationError {
             throw error
         } catch {
@@ -253,4 +307,29 @@ struct ValidateCommand: AsyncParsableCommand {
             if let entry = objects.entry(for: id) { print("   \(index + 1). \(objects.labelWithLocation(of: entry.object))") }
         }
     }
+}
+
+/// The options of a run of the validate command that combine the command line with the
+/// configuration file.
+private struct ValidationRun {
+    /// The options with which the documents and metamodels are read.
+    let loadOptions: EcoreLoadOptions
+
+    /// Whether OCL invariants reject the expressions that Eclipse AQL rejects.
+    let strictAQL: Bool
+
+    /// Whether warnings count as errors.
+    let strict: Bool
+
+    /// Whether every required single-valued feature needs a value that the model sets.
+    let requiresExplicitValues: Bool
+
+    /// The Complete OCL documents that constrain the metamodels, with directories expanded.
+    let completeOCL: [String]
+
+    /// Which references of a multi-level model may cross levels.
+    let levelCrossing: LevelCrossingMode
+
+    /// The encoding of the report that `--report` writes.
+    let outputEncoding: TextEncoding
 }

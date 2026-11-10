@@ -23,7 +23,7 @@ extension ValidationReport {
         let format = ModelFormat.detect(url: url)
         file = url.lastPathComponent
         kind = format == .ecore ? .metamodel : .model
-        self.format = format.map { $0 == .ecore ? ModelVocabulary.ecoreFormatName : $0.rawValue.uppercased() }
+        self.format = format.map { $0 == .ecore ? ModelVocabulary.ecoreFormatName : $0.description }
             ?? url.pathExtension.uppercased()
         metamodels = metamodelPaths
         self.strict = strict

@@ -1,3 +1,4 @@
+import ArgumentParser
 import Foundation
 import Testing
 
@@ -90,7 +91,7 @@ struct CreateCommandTests {
     func missingMetamodel() async throws {
         let result = try await executeSwiftEcore(command: "create", arguments: ["--root-class", "Office", "--output", "/tmp/x.xmi"])
 
-        #expect(result.exitCode == 64)
+        #expect(result.exitCode == ExitCode.validationFailure.rawValue)
         #expect(result.stderr.contains("--metamodel"))
     }
 }

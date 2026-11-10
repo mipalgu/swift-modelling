@@ -34,6 +34,8 @@ Swift implementation of the Eclipse ATL
   with the shared pipeline
 - **Queries**: `query` evaluates ATL query units, such as one that builds a Graphviz file from a
   model with `writeTo`, writing only inside an output directory unless told otherwise
+- **Compatibility Checks**: `check-compat` decides whether a transformation can be used with
+  revised or related metamodels, by structural model subtyping of the metamodels it uses
 - **Integer Ranges**: Collection literals accept OCL integer ranges such as `Sequence{1..3}`
 - **Integer Division**: `/` divides two Integers into a Real, so `7 / 2` is `3.5`, as in OCL and
   Eclipse ATL, and `div` gives the truncated Integer quotient
@@ -56,26 +58,34 @@ swift-atl transform <transformation-file> [options]
 - `--input-format <xmi|json>` - Format of the source models (default: from the file extension)
 - `--output-format <xmi|json>` - Format of the target models (default: from the file extension)
 - `--metamodel-path <directory>` - Directory searched for metamodels named by `-- @path` directives (repeatable)
-- `--reference-style <encoded|plain>` - How an XMI target spells references into its own document (default `encoded`); see the output layout below
+- `--reference-style <encoded|plain>` - How an XMI target spells references into its own document (default `encoded`, or the `reference-style` key of the configuration file); see the output layout below
 - `--unset-features <defaults|undefined>` - How the rules read features that a model does not set (default `defaults`); see below
 - `--source-metamodel <[name=]file.ecore>` - Metamodel file for a source metamodel, matched to the metamodels after `from` (or `refining`) by order or by name (repeatable)
 - `--target-metamodel <[name=]file.ecore>` - Metamodel file for a target metamodel, matched to the metamodels after `create` in the same way (repeatable)
 - `--metamodel <[name=]file.ecore>` - Metamodel file for any metamodel of the module, such as one that source and target share; by position it follows the source metamodels and then the target metamodels, each name once (repeatable)
 - `--refining` - Refine the source model, as a module declared with `refining` does
 - `--validate-only` - Check the transformation against its metamodels and load the source models, without running it or writing targets
+- `--deep-view <level>` - Present each multi-level source model, such as a MetaDepth document (`.mdepth`) or an XMI or JSON document of its linguistic instances, as the read-only deep view of that level, such as 0 for the bottom level; see the deep views below
 - `--quiet`, `-q` - Print nothing on success; cannot be combined with `--verbose` or `--debug`
 - `--verbose` - Enable verbose output
 - `--debug` - Trace the execution
 - `--continue-after-errors` - Continue after metamodel loading errors
 - `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
 - `--integer-division <real|truncating>` - Whether `/` divides two Integers into a Real, so `7 / 2` is `3.5`, as in OCL and Eclipse ATL (`real`, the default), or truncates the quotient to an Integer as version 0.6 did (`truncating`)
-- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` and `--integer-division` override it
+- `--bag-representation <bag|sequence>` - Whether `Bag{...}`, `asBag()` and `collect` on a Set give Bags, a collection kind of their own as in OCL and Eclipse ATL (`bag`, the default), or Sequences as in version 0.6 (`sequence`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax`, `--integer-division` and `--bag-representation` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--encoding <name>` - The character encoding of the ATL source and of the metamodels and models in text formats, such as KM3, Emfatic, Xcore, OCLinEcore, grammar formats or MetaDepth, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8); the `encoding` key of the configuration file names it too
+- `--output-encoding <name>` - The character encoding of the target models, such as `ISO-8859-1` or `windows-1252` (default: UTF-8; an XMI or UML target names it in its XML declaration and refers to a character that it cannot hold by number, and a JSON target is written in UTF-8 with a warning); the `output-encoding` key of the configuration file names it too
 
 **Module parameters.** A transformation declares a parameter in a header comment, `-- @param name : Type` or `-- @param name : Type = default`, with the types `String`, `Integer`, `Real` and `Boolean`, and reads it as `thisModule.name`. `--param name=value` supplies the value; it is converted to the declared type, and the value is everything after the first `=`. A name that the module does not declare, a value of the wrong type, a required parameter without a value, and an argument that is not `name=value` are errors.
 
-**Metamodel files and directives.** A metamodel file given on the command line takes the place of the `-- @path` and `-- @nsURI` directives of its metamodel; a metamodel that two options bind to different files, a name that the module header does not declare, and a positional list whose length differs from the declared metamodels are errors. A metamodel that neither a file nor a directive binds is an error unless `--continue-after-errors` is given. A `-- @path` that starts with `/` names a file in an Eclipse workspace, such as `/Families2Persons/Families.ecore`: it is looked up in each metamodel search directory as `Families2Persons/Families.ecore` and then as `Families.ecore`, with the search directory as the project directory. Without `--metamodel-path` or the `ECOREPATH` environment variable, the search directories are the directory of the transformation, its parent and the current directory.
+**Metamodel files and directives.** A metamodel file given on the command line takes the place of the `-- @path` and `-- @nsURI` directives of its metamodel; a metamodel that two options bind to different files, a name that the module header does not declare, and a positional list whose length differs from the declared metamodels are errors. A metamodel that neither a file nor a directive binds is an error unless `--continue-after-errors` is given. A `-- @path` that starts with `/` names a file in an Eclipse workspace, such as `/Families2Persons/Families.ecore`: it is looked up in each metamodel search directory as `Families2Persons/Families.ecore` and then as `Families.ecore`, with the search directory as the project directory. Without `--metamodel-path` or the `ECOREPATH` environment variable, the search directories are the directory of the transformation, its parent and the current directory. A metamodel file, in any metamodel format that swift-ecore reads, such as Ecore, JSON, KM3, EMOF (also in an `.xmi` file), Emfatic, Xcore, OCLinEcore, a grammar or a UML class model (`.uml`), whose Ecore metamodel is derived as the Eclipse UML2 tools derive it, binds its first root package. A root package without a namespace URI or prefix is loaded, as in the Eclipse Modeling Framework, with a warning on standard error that names the file and the package. `--km3-primitives <ecore|declared>` chooses whether the data types that a KM3 metamodel declares are the built-in Ecore data types of the same meaning (`ecore`, the default) or data types of their own package (`declared`); `transform` and `query` take the option, and the `km3-primitives` key of the configuration file chooses it too. `--package-name <name>`, `--ns-uri <uri>`, `--ns-prefix <prefix>`, `--asdl-enumerations <all-nullary|never>`, `--langium-types <normal|strict>` and `--sdf3-labels` / `--no-sdf3-labels` choose how a metamodel is imported from an ASDL, Langium, Xtext or SDF3 grammar, as for `swift-ecore`; `transform` and `query` take them, and the configuration file keys of the same names choose them too. A target model whose file has the extension `uml` is written as a UML model in the layout of Eclipse UML2, and a source model with that extension is read as one.
+
+**Source encoding.** The transformation is read as UTF-8. A file that is not valid UTF-8 is read as ISO-8859-1 instead, with a warning on standard error that names the file and the line and column of the first byte that is not UTF-8, such as `warning: Families2Persons.atl: line 3, column 12: The text is not valid UTF-8 and was read as ISO-8859-1`. `--encoding` names the encoding instead (`UTF-8`, `UTF-16`, `UTF-16BE`, `UTF-16LE`, `ISO-8859-1`, `windows-1252` or `US-ASCII`, or an alias such as `latin1`); the file is then read in that encoding alone, and a file that is not valid in it is an error. Every command that reads ATL source takes the option. `transform`, `query` and `check-compat` read the metamodels and models in text formats, such as KM3, Emfatic, Xcore, OCLinEcore, grammar formats or MetaDepth, in the same encoding: without `--encoding`, such a file that is not valid UTF-8 is read as ISO-8859-1 with a warning, and with it, a file that is not valid in the encoding is an error that names the file, such as `Cannot read Shop.km3: the file is not valid UTF-8 text`. XMI, Ecore and JSON documents follow their own encoding rules. A model given with `--source` whose extension is not `xmi`, `json` or `ecore` is read in the format of its contents, XMI or JSON, unless `--input-format` names one.
+
+**Output encoding.** Files are written in UTF-8. `--output-encoding` names another encoding, from the same names and aliases as `--encoding`, for the target models of `transform`, the files that `writeTo` writes in `query`, the generator model and generated files of `generate`, and the reports that `--output` names in `parse`, `analyze`, `validate` and `test`; the `output-encoding` key of the configuration file names it too, and the option overrides the key. An XML document, such as an XMI target or a generator model, names the encoding in its declaration and refers to a character that the encoding cannot hold by number, such as `&#x20AC;`. In plain text, such as a text report, a file that `writeTo` writes or a generated file whose template names no charset, such a character is an error that names the file and the line and column of the character, and the file is not written. JSON is always written in UTF-8, with a warning on standard error when another encoding is named. What a command prints on standard output is not affected.
 
 **Refining mode.** A module declared as `create OUT : MM refining IN : MM;`, or run with `--refining`, starts each target model as a copy of the source model in the same position of the header. A rule changes the copy of the element it matches, through the first target pattern element of the type of its source pattern element; elements that no rule matches are kept. A rule whose `to` section starts with `drop`, alone or before target patterns of new elements, deletes the element it matches, with the elements it contains, once every other rule has run; references from the remaining elements to the deleted ones are removed. `drop` outside refining mode is an error, which `--validate-only` reports as well.
 
@@ -85,7 +95,27 @@ swift-atl transform <transformation-file> [options]
 
 **Integer division.** `/` divides two Integers into a Real, as in OCL and Eclipse ATL, so `7 / 2` is `3.5` and `8 / 2` is `4.0`; `div` gives the truncated Integer quotient. `--integer-division truncating` (or `--semantics legacy`) makes `/` truncate the quotient of two Integers, as version 0.6 did. `transform` and `query` run ATL source with the option, and `generate` runs a transformation given with `--transformations` with it.
 
+**Bags.** A Bag is a collection kind of its own, as in OCL and Eclipse ATL: `Bag{...}`, `asBag()`, and `collect` on a Set or a Bag give Bags, and so does navigating a feature over a Set or a Bag, as `collect` would. A Bag keeps its duplicates, is neither a Sequence nor a Set for `oclIsKindOf`, reports `Bag` as its `oclType()`, is written as `Bag{2, 1, 2}`, and equals a collection that holds each element equally often, in any order. It has no positions, so `at()` on a Bag is an error. A Bag receives the helpers declared for `Bag(T)`, then those for `Collection(T)`, then those for `OclAny`, but not those for `Sequence(T)`. `--bag-representation sequence` (or `--semantics legacy`) makes them Sequences, as version 0.6 did. `transform` and `query` run ATL source with the option, and `generate` runs a transformation given with `--transformations` with it.
+
 **Validation only.** `--validate-only` reports a metamodel without classifiers, a model element type that its metamodel does not define, a binding of a feature that the class of its target element does not have, in the rules and helper contexts of the module, and a rule that uses `drop` outside refining mode. It then maps and loads the source models and maps the target models that are given. Expressions are not type-checked. With `--quiet`, nothing is printed on success.
+
+**Deep views.** `--deep-view <level>` presents each multi-level source model as the deep view of a level, as `swift-aql --deep-view` and `swift-mtl generate --deep-view` do: every type above the level becomes a class whose supertypes include its ontological type, so that a rule for `ProductType` matches the deep instances of `ProductType` at that level. The package of the view is named after the level that types the level shown, has the namespace URI `urn:swift-ecore:multilevel:view:<top>:<level model>:deep`, and becomes the source metamodel of the model, whatever name the module header gives that metamodel, as with `--source-metamodel`: `from IN : Bookshop` and `from IN : Products` both bind it, and so does an `-- @nsURI` directive of that namespace URI. A target metamodel of the same name, as in refining mode, is bound to the same package. Rules and helpers can call the deep services of `swift-aql` under the same names, as helpers for `OclAny`:
+
+| Helper | Receiver | Value |
+| :-- | :-- | :-- |
+| `clabjectName()` | object | the name of its clabject |
+| `ontologicalType()` | object | the class of its ontological type |
+| `linguisticType()` | object | `'Node'` or `'Edge'` |
+| `level()` | object | its level |
+| `potency()` | object | its potency, or `'*'` for an unbounded potency |
+| `deepTypes()` | object | the classes of its deep types, nearest first, as a `Sequence` |
+| `typeAtLevel(n)` | object | the object that stands for its ontological type at level `n` |
+| `slotValue('f')` | object | the value of the feature `f` along its type chain, a `Sequence` for several values |
+| `isDeepInstanceOf(T)` | object | whether it is a direct or indirect instance of the type `T`, given as `Bookshop!Book`, as a class such as `p.ontologicalType()`, or as a name |
+| `deepInstances()` | type | the objects of its direct and indirect instances at every level, as a `Sequence` |
+| `instancesAtLevel(n)` | type | the objects of its direct and indirect instances at level `n`, as a `Sequence` |
+
+A type is given as in `Bookshop!ProductType.deepInstances()` or as a class of the view, and types are matched by the names of their clabjects, as in AQL. The helpers give `OclUndefined` for a receiver that stands for no clabject or no type, and take precedence over module helpers of the same names; a wrong kind of argument, such as a String level, is an error. The view only applies to source models that hold a multi-level model: other source models are read as usual, and at least one source model must hold a multi-level model. A level that the model does not have, and two multi-level source models whose views present packages of the same name, are errors. The view is read-only: the multi-level model is never changed, and a target that refines the view is written as an ordinary model of the package of the view.
 
 **Built-in metamodels.** The Ecore metamodel (`http://www.eclipse.org/emf/2002/Ecore`) and the generator metamodel (`http://www.eclipse.org/emf/2002/GenModel`) are built in. A transformation names them with directives, so no metamodel file is needed:
 
@@ -141,6 +171,10 @@ swift-atl transform Families2Persons.atl --source families.xmi --target persons.
 # Metamodel files by name rather than by position
 swift-atl transform Families2Persons.atl --source families.xmi --source-metamodel Families.ecore \
     --target persons.xmi --target-metamodel Persons=Persons.ecore
+
+# Transform the deep view of the bottom level of a multi-level model
+swift-atl transform Shelf2PriceList.atl --source products.mdepth --deep-view 0 \
+    --target price-list.xmi
 ```
 
 ### query
@@ -156,6 +190,7 @@ A query unit starts with `query Name = expression;` instead of a module header, 
 **Options:**
 
 - `--source <[NAME[:METAMODEL]=]path>` - Input model file; repeat for several models. A bare path is matched to the metamodels of the query in order, `NAME=path` binds the model of the metamodel `NAME`, and `NAME:METAMODEL=path` names the model `NAME` and binds it to `METAMODEL`
+- `--deep-view <level>` - Present each multi-level input model as the read-only deep view of that level, as for `transform`; the package of the view follows the metamodels of the query, so a bare path binds it by position, and `NAME:METAMODEL=path` binds it under any metamodel name
 - `-m, --metamodel <[NAME=]file.ecore>` - Ecore metamodel bound to the metamodel name `NAME`, or to the name of its package (repeatable)
 - `--output-directory <directory>` - Directory that `writeTo` and `writeToWithCharset` write into (default: the current directory)
 - `--allow-unrestricted-paths` - Let `writeTo` and `writeToWithCharset` write to absolute paths and outside the output directory
@@ -168,15 +203,18 @@ A query unit starts with `query Name = expression;` instead of a module header, 
 - `--debug` - Trace the execution
 - `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
 - `--integer-division <real|truncating>` - Whether `/` divides two Integers into a Real, so `7 / 2` is `3.5`, as in OCL and Eclipse ATL (`real`, the default), or truncates the quotient to an Integer as version 0.6 did (`truncating`)
-- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` and `--integer-division` override it
+- `--bag-representation <bag|sequence>` - Whether `Bag{...}`, `asBag()` and `collect` on a Set give Bags, a collection kind of their own as in OCL and Eclipse ATL (`bag`, the default), or Sequences as in version 0.6 (`sequence`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax`, `--integer-division` and `--bag-representation` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--encoding <name>` - The character encoding of the ATL source and of the metamodels and models in text formats, such as KM3, Emfatic, Xcore, OCLinEcore, grammar formats or MetaDepth, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8); the `encoding` key of the configuration file names it too
+- `--output-encoding <name>` - The character encoding of the files that `writeTo` writes, such as `ISO-8859-1` or `windows-1252` (default: UTF-8; a character that it cannot hold is an error that names the file, line and column, and `writeToWithCharset` keeps the charset that it names); the `output-encoding` key of the configuration file names it too
 
 **Input models.** A query has no `from` clause. Its metamodels are those named by its `-- @path` and `-- @nsURI` directives, followed by those given with `--metamodel`, and each is an input model of the same name. Type references such as `Flow!Step` resolve through the metamodel name, `allInstances()` collects the instances of every model of that metamodel, and `allInstancesFrom('IN')` selects the model named `IN`.
 
 **Writing files.** `writeTo(path)` writes a string in UTF-8, and `writeToWithCharset(path, charset)` in `UTF-8`, `UTF-16`, `UTF-16BE`, `UTF-16LE`, `UTF-32`, `UTF-32BE`, `UTF-32LE`, `ISO-8859-1` or `US-ASCII`. Both return `true`, replace an existing file, create missing directories and add no line break. Relative paths are resolved against the output directory. Absolute paths and paths that lead outside the output directory, through `..` or through symbolic links, are rejected with an error that names the path, unless `--allow-unrestricted-paths` is given. Eclipse ATL resolves relative paths against the workspace or the working directory of the Java process and accepts any path; give `--allow-unrestricted-paths` only for queries you trust. Transformations run by `transform` cannot write files, so a transformation that calls `writeTo` fails.
 
-**Result.** The value of the query is printed to standard output: a string as it is, followed by a line break unless it ends with one, and any other value as ATL writes it, such as `true`, `42` or `Sequence{'a', 'b'}`. A query that ends with `writeTo` prints `true`. `--no-print-result` prints nothing. Messages, including the progress that `--verbose` reports, go to standard error. Eclipse ATL returns the value to the program that launched the query, and its launcher discards it.
+**Result.** The value of the query is printed to standard output: a string as it is, followed by a line break unless it ends with one, and any other value as ATL writes it, such as `true`, `42`, `Sequence{'a', 'b'}` or `Bag{'a', 'a'}`. A query that ends with `writeTo` prints `true`. `--no-print-result` prints nothing. Messages, including the progress that `--verbose` reports, go to standard error. Eclipse ATL returns the value to the program that launched the query, and its launcher discards it.
 
 **Examples:**
 
@@ -190,6 +228,9 @@ swift-atl query FlowText.atl --source Flow=order.xmi > order.txt
 # Name the model and give the metamodel on the command line
 swift-atl query Count.atl --metamodel Flow=Flow.ecore \
     --source IN:Flow=order.xmi --param offset=10
+
+# Query the deep view of the bottom level of a multi-level model
+swift-atl query Products.atl --source products.mdepth --deep-view 0
 ```
 
 ### generate
@@ -200,7 +241,7 @@ Generate generator models and source code from Ecore models.
 swift-atl generate <model.ecore | model.genmodel> [options]
 ```
 
-The command is the ATL entry to the shared generation pipeline. An Ecore model is transformed into a generator model with the bundled `Ecore2GenModel.atl`; the pseudo-language `genmodel` stops there, and the name of a template set, such as `java`, `swift`, `c` or `cpp`, continues to source files. A generator model is generated from directly.
+The command is the ATL entry to the shared generation pipeline. An Ecore model is transformed into a generator model with the bundled `Ecore2GenModel.atl`; the pseudo-language `genmodel` stops there, and the name of a template set, such as `java`, `swift`, `c` or `cpp`, continues to source files. The verification targets `alloy`, `tla`, `eventb` and `lean` write the metamodel as a specification of the formal language instead; the help lists them apart from the code languages, and `swift-ecore generate --model` also exports models to them. A generator model is generated from directly.
 
 **Options:**
 
@@ -208,21 +249,24 @@ The command is the ATL entry to the shared generation pipeline. An Ecore model i
 - `-o, --output <path>` - Output directory (default: `Generated`); for `genmodel`, the directory or `.genmodel` file to write (default: beside the Ecore model)
 - `--transformations <path>` - A transformation file, or a directory holding `Ecore2GenModel.atl`, that replaces the bundled transformation; the replacement receives the same parameters as the bundled one
 - `--unset-features <defaults|undefined>` - How the transformation and the templates read features that a model does not set, as for `transform`
-- `--base-package <name>`, `--prefix <[package=]name>` (repeatable), `--model-project <name>`, `--model-plugin-id <id>`, `--copyright <text>`, `--jdk-level <level>` - Settings of the generator model, as for `swift-ecore genmodel`
-- `--defaults headless|wizard`, `--root-extends-class <name>`, `--operation-reflection` / `--no-operation-reflection`, `--import-organizing` / `--no-import-organizing` - The preset of the generator model defaults and its overrides, as for `swift-ecore genmodel`; they only apply to an Ecore model
+- `--base-package <name>`, `--prefix <[package=]name>` (repeatable), `--model-project <name>`, `--model-plugin-id <id>`, `--copyright <text>`, `--jdk-level <level>` - Settings of the generator model, as for `swift-ecore genmodel`; the `base-package`, `prefix` (a list) and `jdk-level` keys of the configuration file set them too
+- `--defaults headless|wizard`, `--root-extends-class <name>`, `--operation-reflection` / `--no-operation-reflection`, `--import-organizing` / `--no-import-organizing` - The preset of the generator model defaults and its overrides, as for `swift-ecore genmodel`; they only apply to an Ecore model, and the keys of the configuration file with their names set them too
 - `--template-path <directory>` - Directory with template files that replace bundled templates (repeatable)
 - `--force-overwrite` - Replace existing files without merging
 - `--diff` - Write the generated text of existing files beside them as `.<name>.new`
 - `--model-directory` - Write below the model directory of the generator model
-- `--code-style <style>` - The layout of the generated text, one of the styles of the template set (`java`: `eclipse`, the default, or `emf`); rejected for the language `genmodel` and for sets that offer none, such as `swift`, `c` and `cpp`
+- `--code-style <style>` - The layout of the generated text, one of the styles of the template set (`java`: `eclipse`, the default, or `emf`); rejected for the language `genmodel` and for sets that offer none, such as `swift`, `c` and `cpp`; the `code-style` key of the configuration file names it too, and is ignored for the language `genmodel` and by sets that offer no code styles
 - `--let-type-mismatches <error|skip>` - Whether a typed `let` in the templates whose value does not conform to the declared type stops the generation (`error`, the default) or is skipped with a warning on standard error (`skip`, as in Acceleo 3)
-- `--block-line-breaks <acceleo|kept>`, `--collection-parameters <conforming|exact>`, `--check-let-types` / `--no-check-let-types`, `--cache-containers` / `--no-cache-containers`, `--collection-arguments <whole|first-element>`, `--collection-kinds <distinguished|sequences>`, `--single-value-collections <set|sequence>`, `--container-lookup <resources|registered-objects>`, `--sequence-union <concatenation|distinct>`, `--null-addition <empty-text|null>`, `--text-form <joined|bracketed>` - The behaviours of the templates, as for `swift-mtl generate`; the first value is the default, and the second that of version 0.6
+- `--block-line-breaks <acceleo|kept>`, `--collection-parameters <conforming|exact>`, `--check-let-types` / `--no-check-let-types`, `--cache-containers` / `--no-cache-containers`, `--collection-arguments <whole|first-element>`, `--collection-kinds <distinguished|sequences>`, `--single-value-collections <set|sequence>`, `--container-lookup <resources|registered-objects>`, `--sequence-union <concatenation|distinct>`, `--null-addition <empty-text|null>`, `--text-form <joined|bracketed>`, `--dot-calls <each-element|collection>` - The behaviours of the templates, as for `swift-mtl generate`; the first value is the default, and the second that of version 0.6
 - `--strict-aql` / `--no-strict-aql` - Whether the expressions of the templates reject what Eclipse AQL rejects, as for `swift-mtl generate`; neither preset sets it
 - `--collection-range-syntax <ocl|eclipse>` - Whether a transformation given with `--transformations` may use integer ranges such as `Sequence{1..3}` (`ocl`, the default) or not, as in Eclipse ATL and version 0.6 (`eclipse`)
 - `--integer-division <real|truncating>` - Whether `/` in a transformation given with `--transformations` divides two Integers into a Real, as in OCL and Eclipse ATL (`real`, the default), or truncates the quotient as version 0.6 did (`truncating`)
+- `--bag-representation <bag|sequence>` - Whether `Bag{...}`, `asBag()` and `collect` on a Set in a transformation given with `--transformations` give Bags, as in OCL and Eclipse ATL (`bag`, the default), or Sequences as version 0.6 did (`sequence`)
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`) for every behaviour option above; a behaviour option that is given overrides it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--encoding <name>` - The character encoding of a transformation given with `--transformations` and of the templates with the modules they import, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8; a template is named by its path within the template set); the `encoding` key of the configuration file names it too
+- `--output-encoding <name>` - The character encoding of the generator model and of the generated files whose template names no charset, such as `ISO-8859-1` or `windows-1252` (default: UTF-8; the generator model names it in its XML declaration and refers to a character that it cannot hold by number, and in a generated file such a character is an error that names the file, line and column); the `output-encoding` key of the configuration file names it too
 - `--verbose` - One line for every file; without it a progress bar with counts appears on an interactive terminal
 
 **Examples:**
@@ -264,9 +308,12 @@ swift-atl parse [<atl-files> ...] [options]
 - `--enable-stop-after-errors`, `--disable-stop-after-errors` - Stop after metamodel loading errors (default: disabled)
 - `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
 - `--integer-division <real|truncating>` - Whether `/` divides two Integers into a Real, so `7 / 2` is `3.5`, as in OCL and Eclipse ATL (`real`, the default), or truncates the quotient to an Integer as version 0.6 did (`truncating`)
-- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` and `--integer-division` override it
+- `--bag-representation <bag|sequence>` - Whether `Bag{...}`, `asBag()` and `collect` on a Set give Bags, a collection kind of their own as in OCL and Eclipse ATL (`bag`, the default), or Sequences as in version 0.6 (`sequence`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax`, `--integer-division` and `--bag-representation` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--encoding <name>` - The character encoding of the ATL source, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8); the `encoding` key of the configuration file names it too
+- `--output-encoding <name>` - The character encoding of the file that `--output` names, such as `ISO-8859-1` or `windows-1252` (default: UTF-8; an XML report names it in its declaration and refers to a character that it cannot hold by number, a JSON report is written in UTF-8 with a warning, and in a text report such a character is an error that names the file, line and column); the `output-encoding` key of the configuration file names it too
 
 **Examples:**
 
@@ -290,15 +337,18 @@ swift-atl validate [<atl-files> ...] [options]
 - `-o, --output <file>` - Write the validation results to a file
 - `--metamodel-path <directory>` - Metamodel search path (repeatable)
 - `-v, --verbose` - Enable verbose output
-- `--strict` - Enable strict validation mode
+- `--strict`, `--no-strict` - Enable or disable strict validation mode, in which warnings fail the validation (off by default; the `strict` key of the configuration file sets it too)
 - `--check-metamodels` - Check metamodel compatibility
 - `--check-rules` - Validate rule completeness
 - `--enable-stop-after-errors`, `--disable-stop-after-errors` - Stop after metamodel loading errors (default: disabled)
 - `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
 - `--integer-division <real|truncating>` - Whether `/` divides two Integers into a Real, so `7 / 2` is `3.5`, as in OCL and Eclipse ATL (`real`, the default), or truncates the quotient to an Integer as version 0.6 did (`truncating`)
-- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` and `--integer-division` override it
+- `--bag-representation <bag|sequence>` - Whether `Bag{...}`, `asBag()` and `collect` on a Set give Bags, a collection kind of their own as in OCL and Eclipse ATL (`bag`, the default), or Sequences as in version 0.6 (`sequence`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax`, `--integer-division` and `--bag-representation` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--encoding <name>` - The character encoding of the ATL source, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8); the `encoding` key of the configuration file names it too
+- `--output-encoding <name>` - The character encoding of the file that `--output` names, such as `ISO-8859-1` or `windows-1252` (default: UTF-8; a character that it cannot hold is an error that names the file, line and column); the `output-encoding` key of the configuration file names it too
 
 **Examples:**
 
@@ -326,15 +376,18 @@ swift-atl test [<atl-files> ...] [options]
 **Options:**
 
 - `-d, --directory <directory>` - Directory containing ATL test files
-- `-t, --timeout <seconds>` - Test timeout in seconds (default: 60)
+- `-t, --timeout <seconds>` - The time limit for checking each file, a positive number of seconds (default: 60), and a limit of more than one hundred years is not kept; a file whose checks take longer is reported as failed with 'Test timed out after N seconds', and testing continues with the next file. Each file is reported as soon as its checks finish. Parsing cannot be interrupted, so a file whose parsing overruns the limit keeps using processor time until its parsing ends or the command exits
 - `-o, --output <file>` - Write the test results to a file
 - `-v, --verbose` - Enable verbose output
 - `--fail-fast` - Stop on the first test failure
 - `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
 - `--integer-division <real|truncating>` - Whether `/` divides two Integers into a Real, so `7 / 2` is `3.5`, as in OCL and Eclipse ATL (`real`, the default), or truncates the quotient to an Integer as version 0.6 did (`truncating`)
-- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` and `--integer-division` override it
+- `--bag-representation <bag|sequence>` - Whether `Bag{...}`, `asBag()` and `collect` on a Set give Bags, a collection kind of their own as in OCL and Eclipse ATL (`bag`, the default), or Sequences as in version 0.6 (`sequence`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax`, `--integer-division` and `--bag-representation` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--encoding <name>` - The character encoding of the ATL source, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8); the `encoding` key of the configuration file names it too
+- `--output-encoding <name>` - The character encoding of the file that `--output` names, such as `ISO-8859-1` or `windows-1252` (default: UTF-8; a character that it cannot hold is an error that names the file, line and column); the `output-encoding` key of the configuration file names it too
 
 **Examples:**
 
@@ -361,9 +414,12 @@ swift-atl analyze [<atl-files> ...] [options]
 - `-v, --verbose` - Enable verbose output
 - `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
 - `--integer-division <real|truncating>` - Whether `/` divides two Integers into a Real, so `7 / 2` is `3.5`, as in OCL and Eclipse ATL (`real`, the default), or truncates the quotient to an Integer as version 0.6 did (`truncating`)
-- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` and `--integer-division` override it
+- `--bag-representation <bag|sequence>` - Whether `Bag{...}`, `asBag()` and `collect` on a Set give Bags, a collection kind of their own as in OCL and Eclipse ATL (`bag`, the default), or Sequences as in version 0.6 (`sequence`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax`, `--integer-division` and `--bag-representation` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--encoding <name>` - The character encoding of the ATL source, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8); the `encoding` key of the configuration file names it too
+- `--output-encoding <name>` - The character encoding of the file that `--output` names, such as `ISO-8859-1` or `windows-1252` (default: UTF-8; a JSON report is written in UTF-8 with a warning, and in a text report a character that it cannot hold is an error that names the file, line and column); the `output-encoding` key of the configuration file names it too
 
 **Examples:**
 
@@ -390,9 +446,11 @@ The command parses the transformation and names the compiled module, which defau
 - `--optimise` - Optimise the transformation code
 - `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
 - `--integer-division <real|truncating>` - Whether `/` divides two Integers into a Real, so `7 / 2` is `3.5`, as in OCL and Eclipse ATL (`real`, the default), or truncates the quotient to an Integer as version 0.6 did (`truncating`)
-- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax` and `--integer-division` override it
+- `--bag-representation <bag|sequence>` - Whether `Bag{...}`, `asBag()` and `collect` on a Set give Bags, a collection kind of their own as in OCL and Eclipse ATL (`bag`, the default), or Sequences as in version 0.6 (`sequence`)
+- `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax`, `--integer-division` and `--bag-representation` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--encoding <name>` - The character encoding of the ATL source, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8); the `encoding` key of the configuration file names it too
 
 **Example:**
 
@@ -400,11 +458,76 @@ The command parses the transformation and names the compiled module, which defau
 swift-atl compile Families2Persons.atl --output families2persons.atlc
 ```
 
+### check-compat
+
+Check whether a transformation can be used with other metamodels, such as revised versions of its
+source or target metamodels, without running it.
+
+```bash
+swift-atl check-compat <atl-file> --metamodel <name=file> ... --target-metamodel <name=file> ... [options]
+```
+
+The command extracts the footprint of the transformation, the classes, features and enumeration
+literals that it reads, creates and writes, and checks the target metamodels against it by
+structural model subtyping. Each `--metamodel` is named after a metamodel of the module header,
+such as `Families` in `create OUT : Persons from IN : Families`: the metamodels of source models
+are checked for what the transformation reads, and those of target models for what it creates and
+writes. A metamodel of the header without `--metamodel` is not checked, which makes the verdict
+inconclusive. The library behind the command is described in the ModelTyping documentation.
+
+**Options:**
+
+- `-m, --metamodel <name=file>` - A metamodel that the transformation was written against, named after a metamodel of the module header (repeatable); the file may be in any metamodel format, such as Ecore, JSON, KM3 or EMOF
+- `--target-metamodel <name=file>` - A metamodel to check the transformation against, under the name of a `--metamodel` (repeatable); a metamodel without one is checked against itself, as if it were unchanged
+- `--mode <total-isomorphic|total-non-isomorphic|partial-isomorphic|partial>` - The subtyping relation to decide (default: `partial`): whether every element of the metamodel (`total-...`) or only the elements the transformation uses (`partial...`) must exist in the target metamodel, and whether under the same names (`...isomorphic`) or after the renamings of `--rename`
+- `--subtyping <access-refined|object-type-matching|mof-class-matching>` - How model subtyping matches classes and features (default: `access-refined`, which compares each element by how the transformation reads, writes or instantiates it); `object-type-matching` (alias `steel-jezequel`) and `mof-class-matching` (alias `guy`) are the published definitions of [Steel and Jézéquel (2007)](https://doi.org/10.1007/s10270-006-0036-6) and [Guy et al. (2012)](https://doi.org/10.1007/978-3-642-31491-9_30)
+- `--rename <required=provided>` - Map a name of the original metamodel to a name of the target metamodel, as `Class=NewClass` for a class, enumeration or data type, or `Owner.member=newMember` for a feature or literal (repeatable, or separated by commas); renamings apply in the modes `partial` and `total-non-isomorphic`, and the other modes ignore them with a warning on standard error
+- `--allow-widening` - Let numeric types widen in the direction of use: an attribute that is read may have a narrower type in the target metamodel, such as `EInt` where `ELong` was declared, and one that is written a wider type; an extension of the `access-refined` semantics, which the published semantics and the isomorphic modes ignore with a warning, since the published definitions relate no data types by subtyping
+- `--lenient-lower-bounds` - Report lower bounds that do not conform as warnings instead of errors; like widening, an extension of the `access-refined` semantics
+- `--format <text|json>` - The format of the report (default: `text`); `json` writes one object with the flags `compatible` and `conclusive`, the mode, the findings, the footprint and the renaming hints; in the footprint, features and literals are arrays of objects, and each access is an array of names such as `["read", "write"]`
+- `--encoding <name>` - The character encoding of the transformation and of the metamodels in text formats, such as KM3 (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8)
+- `--km3-primitives`, `--package-name`, `--ns-uri`, `--ns-prefix`, `--asdl-enumerations`, `--langium-types`, `--sdf3-labels` - How metamodels in KM3 and grammar formats are read, as for the other commands
+
+The report is printed to standard output. Its first line states the verdict, the mode and the
+numbers of errors and warnings, such as `incompatible (partial): 1 error(s), 0 warning(s)`;
+each finding follows on a line of its own, starting with `error:` or `warning:` and naming the
+element, such as `Families!Member.firstName`, then each `uncertain:` use whose type could not be inferred, and
+each hint, such as `hint: --rename Member.firstName=givenName`, with the reason for it in parentheses, that would
+reconcile a missing element.
+
+**Exit status:**
+
+- `0` - The target metamodels are compatible
+- `1` - The target metamodels are not compatible
+- `2` - No incompatibility was found, but the types of some expressions could not be inferred, so the verdict is inconclusive
+- `3` - The check could not be made, such as for a file that cannot be read or parsed, or a metamodel name that the module header does not declare
+- `64` - The arguments are invalid, such as a `--target-metamodel` whose name no `--metamodel` gives
+
+**Examples:**
+
+```bash
+# Check the transformation against a revised source metamodel
+swift-atl check-compat Families2Persons.atl \
+    --metamodel Families=Families.ecore --metamodel Persons=Persons.ecore \
+    --target-metamodel Families=FamiliesV2.ecore
+
+# Apply the suggested renaming
+swift-atl check-compat Families2Persons.atl \
+    --metamodel Families=Families.ecore --metamodel Persons=Persons.ecore \
+    --target-metamodel Families=FamiliesV2.ecore --rename Member.firstName=givenName
+
+# Decide total isomorphic subtyping with MOF class matching, as JSON
+swift-atl check-compat Families2Persons.atl \
+    --metamodel Families=Families.ecore --metamodel Persons=Persons.ecore \
+    --target-metamodel Persons=PersonsV2.ecore \
+    --mode total-isomorphic --subtyping mof-class-matching --format json
+```
+
 ## Environment and Configuration File
 
 The Compatibility with 0.6 section of the [SwiftModelling documentation](https://mipalgu.github.io/swift-modelling/documentation/swiftmodelling/swiftmodelling/index.html) lists every behaviour option with its default and its version 0.6 behaviour, and describes the environment variable and the configuration file in full.
 
-Without `--semantics`, the `SWIFT_MODELLING_SEMANTICS` environment variable (`standard` or `legacy`) chooses the preset, and then the `semantics` key of a configuration file. The configuration file is the first `.swift-modelling.json` in the current directory or one of its parents, up to the directory that holds `.git`; `--config` names another file and `--no-config` reads none. Its keys are the names of the behaviour options without their leading `--`, with the spellings of the command line as JSON strings, or JSON booleans for `check-let-types`, `cache-containers` and `strict-aql`; a key that does not apply to a command is ignored. A behaviour option given on the command line overrides the file, an option in the file overrides the preset, `--semantics` overrides the environment variable, and the environment variable overrides `semantics` in the file. `--let-type-mismatches` and `--unset-features` do not depend on the preset: the command line overrides the file, which overrides their defaults. An invalid value of the variable, or an unknown key or an invalid value in the file, stops the command with an error that names it.
+Without `--semantics`, the `SWIFT_MODELLING_SEMANTICS` environment variable (`standard` or `legacy`) chooses the preset, and then the `semantics` key of a configuration file. The configuration file is the first `.swift-modelling.json` in the current directory or one of its parents, up to the directory that holds `.git`; `--config` names another file and `--no-config` reads none. Its keys are the names of the behaviour options without their leading `--`, with the spellings of the command line as JSON strings, or JSON booleans for `check-let-types`, `cache-containers` and `strict-aql`; a key that does not apply to a command is ignored. A behaviour option given on the command line overrides the file, an option in the file overrides the preset, `--semantics` overrides the environment variable, and the environment variable overrides `semantics` in the file. `--let-type-mismatches` and `--unset-features` do not depend on the preset: the command line overrides the file, which overrides their defaults. An invalid value of the variable, or an unknown key or an invalid value in the file, stops the command with an error that names it. The `encoding` and `output-encoding` keys name the character encodings of the files that a command reads and writes, as `--encoding` and `--output-encoding` do.
 
 ```json
 {

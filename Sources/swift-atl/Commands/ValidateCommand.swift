@@ -15,7 +15,7 @@ import ModellingCommandLine
 /// The validate command performs comprehensive validation of ATL transformation files,
 /// including syntax checking, semantic analysis, type checking, and metamodel compatibility
 /// verification. It provides detailed validation reports with errors and warnings.
-struct ValidateCommand: AsyncParsableCommand {
+struct ValidateCommand: AsyncParsableCommand, ATLSourceReading, ATLOutputWriting {
     static let configuration = CommandConfiguration(
         commandName: "validate",
         abstract: "Validate ATL transformation files",
@@ -25,6 +25,10 @@ struct ValidateCommand: AsyncParsableCommand {
             Provides detailed validation reports with warnings and errors.
 
             \(ATLSemanticsOptions.discussion(reader: "the transformations"))
+
+            \(SourceEncodingOptions.discussion(reader: "the transformations"))
+
+            \(OutputEncodingOptions.discussion(writer: "the file that --output names"))
 
             \(SemanticsOptions.discussion())
 
@@ -68,8 +72,15 @@ struct ValidateCommand: AsyncParsableCommand {
     ///
     /// In strict mode, warnings are treated as errors and will cause validation
     /// to fail with a non-zero exit code.
-    @Flag(name: .long, help: "Enable strict validation mode")
-    var strict: Bool = false
+    ///
+    /// `--strict` turns it on and `--no-strict` off, whatever the configuration file says.
+    @Flag(name: .customLong(ValidationOptionName.strict), inversion: .prefixedNo, help: "Enable strict validation mode")
+    var explicitStrict: Bool?
+
+    /// Whether `--strict` was given on the command line.
+    ///
+    /// The strictness of a run also depends on the `strict` key of the configuration file.
+    var strict: Bool { explicitStrict ?? false }
 
     /// Check metamodel compatibility.
     ///
@@ -93,6 +104,12 @@ struct ValidateCommand: AsyncParsableCommand {
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
 
+    /// The character encoding of the ATL source.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// The character encoding of the file that `--output` names.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
+
     /// The behaviours of the ATL source that the command line, the environment and the
     /// configuration file select.
     ///
@@ -114,6 +131,8 @@ struct ValidateCommand: AsyncParsableCommand {
             throw ValidationError("No ATL files specified")
         }
         let atlOptions = try atlOptions()
+        let fileStrictness = try semanticsOptions.settings().configuration.strict
+        let strict = explicitStrict ?? fileStrictness ?? false
 
         if verbose {
             print("Validating \(atlFiles.count) ATL file(s)")
@@ -163,8 +182,7 @@ struct ValidateCommand: AsyncParsableCommand {
         // Write output if requested
         if let outputPath = output {
             let outputContent = generateValidationReport(validationResults)
-            try outputContent.write(
-                to: URL(fileURLWithPath: outputPath), atomically: true, encoding: .utf8)
+            try writeOutput(outputContent, to: outputPath, kind: .text)
             print("Validation report written to \(outputPath)")
         }
 
@@ -206,7 +224,7 @@ struct ValidateCommand: AsyncParsableCommand {
         }
 
         do {
-            let atlSource = try String(contentsOfFile: filePath, encoding: .utf8)
+            let atlSource = try readATLSource(at: filePath)
 
             // Build search paths similar to other commands
             var searchPaths: [String] = []

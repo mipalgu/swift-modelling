@@ -1,0 +1,36 @@
+digraph MetamodelFormats {
+    bgcolor="white"
+    rankdir=LR
+    node [shape=box, style="rounded,filled", fontname="Arial", fontsize=12, fillcolor="#f4e8f8"]
+    edge [fontname="Arial", fontsize=10, dir=both]
+
+    ecore [label="Ecore\nMetamodel" shape=box3d fillcolor="#f8f4e8"]
+
+    subgraph cluster_text {
+        label="Textual notations"
+        style=rounded
+        bgcolor="#e8f4f8"
+        km3 [label="KM3"]
+        emfatic [label="Emfatic"]
+        xcore [label="Xcore"]
+        oclinecore [label="OCLinEcore"]
+    }
+
+    subgraph cluster_xml {
+        label="XMI notations"
+        style=rounded
+        bgcolor="#e8f8f5"
+        emof [label="EMOF"]
+        uml [label="UML class model"]
+    }
+
+    completeocl [label="Complete OCL\nconstraints" shape=note fillcolor="#fff8e8"]
+
+    km3 -> ecore
+    emfatic -> ecore
+    xcore -> ecore
+    oclinecore -> ecore
+    emof -> ecore
+    uml -> ecore [dir=forward label="read"]
+    completeocl -> ecore [dir=forward label="constrains"]
+}

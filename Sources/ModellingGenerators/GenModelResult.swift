@@ -5,6 +5,7 @@
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
 import ECore
+import EMFBase
 import Foundation
 
 /// The outcome of importing Ecore models into a generator model.
@@ -41,4 +42,12 @@ public struct GenModelResult: Sendable {
 
     /// Whether the settings of an existing generator model were reconciled.
     public let reloaded: Bool
+
+    /// The warnings of reading the transformation that replaced the bundled one.
+    ///
+    /// A transformation that is not valid UTF-8, and was therefore read as ISO-8859-1 because
+    /// ``GenModelImportOptions/transformationEncoding`` names no encoding, has a warning whose
+    /// code is `TextDecodingDiagnostic.decodedAsISOLatin1`, whose document is the location of
+    /// the transformation and whose range points at the first byte that is not UTF-8.
+    public internal(set) var decodingWarnings: [SourceDiagnostic] = []
 }

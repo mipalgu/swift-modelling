@@ -7,6 +7,7 @@
 //
 import ATL
 import ECore
+import EMFBase
 import Foundation
 import GenModel
 import ModellingCommandLine
@@ -17,8 +18,8 @@ import OrderedCollections
 /// Loads a model from a file using the appropriate parser.
 ///
 /// The model is read in the format that the explicit format names or, without one, in the
-/// format that the file extension names, as ``ModelFileFormat/instanceFormat(of:explicit:)``
-/// chooses it. Classes that the registered metamodels do not define are read from the
+/// format that the file extension or else the contents of the file name, as
+/// ``ModelFileFormat/detectedInstanceFormat(of:explicit:)`` chooses it. Classes that the registered metamodels do not define are read from the
 /// document itself. Provides verbose output when requested, displaying the number of objects
 /// loaded.
 ///
@@ -31,7 +32,8 @@ import OrderedCollections
 ///   - verbose: Whether to print verbose output.
 ///   - debug: Whether to enable debug mode for parsers.
 /// - Returns: The loaded resource containing the model.
-/// - Throws: `TransformationError.modelFileNotFound` if the file doesn't exist.
+/// - Throws: `TransformationError.modelFileNotFound` if the file doesn't exist, and
+///   `ModelFormatError.undetectableFormat(_:)` if its format cannot be determined.
 func loadModel(
     from path: String,
     resourceSet: ResourceSet? = nil,
@@ -46,7 +48,7 @@ func loadModel(
         throw TransformationError.modelFileNotFound(path)
     }
 
-    let format = ModelFileFormat.instanceFormat(of: url, explicit: explicitFormat)
+    let format = try ModelFileFormat.detectedInstanceFormat(of: url, explicit: explicitFormat)
 
     if verbose {
         if let explicit = explicitFormat {
@@ -227,14 +229,18 @@ func mapFilesToAliases(
 ///     with references to other models as `uri#fragment` attribute values.
 ///   - xmiOptions: The options with which a model that is not written in the layout of the
 ///     Eclipse Modeling Framework is written as XMI.
-/// - Throws: Serialisation errors if saving fails.
+///   - encoding: The character encoding of the file (default: UTF-8).
+/// - Throws: Serialisation errors if saving fails, and
+///   ``ModellingCommandLine/OutputFileError/unrepresentable(path:_:)`` if the encoding cannot
+///   hold a character of a textual format.
 func saveModel(
     _ resource: Resource,
     to path: String,
     explicitFormat: String? = nil,
     verbose: Bool,
     emfLayout: Bool = false,
-    xmiOptions: XMISerializationOptions = .legacy
+    xmiOptions: XMISerializationOptions = .legacy,
+    encoding: TextEncoding = OutputEncodingOptions.defaultEncoding
 ) async throws {
     let url = URL(fileURLWithPath: path)
 
@@ -250,9 +256,14 @@ func saveModel(
     }
 
     if format == .xmi && emfLayout {
-        try await GenModelResource.save(resource, to: url)
+        if encoding == .utf8 {
+            try await GenModelResource.save(resource, to: url)
+        } else {
+            try OutputFile.write(
+                try await GenModelResource.serialised(resource, for: url), to: path, encoding: encoding, kind: .xml)
+        }
     } else {
-        try await ModelIO.save(resource, to: url, format: format, xmiOptions: xmiOptions)
+        try await OutputFile.save(resource, to: url, format: format, xmiOptions: xmiOptions, encoding: encoding)
     }
 
     if verbose {
@@ -274,6 +285,7 @@ func saveModel(
 ///   - emfLayoutAliases: The aliases of the targets that are written in the layout of the
 ///     Eclipse Modeling Framework, because they are instances of a built-in metamodel
 ///   - xmiOptions: The options with which the other targets are written as XMI
+///   - encoding: The character encoding of the files (default: UTF-8)
 /// - Throws: Serialisation errors if saving fails
 func saveTargetModelsFromMapping(
     _ targets: OrderedDictionary<String, Resource>,
@@ -281,7 +293,8 @@ func saveTargetModelsFromMapping(
     explicitFormat: String? = nil,
     verbose: Bool,
     emfLayoutAliases: Set<String> = [],
-    xmiOptions: XMISerializationOptions = .legacy
+    xmiOptions: XMISerializationOptions = .legacy,
+    encoding: TextEncoding = OutputEncodingOptions.defaultEncoding
 ) async throws {
     if verbose && !mapping.isEmpty {
         print("Saving target models...")
@@ -301,7 +314,8 @@ func saveTargetModelsFromMapping(
             explicitFormat: explicitFormat,
             verbose: verbose,
             emfLayout: emfLayoutAliases.contains(alias),
-            xmiOptions: xmiOptions
+            xmiOptions: xmiOptions,
+            encoding: encoding
         )
     }
 }

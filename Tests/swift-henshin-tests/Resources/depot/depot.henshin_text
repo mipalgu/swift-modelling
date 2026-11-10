@@ -1,0 +1,102 @@
+// Rules over a small depot whose bins hold parcels and pass tokens around a ring.
+ePackageImport depot
+
+// addParcel: puts a new parcel into the bin of the given name.
+rule addParcel(IN binName:EString, IN code:EString, IN weight:EInt) {
+	graph {
+		node store:Depot
+		node target:Bin {
+			name = binName
+		}
+		create node parcel:Parcel {
+			code = code
+			weight = weight
+		}
+		edges [
+			(store->target:bins),
+			(create store->parcel:parcels),
+			(create target->parcel:holds)
+		]
+	}
+}
+
+// removeParcel: deletes the parcel with the given code from the depot.
+rule removeParcel(IN code:EString) {
+	graph {
+		node store:Depot
+		delete node parcel:Parcel {
+			code = code
+		}
+		edges [
+			(delete store->parcel:parcels)
+		]
+	}
+}
+
+// move: passes one token from a bin to the next bin of the ring.
+rule move(VAR n:EInt, VAR m:EInt) {
+	conditions [n > 0]
+	graph {
+		node source:Bin {
+			tokens = n
+			set tokens = n - 1
+		}
+		node target:Bin {
+			tokens = m
+			set tokens = m + 1
+		}
+		edges [
+			(source->target:next)
+		]
+	}
+}
+
+// drain: takes one token out of a bin.
+rule drain(VAR n:EInt) {
+	conditions [n > 0]
+	graph {
+		node bin:Bin {
+			tokens = n
+			set tokens = n - 1
+		}
+	}
+}
+
+// emptyBin: a pattern that matches a bin without tokens.
+rule emptyBin() {
+	graph {
+		node bin:Bin {
+			tokens = 0
+		}
+	}
+}
+
+// clearBin: takes every token out of the given bin.
+rule clearBin(IN target:Bin, VAR n:EInt) {
+	graph {
+		node target:Bin {
+			tokens = n
+			set tokens = 0
+		}
+	}
+}
+
+// touch: matches the depot and changes nothing.
+rule touch() {
+	graph {
+		node store:Depot
+	}
+}
+
+// restock: adds a parcel to a bin, then passes a token on.
+unit restock(IN binName:EString, IN code:EString, IN weight:EInt) {
+	addParcel(binName, code, weight)
+	move()
+}
+
+// spin: applies touch for as long as it applies, which is forever.
+unit spin() {
+	while {
+		touch()
+	}
+}

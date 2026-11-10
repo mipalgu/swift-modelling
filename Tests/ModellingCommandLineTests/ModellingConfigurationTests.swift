@@ -139,8 +139,12 @@ struct ModellingConfigurationTests {
             Set(ModellingConfiguration.keys) == [
                 "semantics", "block-line-breaks", "collection-parameters", "check-let-types",
                 "cache-containers", "collection-arguments", "collection-kinds", "single-value-collections",
-                "container-lookup", "sequence-union", "null-addition", "text-form", "collection-range-syntax",
-                "integer-division", "container-scope", "let-type-mismatches", "unset-features", "strict-aql",
+                "container-lookup", "sequence-union", "null-addition", "text-form", "dot-calls",
+                "collection-range-syntax", "integer-division", "bag-representation", "container-scope", "let-type-mismatches", "unset-features", "strict-aql",
+                "encoding", "output-encoding", "km3-primitives", "package-name", "ns-uri", "ns-prefix", "asdl-enumerations",
+                "langium-types", "sdf3-labels", "level-crossing", "ocl", "reference-style", "code-style", "defaults",
+                "root-extends-class", "operation-reflection", "import-organizing", "base-package", "prefix", "jdk-level",
+                "strict", "require-explicit-values", "check-dangling", "injective",
             ])
     }
 
@@ -173,8 +177,10 @@ struct ModellingConfigurationTests {
               "sequence-union": "distinct",
               "null-addition": "null",
               "text-form": "bracketed",
+              "dot-calls": "collection",
               "collection-range-syntax": "eclipse",
               "integer-division": "truncating",
+              "bag-representation": "sequence",
               "container-scope": "this-resource",
               "let-type-mismatches": "skip",
               "unset-features": "undefined",
@@ -194,8 +200,10 @@ struct ModellingConfigurationTests {
         #expect(configuration.sequenceUnion == .distinct)
         #expect(configuration.nullAddition == .null)
         #expect(configuration.textForm == .bracketed)
+        #expect(configuration.dotCalls == .collection)
         #expect(configuration.collectionRangeSyntax == .eclipse)
         #expect(configuration.integerDivision == .truncating)
+        #expect(configuration.bagRepresentation == .sequence)
         #expect(configuration.containerLookupScope == .thisResource)
         #expect(configuration.letTypeMismatches == .skip)
         #expect(configuration.unsetFeatures == .undefined)
@@ -244,6 +252,28 @@ struct ModellingConfigurationTests {
         #expect(options.aqlOptions(settings: settings).strict == !inFile)
     }
 
+    // MARK: - Dot calls
+
+    @Test("reads each dot call mode from the file and applies it over both presets",
+          arguments: AQLDotCalls.allCases, SemanticsPreset.allCases)
+    func dotCallsFromFile(mode: AQLDotCalls, preset: SemanticsPreset) throws {
+        let configuration = try parse(#"{ "dot-calls": "\#(mode.rawValue)" }"#)
+        #expect(configuration.dotCalls == mode)
+        let settings = SemanticsSettings(preset: preset, configuration: configuration)
+        let options = try MTLSemanticsOptions.parse([])
+        #expect(options.aqlOptions(settings: settings).dotCalls == mode)
+        #expect(options.mtlOptions(settings: settings).aql.dotCalls == mode)
+    }
+
+    @Test("lets the command line override the dot calls of the file", arguments: AQLDotCalls.allCases)
+    func dotCallsOverridden(inFile: AQLDotCalls) throws {
+        let configuration = try parse(#"{ "dot-calls": "\#(inFile.rawValue)" }"#)
+        let settings = SemanticsSettings(preset: .standard, configuration: configuration)
+        let other = AQLDotCalls.allCases.first { $0 != inFile }!
+        let options = try MTLSemanticsOptions.parse(["--dot-calls", other.rawValue])
+        #expect(options.aqlOptions(settings: settings).dotCalls == other)
+    }
+
     // MARK: - Errors
 
     @Test("rejects text that is not JSON, naming the file")
@@ -285,6 +315,8 @@ struct ModellingConfigurationTests {
             (#"{ "check-let-types": "false" }"#, "check-let-types"),
             (#"{ "cache-containers": 0 }"#, "cache-containers"),
             (#"{ "strict-aql": "true" }"#, "strict-aql"),
+            (#"{ "dot-calls": false }"#, "dot-calls"),
+            (#"{ "bag-representation": 2 }"#, "bag-representation"),
             (#"{ "unset-features": { "mode": "undefined" } }"#, "unset-features"),
         ])
     func wrongType(text: String, key: String) {
@@ -308,9 +340,11 @@ struct ModellingConfigurationTests {
             (#"{ "container-scope": "everywhere" }"#, "container-scope", "everywhere", ["any-resource", "this-resource"]),
             (#"{ "collection-range-syntax": "sometimes" }"#, "collection-range-syntax", "sometimes", ["ocl", "eclipse"]),
             (#"{ "integer-division": "rounding" }"#, "integer-division", "rounding", ["real", "truncating"]),
+            (#"{ "bag-representation": "set" }"#, "bag-representation", "set", ["bag", "sequence"]),
             (#"{ "sequence-union": "all" }"#, "sequence-union", "all", ["concatenation", "distinct"]),
             (#"{ "null-addition": "zero" }"#, "null-addition", "zero", ["empty-text", "null"]),
             (#"{ "text-form": "quoted" }"#, "text-form", "quoted", ["joined", "bracketed"]),
+            (#"{ "dot-calls": "each" }"#, "dot-calls", "each", ["each-element", "collection"]),
             (#"{ "let-type-mismatches": "warn" }"#, "let-type-mismatches", "warn", ["error", "skip"]),
             (#"{ "unset-features": "" }"#, "unset-features", "", ["defaults", "undefined"]),
         ])

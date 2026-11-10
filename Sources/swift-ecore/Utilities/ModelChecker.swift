@@ -5,9 +5,12 @@
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
 import AQL
+import AQLMultiLevel
 import ECore
 import EMFBase
 import Foundation
+import ModellingCommandLine
+import MultiLevel
 
 /// What validation checks besides conformance.
 struct ValidationOptions: Sendable, Equatable {
@@ -27,6 +30,9 @@ struct ValidationOptions: Sendable, Equatable {
     /// first literal of an enumeration or zero for a number. When it is `true`, such a feature
     /// is reported as having no value.
     var requiresExplicitValues = false
+
+    /// Which references of a multi-level model may cross levels.
+    var levelCrossing = LevelCrossingOptions.defaultMode
 }
 
 /// Checks a metamodel or a model and collects what is wrong with it.
@@ -62,7 +68,30 @@ struct ModelChecker {
     ///
     /// - Returns: What the checks found.
     func check() async -> Outcome {
-        document.isMetamodel ? checkMetamodel() : await checkModel()
+        if let deepModel = document.deepModel { return await checkDeepModel(deepModel) }
+        return document.isMetamodel ? checkMetamodel() : await checkModel()
+    }
+
+    // MARK: - Multi-level models
+
+    /// Checks a multi-level model: its structure, its level crossings under
+    /// ``ValidationOptions/levelCrossing``, and its constraints, which are evaluated with AQL on
+    /// the deep instances at the levels that their potencies select.
+    ///
+    /// - Parameter model: The multi-level model of the document.
+    /// - Returns: What the checks found.
+    private func checkDeepModel(_ model: DeepModel) async -> Outcome {
+        var model = model
+        model.levelCrossing = options.levelCrossing.policy
+        let evaluator = AQLDeepConstraintEvaluator(options: AQLOptions(strict: options.strictAQL))
+        let diagnostics = await model.validate(evaluator: evaluator) + options.levelCrossing.diagnostics(for: model)
+        var outcome = Outcome()
+        outcome.findings = diagnostics.map { diagnostic in
+            ValidationFinding(
+                severity: Self.severity(of: diagnostic.severity), code: diagnostic.code,
+                location: diagnostic.range.map { "\($0.start.line):\($0.start.column)" }, message: diagnostic.message)
+        }
+        return outcome
     }
 
     // MARK: - Metamodels
@@ -149,9 +178,10 @@ struct ModelChecker {
             for check in checks where check.outcome != .satisfied {
                 outcome.findings.append(
                     ValidationFinding(
-                        severity: .error, code: ValidationCode.invariant, location: check.location, element: check.object,
+                        severity: check.outcome == .untranslated ? .warning : .error, code: ValidationCode.invariant,
+                        location: check.location, element: check.object,
                         message: "Invariant \(check.context)::\(check.constraint) is \(check.outcome.rawValue)"
-                            + (check.detail.map { " (\($0))" } ?? "")))
+                            + (check.detail.map { " (\($0))" } ?? "") + (check.message.map { ": " + $0 } ?? "")))
             }
         }
         return outcome
@@ -198,11 +228,9 @@ struct ModelChecker {
                 for proxy in proxies {
                     let target = ModelCatalogue.text(of: proxy)
                     guard let resolved = await proxy.resolveObject(in: document.resourceSet) else {
-                        findings.append(
-                            ValidationFinding(
-                                severity: .error, code: ValidationCode.unresolvedReference, location: entry.location,
-                                element: objects.label(of: entry.object),
-                                message: "Reference '\(name)' names \(target), which does not exist"))
+                        findings.append(await Self.unresolvedFinding(
+                            proxy, reference: name, target: target, in: document.resourceSet,
+                            location: entry.location, element: objects.label(of: entry.object)))
                         continue
                     }
                     guard let expected = (reference?.eType as? EClass).map(catalogue.canonical),
@@ -218,6 +246,37 @@ struct ModelChecker {
             }
         }
         return findings
+    }
+
+    /// The finding for a reference into another document that names no object.
+    ///
+    /// A reference into a document of the Eclipse platform, such as a UML profile or library
+    /// with a `pathmap:` URI, that cannot be read is a warning: the document is not available
+    /// here, so the reference cannot be checked. Any other unresolved reference, including one
+    /// into a document that can be read but has no such object, is an error.
+    ///
+    /// - Parameters:
+    ///   - proxy: The unresolved reference.
+    ///   - reference: The name of the reference feature.
+    ///   - target: The text of the reference.
+    ///   - resourceSet: The resource set in which the reference was resolved.
+    ///   - location: Where the referring object is.
+    ///   - element: The label of the referring object.
+    /// - Returns: The finding.
+    private static func unresolvedFinding(
+        _ proxy: ResourceProxy, reference: String, target: String, in resourceSet: ResourceSet,
+        location: String?, element: String
+    ) async -> ValidationFinding {
+        let isPlatformDocument = proxy.uri.hasPrefix(ValidationCode.platformDocumentPrefix)
+        if isPlatformDocument, await proxy.targetResource(in: resourceSet) == nil {
+            return ValidationFinding(
+                severity: .warning, code: ValidationCode.unavailableDocument, location: location, element: element,
+                message: "Reference '\(reference)' names \(target), whose document \(proxy.uri) is not available, "
+                    + "so the reference is not checked")
+        }
+        return ValidationFinding(
+            severity: .error, code: ValidationCode.unresolvedReference, location: location, element: element,
+            message: "Reference '\(reference)' names \(target), which does not exist")
     }
 
     /// Whether a class is a class or a subclass of another, compared by name across documents.
@@ -252,6 +311,14 @@ enum ValidationCode {
 
     /// A reference into another document names no object.
     static let unresolvedReference = "model.unresolvedReference"
+
+    /// A reference into a document of the Eclipse platform names a document that is not
+    /// available.
+    static let unavailableDocument = "model.unavailableDocument"
+
+    /// The start of the URIs by which models refer to documents of the Eclipse platform, such
+    /// as the libraries and profiles of Eclipse UML2.
+    static let platformDocumentPrefix = "pathmap://"
 
     /// A reference into another document names an object of the wrong class.
     static let referenceTypeMismatch = "model.crossReferenceTypeMismatch"

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lending:Library xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:lending="http://example.org/lending" name="Riverside Library">
+  <branches name="Central" code="1" holdings="//@items.0 //@items.2"/>
+  <branches name="Northside" code="1" holdings="//@items.1"/>
+  <members name="Alex" age="34" active="true">
+    <loans item="//@items.2" due="14"/>
+  </members>
+  <members name="Sam" age="12" active="false"/>
+  <items xsi:type="lending:Book" name="A Field Guide to Birds" year="2019" status="ON_LOAN" location="//@branches.0" pages="320" isbn="978-0-00-000000-2"/>
+  <items xsi:type="lending:Periodical" name="Science Monthly" status="ON_LOAN" location="//@branches.1" issue="42"/>
+  <items xsi:type="lending:ReferenceBook" name="Atlas of the World" year="2021" status="AVAILABLE" location="//@branches.0" pages="200" minimumAge="16" loan="//@members.0/@loans.0"/>
+</lending:Library>

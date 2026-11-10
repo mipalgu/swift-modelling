@@ -1,0 +1,90 @@
+[comment encoding = UTF-8 /]
+[**
+ * The names and types of the Lean template set.
+ *
+ * Identifiers follow the rules of the verification services, so that the declarations written here and the formulas of
+ * translated invariants agree: reserved words are enclosed in guillemets, features are read through accessors named
+ * after the class that declares them, such as 'Obj.Member_age', and the membership test of a class is named after the
+ * class, such as 'Obj.isMember'.
+ **/]
+[module LeanNames('http://www.eclipse.org/emf/2002/Ecore')/]
+[import verification::VerificationQueries/]
+
+[**
+ * The name of the verification target of this template set.
+ **/]
+[query public target() : String = 'lean'/]
+
+[**
+ * A model name as a Lean identifier.
+ **/]
+[query public id(name : String) : String = name.verificationIdentifier(target())/]
+
+[**
+ * The name of the file of the module of a package: the name of the package with a capital initial.
+ **/]
+[query public moduleFileName(p : EPackage) : String = p.name.toUpperFirst()/]
+
+[**
+ * The name of the module of a package, as imports and namespaces write it.
+ **/]
+[query public moduleName(p : EPackage) : String = id(p.moduleFileName())/]
+
+[**
+ * The name of the module of a model: the name of the model with a capital initial, followed by 'Instance'.
+ **/]
+[query public instanceModuleName(model : String) : String = model.toUpperFirst() + 'Instance'/]
+
+[**
+ * The name of the membership test of a class, a function from objects to truth values.
+ **/]
+[query public membership(c : EClass) : String = 'Obj.' + id('is' + c.name)/]
+
+[**
+ * The membership test of the class of the values of a reference; a reference to a class outside the package admits
+ * every object.
+ **/]
+[query public targetMembership(p : EPackage, f : EStructuralFeature) : String = if p.classNamed(f.eType.name).oclIsUndefined() then '(fun _ => true)' else membership(p.classNamed(f.eType.name)) endif/]
+
+[**
+ * The name of the constructor of the objects of a concrete class.
+ **/]
+[query public constructorName(c : EClass) : String = 'of' + c.name/]
+
+[**
+ * The name of the accessor of a feature that a class declares.
+ **/]
+[query public accessor(c : EClass, f : EStructuralFeature) : String = 'Obj.' + c.name.verificationFeature(f.name, target())/]
+
+[**
+ * The accessor of a feature that a class declares, as a function from objects to lists of values.
+ **/]
+[query public listAccessor(c : EClass, f : EStructuralFeature) : String = if f.isMany() then accessor(c, f) else '(fun o => (' + accessor(c, f) + ' o).toList)' endif/]
+
+[**
+ * The identifier of an enumeration literal.
+ **/]
+[query public literalId(e : EEnum, literal : String) : String = e.name.verificationLiteral(literal, target())/]
+
+[**
+ * The Lean type of one value of a feature: integers, truth values and strings are built in, objects are identified by
+ * their identifier, and enumerations and uninterpreted data types are declared by the module of the package.
+ **/]
+[query public valueType(f : EStructuralFeature) : String = if f.valueKind() = 'integer' then 'Int' else if f.valueKind() = 'boolean' then 'Bool' else if f.valueKind() = 'string' then 'String' else if f.valueKind() = 'object' then 'ObjectId' else id(f.eType.name) endif endif endif endif/]
+
+[**
+ * The type of a field of a structure: a plain value if the feature is required and single-valued, an optional value
+ * if it is optional, and a list if it is many-valued.
+ **/]
+[query public fieldType(f : EStructuralFeature) : String = if f.isMany() then 'List ' + f.valueType() else if f.isRequiredSingle() then f.valueType() else 'Option ' + f.valueType() endif endif/]
+
+[**
+ * The result type of the accessor of a feature: an optional value if the feature is single-valued, as objects of
+ * other classes have no value, and a list if it is many-valued.
+ **/]
+[query public accessorType(f : EStructuralFeature) : String = if f.isMany() then 'List ' + f.valueType() else 'Option ' + f.valueType() endif/]
+
+[**
+ * The upper bound of a many-valued feature as an optional natural number: none if it is unbounded.
+ **/]
+[query public upperBoundText(f : EStructuralFeature) : String = if f.upperBound > 1 then '(some ' + f.upperBound.toString() + ')' else 'none' endif/]

@@ -83,14 +83,14 @@
  * Writes the file of the factory interface of a package.
  **/]
 [template public generateFactoryInterfaceFile(genPackage : GenPackage)]
-[file (genPackage.reflectionPackageName().packagePath() + '/' + genPackage.factoryInterfaceName() + '.java', false, 'UTF-8')][genPackage.factoryInterface()/][/file]
+[file (genPackage.reflectionPackageName().packagePath() + '/' + genPackage.factoryInterfaceName() + '.java', false)][genPackage.factoryInterface()/][/file]
 [/template]
 
 [**
  * Writes the file of the factory implementation of a package.
  **/]
 [template public generateFactoryImplementationFile(genPackage : GenPackage)]
-[file (genPackage.factoryClassPackageName().packagePath() + '/' + genPackage.factoryClassName() + '.java', false, 'UTF-8')][genPackage.factoryImplementation()/][/file]
+[file (genPackage.factoryClassPackageName().packagePath() + '/' + genPackage.factoryClassName() + '.java', false)][genPackage.factoryImplementation()/][/file]
 [/template]
 
 [**
@@ -98,10 +98,10 @@
  **/]
 [template public generateClassFiles(genClass : GenClass)]
 [if (not genClass.isExternalInterface() and not genClass.genModel().isOn('suppressInterfaces'))]
-[file (genClass.genPackage().interfacePackageName().packagePath() + '/' + genClass.interfaceName() + '.java', false, 'UTF-8')][genClass.classInterfaceFile()/][/file]
+[file (genClass.genPackage().interfacePackageName().packagePath() + '/' + genClass.interfaceName() + '.java', false)][genClass.classInterfaceFile()/][/file]
 [/if]
 [if (not genClass.isInterface())]
-[file (genClass.genPackage().classPackageName().packagePath() + '/' + genClass.className() + '.java', false, 'UTF-8')][genClass.classImplementationFile()/][/file]
+[file (genClass.genPackage().classPackageName().packagePath() + '/' + genClass.className() + '.java', false)][genClass.classImplementationFile()/][/file]
 [/if]
 [/template]
 
@@ -109,28 +109,28 @@
  * Writes the file of one enumeration.
  **/]
 [template public generateEnumFile(genEnum : GenEnum)]
-[file (genEnum.genPackage().interfacePackageName().packagePath() + '/' + genEnum.name() + '.java', false, 'UTF-8')][genEnum.enumClass()/][/file]
+[file (genEnum.genPackage().interfacePackageName().packagePath() + '/' + genEnum.name() + '.java', false)][genEnum.enumClass()/][/file]
 [/template]
 
 [**
  * Writes the file of the switch of one generator package.
  **/]
 [template public generateSwitchFile(genPackage : GenPackage)]
-[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.switchClassName() + '.java', false, 'UTF-8')][genPackage.switchClass()/][/file]
+[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.switchClassName() + '.java', false)][genPackage.switchClass()/][/file]
 [/template]
 
 [**
  * Writes the file of the validator of one generator package.
  **/]
 [template public generateValidatorFile(genPackage : GenPackage)]
-[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.validatorClassName() + '.java', false, 'UTF-8')][genPackage.validatorClass()/][/file]
+[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.validatorClassName() + '.java', false)][genPackage.validatorClass()/][/file]
 [/template]
 
 [**
  * Writes the file of the adapter factory of one generator package.
  **/]
 [template public generateAdapterFactoryFile(genPackage : GenPackage)]
-[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.adapterFactoryClassName() + '.java', false, 'UTF-8')][genPackage.adapterFactoryClass()/][/file]
+[file (genPackage.utilitiesPackageName().packagePath() + '/' + genPackage.adapterFactoryClassName() + '.java', false)][genPackage.adapterFactoryClass()/][/file]
 [/template]
 
 [**
@@ -151,8 +151,8 @@
 [file (genPackage.classPackageName().packagePath() + '/' + genPackage.serializedPackageFilename(), false, 'UTF-8')][if (genPackage.genModel().isOn('suppressGenModelAnnotations'))][genPackage.serialisedEcore(copyrightSource())/][else][genPackage.serialisedEcore()/][/if][/file]
 [/if]
 [if (not genPackage.genModel().isOn('suppressEMFMetaData') and not genPackage.genModel().isOn('suppressInterfaces'))]
-[file (genPackage.reflectionPackageName().packagePath() + '/' + genPackage.packageInterfaceName() + '.java', false, 'UTF-8')][genPackage.packageInterface()/][/file]
+[file (genPackage.reflectionPackageName().packagePath() + '/' + genPackage.packageInterfaceName() + '.java', false)][genPackage.packageInterface()/][/file]
 [/if]
-[file ((if genPackage.genModel().isOn('suppressInterfaces') then genPackage.reflectionPackageName() else genPackage.classPackageName() endif).packagePath() + '/' + genPackage.packageClassName() + '.java', false, 'UTF-8')][genPackage.packageImplementation()/][/file]
+[file ((if genPackage.genModel().isOn('suppressInterfaces') then genPackage.reflectionPackageName() else genPackage.classPackageName() endif).packagePath() + '/' + genPackage.packageClassName() + '.java', false)][genPackage.packageImplementation()/][/file]
 [/if]
 [/template]

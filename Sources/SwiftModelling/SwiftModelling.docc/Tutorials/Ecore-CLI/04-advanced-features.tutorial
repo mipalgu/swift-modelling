@@ -10,7 +10,7 @@
 
     @Section(title: "Understanding EEnum") {
         @ContentAndMedia {
-            EEnum defines enumeration types—fixed sets of named values. Use enumerations to model properties that can only take specific predefined values, such as employment status or project priority.
+            EEnum defines enumeration types, which are fixed sets of named values. Use enumerations to model properties that can only take specific predefined values, such as employment status or project priority.
 
             Enumerations provide type safety and make your models more expressive by replacing generic strings or integers with meaningful, constrained values.
 
@@ -72,7 +72,7 @@
 
     @Section(title: "Abstract Classes") {
         @ContentAndMedia {
-            Abstract classes cannot be instantiated directly—they serve as base types that other classes extend. Mark a class as abstract when it represents a concept that only makes sense through its concrete subclasses.
+            Abstract classes cannot be instantiated directly; they serve as base types that other classes extend. Mark a class as abstract when it represents a concept that only makes sense through its concrete subclasses.
 
             Abstract classes let you define common structure and behaviour whilst ensuring only complete, concrete implementations can be created.
         }
@@ -173,7 +173,7 @@
             }
 
             @Choice(isCorrect: true) {
-                The class cannot be instantiated directly—only its concrete subclasses can
+                The class cannot be instantiated directly; only its concrete subclasses can
 
                 @Justification {
                     Correct! Abstract classes (`abstract="true"`) serve as templates that concrete subclasses extend. You cannot create instances of abstract classes, only their non-abstract descendants.

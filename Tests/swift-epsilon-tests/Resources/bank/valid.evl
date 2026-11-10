@@ -1,0 +1,5 @@
+context Bank {
+  constraint HasName {
+    check : self.name.length() > 0
+  }
+}

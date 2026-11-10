@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:LibraryModel="http:///LibraryModel.ecore">
+  <LibraryModel:Library name="City Library">
+    <items xsi:type="LibraryModel:Book" title="Ocean Notes" isbn="978-0-00-000001-1"
+        pages="212" genre="Poetry" authors="/1"/>
+  </LibraryModel:Library>
+  <LibraryModel:Writer name="Ada Reed"/>
+</xmi:XMI>

@@ -115,7 +115,7 @@
                 Model instances are used to generate metamodels
 
                 @Justification {
-                    Incorrect. The opposite is true—metamodels come first and define what model instances can contain.
+                    Incorrect. The opposite is true: metamodels come first and define what model instances can contain.
                 }
             }
         }
@@ -155,7 +155,7 @@
                 The name of your company
 
                 @Justification {
-                    Incorrect. It's not about company names—it's a technical XML namespace declaration.
+                    Incorrect. It's not about company names; it's a technical XML namespace declaration.
                 }
             }
 

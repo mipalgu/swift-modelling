@@ -1,0 +1,10 @@
+[module priceList('urn:swift-ecore:multilevel:view:Catalogue:Shelf:deep')/]
+
+[template public main(item : Bookshop::ProductType)]
+[file ('price-list.txt', false, 'UTF-8')]
+Price list
+[for (p : Bookshop::ProductType | Bookshop::ProductType.allInstances()->sortedBy(x | x.clabjectName()))]
+- [p.clabjectName()/] ([p.ontologicalType().name/]): [p.price/] plus [p.gst/] per cent GST
+[/for]
+[/file]
+[/template]

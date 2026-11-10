@@ -1,0 +1,13 @@
+{
+  "name": "lean",
+  "summary": "Lean 4 modules that decide whether models conform to metamodels and satisfy their invariants",
+  "mainModule": "generate",
+  "mainTemplate": "generate",
+  "fileCountTemplate": "fileCount",
+  "modelTemplate": "generateModel",
+  "modelFileCountTemplate": "modelFileCount",
+  "imports": ["../verification"],
+  "options": {
+    "lineDelimiter": "\n"
+  }
+}

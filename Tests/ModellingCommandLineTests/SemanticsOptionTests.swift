@@ -168,6 +168,43 @@ struct SemanticsOptionTests {
         }
     }
 
+    @Test("parses each dot call mode", arguments: AQLDotCalls.allCases, SemanticsPreset.allCases)
+    func dotCalls(mode: AQLDotCalls, preset: SemanticsPreset) throws {
+        let options = try MTLSemanticsOptions.parse(["--dot-calls", mode.rawValue])
+        #expect(options.mtlOptions(preset: preset).aql.dotCalls == mode)
+        #expect(options.aqlOptions(preset: preset).dotCalls == mode)
+    }
+
+    @Test("takes the dot calls of each preset unless given")
+    func dotCallsFollowPreset() throws {
+        let options = try MTLSemanticsOptions.parse([])
+        #expect(options.aqlOptions(preset: .standard).dotCalls == .eachElement)
+        #expect(options.aqlOptions(preset: .legacy).dotCalls == .collection)
+        #expect(options.mtlOptions(preset: .legacy).aql.dotCalls == .collection)
+    }
+
+    @Test("names the dot call option and its values, and describes it")
+    func dotCallNames() {
+        #expect(MTLSemanticsOptions.OptionName.dotCalls == "dot-calls")
+        #expect(MTLSemanticsOptions.valueList(AQLDotCalls.self) == "each-element|collection")
+        #expect(MTLSemanticsOptions.discussion(reader: "the templates").contains("--dot-calls"))
+    }
+
+    @Test("rejects a value that is not a dot call mode", arguments: ["sometimes", "each", "Collection"])
+    func rejectsUnknownDotCalls(value: String) {
+        #expect(throws: (any Error).self) {
+            try MTLSemanticsOptions.parse(["--dot-calls", value])
+        }
+    }
+
+    @Test("changes only the dot calls when the option is given")
+    func overridesDotCallsOnly() throws {
+        let options = try MTLSemanticsOptions.parse(["--dot-calls", "each-element"])
+        var expected = MTLOptions.legacy
+        expected.aql.dotCalls = .eachElement
+        #expect(options.mtlOptions(preset: .legacy) == expected)
+    }
+
     @Test("changes only the behaviour that an option names")
     func overridesOneBehaviour() throws {
         let options = try MTLSemanticsOptions.parse(["--block-line-breaks", "acceleo"])
@@ -265,6 +302,26 @@ struct SemanticsOptionTests {
         }
     }
 
+    @Test("parses each Bag representation", arguments: ATLBagRepresentation.allCases, SemanticsPreset.allCases)
+    func bagRepresentation(representation: ATLBagRepresentation, preset: SemanticsPreset) throws {
+        let options = try ATLSemanticsOptions.parse(["--bag-representation", representation.rawValue])
+        #expect(options.atlOptions(preset: preset).bagRepresentation == representation)
+    }
+
+    @Test("takes the Bag representation of each preset unless given")
+    func bagRepresentationFollowsPreset() throws {
+        let options = try ATLSemanticsOptions.parse([])
+        #expect(options.atlOptions(preset: .standard).bagRepresentation == .bag)
+        #expect(options.atlOptions(preset: .legacy).bagRepresentation == .sequence)
+    }
+
+    @Test("rejects a Bag representation that does not exist")
+    func rejectsUnknownBagRepresentation() {
+        #expect(throws: (any Error).self) {
+            try ATLSemanticsOptions.parse(["--bag-representation", "set"])
+        }
+    }
+
     @Test("leaves strict AQL off in both presets unless --strict-aql is given", arguments: SemanticsPreset.allCases)
     func strictAQL(preset: SemanticsPreset) throws {
         #expect(!(try MTLSemanticsOptions.parse([]).aqlOptions(preset: preset).strict))
@@ -282,6 +339,15 @@ struct SemanticsOptionTests {
         #expect(discussion.contains("--integer-division"))
         #expect(discussion.contains("real"))
         #expect(discussion.contains("truncating"))
+    }
+
+    @Test("names the Bag representation option and describes it")
+    func bagRepresentationNames() {
+        #expect(ATLSemanticsOptions.OptionName.bagRepresentation == "bag-representation")
+        let discussion = ATLSemanticsOptions.discussion(reader: "the transformation")
+        #expect(discussion.contains("--bag-representation"))
+        #expect(discussion.contains("bag"))
+        #expect(discussion.contains("sequence"))
     }
 
     @Test("names the ATL option and describes it")
@@ -303,6 +369,9 @@ struct SemanticsOptionTests {
         try ATLSemanticsOptions.parse(["--integer-division", "real"]).apply(to: &imports, preset: .legacy)
         #expect(imports.atlOptions.integerDivision == .real)
         #expect(imports.atlOptions.collectionRangeSyntax == .eclipse)
+        try ATLSemanticsOptions.parse(["--bag-representation", "bag"]).apply(to: &imports, preset: .legacy)
+        #expect(imports.atlOptions.bagRepresentation == .bag)
+        #expect(imports.atlOptions.integerDivision == .truncating)
     }
 
     // MARK: - Combined
@@ -310,10 +379,12 @@ struct SemanticsOptionTests {
     @Test("lets an option override the preset whatever their order")
     func precedence() throws {
         let before = try SemanticsCommand.parse([
-            "--block-line-breaks", "acceleo", "--collection-range-syntax", "ocl", "--semantics", "legacy",
+            "--block-line-breaks", "acceleo", "--collection-range-syntax", "ocl", "--bag-representation", "bag",
+            "--semantics", "legacy",
         ])
         let after = try SemanticsCommand.parse([
             "--semantics", "legacy", "--block-line-breaks", "acceleo", "--collection-range-syntax", "ocl",
+            "--bag-representation", "bag",
         ])
         for command in [before, after] {
             let mtl = command.mtl.mtlOptions(preset: command.semantics.semantics)
@@ -322,6 +393,8 @@ struct SemanticsOptionTests {
             #expect(mtl.aql == .legacy)
             let atl = command.atl.atlOptions(preset: command.semantics.semantics)
             #expect(atl.collectionRangeSyntax == .ocl)
+            #expect(atl.bagRepresentation == .bag)
+            #expect(atl.integerDivision == .truncating)
         }
     }
 }

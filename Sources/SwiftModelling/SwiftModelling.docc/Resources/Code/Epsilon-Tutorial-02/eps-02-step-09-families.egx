@@ -1,0 +1,7 @@
+// Write one page for every family with at least one child
+rule Family2Page transform f : Family {
+  guard : f.sons.size() + f.daughters.size() > 0
+  parameters : Map{"family" = f}
+  template : "family.egl"
+  target : "families/" + f.lastName.toLowerCase() + ".md"
+}

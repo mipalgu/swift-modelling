@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<uml:Model xmi:version="20131001" xmlns:xmi="http://www.omg.org/spec/XMI/20131001"
+    xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML" xmi:id="_model" name="LibraryModel">
+  <packagedElement xmi:type="uml:Class" xmi:id="_Library" name="Library">
+    <ownedAttribute xmi:id="_Library_name" name="name">
+      <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+    </ownedAttribute>
+    <ownedAttribute xmi:id="_Library_items" name="items" type="_Item" aggregation="composite"
+        association="_Library_items_association">
+      <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_Library_items_lower"/>
+      <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_Library_items_upper" value="*"/>
+    </ownedAttribute>
+  </packagedElement>
+  <packagedElement xmi:type="uml:Class" xmi:id="_Item" name="Item" isAbstract="true">
+    <ownedAttribute xmi:id="_Item_title" name="title">
+      <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+    </ownedAttribute>
+  </packagedElement>
+  <packagedElement xmi:type="uml:Class" xmi:id="_Book" name="Book">
+    <generalization xmi:id="_Book_generalization" general="_Item"/>
+    <ownedAttribute xmi:id="_Book_isbn" name="isbn">
+      <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+    </ownedAttribute>
+    <ownedAttribute xmi:id="_Book_pages" name="pages">
+      <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Integer"/>
+    </ownedAttribute>
+    <ownedAttribute xmi:id="_Book_genre" name="genre" type="_Genre"/>
+    <ownedAttribute xmi:id="_Book_authors" name="authors" type="_Writer"
+        association="_Book_authors_association">
+      <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_Book_authors_lower" value="1"/>
+      <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_Book_authors_upper" value="*"/>
+    </ownedAttribute>
+  </packagedElement>
+  <packagedElement xmi:type="uml:Class" xmi:id="_Writer" name="Writer">
+    <ownedAttribute xmi:id="_Writer_name" name="name">
+      <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+    </ownedAttribute>
+  </packagedElement>
+  <packagedElement xmi:type="uml:Enumeration" xmi:id="_Genre" name="Genre">
+    <ownedLiteral xmi:id="_Genre_fiction" name="Fiction"/>
+    <ownedLiteral xmi:id="_Genre_poetry" name="Poetry"/>
+    <ownedLiteral xmi:id="_Genre_reference" name="Reference"/>
+  </packagedElement>
+  <packagedElement xmi:type="uml:Association" xmi:id="_Library_items_association"
+      name="library_items" memberEnd="_Library_items _Library_items_library">
+    <ownedEnd xmi:id="_Library_items_library" name="library" type="_Library"
+        association="_Library_items_association"/>
+  </packagedElement>
+  <packagedElement xmi:type="uml:Association" xmi:id="_Book_authors_association"
+      name="book_authors" memberEnd="_Book_authors _Book_authors_books">
+    <ownedEnd xmi:id="_Book_authors_books" name="books" type="_Book"
+        association="_Book_authors_association">
+      <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_Book_authors_books_lower"/>
+      <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_Book_authors_books_upper" value="*"/>
+    </ownedEnd>
+  </packagedElement>
+</uml:Model>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bank:Bank xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:bank="http://example.org/bank" name="Harbour Bank">
+  <clients name="Ada" accounts="//@accounts.0"/>
+  <clients name="Ben" accounts="//@accounts.1"/>
+  <accounts id="1" balance="80" owner="//@clients.0"/>
+  <accounts id="2" balance="20" owner="//@clients.1"/>
+</bank:Bank>

@@ -1,0 +1,1 @@
+self.books->select(b | b.pages > 300)->collect(b | b.title)

@@ -6,6 +6,8 @@
 //
 import ECore
 import EMFBase
+import ModellingCommandLine
+import MultiLevel
 
 /// What an inspection includes.
 struct InspectionOptions: Sendable, Equatable {
@@ -39,7 +41,16 @@ enum Inspector {
     ///   - document: The metamodel or model.
     ///   - options: What the inspection includes.
     /// - Returns: The report.
-    static func inspect(_ document: ModelDocument, options: InspectionOptions) async -> InspectionReport {
+    static func inspect(
+        _ document: ModelDocument, options: InspectionOptions,
+        levelCrossing: LevelCrossingMode = LevelCrossingOptions.defaultMode
+    ) async -> InspectionReport {
+        if let deepModel = document.deepModel {
+            var report = InspectionReport(
+                file: document.fileName, kind: .multiLevelModel, format: document.formatName, detail: options.detail.rawValue)
+            report.multiLevel = multiLevelReport(deepModel, levelCrossing: levelCrossing)
+            return report
+        }
         var report = InspectionReport(
             file: document.fileName, kind: document.isMetamodel ? .metamodel : .model,
             format: document.formatName, detail: options.detail.rawValue)
@@ -56,6 +67,29 @@ enum Inspector {
             report.hierarchy = catalogue.hierarchyRoots.map { hierarchyNode($0, catalogue: catalogue) }
         }
         return report
+    }
+
+    // MARK: - Multi-level models
+
+    /// The levels and clabjects of a multi-level model.
+    ///
+    /// - Parameters:
+    ///   - model: The model.
+    ///   - levelCrossing: The level crossing mode of the command.
+    /// - Returns: The report.
+    static func multiLevelReport(_ model: DeepModel, levelCrossing: LevelCrossingMode) -> MultiLevelReport {
+        let levels = model.levels.enumerated().map { position, level in
+            LevelReport(
+                level: model.levelNumber(ofModelAt: position), name: level.name, typeModel: level.typeModel,
+                clabjects: level.clabjects.map { clabject in
+                    ClabjectReport(
+                        name: clabject.name, type: clabject.type.flatMap { model.clabject($0)?.name },
+                        potency: model.potency(of: clabject.id)?.description, isEdge: clabject.isEdge,
+                        isAbstract: clabject.isAbstract, features: clabject.features.map(\.name))
+                })
+        }
+        return MultiLevelReport(
+            potencyVariant: model.potencyVariant.rawValue, levelCrossing: levelCrossing.rawValue, levels: levels)
     }
 
     // MARK: - Metamodels
@@ -175,7 +209,7 @@ enum Inspector {
         }
         var report = ModelReport(
             rootObjects: objects.roots.count, objects: objects.entries.count, classes: classes,
-            metamodels: document.metamodels.map(\.nsURI))
+            metamodels: document.metamodels.map { $0.nsURI.isEmpty ? $0.name : $0.nsURI })
         if options.includesEverything {
             var tree: [ObjectReport] = []
             for entry in objects.entries where entry.container == nil {

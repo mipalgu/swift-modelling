@@ -7,6 +7,7 @@
 //
 import ATL
 import ECore
+import EMFBase
 import ArgumentParser
 import Foundation
 import ModellingCommandLine
@@ -16,7 +17,7 @@ import ModellingCommandLine
 /// The parse command processes ATL source files and provides detailed information
 /// about their structure, including modules, rules, helpers, and expressions.
 /// It validates syntax and provides comprehensive parsing diagnostics.
-struct ParseCommand: AsyncParsableCommand {
+struct ParseCommand: AsyncParsableCommand, ATLSourceReading, ATLOutputWriting {
     static let configuration = CommandConfiguration(
         commandName: "parse",
         abstract: "Parse and analyze ATL transformation files",
@@ -26,6 +27,10 @@ struct ParseCommand: AsyncParsableCommand {
             diagnostics about modules, rules, helpers, and expressions.
 
             \(ATLSemanticsOptions.discussion(reader: "the transformations"))
+
+            \(SourceEncodingOptions.discussion(reader: "the transformations"))
+
+            \(OutputEncodingOptions.discussion(writer: "the file that --output names"))
 
             \(SemanticsOptions.discussion())
 
@@ -70,6 +75,12 @@ struct ParseCommand: AsyncParsableCommand {
     /// The preset of the behaviours, standard or that of version 0.6.
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
+
+    /// The character encoding of the ATL source.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// The character encoding of the file that `--output` names.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
 
     /// The behaviours of the ATL source that the command line, the environment and the
     /// configuration file select.
@@ -132,8 +143,7 @@ struct ParseCommand: AsyncParsableCommand {
         let outputContent = try generateParseOutput(results: results, format: format)
 
         if let outputPath = output {
-            try outputContent.write(
-                to: URL(fileURLWithPath: outputPath), atomically: true, encoding: .utf8)
+            try writeOutput(outputContent, to: outputPath, kind: Self.documentKind(of: format))
             if verbose {
                 print("Results written to: \(outputPath)")
             } else {
@@ -151,7 +161,7 @@ struct ParseCommand: AsyncParsableCommand {
             throw ValidationError("File not found: \(filePath)")
         }
 
-        let atlSource = try String(contentsOfFile: filePath, encoding: .utf8)
+        let atlSource = try readATLSource(at: filePath)
 
         if verbose {
             print("  Source size: \(atlSource.count) characters")
@@ -229,6 +239,18 @@ struct ParseCommand: AsyncParsableCommand {
             parseTime: parseTime,
             error: nil
         )
+    }
+
+    /// The kind of document that a format of the results is.
+    ///
+    /// - Parameter format: The format given with `--format`.
+    /// - Returns: JSON for `json`, XML for `xml`, and plain text for any other format.
+    static func documentKind(of format: String) -> TextDocumentKind {
+        switch format.lowercased() {
+        case "json": return .json
+        case "xml": return .xml
+        default: return .text
+        }
     }
 
     private func generateParseOutput(results: [ParseResult], format: String) throws -> String {

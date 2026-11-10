@@ -1,0 +1,273 @@
+@Tutorial(time: 40) {
+    @Intro(title: "Checking a Metamodel with Alloy") {
+        Export a metamodel and its OCL invariants to Alloy 6, and use the Alloy Analyzer to find out whether the invariants can be satisfied and whether a model satisfies them.
+
+        Validation checks one model at a time. A formal method can answer questions about every model of a metamodel: can any model satisfy all its invariants at once, and does the structure of the metamodel already guarantee an invariant? In this tutorial, you'll:
+        - Write a small organisation metamodel with OCL invariants
+        - Export it to an Alloy 6 module with swift-ecore
+        - Read how classes, features, multiplicities, containment and invariants appear in Alloy
+        - Export a model and check that it conforms to its metamodel
+        - Learn what the export leaves out, and why
+        - Export the same metamodel to TLA+, Event-B and Lean 4
+
+        Every command in this tutorial runs in one directory, which starts empty. The Alloy Analyzer is a separate application that you install yourself; the tutorial tells you what to do with it, but no step runs it.
+
+        @Image(source: "verification-exports.svg", alt: "An Ecore metamodel with OCL invariants is exported to an Alloy module that the Alloy Analyzer checks")
+    }
+
+    @Section(title: "A Metamodel with Invariants") {
+        @ContentAndMedia {
+            The example is an organisation: a company contains its departments and its employees, and every department has a code, a capacity, its members and an optional manager. Four OCL invariants state what the structure alone does not.
+
+            The export translates a subset of OCL: navigation, Boolean and integer operators, `size`, `includes`, `isUnique`, `forAll`, `exists`, `oclIsUndefined` and a few more. Invariants outside the subset, such as those with string operations, real numbers or `iterate`, are not translated, and the export lists each of them with the reason.
+        }
+
+        @Steps {
+            @Step {
+                Write the organisation metamodel.
+
+                @Code(name: "Organisation.ecore", file: verif-01-step-01-organisation.ecore)
+
+                `UniqueDepartmentCodes` uses `isUnique`, `ManagerIsMember` uses `oclIsUndefined` and `includes`, and `WithinCapacity` compares a size with an integer attribute: all three are in the translatable subset. `NonEmptyName` uses the string operation `size()` on a name, which is not. A company holds at most eight departments, a bound that is neither `1` nor unlimited.
+            }
+
+            @Step {
+                Validate the metamodel.
+
+                @Code(name: "Terminal", file: verif-01-step-02-validate.sh)
+
+                Validate a metamodel before you export it, so that the analysis starts from a well-formed metamodel.
+            }
+        }
+    }
+
+    @Section(title: "Exporting to Alloy") {
+        @ContentAndMedia {
+            The Alloy export is a verification target of `swift-ecore generate`, chosen with `--language alloy`, and is written by a template set like the code generators. It writes one Alloy 6 module for the package of the metamodel. Every class becomes a signature, every feature a field, and facts state the multiplicities, the opposite references and the containment. Every translated invariant becomes a predicate together with an assertion that states it.
+        }
+
+        @Steps {
+            @Step {
+                Export the metamodel.
+
+                @Code(name: "Terminal", file: verif-01-step-03-generate.sh)
+
+                `--output` names the directory to write to, which is created if needed.
+            }
+
+            @Step {
+                List the generated files.
+
+                @Code(name: "Terminal", file: verif-01-step-04-list.sh)
+
+                The module is named after the package of the metamodel.
+            }
+
+            @Step {
+                Read the comment at the top of the module.
+
+                @Code(name: "Terminal", file: verif-01-step-05-header.sh)
+
+                The comment explains the commands of the module and lists everything that was not exported: here the invariant `NonEmptyName`, with the reason that string operations are not supported. An export never leaves something out silently, so read this list before you trust the result of an analysis.
+            }
+
+            @Step {
+                Look at the signatures.
+
+                @Code(name: "Terminal", file: verif-01-step-06-signatures.sh)
+
+                Every object of a model is an atom of the abstract signature `EObject`, and every class is a signature that extends it. The enumeration `EmploymentKind` is an abstract signature with a `one sig` for each literal.
+            }
+
+            @Step {
+                Look at the fields of a department.
+
+                @Code(name: "Terminal", file: verif-01-step-07-fields.sh)
+
+                Every feature is a field. The multiplicity of a field is a keyword of Alloy: `one` for exactly one value, `lone` for at most one, `some` for at least one and `set` for any number. The required `capacity` is `one Int`, the optional `manager` is `lone Employee`, and `members` is a `set`.
+            }
+
+            @Step {
+                Look at the facts.
+
+                @Code(name: "Terminal", file: verif-01-step-08-facts.sh)
+
+                `Multiplicities` states the bound that the keywords cannot express: a company has at most eight departments. `Opposites` states that `members` and `department` are converse relations, so following one and then the other leads back. `Containment` states that every object has at most one container and that no object contains itself.
+            }
+
+            @Step {
+                Look at the translation of `WithinCapacity`.
+
+                @Code(name: "Terminal", file: verif-01-step-09-invariant.sh)
+
+                The predicate states the invariant for all departments. The assertion states the predicate, and a `check` command of the same name looks for a counterexample to it.
+            }
+
+            @Step {
+                Look at the commands of the module.
+
+                @Code(name: "Terminal", file: verif-01-step-10-commands.sh)
+
+                `run instance` looks for an instance of the metamodel that satisfies all invariants. Each `check` looks for an instance of the structure that violates one invariant. The commands use a scope of 4 atoms per signature, a bit width of 5 for integers, which gives the integers from -16 to 15, and exactly 4 string atoms.
+            }
+        }
+    }
+
+    @Section(title: "Analysing the Metamodel") {
+        @ContentAndMedia {
+            The Alloy Analyzer is the tool of the Alloy language. Install Alloy 6 from the Alloy website and open `verification/organisation.als` in it. The commands of the module appear in its Execute menu.
+        }
+
+        @Steps {
+            @Step {
+                Run `instance`. An instance shows that the invariants are consistent: at least one model satisfies them all at once within the scope. The Analyzer draws it as a graph of atoms such as `Department$0`, with the fields as labelled arrows. If no instance is found, no model within the scope satisfies all invariants together, which usually means that two invariants contradict each other.
+            }
+
+            @Step {
+                Run `check Department_WithinCapacity_holds`. The Analyzer finds a counterexample: a department with more members than its capacity. That is expected, because nothing in the structure limits the number of members. A counterexample to the check of an invariant shows that the invariant adds a rule of its own; no counterexample would mean that the structure already guarantees it.
+            }
+
+            @Step {
+                Keep the limits of the encoding in mind when you read a result. Fields are sets, so the order and repetition of the values of many-valued features are lost. Strings are atoms that only support equality. Integers are bounded by the bit width and wrap around on overflow, and an absent integer counts as zero in comparisons. The commands of the metamodel module consider only the integers from -16 to 15, so an instance never shows a capacity of 20; widen the bit width of a command to look further, at the price of a slower analysis. The module of a model, in the next section, chooses a bit width that fits the integers of the model.
+            }
+        }
+    }
+
+    @Section(title: "Checking a Model") {
+        @ContentAndMedia {
+            A model is exported to a second module that opens the module of its metamodel and fixes every object and every value of the model. Its command `conforms` has an instance exactly if the model satisfies the multiplicities, the opposite references and the containment, and its checks report no counterexample exactly if the model satisfies the invariants.
+        }
+
+        @Steps {
+            @Step {
+                Write a small model of an office with two departments and four employees.
+
+                @Code(name: "office.xmi", file: verif-01-step-11-office.xmi)
+
+                Each department names its members and its manager, and each employee names their department.
+            }
+
+            @Step {
+                Validate the model, and export it together with its metamodel.
+
+                @Code(name: "Terminal", file: verif-01-step-12-export-model.sh)
+
+                Validation evaluates all seven invariant checks, including `NonEmptyName`. `--model` names a model of the metamodel to export as well, and may be given more than once. The module of the model is named after the model file. A model export reads every feature that the model does not set as undefined, so an unset optional value is absent from the module rather than replaced by a default.
+            }
+
+            @Step {
+                Look at the module of the model.
+
+                @Code(name: "Terminal", file: verif-01-step-13-conforms.sh)
+
+                The module opens `organisation`, declares a `one sig` for every object of the model, named after its class and numbered, and has the command `conforms` and a check for each translated invariant. A fact, which this listing leaves out, fixes the value of every feature of every object. The commands choose a bit width of 4, which gives the integers from -8 to 7 and fits the capacities of the model.
+            }
+
+            @Step {
+                Open `verification/office_instance.als` in the Alloy Analyzer and run `conforms`, then the checks. As the office satisfies every invariant, `conforms` finds an instance and no check finds a counterexample. Change the capacity of `Operations` to `1` in `office.xmi` and export the model again: the check of `WithinCapacity` now finds a counterexample, the office itself, in which `Operations` has more members than its capacity.
+            }
+        }
+    }
+
+    @Section(title: "Other Verification Targets") {
+        @ContentAndMedia {
+            The same metamodel and model can be exported to three more formal methods. Each export has its own template set and states the same structure and the same translated invariants in its own notation, so you can choose the tool that suits a question.
+        }
+
+        @Steps {
+            @Step {
+                Export the metamodel and the model to TLA+, Event-B and Lean 4.
+
+                @Code(name: "Terminal", file: verif-01-step-14-other-targets.sh)
+
+                The TLA+ export writes a module for the metamodel and a module with a configuration file for the model, which the TLC model checker checks. The Event-B export writes CamilleX text files, a context and a machine for the metamodel and another pair for the model, which the Rodin platform with the CamilleX plug-in turns into components with proof obligations. The Lean export writes a Lean 4 file for the package and one for the model, whose theorems Lean proves by evaluation with `decide`. As with Alloy, these tools are installed separately, and the header of each file says what was not exported.
+            }
+        }
+    }
+
+    @Assessments {
+        @MultipleChoice {
+            What does the `check` of an invariant on the metamodel module look for?
+
+            @Choice(isCorrect: false) {
+                A model that satisfies the invariant
+
+                @Justification(reaction: "Not quite!") {
+                    That is what `run instance` does, for all invariants together.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                An instance of the structure that violates the invariant
+
+                @Justification(reaction: "Correct!") {
+                    A counterexample shows that the structure of the metamodel does not guarantee the invariant on its own.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                A syntax error in the OCL text of the invariant
+
+                @Justification(reaction: "Incorrect!") {
+                    The Analyzer checks Alloy, not OCL. Invariants that cannot be translated are listed in the header of the module instead.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Why is the invariant `NonEmptyName` not part of the Alloy module?
+
+            @Choice(isCorrect: true) {
+                It uses a string operation, and strings in Alloy are atoms that only support equality
+
+                @Justification(reaction: "Correct!") {
+                    The export lists the invariant in the header of the module, with the reason that string operations are not supported.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                The metamodel does not declare it in its `constraints` annotation
+
+                @Justification(reaction: "Not quite!") {
+                    It is declared there; it is left out because of the operation that it uses.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Alloy cannot express invariants
+
+                @Justification(reaction: "Incorrect!") {
+                    The other invariants become predicates with assertions.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            Which integers do the commands of the exported metamodel module consider?
+
+            @Choice(isCorrect: false) {
+                Every integer that a Swift `Int` can hold
+
+                @Justification(reaction: "Not quite!") {
+                    Alloy analyses a bounded scope, and integers are bounded by the bit width of each command.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                The integers from -16 to 15, as the bit width is 5
+
+                @Justification(reaction: "Correct!") {
+                    Arithmetic outside this range wraps around, so keep the integers of an analysis small or widen the bit width.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Only the integers that the metamodel names as default values
+
+                @Justification(reaction: "Try again!") {
+                    The scope of a command, not the metamodel, decides which integers exist in an analysis.
+                }
+            }
+        }
+    }
+}

@@ -17,12 +17,15 @@ import ModellingCommandLine
 ///
 /// - **evaluate**: evaluate an expression against the models given with `--model`
 /// - **query**: evaluate a query against the model given as an argument
+/// - **check-compat**: check whether an expression can be used with another metamodel
 ///
 /// ## Example Usage
 ///
 /// ```bash
 /// swift-aql evaluate --model company.xmi --expression "company.departments.name"
 /// swift-aql query company.xmi --query "self.employees->size()" --context company1
+/// swift-aql check-compat -e "self.books.title" --variable self=library::Library \
+///     --metamodel library=Library.ecore --target-metamodel library=LibraryV2.ecore
 /// ```
 @main
 struct SwiftAQLCommand: AsyncParsableCommand {
@@ -42,6 +45,7 @@ struct SwiftAQLCommand: AsyncParsableCommand {
         subcommands: [
             EvaluateCommand.self,
             QueryCommand.self,
+            CheckCompatCommand.self,
         ]
     )
 
@@ -55,9 +59,9 @@ struct SwiftAQLCommand: AsyncParsableCommand {
 
     /// A paragraph that describes how the metamodels of the models are found.
     static let metamodelDiscussion = """
-        Without --\(MetamodelOptions.optionName), the Ecore files in the directory of \
-        each model whose namespace URI the model uses are registered as its metamodels, so that \
-        its attributes have their declared types.
+        Without --\(MetamodelOptions.optionName), the metamodel files in the directory of \
+        each model, such as Ecore, JSON, KM3 or EMOF files, whose namespace URI the model uses \
+        are registered as its metamodels, so that its attributes have their declared types.
         """
 
     /// A paragraph that describes how values are printed.

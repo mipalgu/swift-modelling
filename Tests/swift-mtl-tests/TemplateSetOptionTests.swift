@@ -229,6 +229,44 @@ struct TemplateSetOptionTests {
         #expect(unknown.stderr.contains("wide"))
     }
 
+    @Test("applies the code style of the configuration file to a set with styles and ignores it otherwise")
+    @MainActor
+    func configuredCodeStyles() async throws {
+        let scratch = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(scratch) }
+        try FileManager.default.createDirectory(
+            at: scratch.appendingPathComponent(".git"), withIntermediateDirectories: true)
+        try write(#"{ "code-style": "tabs" }"#, to: scratch.appendingPathComponent(ConfigurationTests.configurationFile))
+        let styledSet = try writeSet(
+            in: scratch.appendingPathComponent("styled"),
+            descriptor: #""styles": { "tabs": { "sourceIndent": "  ", "targetIndent": "\t" } }"#,
+            body: "{\n  [c.name/]\n}")
+        let plainSet = try writeSet(in: scratch.appendingPathComponent("plain"), body: "{\n  [c.name/]\n}")
+        let output = scratch.appendingPathComponent("out")
+        let models = try modelArguments()
+
+        let styled = try await executeSwiftMTL(
+            command: "generate", arguments: ["--template-set", styledSet.path, "--output", output.path, "--force-overwrite"] + models,
+            workingDirectory: scratch)
+        let styledText = try text(of: output.appendingPathComponent("company.txt"))
+        let plain = try await executeSwiftMTL(
+            command: "generate", arguments: ["--template-set", plainSet.path, "--output", output.path, "--force-overwrite"] + models,
+            workingDirectory: scratch)
+        let plainText = try text(of: output.appendingPathComponent("company.txt"))
+        let explicit = try await executeSwiftMTL(
+            command: "generate",
+            arguments: ["--template-set", plainSet.path, "--output", output.path, "--force-overwrite", "--code-style", "tabs"]
+                + models,
+            workingDirectory: scratch)
+
+        #expect(styled.succeeded, "\(styled.stdout)\(styled.stderr)")
+        #expect(styledText == "{\n\tTech Innovations Ltd\n}")
+        #expect(plain.succeeded, "\(plain.stdout)\(plain.stderr)")
+        #expect(plainText == "{\n  Tech Innovations Ltd\n}")
+        #expect(!explicit.succeeded)
+        #expect(explicit.stderr.contains("tabs"))
+    }
+
     @Test("replaces files of the set with those of the template paths")
     @MainActor
     func templatePathOverrides() async throws {

@@ -1,0 +1,33 @@
+digraph GraphTransformation {
+    bgcolor="white"
+    rankdir=LR
+    node [shape=box, style="rounded,filled", fontname="Arial", fontsize=12, fillcolor="#f4e8f8"]
+    edge [fontname="Arial", fontsize=10]
+
+    rules [label="Henshin Module\n(.henshin_text or .henshin)" shape=box3d fillcolor="#f8f4e8"]
+    model [label="Model\n(XMI)" shape=box3d fillcolor="#e8f8f5"]
+
+    subgraph cluster_commands {
+        label="swift-henshin"
+        style=rounded
+        bgcolor="#e8f4f8"
+        validate [label="validate"]
+        apply [label="apply"]
+        analyse [label="analyse"]
+        explore [label="explore"]
+    }
+
+    result [label="Transformed Model" shape=box3d fillcolor="#e8f8f5"]
+    pairs [label="Conflicts and\nDependencies" shape=note fillcolor="#fff8e8"]
+    space [label="State Space and\nProperties (--dot)" shape=note fillcolor="#fff8e8"]
+
+    rules -> validate
+    rules -> apply
+    rules -> analyse
+    rules -> explore
+    model -> apply [style=dashed]
+    model -> explore [style=dashed]
+    apply -> result
+    analyse -> pairs
+    explore -> space
+}

@@ -1,0 +1,27 @@
+digraph ModelTyping {
+    bgcolor="white"
+    rankdir=LR
+    node [shape=box, style="rounded,filled", fontname="Arial", fontsize=12, fillcolor="#f4e8f8"]
+    edge [fontname="Arial", fontsize=10]
+
+    subgraph cluster_modules {
+        label="Modules written against version 1"
+        style=rounded
+        bgcolor="#e8f4f8"
+        atl [label="ATL transformation"]
+        mtl [label="MTL template"]
+        aql [label="AQL query"]
+    }
+
+    footprint [label="Footprint\nclasses, features and literals\nread, written or instantiated" shape=note fillcolor="#f8f4e8"]
+    v1 [label="Metamodel\nversion 1" shape=box3d fillcolor="#e8f8f5"]
+    v2 [label="Metamodel\nversion 2" shape=box3d fillcolor="#e8f8f5"]
+    verdict [label="Verdict\ncompatible, incompatible\nor inconclusive,\nwith hints for --rename" fillcolor="#fff8e8"]
+
+    atl -> footprint
+    mtl -> footprint
+    aql -> footprint
+    v1 -> footprint [style=dashed label="--metamodel"]
+    footprint -> verdict [label="check-compat"]
+    v2 -> verdict [style=dashed label="--target-metamodel"]
+}

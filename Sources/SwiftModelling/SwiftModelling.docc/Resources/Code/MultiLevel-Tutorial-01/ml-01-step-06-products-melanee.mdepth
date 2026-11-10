@@ -1,0 +1,28 @@
+Model Catalogue@2 melanee {
+  Node ProductType {
+    gst@1/0 : double = 10.0;
+    price@2/1 : double = 0.0;
+    discount@2 : double = 0.0;
+  }
+  Node Category@* {
+    label@* : String;
+  }
+}
+
+Catalogue Bookshop {
+  ProductType Book {
+    price = 30.0;
+  }
+  Category Fiction {
+    label = "fiction";
+  }
+}
+
+Bookshop Shelf {
+  Book manual {
+    discount = 5.0;
+  }
+  Fiction crime {
+    label = "crime";
+  }
+}

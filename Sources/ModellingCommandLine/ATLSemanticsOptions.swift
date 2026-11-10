@@ -14,6 +14,9 @@ extension ATLCollectionRangeSyntax: @retroactive ExpressibleByArgument {}
 /// Parses a command-line value into what `/` yields for two Integers.
 extension ATLIntegerDivision: @retroactive ExpressibleByArgument {}
 
+/// Parses a command-line value into what a Bag value is when ATL expressions evaluate.
+extension ATLBagRepresentation: @retroactive ExpressibleByArgument {}
+
 /// The command line options that choose the behaviours of ATL source.
 ///
 /// Each option selects one behaviour of `ATLOptions`. An option that is not given takes the
@@ -35,6 +38,9 @@ public struct ATLSemanticsOptions: ParsableArguments, Sendable {
 
         /// The option that chooses `ATLOptions.integerDivision`.
         public static let integerDivision = "integer-division"
+
+        /// The option that chooses `ATLOptions.bagRepresentation`.
+        public static let bagRepresentation = "bag-representation"
     }
 
     /// Whether collection literals accept integer ranges.
@@ -66,6 +72,21 @@ public struct ATLSemanticsOptions: ParsableArguments, Sendable {
             valueName: MTLSemanticsOptions.valueList(ATLIntegerDivision.self)))
     public var integerDivision: ATLIntegerDivision?
 
+    /// What a Bag value is when ATL expressions evaluate.
+    @Option(
+        name: .customLong(OptionName.bagRepresentation),
+        help: ArgumentHelp(
+            "What a Bag is: \(ATLBagRepresentation.bag.rawValue), a collection kind of its own (the "
+                + "default), or \(ATLBagRepresentation.sequence.rawValue), as in version 0.6",
+            discussion: """
+                With \(ATLBagRepresentation.bag.rawValue), Bag{...}, asBag() and collect on a Set give \
+                Bags, as in OCL and Eclipse ATL: a Bag is neither a Sequence nor a Set, its oclType() \
+                is Bag and it is written as Bag{...}. With \(ATLBagRepresentation.sequence.rawValue), \
+                they give Sequences.
+                """,
+            valueName: MTLSemanticsOptions.valueList(ATLBagRepresentation.self)))
+    public var bagRepresentation: ATLBagRepresentation?
+
     /// Creates the options with nothing set, which leaves every behaviour to the preset.
     public init() {}
 
@@ -91,6 +112,9 @@ public struct ATLSemanticsOptions: ParsableArguments, Sendable {
         }
         if let value = integerDivision ?? settings.configuration.integerDivision {
             options.integerDivision = value
+        }
+        if let value = bagRepresentation ?? settings.configuration.bagRepresentation {
+            options.bagRepresentation = value
         }
         return options
     }
@@ -124,9 +148,15 @@ public struct ATLSemanticsOptions: ParsableArguments, Sendable {
             + "accepts them, and \(ATLCollectionRangeSyntax.eclipse.rawValue), as in version 0.6 "
             + "and with --\(SemanticsOptions.optionName) \(SemanticsPreset.legacy.rawValue), "
             + "rejects them. --\(OptionName.integerDivision) chooses what / gives for two "
-            + "Integers when \(reader) runs: \(ATLIntegerDivision.real.rawValue), the default, "
+            + "Integers when running \(reader): \(ATLIntegerDivision.real.rawValue), the default, "
             + "gives a Real, so 7 / 2 is 3.5, and \(ATLIntegerDivision.truncating.rawValue), as in "
             + "version 0.6 and with --\(SemanticsOptions.optionName) "
-            + "\(SemanticsPreset.legacy.rawValue), truncates the quotient to an Integer."
+            + "\(SemanticsPreset.legacy.rawValue), truncates the quotient to an Integer. "
+            + "--\(OptionName.bagRepresentation) chooses what a Bag is when running \(reader): "
+            + "\(ATLBagRepresentation.bag.rawValue), the default, makes Bag{...}, asBag() and "
+            + "collect on a Set give Bags, as in OCL and Eclipse ATL, and "
+            + "\(ATLBagRepresentation.sequence.rawValue), as in version 0.6 and with "
+            + "--\(SemanticsOptions.optionName) \(SemanticsPreset.legacy.rawValue), makes them give "
+            + "Sequences."
     }
 }

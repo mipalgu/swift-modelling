@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<company:Company xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:company="http://www.example.org/company"
+    name="Acme Pty Ltd">
+  <employees xsi:type="company:Employee" name="Alice Smith" email="alice@example.com"
+      status="FULL_TIME" employeeId="E001"/>
+  <employees xsi:type="company:Employee" name="Bob Chen" email="bob@example.com"
+      status="PART_TIME" employeeId="E002"/>
+  <employees xsi:type="company:Manager" name="Carol Williams" email="carol@example.com"
+      status="FULL_TIME" department="Engineering"/>
+</company:Company>

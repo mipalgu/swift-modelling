@@ -362,3 +362,110 @@ struct ValidateStrictAQLTests {
         #expect(strictWarnings.succeeded, "\(strictWarnings.stdout)\(strictWarnings.stderr)")
     }
 }
+
+@Suite("swift-ecore validate - Invariant messages")
+struct ValidateInvariantMessageTests {
+    /// A metamodel in OCLinEcore whose shelves need a positive capacity, with a message, and a name.
+    private static let metamodel = """
+        package rooms : rm = 'http://www.example.org/rooms'
+        {
+        \tclass Room
+        \t{
+        \t\tproperty shelves : Shelf[*] { composes, ordered };
+        \t}
+        \tclass Shelf
+        \t{
+        \t\tinvariant PositiveCapacity('Shelf ' + name + ' needs a positive capacity'): capacity > 0;
+        \t\tinvariant Named: name.size() > 0;
+        \t\tattribute name : String;
+        \t\tattribute capacity : Integer;
+        \t}
+        }
+        """
+
+    /// The same metamodel without invariants, for a Complete OCL document.
+    private static let plainMetamodel = """
+        package rooms : rm = 'http://www.example.org/rooms'
+        {
+        \tclass Room
+        \t{
+        \t\tproperty shelves : Shelf[*] { composes, ordered };
+        \t}
+        \tclass Shelf
+        \t{
+        \t\tattribute name : String;
+        \t\tattribute capacity : Integer;
+        \t}
+        }
+        """
+
+    /// A Complete OCL document with the invariants of ``metamodel``.
+    private static let document = """
+        import 'Rooms.oclinecore'
+
+        package rooms
+
+        context Shelf
+        inv PositiveCapacity('Shelf ' + name + ' needs a positive capacity'): capacity > 0
+        inv Named: name.size() > 0
+
+        endpackage
+        """
+
+    /// A room with one shelf that has a capacity and one that has none.
+    private static let model = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <rm:Room xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:rm="http://www.example.org/rooms">
+          <shelves name="A" capacity="3"/>
+          <shelves name="B" capacity="0"/>
+        </rm:Room>
+        """
+
+    /// The report of the violated invariant, with its message.
+    private static let violation =
+        "Checking constraint: PositiveCapacity (Shelf 'B', //@shelves.1) ... violated: Shelf B needs a positive capacity"
+
+    /// Validates the room model against the metamodel, or the plain metamodel and the document.
+    private func validate(completeOCL: Bool, _ extra: [String] = []) async throws -> SubprocessResult {
+        let directory = try createTemporaryDirectory()
+        defer { cleanupTemporaryDirectory(directory) }
+        let metamodel = directory.appendingPathComponent("Rooms.oclinecore")
+        let model = directory.appendingPathComponent("room.xmi")
+        try (completeOCL ? Self.plainMetamodel : Self.metamodel).write(to: metamodel, atomically: true, encoding: .utf8)
+        try Self.model.write(to: model, atomically: true, encoding: .utf8)
+        var arguments = [model.path, "--metamodel", metamodel.path]
+        if completeOCL {
+            let rules = directory.appendingPathComponent("rooms.ocl")
+            try Self.document.write(to: rules, atomically: true, encoding: .utf8)
+            arguments += ["--ocl", rules.path]
+        }
+        return try await executeSwiftEcore(command: "validate", arguments: arguments + extra)
+    }
+
+    @Test("evaluates an invariant with a message and reports the message of a violation", arguments: [false, true])
+    @MainActor
+    func message(completeOCL: Bool) async throws {
+        let result = try await validate(completeOCL: completeOCL)
+
+        #expect(!result.succeeded)
+        #expect(result.stdout == Self.violation + "\nOCL invariants: 3 of 4 check(s) satisfied\n", "\(result.stdout)")
+        #expect(result.stderr.contains("Validation failed: 1 error(s), 0 warning(s)"))
+    }
+
+    @Test("writes the message of a violation into the JSON report")
+    @MainActor
+    func json() async throws {
+        let result = try await validate(completeOCL: false, ["--format", "json"])
+
+        #expect(!result.succeeded)
+        let json = try #require(try JSONSerialization.jsonObject(with: Data(result.stdout.utf8)) as? [String: Any])
+        let constraints = try #require(json["constraints"] as? [[String: Any]])
+        let violated = constraints.filter { $0["outcome"] as? String == "violated" }
+        #expect(violated.count == 1)
+        #expect(violated.first?["message"] as? String == "Shelf B needs a positive capacity")
+        #expect(constraints.filter { $0["message"] != nil }.count == 1)
+        let findings = try #require(json["findings"] as? [[String: Any]])
+        #expect(findings.first?["message"] as? String
+            == "Invariant Shelf::PositiveCapacity is violated: Shelf B needs a positive capacity")
+    }
+}

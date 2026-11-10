@@ -1,0 +1,146 @@
+[comment encoding = UTF-8 /]
+[**
+ * The names, types and formulas of the Event-B template set.
+ *
+ * Identifiers follow the rules of the verification services, so that the declarations written here and the formulas of
+ * translated invariants agree: features are qualified by the class that declares them, enumeration literals by their
+ * enumeration, and reserved words get a trailing underscore. Formulas use the Unicode notation of Rodin.
+ **/]
+[module EventBNames('http://www.eclipse.org/emf/2002/Ecore')/]
+[import verification::VerificationQueries/]
+
+[comment Names /]
+
+[**
+ * The name of the verification target of this template set.
+ **/]
+[query public target() : String = 'eventb'/]
+
+[**
+ * A model name as an Event-B identifier.
+ **/]
+[query public id(name : String) : String = name.verificationIdentifier(target())/]
+
+[**
+ * The carrier set that holds the objects of all classes.
+ **/]
+[query public objectSet() : String = 'OBJECT'/]
+
+[**
+ * The carrier set that holds strings.
+ **/]
+[query public stringSet() : String = 'STRING'/]
+
+[**
+ * The name of the context of a package.
+ **/]
+[query public contextName(p : EPackage) : String = id(p.name + '_ctx')/]
+
+[**
+ * The name of the machine of a package.
+ **/]
+[query public machineName(p : EPackage) : String = id(p.name + '_machine')/]
+
+[**
+ * The name of the context of a model.
+ **/]
+[query public instanceContextName(model : String) : String = id(model + '_instance_ctx')/]
+
+[**
+ * The name of the machine of a model.
+ **/]
+[query public instanceMachineName(model : String) : String = id(model + '_instance_machine')/]
+
+[**
+ * The identifier of an enumeration literal.
+ **/]
+[query public literalId(e : EEnum, literal : String) : String = e.name.verificationLiteral(literal, target())/]
+
+[**
+ * The identifier of a feature, qualified by the class that declares it.
+ **/]
+[query public featureId(c : EClass, f : EStructuralFeature) : String = c.name.verificationFeature(f.name, target())/]
+
+[**
+ * A feature as it appears in a formula: it is primed in the predicate of an initialisation.
+ **/]
+[query public featureRef(c : EClass, f : EStructuralFeature, primed : Boolean) : String = c.featureId(f) + prime(primed)/]
+
+[**
+ * The population of a class as it appears in a formula: it is primed in the predicate of an initialisation.
+ **/]
+[query public classRef(c : EClass, primed : Boolean) : String = id(c.name) + prime(primed)/]
+
+[**
+ * The prime that marks the value of a variable after an initialisation, or nothing.
+ **/]
+[query public prime(primed : Boolean) : String = if primed then '\'' else '' endif/]
+
+[comment Features /]
+
+[**
+ * The exported features that a class declares, which are all variables of the machines: the population of a class is
+ * a variable, so the features whose domain it is are variables too, including those that cannot change.
+ **/]
+[query public variableFeatures(c : EClass) : Sequence(EStructuralFeature) = c.exportedFeatures()/]
+
+[**
+ * The identifiers of the variables of the machines of a package: the populations of its classes, then the features of
+ * each class.
+ **/]
+[query public variableIds(p : EPackage) : Sequence(String) = p.classes()->collect(c | id(c.name))->concat(p.classes()->collect(c | c.variableFeatures()->collect(f | c.featureId(f)))->flatten())/]
+
+[**
+ * The Event-B set of the values of a feature; the population of a class is primed in the predicate of an
+ * initialisation.
+ **/]
+[query public valueSet(f : EStructuralFeature, primed : Boolean) : String = if f.valueKind() = 'integer' then 'ℤ' else if f.valueKind() = 'boolean' then 'BOOL' else if f.valueKind() = 'string' then stringSet() else id(f.eType.name) + (if f.valueKind() = 'object' then prime(primed) else '' endif) endif endif endif/]
+
+[**
+ * The kind of relation of a feature: a total function for a required single value, a partial function for an optional
+ * one and a relation for many values.
+ **/]
+[query public arrow(f : EStructuralFeature) : String = if f.isRequiredSingle() then '→' else if f.isOptional() then '⇸' else '↔' endif endif/]
+
+[**
+ * The predicate that states the type and the kind of relation of a feature.
+ **/]
+[query public typing(c : EClass, f : EStructuralFeature, primed : Boolean) : String = c.typingOver(f, c.classRef(primed), primed)/]
+
+[**
+ * The predicate that states the type and the kind of relation of a feature over a given domain.
+ **/]
+[query public typingOver(c : EClass, f : EStructuralFeature, domain : String, primed : Boolean) : String = c.featureRef(f, primed) + ' ∈ ' + domain + ' ' + f.arrow() + ' ' + f.valueSet(primed)/]
+
+[**
+ * The predicate that states the bounds of a many-valued feature on the number of values of each object.
+ **/]
+[query public bounds(c : EClass, f : EStructuralFeature, primed : Boolean) : String = c.boundsOver(f, c.classRef(primed), primed)/]
+
+[**
+ * The predicate that states the bounds of a many-valued feature on the number of values of each object of a domain.
+ **/]
+[query public boundsOver(c : EClass, f : EStructuralFeature, domain : String, primed : Boolean) : String = '∀o·o ∈ ' + domain + ' ⇒ card(' + c.featureRef(f, primed) + '[{o}]) ' + (if f.lowerBound > 0 and f.upperBound > 1 then '∈ ' + f.lowerBound.toString() + ' ‥ ' + f.upperBound.toString() else if f.lowerBound > 0 then '≥ ' + f.lowerBound.toString() else '≤ ' + f.upperBound.toString() endif endif)/]
+
+[**
+ * The predicates that state the type and bounds of a feature, as text such as 'Member_loans ∈ Member ↔ Loan'.
+ **/]
+[query public featurePredicates(c : EClass, f : EStructuralFeature, primed : Boolean) : Sequence(String) = if f.hasCardinalityBounds() then Sequence{c.typing(f, primed), c.bounds(f, primed)} else Sequence{c.typing(f, primed)} endif/]
+
+[**
+ * The labels of the predicates that state the type and bounds of a feature.
+ **/]
+[query public featureLabels(c : EClass, f : EStructuralFeature) : Sequence(String) = if f.hasCardinalityBounds() then Sequence{c.featureId(f) + '_type', c.featureId(f) + '_bounds'} else Sequence{c.featureId(f) + '_type'} endif/]
+
+[comment Formulas /]
+
+[**
+ * A conjunct of a conjunction: quantified predicates are enclosed in parentheses, as a quantifier extends as far to the
+ * right as possible.
+ **/]
+[query public conjunct(predicate : String) : String = if predicate.startsWith('∀') or predicate.startsWith('∃') then '(' + predicate + ')' else predicate endif/]
+
+[**
+ * A set of identifiers in extension, such as '{Branch2, Branch3}', or the empty set.
+ **/]
+[query public extension(members : Sequence(String)) : String = if members->isEmpty() then '∅' else '{' + members->sep(', ') + '}' endif/]

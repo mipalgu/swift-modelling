@@ -1,0 +1,27 @@
+Model Catalogue@2 {
+  Node ProductType {
+    price : double = 0.0;
+    seeAlso : ProductType[0..1] {level=1};
+  }
+  Node Display@(2) {
+    items : ProductType@0[*];
+  }
+}
+
+Catalogue Bookshop {
+  ProductType Book {}
+  ProductType Magazine {}
+}
+
+Bookshop Shelf {
+  Book manual {
+    price = 35.0;
+    seeAlso = Magazine;
+  }
+  Magazine monthly {
+    price = 9.5;
+  }
+  Display window {
+    items = [manual, monthly];
+  }
+}

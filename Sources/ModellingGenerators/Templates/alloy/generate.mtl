@@ -1,0 +1,42 @@
+[comment encoding = UTF-8 /]
+[**
+ * The main module of the Alloy template set.
+ *
+ * It writes an Alloy 6 module for each root package of a generator model, and an Alloy 6 module for a model of such a
+ * package, which opens the module of the package and fixes every object and value of the model.
+ **/]
+[module generate('http://www.eclipse.org/emf/2002/GenModel', 'http://www.eclipse.org/emf/2002/Ecore')/]
+[import verification::VerificationQueries/]
+[import AlloyNames/]
+[import AlloyMetamodel/]
+[import AlloyModel/]
+
+[**
+ * Writes the module of each root package of a generator model.
+ **/]
+[template public generate(genModel : GenModel)]
+[for (p : OclAny | genModel.allGenPackages()->collect(g | g.ecorePackage))]
+[file (p.moduleName() + '.als', false)][p.metamodelModule()/][/file]
+[/for]
+[/template]
+
+[**
+ * Writes the module of a model, named after the model file.
+ **/]
+[template public generateModel(p : EPackage, root : EObject)]
+[file (instanceModuleName(modelName) + '.als', false)][p.modelModule(root, instanceModuleName(modelName))/][/file]
+[/template]
+
+[**
+ * Writes the number of files that the main template writes: one for each package.
+ **/]
+[template public fileCount(genModel : GenModel)]
+[file ('count', false, 'UTF-8')][genModel.allGenPackages()->size()/][/file]
+[/template]
+
+[**
+ * Writes the number of files that the model template writes for a model: one file.
+ **/]
+[template public modelFileCount(p : EPackage, root : EObject)]
+[file ('count', false, 'UTF-8')]1[/file]
+[/template]

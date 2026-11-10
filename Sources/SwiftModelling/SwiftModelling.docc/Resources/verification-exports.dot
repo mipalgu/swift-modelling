@@ -1,0 +1,42 @@
+digraph VerificationExports {
+    bgcolor="white"
+    rankdir=LR
+    node [shape=box, style="rounded,filled", fontname="Arial", fontsize=12, fillcolor="#f4e8f8"]
+    edge [fontname="Arial", fontsize=10]
+
+    ecore [label="Ecore Metamodel\nwith OCL invariants" shape=box3d fillcolor="#f8f4e8"]
+    model [label="Model\n(XMI)" shape=box3d fillcolor="#e8f8f5"]
+
+    subgraph cluster_targets {
+        label="swift-ecore generate --language"
+        style=rounded
+        bgcolor="#e8f4f8"
+        alloy [label="Alloy"]
+        tla [label="TLA+"]
+        eventb [label="Event-B"]
+        lean [label="Lean"]
+    }
+
+    subgraph cluster_checkers {
+        label="External checkers"
+        style=rounded
+        bgcolor="#fff8e8"
+        analyzer [label="Alloy Analyzer" shape=note]
+        tlc [label="TLC" shape=note]
+        rodin [label="Rodin" shape=note]
+        leanc [label="Lean" shape=note]
+    }
+
+    ecore -> alloy
+    ecore -> tla
+    ecore -> eventb
+    ecore -> lean
+    model -> alloy [style=dashed label="--model"]
+    model -> tla [style=dashed]
+    model -> eventb [style=dashed]
+    model -> lean [style=dashed]
+    alloy -> analyzer [style=dotted]
+    tla -> tlc [style=dotted]
+    eventb -> rodin [style=dotted]
+    lean -> leanc [style=dotted]
+}

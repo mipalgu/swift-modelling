@@ -46,12 +46,15 @@ public enum ConversionWarningReport {
 
     /// Writes the warnings of a conversion to standard error.
     ///
+    /// The warnings follow everything that the command printed on standard output before
+    /// them, see ``StandardStreams/writeToStandardError(_:)``.
+    ///
     /// - Parameters:
     ///   - diagnostics: The warnings of reading and writing the model.
     ///   - metamodelGiven: Whether a metamodel of the model was given on the command line.
     public static func write(_ diagnostics: ConversionDiagnostics, metamodelGiven: Bool) {
         let lines = lines(for: diagnostics, metamodelGiven: metamodelGiven)
         guard !lines.isEmpty else { return }
-        FileHandle.standardError.write(Data((lines.joined(separator: "\n") + "\n").utf8))
+        StandardStreams.writeToStandardError(lines.joined(separator: "\n") + "\n")
     }
 }

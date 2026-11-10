@@ -15,7 +15,7 @@ import ModellingCommandLine
 /// The test command runs comprehensive tests on ATL transformation files,
 /// including parsing tests, validation tests, and transformation execution tests.
 /// It can test individual files or entire directories of ATL transformations.
-struct TestCommand: AsyncParsableCommand {
+struct TestCommand: AsyncParsableCommand, ATLSourceReading, ATLOutputWriting {
     static let configuration = CommandConfiguration(
         commandName: "test",
         abstract: "Test ATL transformation files",
@@ -25,6 +25,10 @@ struct TestCommand: AsyncParsableCommand {
             or entire directories of ATL transformations.
 
             \(ATLSemanticsOptions.discussion(reader: "the transformations"))
+
+            \(SourceEncodingOptions.discussion(reader: "the transformations"))
+
+            \(OutputEncodingOptions.discussion(writer: "the file that --output names"))
 
             \(SemanticsOptions.discussion())
 
@@ -52,7 +56,9 @@ struct TestCommand: AsyncParsableCommand {
     /// Test timeout in seconds.
     ///
     /// Maximum time allowed for each test to complete before being
-    /// marked as failed due to timeout. Default is 60 seconds.
+    /// marked as failed due to timeout. Default is 60 seconds.  A time limit
+    /// longer than ``longestTimeLimit`` is not kept, and the checks of each
+    /// file then run until they finish.
     @Option(name: .shortAndLong, help: "Test timeout in seconds (default: 60)")
     var timeout: TimeInterval = 60.0
 
@@ -84,6 +90,12 @@ struct TestCommand: AsyncParsableCommand {
     /// The preset of the behaviours, standard or that of version 0.6.
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
+
+    /// The character encoding of the ATL source.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// The character encoding of the file that `--output` names.
+    @OptionGroup var outputEncodingOptions: OutputEncodingOptions
 
     /// The behaviours of the ATL source that the command line, the environment and the
     /// configuration file select.
@@ -179,8 +191,7 @@ struct TestCommand: AsyncParsableCommand {
         // Write detailed results if requested
         if let outputPath = output {
             let report = generateTestReport(testResults)
-            try report.write(
-                to: URL(fileURLWithPath: outputPath), atomically: true, encoding: .utf8)
+            try writeOutput(report, to: outputPath, kind: .text)
             print("Test report written to \(outputPath)")
         }
 
@@ -190,56 +201,37 @@ struct TestCommand: AsyncParsableCommand {
         }
     }
 
-    private func runTest(for filePath: String, atlOptions: ATLOptions) async -> TestResult {
-        let startTime = Date()
-
-        return await withTaskGroup(of: TestResult.self) { group in
-            group.addTask {
-                await self.executeTestWithTimeout(filePath: filePath, startTime: startTime, atlOptions: atlOptions)
-            }
-            return await group.next()
-                ?? TestResult(
-                    filename: filePath,
-                    passed: false,
-                    testTime: Date().timeIntervalSince(startTime),
-                    error: "Test task failed to complete"
-                )
+    /// Checks that the time limit is a positive number of seconds.
+    ///
+    /// - Throws: A validation error if the time limit is zero, negative or not a number.
+    func validate() throws {
+        guard timeout.isFinite, timeout > 0 else {
+            throw ArgumentParser.ValidationError("--timeout must be a positive number of seconds")
         }
     }
 
-    private func executeTestWithTimeout(filePath: String, startTime: Date, atlOptions: ATLOptions) async
-        -> TestResult
-    {
+    /// Runs the checks of one ATL file within the time limit.
+    ///
+    /// The result is available as soon as the checks finish or the time limit passes,
+    /// whichever comes first.  Checks that overrun the time limit are cancelled and are
+    /// not waited for.
+    ///
+    /// - Parameters:
+    ///   - filePath: The path of the ATL file to check.
+    ///   - atlOptions: The options of the ATL language.
+    /// - Returns: The result of the checks, or a failure that reports the timeout.
+    private func runTest(for filePath: String, atlOptions: ATLOptions) async -> TestResult {
+        let startTime = Date()
         do {
-            let testTask = Task {
-                try await executeTest(filePath: filePath, startTime: startTime, atlOptions: atlOptions)
+            return try await Self.firstOutcome(withinSeconds: timeout) {
+                try await self.executeTest(filePath: filePath, startTime: startTime, atlOptions: atlOptions)
             }
-
-            let timeoutTask = Task {
-                try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
-                throw TestError.timeout
-            }
-
-            let result = try await withThrowingTaskGroup(of: TestResult.self) { group in
-                group.addTask { try await testTask.value }
-                group.addTask {
-                    _ = try await timeoutTask.value
-                    throw TestError.timeout
-                }
-
-                let result = try await group.next()!
-                group.cancelAll()
-                return result
-            }
-
-            return result
-
         } catch TestError.timeout {
             return TestResult(
                 filename: filePath,
                 passed: false,
                 testTime: timeout,
-                error: "Test timed out after \(Int(timeout)) seconds"
+                error: "Test timed out after \(Self.formattedSeconds(timeout)) seconds"
             )
         } catch {
             return TestResult(
@@ -249,6 +241,86 @@ struct TestCommand: AsyncParsableCommand {
                 error: error.localizedDescription
             )
         }
+    }
+
+    /// Runs an operation with a time limit, without waiting for an operation that overruns it.
+    ///
+    /// The operation runs in a separate task, so the time limit is kept even if the operation
+    /// does not respond to cancellation.  Whichever finishes first, the operation or the time
+    /// limit, decides the outcome; the other is cancelled.
+    ///
+    /// - Parameters:
+    ///   - seconds: The time limit in seconds, which must be positive.
+    ///   - operation: The operation to run.
+    /// - Returns: The value of the operation, if it finishes within the time limit.
+    /// - Throws: `TestError.timeout` if the time limit passes first, the error of the
+    ///   operation if it fails first, or `CancellationError` if the caller is cancelled.
+    ///
+    /// A time limit longer than ``longestTimeLimit`` is not kept: the operation then runs
+    /// until it finishes.
+    static func firstOutcome<Value: Sendable>(
+        withinSeconds seconds: TimeInterval,
+        operation: @escaping @Sendable () async throws -> Value
+    ) async throws -> Value {
+        let (outcomes, sink) = AsyncStream.makeStream(of: Result<Value, any Error>.self)
+        let work = Task {
+            do {
+                sink.yield(.success(try await operation()))
+            } catch {
+                sink.yield(.failure(error))
+            }
+        }
+        let timer = nanoseconds(for: seconds).map { limit in
+            Task {
+                do {
+                    try await Task.sleep(nanoseconds: limit)
+                    sink.yield(.failure(TestError.timeout))
+                } catch {
+                    return
+                }
+            }
+        }
+        defer {
+            work.cancel()
+            timer?.cancel()
+            sink.finish()
+        }
+        var iterator = outcomes.makeAsyncIterator()
+        guard let outcome = await iterator.next() else {
+            throw CancellationError()
+        }
+        return try outcome.get()
+    }
+
+    /// The longest time limit that is kept, in seconds: one hundred years.
+    ///
+    /// A time limit is kept by sleeping for its length.  The concurrency runtime of some
+    /// platforms ends a sleep at once if its length in nanoseconds does not fit a signed
+    /// 64-bit number, which is the case for about 292 years or more.  A time limit longer
+    /// than this one is no practical limit and is not kept at all.
+    static let longestTimeLimit: TimeInterval = 100 * 365.25 * 24 * 60 * 60
+
+    /// The number of nanoseconds in a time limit, if the time limit is kept.
+    ///
+    /// - Parameter seconds: The time limit in seconds, which must be positive.
+    /// - Returns: The time limit in nanoseconds, or `nil` if it is longer than
+    ///   ``longestTimeLimit`` and is therefore not kept.
+    static func nanoseconds(for seconds: TimeInterval) -> UInt64? {
+        guard seconds <= longestTimeLimit else { return nil }
+        return UInt64(seconds * 1_000_000_000)
+    }
+
+    /// A number of seconds as the timeout message shows it.
+    ///
+    /// Whole numbers of seconds have no fractional part; other numbers keep theirs.
+    ///
+    /// - Parameter seconds: The number of seconds.
+    /// - Returns: The number as text.
+    static func formattedSeconds(_ seconds: TimeInterval) -> String {
+        guard seconds >= 1, seconds < Double(Int.max), seconds.rounded() == seconds else {
+            return "\(seconds)"
+        }
+        return "\(Int(seconds))"
     }
 
     private func executeTest(filePath: String, startTime: Date, atlOptions: ATLOptions) async throws
@@ -264,10 +336,12 @@ struct TestCommand: AsyncParsableCommand {
         }
 
         // Test 1: Parse the ATL file
-        let atlSource = try String(contentsOfFile: filePath, encoding: .utf8)
+        let atlSource = try readATLSource(at: filePath)
         let parser = ATLParser(options: atlOptions)
         let module = try await parser.parseContent(
             atlSource, filename: URL(fileURLWithPath: filePath).lastPathComponent)
+
+        try Task.checkCancellation()
 
         if verbose {
             print("  Parse successful: \(module.name)")

@@ -19,6 +19,7 @@ import ArgumentParser
 /// - **generate**: Generate text from models using MTL templates
 /// - **parse**: Parse and display MTL template structure
 /// - **validate**: Validate MTL template syntax and semantics
+/// - **check-compat**: Check whether a template module can be used with another metamodel
 ///
 /// ## Example Usage
 ///
@@ -31,6 +32,10 @@ import ArgumentParser
 ///
 /// # Validate multiple MTL files
 /// swift-mtl validate *.mtl --verbose
+///
+/// # Check whether a template module can be used with a revised metamodel
+/// swift-mtl check-compat catalogue.mtl --metamodel library=Library.ecore \
+///   --target-metamodel library=LibraryV2.ecore
 /// ```
 @main
 struct SwiftMTLCommand: AsyncParsableCommand {
@@ -50,11 +55,12 @@ struct SwiftMTLCommand: AsyncParsableCommand {
             Acceleo-specific extensions where applicable, while providing enhanced performance
             through Swift's concurrent execution model and type safety.
             """,
-        version: "0.7.0",
+        version: "0.8.0",
         subcommands: [
             GenerateCommand.self,
             ParseCommand.self,
             ValidateCommand.self,
+            CheckCompatCommand.self,
         ],
         defaultSubcommand: GenerateCommand.self
     )

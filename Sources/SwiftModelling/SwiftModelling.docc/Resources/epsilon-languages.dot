@@ -1,0 +1,34 @@
+digraph EpsilonLanguages {
+    bgcolor="white"
+    rankdir=LR
+    node [shape=box, style="rounded,filled", fontname="Arial", fontsize=12, fillcolor="#f4e8f8"]
+    edge [fontname="Arial", fontsize=10]
+
+    families [label="Families model\n(XMI)" shape=box3d fillcolor="#e8f8f5"]
+    metamodels [label="Families.ecore\nPersons.ecore" shape=box3d fillcolor="#f8f4e8"]
+
+    subgraph cluster_epsilon {
+        label="swift-epsilon"
+        style=rounded
+        bgcolor="#e8f4f8"
+        eol [label="eol run\nqueries and changes"]
+        evl [label="evl validate\nconstraints and fixes"]
+        etl [label="etl transform\nmodel to model"]
+        egl [label="egl generate\ntemplates and EGX rules"]
+    }
+
+    report [label="Report and\nchanged model" shape=note fillcolor="#fff8e8"]
+    findings [label="Findings and\nrepaired model" shape=note fillcolor="#fff8e8"]
+    persons [label="Persons model" shape=box3d fillcolor="#e8f8f5"]
+    pages [label="Text files with\nprotected regions" shape=note fillcolor="#fff8e8"]
+
+    metamodels -> families [style=dashed label="types"]
+    families -> eol
+    families -> evl
+    families -> etl
+    families -> egl
+    eol -> report
+    evl -> findings
+    etl -> persons
+    egl -> pages
+}

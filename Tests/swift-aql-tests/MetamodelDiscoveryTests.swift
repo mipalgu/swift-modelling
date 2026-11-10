@@ -42,7 +42,7 @@ struct MetamodelDiscoveryTests {
     }
 
     @Test("The metamodels beside a model whose namespaces it uses are found")
-    func discoversSiblings() throws {
+    func discoversSiblings() async throws {
         let directory = try Fixture.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         try metamodel("urn:shop").write(to: directory.appendingPathComponent("B.ecore"), atomically: true, encoding: .utf8)
@@ -51,21 +51,21 @@ struct MetamodelDiscoveryTests {
         try "not a metamodel".write(to: directory.appendingPathComponent("D.ecore"), atomically: true, encoding: .utf8)
         let model = directory.appendingPathComponent("m.xmi")
         try "<x xmlns:s=\"urn:shop\" xmlns:b=\"urn:base\"/>".write(to: model, atomically: true, encoding: .utf8)
-        let found = try discovery.metamodels(for: [model.path]).map { URL(fileURLWithPath: $0).lastPathComponent }
+        let found = try await discovery.metamodels(for: [model.path]).map { URL(fileURLWithPath: $0).lastPathComponent }
         #expect(found == ["B.ecore", "C.ECORE"])
     }
 
     @Test("Several metamodels that declare a namespace a model uses are reported")
-    func ambiguous() throws {
+    func ambiguous() async throws {
         let directory = try Fixture.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         try metamodel("urn:shop").write(to: directory.appendingPathComponent("A.ecore"), atomically: true, encoding: .utf8)
         try metamodel("urn:shop").write(to: directory.appendingPathComponent("B.ecore"), atomically: true, encoding: .utf8)
         let model = directory.appendingPathComponent("m.xmi")
         try "<x xmlns:s=\"urn:shop\"/>".write(to: model, atomically: true, encoding: .utf8)
-        #expect(throws: SwiftAQLError.self) { try discovery.metamodels(for: [model.path]) }
+        await #expect(throws: SwiftAQLError.self) { try await discovery.metamodels(for: [model.path]) }
         do {
-            _ = try discovery.metamodels(for: [model.path])
+            _ = try await discovery.metamodels(for: [model.path])
         } catch let SwiftAQLError.ambiguousMetamodels(uri, paths) {
             #expect(uri == "urn:shop")
             #expect(paths.map { URL(fileURLWithPath: $0).lastPathComponent } == ["A.ecore", "B.ecore"])
@@ -73,17 +73,17 @@ struct MetamodelDiscoveryTests {
     }
 
     @Test("A model that is itself an Ecore file, and an unreadable model, contribute nothing")
-    func modelsThemselves() throws {
+    func modelsThemselves() async throws {
         let directory = try Fixture.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let ecore = directory.appendingPathComponent("A.ecore")
         try metamodel("urn:shop").write(to: ecore, atomically: true, encoding: .utf8)
-        #expect(try discovery.metamodels(for: [ecore.path]).isEmpty)
-        #expect(try discovery.metamodels(for: [directory.appendingPathComponent("missing.xmi").path]).isEmpty)
+        #expect(try await discovery.metamodels(for: [ecore.path]).isEmpty)
+        #expect(try await discovery.metamodels(for: [directory.appendingPathComponent("missing.xmi").path]).isEmpty)
     }
 
     @Test("A metamodel shared by several models is found once")
-    func sharedMetamodel() throws {
+    func sharedMetamodel() async throws {
         let directory = try Fixture.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         try metamodel("urn:shop").write(to: directory.appendingPathComponent("A.ecore"), atomically: true, encoding: .utf8)
@@ -93,6 +93,6 @@ struct MetamodelDiscoveryTests {
             try "<x xmlns:s=\"urn:shop\"/>".write(to: model, atomically: true, encoding: .utf8)
             models.append(model.path)
         }
-        #expect(try discovery.metamodels(for: models).count == 1)
+        #expect(try await discovery.metamodels(for: models).count == 1)
     }
 }

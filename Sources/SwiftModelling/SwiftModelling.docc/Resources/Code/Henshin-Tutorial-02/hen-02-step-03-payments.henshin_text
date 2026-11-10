@@ -1,0 +1,38 @@
+// Rules that move single dollars between the accounts of a bank.
+ePackageImport bank
+
+// Move one dollar from an account with a positive balance to another account.
+rule payOne(VAR x:EInt, VAR y:EInt) {
+	conditions [x > 0]
+	graph {
+		node source:Account {
+			balance = x
+			set balance = x - 1
+		}
+		node target:Account {
+			balance = y
+			set balance = y + 1
+		}
+	}
+}
+
+// Withdraw one dollar from an account with a positive balance.
+rule withdrawOne(VAR x:EInt) {
+	conditions [x > 0]
+	graph {
+		node account:Account {
+			balance = x
+			set balance = x - 1
+		}
+	}
+}
+
+// Match an account that is overdrawn.
+rule overdrawn(VAR x:EInt) {
+	conditions [x < 0]
+	graph {
+		node account:Account {
+			balance = x
+		}
+	}
+}

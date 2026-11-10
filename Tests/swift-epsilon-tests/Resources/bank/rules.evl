@@ -1,0 +1,14 @@
+context Account {
+  constraint NotOverdrawn {
+    check : self.balance >= 0
+    message : 'Account ' + self.name + ' is overdrawn by ' + (0 - self.balance)
+    fix {
+      title : 'Clear the balance of ' + self.name
+      do { self.balance = 0; }
+    }
+  }
+  critique HasOwner {
+    check : self.owner.length() > 0
+    message : 'Account ' + self.name + ' has no owner'
+  }
+}

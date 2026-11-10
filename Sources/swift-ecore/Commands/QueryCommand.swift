@@ -34,6 +34,10 @@ struct QueryCommand: AsyncParsableCommand {
 
             --\(MetamodelOptions.optionName) names an Ecore metamodel of the model. \
             \(MetamodelOptions.effect)
+
+            \(SourceEncodingOptions.discussion(reader: EncodingVocabulary.encodedDocuments))
+
+            \(ConfigurationVocabulary.readingDiscussion)
             """
     )
 
@@ -48,6 +52,30 @@ struct QueryCommand: AsyncParsableCommand {
     /// The metamodels of the model.
     @OptionGroup var metamodelOptions: MetamodelOptions
 
+    /// How metamodels in KM3 and in grammar formats are read.
+    @OptionGroup var formatOptions: MetamodelFormatOptions
+
+    /// The character encoding of the documents in text formats.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
+    /// The configuration file whose keys give the options that the command line leaves open.
+    @OptionGroup var configurationOptions: ConfigurationFileOptions
+
+    /// The options with which the documents and metamodels are read.
+    ///
+    /// Each option is the one given on the command line, else the value of its key in the
+    /// configuration file, else its default.
+    ///
+    /// - Returns: The options of the readers, in the encoding of the run.
+    /// - Throws: ``ModellingConfigurationError`` if the configuration file cannot be read or is
+    ///   not valid.
+    private func configuredLoadOptions() throws -> EcoreLoadOptions {
+        formatOptions.ecoreLoadOptions(settings: try configurationOptions.settings(), encodingOptions: encodingOptions)
+    }
+
+    /// The Complete OCL documents that constrain the metamodels.
+    @OptionGroup var completeOCLOptions: CompleteOCLOptions
+
     /// Enable verbose output.
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose: Bool = false
@@ -58,14 +86,18 @@ struct QueryCommand: AsyncParsableCommand {
     ///
     /// - Throws: ``DocumentError`` if the file cannot be read, ``QueryError`` if the query is
     ///   invalid, or the error of the parser.
+    ///   Also ``ModellingConfigurationError`` if the configuration file cannot be read or is not valid.
     func run() async throws {
+        let loadOptions = try configuredLoadOptions()
+        let oclDocuments = completeOCLOptions.documents(settings: try configurationOptions.settings())
         if verbose {
             print("Querying: \(inputPath)")
             print("Query: \(query)")
         }
         let document: ModelDocument
         do {
-            document = try await ModelDocument.load(path: inputPath, metamodelOptions: metamodelOptions, verbose: verbose)
+            document = try await ModelDocument.load(path: inputPath, metamodelOptions: metamodelOptions, verbose: verbose,
+            ecoreLoadOptions: loadOptions, completeOCL: oclDocuments)
         } catch DocumentError.fileNotFound(let path) {
             throw QueryError.fileNotFound(path)
         } catch DocumentError.unsupportedFormat(let format) {

@@ -1,0 +1,153 @@
+[comment encoding = UTF-8 /]
+[**
+ * The names and value sets of the TLA+ template set.
+ *
+ * Identifiers follow the rules of the verification services, so that the definitions written here and the formulas of
+ * translated invariants agree: reserved words get a trailing underscore, enumeration literals are strings, and features
+ * are the fields of the records in the object store obj.
+ **/]
+[module TLANames('http://www.eclipse.org/emf/2002/Ecore')/]
+[import verification::VerificationQueries/]
+
+[**
+ * The name of the verification target of this template set.
+ **/]
+[query public target() : String = 'tla'/]
+
+[**
+ * A model name as a TLA+ identifier.
+ **/]
+[query public id(name : String) : String = name.verificationIdentifier(target())/]
+
+[**
+ * The name of the module of a package.
+ **/]
+[query public moduleName(p : EPackage) : String = id(p.name)/]
+
+[**
+ * The name of the module of a model.
+ **/]
+[query public instanceModuleName(model : String) : String = id(model + '_instance')/]
+
+[**
+ * The line that opens a module.
+ **/]
+[query public moduleStart(name : String) : String = '---- MODULE ' + name + ' ----'/]
+
+[**
+ * The line that closes a module.
+ **/]
+[query public moduleEnd() : String = '===='/]
+
+[**
+ * The variable that holds the object store, which maps the identifier of every object to the record of its values.
+ **/]
+[query public store() : String = 'obj'/]
+
+[**
+ * The constant that stands for an absent single value.
+ **/]
+[query public nullValue() : String = 'Null'/]
+
+[**
+ * The set of the identifiers of all objects.
+ **/]
+[query public objectSet() : String = 'Object'/]
+
+[**
+ * The constant set of the identifiers of the direct instances of a class.
+ **/]
+[query public idsName(c : EClass) : String = id(c.name + 'Ids')/]
+
+[**
+ * The set of the records of the direct instances of a class.
+ **/]
+[query public recordName(c : EClass) : String = id(c.name + 'Record')/]
+
+[**
+ * The constant set of the values of a data type that the export does not interpret.
+ **/]
+[query public valuesName(t : String) : String = id(t + 'Values')/]
+
+[**
+ * The definition in a model module that fixes a constant of the module of the package.
+ **/]
+[query public instanceName(constant : String) : String = id('Instance' + constant)/]
+
+[**
+ * The definition in a model module that holds the object store of the model.
+ **/]
+[query public instanceStore() : String = id('InstanceObj')/]
+
+[**
+ * The definition of a translated invariant.
+ **/]
+[query public invariantName(c : EClass, n : String) : String = 'Inv_' + invariantIdentifier(c, n)/]
+
+[**
+ * The record of an object in the object store.
+ **/]
+[query public objOf(x : String) : String = store() + '[' + x + ']'/]
+
+[**
+ * The field of the record of a feature.
+ **/]
+[query public fieldName(f : EStructuralFeature) : String = f.eContainingClass.name.verificationFeature(f.name, target())/]
+
+[**
+ * The value of a feature of an object in the object store.
+ **/]
+[query public fieldOf(x : String, f : EStructuralFeature) : String = objOf(x) + '.' + fieldName(f)/]
+
+[**
+ * The text of an enumeration literal.
+ **/]
+[query public literalText(e : EEnum, literal : String) : String = e.name.verificationLiteral(literal, target())/]
+
+[**
+ * The text of a string.
+ **/]
+[query public quoted(text : String) : String = text.verificationString(target())/]
+
+[**
+ * The set of the single values of a feature: Int, BOOLEAN, STRING, the set of an enumeration or class, or the constant
+ * set of an uninterpreted data type.
+ **/]
+[query public typeName(f : EStructuralFeature) : String = if f.valueKind() = 'integer' then 'Int' else if f.valueKind() = 'boolean' then 'BOOLEAN' else if f.valueKind() = 'string' then 'STRING' else if f.valueKind() = 'uninterpreted' then valuesName(f.eType.name) else id(f.eType.name) endif endif endif endif/]
+
+[**
+ * The set of the values of a feature in a record: the subsets of its single values if it is many-valued, and its single
+ * values or Null if it is optional.
+ **/]
+[query public fieldType(f : EStructuralFeature) : String = if f.isMany() then 'SUBSET ' + f.typeName() else if f.isOptional() then f.typeName() + ' \\cup {' + nullValue() + '}' else f.typeName() endif endif/]
+
+[**
+ * The formula that an object x is a value of a feature of an object o.
+ **/]
+[query public holds(f : EStructuralFeature, o : String, x : String) : String = if f.isMany() then x + ' \\in ' + fieldOf(o, f) else fieldOf(o, f) + ' = ' + x endif/]
+
+[**
+ * The set of the values of a feature of an object: the value itself if the feature is many-valued, and otherwise the
+ * set of its value, which is empty if an optional value is absent.
+ **/]
+[query public valueSet(f : EStructuralFeature, o : String) : String = if f.isMany() then fieldOf(o, f) else if f.isOptional() then '({' + fieldOf(o, f) + '} \\ {' + nullValue() + '})' else '{' + fieldOf(o, f) + '}' endif endif/]
+
+[**
+ * The concrete classes of a package, whose direct instances have identifiers of their own.
+ **/]
+[query public concreteClasses(p : EPackage) : Sequence(EClass) = p.classes()->select(c | c.isConcrete())/]
+
+[**
+ * The names of the data types of exported features that the export does not interpret.
+ **/]
+[query public uninterpretedTypes(p : EPackage) : Sequence(String) = p.classes()->collect(c | c.exportedFeatures())->flatten()->select(f | f.valueKind() = 'uninterpreted')->collect(f | f.eType.name)->asOrderedSet()->asSequence()/]
+
+[**
+ * The union of sets, or the empty set if there are none.
+ **/]
+[query public unionOf(sets : Sequence(String)) : String = if sets->isEmpty() then '{}' else sets->sep(' \\cup ') endif/]
+
+[**
+ * The definitions of the metamodel module that state the structure of the metamodel.
+ **/]
+[query public structuralInvariants() : Sequence(String) = Sequence{'TypeOK', 'Multiplicities', 'Opposites', 'Containment'}/]

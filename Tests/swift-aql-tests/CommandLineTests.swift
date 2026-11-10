@@ -108,6 +108,20 @@ struct CommandLineTests {
         #expect(try strict(["--strict-aql"]))
     }
 
+    @Test("Dot calls follow the preset unless --dot-calls is given")
+    func dotCalls() throws {
+        func dotCalls(_ arguments: [String]) throws -> AQLDotCalls {
+            let options = try EvaluateCommand.parse(["-e", "self", "--no-config"] + arguments).evaluationOptions
+            return options.aqlSemanticsOptions.aqlOptions(settings: try options.semanticsOptions.settings(environment: [:]))
+                .dotCalls
+        }
+        #expect(try dotCalls([]) == .eachElement)
+        #expect(try dotCalls(["--semantics", "legacy"]) == .collection)
+        #expect(try dotCalls(["--dot-calls", "collection"]) == .collection)
+        #expect(try dotCalls(["--semantics", "legacy", "--dot-calls", "each-element"]) == .eachElement)
+        #expect(throws: (any Error).self) { try EvaluateCommand.parse(["-e", "self", "--dot-calls", "each"]) }
+    }
+
     @Test("Unset features read as the command line says")
     func unsetFeatures() throws {
         let options = try EvaluateCommand.parse(["-e", "self", "--unset-features", "undefined"]).evaluationOptions
@@ -119,7 +133,7 @@ struct CommandLineTests {
         let configuration = SwiftAQLCommand.configuration
         #expect(configuration.commandName == SwiftAQLVocabulary.toolName)
         #expect(configuration.version == SwiftAQLVocabulary.version)
-        #expect(configuration.subcommands.map { $0.configuration.commandName } == ["evaluate", "query"])
+        #expect(configuration.subcommands.map { $0.configuration.commandName } == ["evaluate", "query", "check-compat"])
     }
 }
 

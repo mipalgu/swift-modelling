@@ -9,6 +9,7 @@
 import ArgumentParser
 import Foundation
 import MTL
+import ModellingCommandLine
 
 /// Command for validating MTL template syntax and semantics.
 ///
@@ -37,6 +38,11 @@ struct ValidateCommand: AsyncParsableCommand {
 
                 # Trace the template parser
                 swift-mtl validate template.mtl --debug
+
+                # Templates written in Latin-1
+                swift-mtl validate template.mtl --encoding ISO-8859-1
+
+            \(SourceEncodingOptions.discussion(reader: "the templates and the modules they import", configurable: false))
             """
     )
 
@@ -49,13 +55,16 @@ struct ValidateCommand: AsyncParsableCommand {
     /// Whether the template parser traces its work.
     @OptionGroup var debugOptions: DebugOptions
 
+    /// The character encoding of the templates.
+    @OptionGroup var encodingOptions: SourceEncodingOptions
+
     @MainActor
     func run() async throws {
         var allValid = true
         var validCount = 0
         var errorCount = 0
 
-        let parser = MTLParser(enableDebugging: debugOptions.debug)
+        let parser = MTLParser(enableDebugging: debugOptions.debug, encoding: encodingOptions.explicitEncoding)
 
         if verbose {
             print("Validating \(templates.count) template(s)...\n")
@@ -74,7 +83,7 @@ struct ValidateCommand: AsyncParsableCommand {
 
             // Parse and validate
             do {
-                let module = try await parser.parse(templateURL)
+                let module = try await parser.parseReportingWarnings(templateURL)
 
                 print("✓ \(templatePath): Valid")
                 validCount += 1

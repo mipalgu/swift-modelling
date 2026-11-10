@@ -43,6 +43,160 @@ Swift implementation of the Eclipse Modeling Framework
 - **Template Sets**: Languages are directories of templates and data files, so a new language
   needs no Swift code
 
+### Files and Metamodels
+
+`inspect`, `validate`, `compare`, `statistics` and `query` read every format of the format
+registry of swift-ecore: models in XMI (`.xmi`), JSON (`.json`) and UML (`.uml`), and metamodels
+in Ecore (`.ecore`), JSON, KM3 (`.km3`), EMOF (`.emof`), Emfatic (`.emf`), Xcore (`.xcore`),
+OCLinEcore (`.oclinecore`), and the grammar notations ASDL (`.asdl`), Langium (`.langium`), Xtext
+(`.xtext`) and SDF3 (`.sdf3`), from which a metamodel is imported. The registry chooses the format
+from the extension and the contents of a file: a format that recognises its documents, such as
+EMOF or UML, takes precedence over XMI, so an EMOF metamodel saved as `shop.xmi` is read as a
+metamodel and a model in an OMG UML namespace as a UML model. A file with any other extension, or
+none, is read in the format of its contents, so a model saved as `shop.model` is read as XMI if it
+holds XML and as JSON if it holds JSON. A file whose contents are in no format is rejected with an
+error that lists the supported formats, such as
+`Unsupported format: txt (supported: xmi, json, ecore, ...)`.
+
+A metamodel file may hold several root packages, and may be in any metamodel format, such as an
+Ecore, a JSON, a KM3 or an EMOF file, or a grammar.
+`--metamodel` registers every root package of the file under its namespace URI, so a model may hold instances of the classes of any of them. As in the
+Eclipse Modeling Framework, a root package need not declare a namespace URI or prefix: it is then
+loaded with an empty one, so that the other packages of the file can refer to its classifiers, but it
+is not registered, and a warning on standard error names the file and the package:
+
+```
+warning: Library.ecore: The package 'Types' has no 'nsURI' and is not registered under a namespace
+```
+
+The same warning appears when such a metamodel is the file that a command reads. It does not
+change the exit status; `validate` reports the missing namespace URI as an error of the constraint
+`WellFormedNsURI`, as before.
+
+KM3, the textual metamodel notation of the ATL tool chain, has no namespace URIs. Each root package
+of a KM3 metamodel is therefore registered under its name, with a warning, and a model refers to it
+by a namespace declaration with that name, such as `xmlns:Library="Library"`. A syntax error in a
+KM3 file is reported on standard error as a line that starts with `error:`, with its line and
+column, as are the syntax errors of the other textual formats and grammars. When the file with
+such an error is the one that `inspect`, `validate`, `compare`, `statistics`, `query` or `convert`
+reads, the command then stops with exit status 1 and a final line such as
+`Error: Failed to read Arith.asdl: 1 error(s)`; warnings do not change the exit status.
+`--km3-primitives <ecore|declared>`, which every command that reads metamodels accepts,
+chooses how the data types that a KM3 metamodel declares are read: as the built-in Ecore data types
+of the same meaning, such as `EString` for `String` (`ecore`, the default), or as data types of
+their own package, as the KM32EMF transformation makes them (`declared`). The `km3-primitives` key
+of the configuration file chooses it as well (see Environment and Configuration File below).
+
+Documents in text formats, such as KM3, Emfatic, Xcore, OCLinEcore, Complete OCL, ASDL, Langium,
+Xtext, SDF3 and MetaDepth, are read as UTF-8, and a file that is not valid UTF-8 is read as
+ISO-8859-1 with a warning on standard error. `--encoding <name>`, which `inspect`, `validate`,
+`compare`, `statistics`, `query`, `convert` and `create` accept, names the encoding of the file they read, of
+the metamodels given with `--metamodel` and of the Complete OCL documents given with `--ocl`, such
+as `ISO-8859-1` (alias `latin1`) or `windows-1252`. They are then read in that encoding alone,
+without a warning, and a file that is not valid in it is an error. On `generate`, it names the
+encoding of the templates and of the models that `--model` names. XMI, Ecore, EMOF, UML and JSON
+documents are decoded as their own rules prescribe. The `encoding` key of the configuration file
+names the encoding as well, and `--encoding` overrides it (see Environment and Configuration File
+below).
+
+Files are written in UTF-8. `--output-encoding <name>`, which `convert`, `create`, `genmodel`,
+`generate`, and `inspect`, `validate`, `compare` and `statistics` with a report file accept, names
+the encoding of the files they write, with the names of `--encoding`. An XML document, such as XMI,
+Ecore or a generator model, names the encoding in its declaration and writes a character that the
+encoding cannot hold as a numeric character reference, such as `&#x20AC;`. In plain text, such as a
+report, KM3 or generated code, such a character is an error that names the file, line and column,
+and the file is not written. JSON is always written in UTF-8, with a warning on standard error when
+another encoding is named. What a command prints on standard output is not affected. The
+`output-encoding` key of the configuration file names the encoding as well, and `--output-encoding`
+overrides it.
+
+A UML class model (`.uml`, or an `.xmi` file in an OMG UML namespace) is also accepted as a
+metamodel: `--metamodel garden.uml` registers the Ecore metamodel that it describes, converted as
+the Eclipse UML2 tools convert it, and `swift-ecore convert garden.uml garden.ecore` writes that
+metamodel. Given as the file that a command reads, a `.uml` file is a UML model.
+
+### Grammar Imports
+
+A metamodel imported from an ASDL, Langium, Xtext or SDF3 grammar is named after the grammar, or
+after the file if the grammar declares no name, and receives a namespace URI and prefix derived from
+that name. Every command that reads metamodels accepts these options for the import:
+
+- `--package-name <name>` - The name of the package of a grammar that declares no name
+- `--ns-uri <uri>` and `--ns-prefix <prefix>` - The namespace URI and prefix of the package
+- `--asdl-enumerations <all-nullary|never>` - Whether an ASDL sum type whose constructors all have
+  no fields becomes an enumeration (`all-nullary`, the default) or, like every other sum type, an
+  abstract class with a subclass for each constructor (`never`)
+- `--langium-types <normal|strict>` - Whether the classes of a Langium grammar are inferred from its
+  rules (`normal`, the default) or come only from the types and interfaces that it declares
+  (`strict`)
+- `--sdf3-labels`, `--no-sdf3-labels` - Whether the argument labels of an SDF3 grammar, such as
+  `lhs` in `<lhs:Exp>`, name the features of the metamodel (off by default: features are named
+  after their sorts, such as `exp1` and `exp2`)
+
+The options do not change metamodels in other formats. The keys of the configuration file with the
+names of the options, such as `"ns-uri"`, choose them as well, and an option given on the command
+line overrides its key. Langium, Xtext and SDF3 are only read: a metamodel imported from them can be
+written in any other metamodel format.
+
+### Complete OCL
+
+`inspect`, `validate`, `convert`, `compare`, `statistics` and `query` accept `--ocl <file.ocl>`,
+which can be given several times. A directory given with `--ocl` stands for every `.ocl` file
+directly in it, not in its subdirectories, in the order of their names; a directory without one is
+reported as a warning on standard error and contributes nothing. The `ocl` key of the configuration
+file lists documents and directories as well, as a JSON array whose relative paths are resolved
+against the directory of the configuration file; `--ocl` on the command line replaces the list. A Complete OCL document adds invariants, pre- and postconditions,
+definitions and derivations to classes that a metamodel defines elsewhere. The documents apply,
+in command line order, to the metamodels given with `--metamodel` after they are loaded or, without
+`--metamodel`, to the metamodel that the command reads. The constraints become OCL annotations of
+the metamodel, so `validate` checks the invariants of a document for every object of a model, and
+`convert` writes them into a converted metamodel:
+
+```bash
+swift-ecore validate shop.xmi --metamodel shop.ecore --ocl pricing.ocl
+swift-ecore convert shop.ecore shop-constrained.ecore --ocl pricing.ocl
+```
+
+What a document cannot apply, such as a context that no metamodel declares, is reported on standard
+error as a line starting with `error:` or `warning:`, and does not change the exit status. A model
+without a metamodel to constrain, and a document that does not exist, are errors.
+
+### Multi-level Models
+
+A multi-level model in the MetaDepth notation (`.mdepth`) is a chain of levels, each an instance
+of the one above, whose clabjects are at once types and instances, and whose potencies say over
+how many levels an element can still be instantiated. `inspect` lists its levels and clabjects,
+`validate` checks its structure, its potencies and its constraints, which are written in AQL and
+evaluated on the deep instances of the levels that their potencies select, and `convert` writes it
+losslessly as XMI or JSON instances of the linguistic metamodel of multi-level models, from which
+it converts back to MetaDepth. A JSON or XMI document of such instances is read as the multi-level
+model it holds.
+
+`--level-crossing <strict|declared|non-strict>` chooses which references may connect clabjects at
+different levels. With `declared`, the default, a reference stays within its level unless it is a
+deep reference (`T@0`), a clabject has a leap potency (`@(2)`) or the reference declares its target
+level (`{level=1}`). With `strict`, those declared crossings are errors too, and with `non-strict`,
+any reference may cross levels:
+
+```bash
+swift-ecore validate products.mdepth --level-crossing non-strict
+swift-ecore convert products.mdepth products.xmi
+swift-ecore convert products.mdepth bookstore.ecore --level 1
+```
+
+The `level-crossing` key of the configuration file chooses the mode as well, and the option
+overrides it.
+
+`convert --level <level>` writes, in any metamodel format, the Ecore metamodel whose instances live
+at that level: with `--level 0`, for example, its classes are the types of level 1, with the
+features that they and the levels above give them, annotated with their levels and potencies. The
+export is one-way, as Ecore cannot hold instances of instances. Without `--level`, a multi-level model
+cannot be written in a metamodel format, and the error lists its levels.
+
+`swift-aql`, `swift-mtl generate`, and `swift-atl transform` and `query` present a multi-level
+model as the deep view of one level with `--deep-view <level>`, so that queries, templates and
+transformations written for Ecore find the deep instances of a type at that level.
+
 ## Commands
 
 Every command except `info` accepts `-v, --verbose` for detailed output, and every command
@@ -50,7 +204,7 @@ accepts `--help`; `swift-ecore <command> --help` describes the options of a comm
 
 ### convert
 
-Convert models between XMI and JSON, and metamodels between Ecore and JSON.
+Convert models between XMI, JSON and UML, and metamodels between the metamodel formats.
 
 ```bash
 swift-ecore convert <input-file> <output-file> [options]
@@ -62,12 +216,32 @@ swift-ecore convert <input-file> --output <output-file> [options]
 - `-o, --output <file>` - The output file, instead of the second argument
 - `--validate` - Check the model or metamodel as `validate` does, and write nothing if it has an
   error
-- `--input-format <xmi|json|ecore>` - Input format (inferred from the extension if not specified)
-- `--output-format <xmi|json|ecore>` - Output format (inferred from the extension if not specified)
-- `-m, --metamodel <file.ecore>` - An Ecore metamodel of the model (can be given several times)
+- `--input-format <format>` - Input format, such as `xmi`, `json`, `ecore`, `km3`, `emof` or
+  `asdl` (chosen from the extension and the contents of the file, as for the other commands, if
+  not specified, so a Stratego signature in a `.str` file is recognised by its contents)
+- `--output-format <format>` - Output format, one of the formats that can be written (inferred
+  from the extension if not specified)
+- `-m, --metamodel <file.ecore>` - A metamodel of the model, in any metamodel format (can be given
+  several times)
+- `--ocl <file.ocl>` - A Complete OCL document, or a directory of them, that constrains the
+  metamodels (can be given several times; see Complete OCL above)
+- `--km3-primitives <ecore|declared>` - How the data types of a KM3 metamodel are read (default
+  `ecore`; see Files and Metamodels above)
+- `--encoding <name>` - The character encoding of the documents in text formats, such as
+  `ISO-8859-1` (default: UTF-8, and ISO-8859-1 with a warning for a file that is not valid UTF-8;
+  see Files and Metamodels above)
+- `--output-encoding <name>` - The character encoding of the converted model or metamodel, such as
+  `ISO-8859-1` (default: UTF-8; JSON is always UTF-8; see Files and Metamodels above)
+- `--package-name`, `--ns-uri`, `--ns-prefix`, `--asdl-enumerations`, `--langium-types`,
+  `--sdf3-labels` - How a metamodel is imported from a grammar (see Grammar Imports above)
+- `--level <level>` - Write the Ecore metamodel whose instances live at this level of a
+  multi-level model (see Multi-level Models above)
+- `--level-crossing <strict|declared|non-strict>` - Which references of a multi-level model may cross
+  levels when `--validate` checks it (default `declared`)
 - `--reference-style <encoded|plain>` - How an XMI output spells references into itself
   (default `encoded`)
 - `--force` - Overwrite the output file if it exists
+- `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none (see Environment and Configuration File below)
 - `-v, --verbose` - Show progress
 
 JSON is written indented, with the keys of every object in alphabetical order.
@@ -81,17 +255,27 @@ and references are resolved against the metamodels in use, here as well as in
 
 Whatever the conversion cannot keep, such as a class that no metamodel defines or a reference
 that cannot be written as a fragment, is reported once on standard error as a line starting
-with `warning:`. Without `--metamodel`, the warnings are followed by a `hint:` line suggesting
-it. Warnings do not change the exit status, and the completion message stays on standard
-output.
+with `warning:`. Without `--metamodel`, the warnings of converting a model are followed by a
+`hint:` line suggesting it. Warnings do not change the exit status, and the completion message
+stays on standard output. An error of reading the input, such as a syntax error of a grammar, is
+reported as a line starting with `error:` and stops the conversion with exit status 1, and
+nothing is written.
 
 A metamodel (`.ecore`) is written as a JSON metamodel, in which every object names its Ecore
 metaclass in `eClass`, contained elements are nested, and references are `{"$ref": ...}` objects
 with the name-based fragments of Ecore (`//Book/author`). A JSON file whose roots are Ecore
 packages is read as a metamodel, whatever its name, and can be written as `.ecore`. Enumerations,
 opposites, supertypes, annotations and every other construct of the metamodel are kept. A
-metamodel cannot be written as an XMI model, nor a model as `.ecore`: the command fails with an
-error that names the formats that suit the input, and writes nothing.
+metamodel can also be read from and written as KM3 (`.km3`); what KM3 cannot express, such as
+annotations and default values, is reported on standard error as a warning when a metamodel is
+written as KM3, and namespace URIs are not written. A metamodel can be written in every metamodel
+format that swift-ecore writes: Ecore, JSON, KM3, EMOF, Emfatic, Xcore, OCLinEcore and ASDL. A model
+is written as XMI, JSON or UML; a `.uml` output is written in the layout of Eclipse UML2. A metamodel
+cannot be written as an XMI model, nor a model as `.ecore` or `.km3`, and no document can be written
+as Langium, Xtext or SDF3, which are only read: the command fails with an error that lists the
+formats that suit the input, such as
+`convert it to one of: ecore, json, km3, emof, emf (Emfatic), xcore, oclinecore, asdl`, and writes
+nothing.
 
 References to other metamodel files keep their file names. A `shop.json` converted from a
 `shop.ecore` whose classes extend classes of `base.ecore` still refers to `base.ecore#//Named`,
@@ -142,26 +326,42 @@ swift-ecore validate <file>... [options]
 
 **Options:**
 
-- `-m, --metamodel <file.ecore>` - An Ecore metamodel of the model (can be given several times)
+- `-m, --metamodel <file.ecore>` - A metamodel of the model, in any metamodel format (can be given
+  several times)
+- `--ocl <file.ocl>` - A Complete OCL document, or a directory of them, that constrains the
+  metamodels (can be given several times; see Complete OCL above)
+- `--encoding <name>` - The character encoding of the documents in text formats, such as
+  `ISO-8859-1` (see Files and Metamodels above)
+- `--level-crossing <strict|declared|non-strict>` - Which references of a multi-level model may cross
+  levels (default `declared`; see Multi-level Models above)
 - `--check-abstract-classes` - For a metamodel, list every abstract class and interface with the
   concrete classes that extend it, and warn about one that none extends; for a model, confirm
   that no object is an instance of one
-- `--strict` - Fail on warnings as well as on errors
-- `--require-explicit-values` - Report every required single-valued feature that the model
-  leaves unset, even when it reads as a default; unlike the Eclipse Modeling Framework, and
-  unrelated to `--strict`
-- `--strict-aql` - Evaluate the OCL invariants as strictly as Eclipse AQL: a union of a sequence with
+- `--strict` / `--no-strict` - Fail on warnings as well as on errors (off by default; the
+  `strict` key of the configuration file sets it too)
+- `--require-explicit-values` / `--no-require-explicit-values` - Report every required
+  single-valued feature that the model leaves unset, even when it reads as a default; unlike the
+  Eclipse Modeling Framework, and unrelated to `--strict` (off by default; the
+  `require-explicit-values` key of the configuration file sets it too)
+- `--strict-aql` / `--no-strict-aql` - Evaluate the OCL invariants as strictly as Eclipse AQL: a union of a sequence with
   a set, or a single value passed to `concat`, `sub` or `union`, is a type error instead of being
-  accepted; unrelated to `--strict`. `validate` reads no configuration file, so only this flag
-  turns it on
+  accepted; unrelated to `--strict`. `--no-strict-aql` turns it off, and without either flag the
+  `strict-aql` key of the configuration file decides, else it is off
 - `--format <text|json>` - The format of the report (default `text`)
 - `--report <file>` - Write the report to a file instead of standard output
+- `--output-encoding <name>` - The character encoding of the report that `--report` writes, such as
+  `ISO-8859-1` (default: UTF-8; a JSON report is always UTF-8; see Files and Metamodels above)
+- `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none (see Environment and Configuration File below)
 - `-v, --verbose` - Show the root objects that were read, and every satisfied OCL invariant
 
-The supported formats are XMI (`.xmi`), JSON (`.json`) and Ecore (`.ecore`). A metamodel (`.ecore`)
+The supported formats are XMI (`.xmi`), JSON (`.json`) and Ecore (`.ecore`); a file with another
+extension is read in the format of its contents. A metamodel (`.ecore`)
 is checked against the constraints of Ecore, such as well-formed names,
 consistent bounds and opposites, and acyclic inheritance. A model is checked for references into
-other documents that name no object. With a metamodel, a model is also checked against it: every
+other documents that name no object. A reference into a document of the Eclipse platform, written
+with a `pathmap:` URI, such as a UML profile that is not available, is reported as a warning
+instead, as it cannot be checked; the UML primitive types of Eclipse UML2 are available, so
+references to them are checked. With a metamodel, a model is also checked against it: every
 class and feature must be defined by the metamodel, values must fit the types and bounds of their
 features, references must lead to objects of the right class, no object may be an instance of an
 abstract class or an interface, and every OCL invariant of the metamodel must hold. A JSON model is
@@ -191,7 +391,12 @@ swift-ecore validate orders.xmi -m Orders.ecore --require-explicit-values
 Every problem is printed as a line starting with `error:`, `warning:` or `information:`, with the
 element and its location in the model, such as `//@employees.0`. A violated OCL invariant is
 printed as a line starting with `Checking constraint:`, followed by the number of satisfied
-checks. The command prints `Validation completed successfully` and exits with status 0 if there
+checks. An invariant declared with a message, such as
+`invariant PositiveCapacity('Course ' + code + ' needs places'): capacity > 0` in OCLinEcore or
+the same form after `inv` in Complete OCL, is checked by its status, and the line of a violation
+ends with the message, evaluated for the object that violates it, as in
+`Checking constraint: PositiveCapacity (Course 'Painting', //@courses.1) ... violated: Course ART101 needs places`.
+The command prints `Validation completed successfully` and exits with status 0 if there
 is no error (and, with `--strict`, no warning); otherwise it fails with status 1 and a summary on
 standard error.
 
@@ -206,9 +411,16 @@ is an array with one report per file.
 OCL invariants are declared as in the Eclipse Modeling Framework: the `constraints` detail of the
 annotation with the source `http://www.eclipse.org/emf/2002/Ecore` names them, and the details of
 the annotation with the source `http://www.eclipse.org/emf/2002/Ecore/OCL` give their expressions.
-Expressions use the OCL that AQL shares, including implicit iterators such as
-`self.accounts->isUnique(number)` and `String::indexOf`. Write an enumeration literal with its
-package, as in `Bank::AccountType::SAVINGS`.
+Each invariant, whether the metamodel declares it or a Complete OCL document adds it, is translated
+from OCL into AQL and then evaluated, so that the constructs whose meaning differs between the two
+languages keep their OCL meaning: an explicit `self` inside an iteration still names the object
+being checked, the division of two integers is a real division (`7 / 2` is `3.5`), an enumeration
+literal may be written as `AccountType::SAVINGS` without its package, and `->forAll` and
+`->exists` may declare several iterators. Implicit iterators such as
+`self.accounts->isUnique(number)` and `String::indexOf` work as before. An invariant that uses a
+construct without a counterpart in AQL, such as `iterate`, tuples or `@pre`, is not evaluated: it
+is reported as `untranslated`, with the construct, and counts as a warning, so it fails validation
+only with `--strict`. Text that is not OCL is evaluated as AQL, as before.
 
 **Examples:**
 
@@ -247,7 +459,17 @@ swift-ecore inspect <file> [options]
 - `--show-attributes` - Show the attributes of every class, also in a summary
 - `--format <text|json>` - The format of the report (default `text`)
 - `-o, --output <file>` - Write the report to a file instead of standard output
-- `-m, --metamodel <file.ecore>` - An Ecore metamodel of the model (can be given several times)
+- `--output-encoding <name>` - The character encoding of the report that `--output` writes, such as
+  `ISO-8859-1` (default: UTF-8; a JSON report is always UTF-8; see Files and Metamodels above)
+- `-m, --metamodel <file.ecore>` - A metamodel of the model, in any metamodel format (can be given
+  several times)
+- `--ocl <file.ocl>` - A Complete OCL document, or a directory of them, that constrains the
+  metamodels (can be given several times; see Complete OCL above)
+- `--encoding <name>` - The character encoding of the documents in text formats, such as
+  `ISO-8859-1` (see Files and Metamodels above)
+- `--level-crossing <strict|declared|non-strict>` - Which references of a multi-level model may cross
+  levels (default `declared`; see Multi-level Models above)
+- `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none (see Environment and Configuration File below)
 - `-v, --verbose` - Show progress
 
 A metamodel is shown package by package. The summary lists the classes (with their supertypes and
@@ -280,14 +502,22 @@ swift-ecore compare <original> <revised> [options]
 
 **Options:**
 
-- `-m, --metamodel <file.ecore>` - An Ecore metamodel of both models (can be given several times)
+- `-m, --metamodel <file.ecore>` - A metamodel of both models, in any metamodel format (can be given
+  several times)
+- `--ocl <file.ocl>` - A Complete OCL document, or a directory of them, that constrains the
+  metamodels (can be given several times; see Complete OCL above)
+- `--encoding <name>` - The character encoding of the documents in text formats, such as
+  `ISO-8859-1` (see Files and Metamodels above)
 - `--summary` - Show the numbers of objects of each class, or of metamodel elements, in both files
   instead of every difference
 - `--ignore <name>` - Leave out a feature, metamodel element or property of that name, or one
   feature of one class as `Class.feature` (can be given several times)
 - `--format <text|json>` - The format of the report (default `text`)
 - `-o, --output <file>` - Write the report to a file and print only its summary line
+- `--output-encoding <name>` - The character encoding of the report that `--output` writes, such as
+  `ISO-8859-1` (default: UTF-8; a JSON report is always UTF-8; see Files and Metamodels above)
 - `--exit-code` - Exit with status 1 if the files differ
+- `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none (see Environment and Configuration File below)
 - `-v, --verbose` - Show the files and how many objects were matched
 
 Both files must be metamodels, or both models. Two metamodels are compared package by package:
@@ -295,9 +525,10 @@ packages, classifiers, features, operations and enumeration literals are matched
 metamodel with a single root package is compared with the single root package of the other even if
 it was renamed. Added and removed elements are reported, as are changes of namespace URIs and
 prefixes, of the kind of a classifier or feature, of abstract and interface flags, supertypes,
-feature types, multiplicities, containment, opposites, the `id`, `derived`, `transient` and
-`read-only` flags, default values, literal values, operation signatures and data type instance
-classes.
+feature types, multiplicities, containment, opposites, the `id`, `derived`, `transient`,
+`read-only`, `ordered`, `unique`, `volatile` and `unsettable` flags of features, the
+`resolve proxies` flag of references, default values, literal values, operation signatures and
+data type instance classes.
 
 Two models are compared object by object. Objects are matched by class and identity: the value of
 the identifying attribute of their class, else the value that names them (such as `name`), else
@@ -357,9 +588,17 @@ swift-ecore statistics <file> [options]
 
 **Options:**
 
-- `-m, --metamodel <file.ecore>` - An Ecore metamodel of the model (can be given several times)
+- `-m, --metamodel <file.ecore>` - A metamodel of the model, in any metamodel format (can be given
+  several times)
+- `--ocl <file.ocl>` - A Complete OCL document, or a directory of them, that constrains the
+  metamodels (can be given several times; see Complete OCL above)
+- `--encoding <name>` - The character encoding of the documents in text formats, such as
+  `ISO-8859-1` (see Files and Metamodels above)
 - `--format <text|json>` - The format of the report (default `text`)
 - `-o, --output <file>` - Write the report to a file instead of standard output
+- `--output-encoding <name>` - The character encoding of the report that `--output` writes, such as
+  `ISO-8859-1` (default: UTF-8; a JSON report is always UTF-8; see Files and Metamodels above)
+- `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none (see Environment and Configuration File below)
 - `-v, --verbose` - Show progress
 
 A metamodel is measured by the numbers of its packages, classes (abstract ones and interfaces
@@ -397,8 +636,14 @@ swift-ecore create --metamodel <file.ecore> --root-class <class> --output <file>
 - `-m, --metamodel <file.ecore>` - The metamodel that defines the class (can be given several times)
 - `--root-class <class>` - The class of the root object; it must not be abstract or an interface
 - `-o, --output <file>` - The model file to write
-- `--output-format <xmi|json>` - The output format (inferred from the extension if not specified)
+- `--output-format <xmi|json|uml>` - The output format (inferred from the extension if not
+  specified); a metamodel format is rejected
+- `--output-encoding <name>` - The character encoding of the model, such as `ISO-8859-1`
+  (default: UTF-8; JSON is always UTF-8; see Files and Metamodels above)
 - `--force` - Overwrite the output file if it exists
+- `--encoding <name>` - The character encoding of the metamodels in text formats, such as
+  `ISO-8859-1` (see Files and Metamodels above)
+- `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none (see Environment and Configuration File below)
 - `-v, --verbose` - Show progress
 
 **Example:**
@@ -434,6 +679,10 @@ The generator model is written in the layout that the Eclipse Modeling Framework
 - `--unset-features <defaults|undefined>` - How the import transformation reads features that the Ecore model does not set, as for `swift-atl transform`
 - `--reload <path>` - Existing generator model whose settings are kept
 - `-o, --output <path>` - Generator model to write (default: beside the first Ecore model, named after it)
+- `--output-encoding <name>` - The character encoding of the generator model, such as `ISO-8859-1` (default: UTF-8; see Files and Metamodels above)
+- `--semantics <standard|legacy>` - The behaviours of the import transformation: `standard` (the default) or `legacy`, as in version 0.6 (see Environment and Configuration File below)
+- `--container-scope <any-resource|this-resource>` - The objects whose containers a model finds, as for `generate`
+- `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none (see Environment and Configuration File below)
 - `-v, --verbose` - Show progress and a summary
 
 A new generator model gets the settings of the Ecore importer: the importer identifier, compliance level `17.0`, model directory `/<project>/src`, a model plug-in identifier derived from the project, the model name taken from the generator model file, and no copyright fields. Each package gets a prefix (its name with the first letter in upper case unless given), disposable provider factories, the XML resource kind when it uses extended metadata, and the load-initialisation settings that suit its size. Classes, features, enumerations, data types, operations and parameters get the settings that the importer derives from the Ecore model. References to the Ecore model are written in the layout Eclipse uses, for example `ecoreFeature="ecore:EAttribute library.ecore#//Book/title"`.
@@ -467,25 +716,28 @@ Generate source code from models.
 swift-ecore generate <model> [options]
 ```
 
-Every language has a template set (`c`, `cpp`, `java` and `swift` are bundled) and is generated from a generator model (`.genmodel`); an Ecore model is imported into a temporary generator model first. A template set is a directory of templates and data files, so a new language needs no Swift code; see the `ModellingGenerators` documentation. The help (`swift-ecore generate --help`) lists the bundled template set languages; a language that `--template-path` adds is accepted but not listed there, and an unknown language is reported with every language that can be used, including those additions. `swift-atl generate` runs the same pipeline from the ATL tool.
+Every language has a template set (`c`, `cpp`, `java` and `swift` are bundled, and so are the verification targets `alloy`, `tla`, `eventb` and `lean`) and is generated from a generator model (`.genmodel`); an Ecore model is imported into a temporary generator model first. A template set is a directory of templates and data files, so a new language needs no Swift code; see the `ModellingGenerators` documentation. The help (`swift-ecore generate --help`) lists the bundled template set languages, and the verification targets apart from them; a language that `--template-path` adds is accepted but not listed there, and an unknown language is reported with every language that can be used, the languages of code first, including those additions. `swift-atl generate` runs the same pipeline from the ATL tool.
 
 **Options:**
 
-- `-l, --language <name>` - the name of a template set, such as `swift`, `java`, `c` or `cpp` (default: `swift`)
+- `-l, --language <name>` - the name of a template set, such as `swift`, `java`, `c` or `cpp`, or a verification target, `alloy`, `tla`, `eventb` or `lean` (default: `swift`)
+- `--model <file.xmi>` - A model of the input metamodel to export as well, named after the model file (repeatable); only for template sets that export models, such as the verification targets, and checked before anything is written
 - `-o, --output <path>` - Directory to write below (default: the current directory)
 - `--template-path <path>` - Directory with template files that replace bundled templates (repeatable)
 - `--force-overwrite` - Replace existing files without merging
 - `--diff` - Write the generated text of existing files beside them as `.<name>.new`
 - `--model-directory` - Write below the model directory of the generator model
-- `--code-style <style>` - The layout of the generated text, one of the styles of the template set (`java`: `eclipse`, the default, or `emf`); rejected for sets that offer none, such as `swift`, `c` and `cpp`
+- `--code-style <style>` - The layout of the generated text, one of the styles of the template set (`java`: `eclipse`, the default, or `emf`); rejected for sets that offer none, such as `swift`, `c` and `cpp`; the `code-style` key of the configuration file names it too, and is ignored by such sets
 - `--defaults`, `--root-extends-class`, `--operation-reflection`, `--import-organizing` - The generator model defaults of an Ecore model that is imported for a template language, as for `genmodel`
 - `--unset-features <defaults|undefined>` - How the import transformation and the templates read features that a model does not set, as for `swift-mtl generate`
 - `--let-type-mismatches <error|skip>` - Whether a typed `let` in the templates whose value does not conform to the declared type stops the generation (`error`, the default) or is skipped with a warning on standard error (`skip`, as in Acceleo 3)
-- `--block-line-breaks <acceleo|kept>`, `--collection-parameters <conforming|exact>`, `--check-let-types` / `--no-check-let-types`, `--cache-containers` / `--no-cache-containers`, `--collection-arguments <whole|first-element>`, `--collection-kinds <distinguished|sequences>`, `--single-value-collections <set|sequence>`, `--container-lookup <resources|registered-objects>`, `--sequence-union <concatenation|distinct>`, `--null-addition <empty-text|null>`, `--text-form <joined|bracketed>` - The behaviours of the templates, as for `swift-mtl generate`; the first value is the default, and the second that of version 0.6
+- `--block-line-breaks <acceleo|kept>`, `--collection-parameters <conforming|exact>`, `--check-let-types` / `--no-check-let-types`, `--cache-containers` / `--no-cache-containers`, `--collection-arguments <whole|first-element>`, `--collection-kinds <distinguished|sequences>`, `--single-value-collections <set|sequence>`, `--container-lookup <resources|registered-objects>`, `--sequence-union <concatenation|distinct>`, `--null-addition <empty-text|null>`, `--text-form <joined|bracketed>`, `--dot-calls <each-element|collection>` - The behaviours of the templates, as for `swift-mtl generate`; the first value is the default, and the second that of version 0.6
 - `--strict-aql` / `--no-strict-aql` - Whether the expressions of the templates reject what Eclipse AQL rejects, as for `swift-mtl generate`; neither preset sets it
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`) for every behaviour option above; a behaviour option that is given overrides it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
+- `--encoding <name>` - The character encoding of the templates, the modules they import and the models in a text format, such as KM3, that `--model` names, such as `ISO-8859-1` or `windows-1252` (default: UTF-8, and ISO-8859-1 with a warning on standard error for a file that is not valid UTF-8, naming a template by its path within the template set and a model as given); the `encoding` key of the configuration file names it too, and a file that is not valid in the encoding given is an error. XMI, Ecore and JSON models are decoded as their own rules prescribe
+- `--output-encoding <name>` - The character encoding of the generated files, such as `ISO-8859-1` (default: UTF-8); the `output-encoding` key of the configuration file names it too. A template that names the charset of its file keeps it, as the bundled templates do where a format requires one: Lean, Event-B, and the manifest, `plugin.xml`, properties and Ecore files of Java. A character that the encoding cannot hold is an error that names the file, line and column, and that file is not written
 - `-v, --verbose` - Show every progress report; without it a progress bar appears on an interactive terminal
 
 **Languages.** The bundled template sets write:
@@ -494,6 +746,15 @@ Every language has a template set (`c`, `cpp`, `java` and `swift` are bundled) a
 - `java` - Java model code for the Eclipse Modeling Framework runtime, following the output of the Eclipse code generator for the default options, including its `@generated` tags, so that files can be merged with hand-written code and, where the Eclipse tooling is in use, with Eclipse's own output.
 - `c` - A C11 model API: a header and a source file for each package, a `struct` for each class that has instances, with `Class_create` and `Class_destroy` and typed accessors, an `enum` for each enumeration, descriptors with the class and feature names for reflection, and the support header `EObject.h`. Containment references own their targets. Compile the output with `cc -std=c11 -I c-src`, with the output directory as the include path.
 - `cpp` - A header-only C++20 model API: a class for each class that has instances (an abstract base class for each abstract class or interface), an `enum class` for each enumeration, `std::vector` for many-valued features, `std::shared_ptr` for containment and `std::weak_ptr` for other references, a factory and a package description for each package, and the support header `EObject.hpp`. Compile with `c++ -std=c++20 -I cpp-src`.
+
+**Verification targets.** The verification sets write the metamodel, with the OCL invariants of its classes, in the notation of a formal method, and each model given with `--model` as a file that the tools of the method check against it:
+
+- `alloy` - An Alloy 6 module for each package, with a command that finds an instance and a check for each invariant, and a module for each model with a command `conforms` and a check for each invariant.
+- `tla` - A TLA+ module for each package with `TypeOK`, the structural invariants and the translated invariants, and for each model a module and a TLC configuration that check the model as the only state.
+- `eventb` - A CamilleX context and machine for each package and for each model, for import into Rodin, where the proof obligations of the instance machine state that the model conforms.
+- `lean` - A Lean 4 file for each package with decidable propositions for well-formedness and each invariant, and a file for each model whose theorems are proved `by decide`.
+
+A model export reads features that the model does not set as undefined, whatever `--unset-features` says, so that an unset optional value is absent from the export. The Verification Exports article of the [ModellingGenerators documentation](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/index.html) describes the mappings, the translatable subset of OCL and how to run the tools.
 
 In the `c` and `cpp` sets, names that are keywords of the language, or that would hide a standard type or a generated name, get a trailing underscore, and documentation comes from the model as Doxygen comments. The Swift Generation, Java Generation, C Generation and C++ Generation articles of the [ModellingGenerators documentation](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/index.html) describe each set in detail, and [Converting Ecore to GenModel and Java](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/convertingecoretojava/index.html) walks through the Java route.
 
@@ -535,6 +796,10 @@ swift-ecore generate --language java model/library.genmodel --output src-gen
 # Customise one template and keep a copy of what would change in existing files
 swift-ecore generate --language java model/library.genmodel -o src-gen \
     --template-path my-templates --diff
+
+# Export a metamodel and two of its models to Alloy, for the Alloy Analyzer
+swift-ecore generate model/library.ecore --language alloy \
+    --model model/branch.xmi --model model/archive.xmi -o verification
 ```
 
 ### info
@@ -555,15 +820,21 @@ Query the whole of a model or a metamodel.
 swift-ecore query <file> [options]
 ```
 
-The file is an XMI (`.xmi`), JSON (`.json`) or Ecore (`.ecore`) file, chosen by its extension.
+The file is an XMI (`.xmi`), JSON (`.json`) or Ecore (`.ecore`) file, chosen by its extension or,
+for any other extension, by its contents.
 Every query looks at the whole document: every object of a model, however deeply it is contained,
 and every element of a metamodel.
 
 **Options:**
 
 - `-q, --query <query>` - The query to run (default: `info`)
-- `-m, --metamodel <file.ecore>` - An Ecore metamodel of the model (can be given several times);
-  without one, the classes of a model are inferred from the document
+- `-m, --metamodel <file.ecore>` - A metamodel of the model, in any metamodel format (can be given
+  several times); without one, the classes of a model are inferred from the document
+- `--ocl <file.ocl>` - A Complete OCL document, or a directory of them, that constrains the
+  metamodels (can be given several times; see Complete OCL above)
+- `--encoding <name>` - The character encoding of the documents in text formats, such as
+  `ISO-8859-1` (see Files and Metamodels above)
+- `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none (see Environment and Configuration File below)
 - `-v, --verbose` - Show the file and the query before the result
 
 **Queries:**
@@ -615,6 +886,40 @@ Without `--semantics`, the `SWIFT_MODELLING_SEMANTICS` environment variable (`st
   "block-line-breaks": "acceleo",
   "check-let-types": true,
   "container-scope": "any-resource"
+}
+```
+
+`genmodel` takes the preset as `generate` does. The commands that read models and metamodels,
+`convert`, `validate`, `inspect`, `compare`, `statistics`, `query` and `create`, read the same
+configuration file and accept `--config` and `--no-config`, but take no preset: neither
+`--semantics`, the environment variable nor the `semantics` key applies to them. These commands
+honour the following keys, each of which the option of the same name on the command line overrides:
+
+| Command | Keys |
+|--|--|
+| `convert`, `validate`, `inspect`, `compare`, `statistics`, `query` | `encoding`, `km3-primitives`, `package-name`, `ns-uri`, `ns-prefix`, `asdl-enumerations`, `langium-types`, `sdf3-labels`, `ocl` |
+| `convert`, `validate`, `inspect`, `compare`, `statistics` | also `output-encoding` |
+| `validate` | also `strict-aql`, `strict` and `require-explicit-values` |
+| `convert`, `validate`, `inspect` | also `level-crossing` |
+| `convert` | also `reference-style` |
+| `create` | `encoding`, `km3-primitives`, `package-name`, `ns-uri`, `ns-prefix`, `asdl-enumerations`, `langium-types`, `sdf3-labels`, `output-encoding` |
+| `genmodel` | `semantics`, `container-scope`, `unset-features`, `output-encoding`, `defaults`, `root-extends-class`, `operation-reflection`, `import-organizing`, `base-package`, `prefix`, `jdk-level` |
+| `generate` | also `code-style`, `defaults`, `root-extends-class`, `operation-reflection`, `import-organizing` |
+
+`prefix` takes a JSON array of prefixes, each `Name` or `package=Name`, which `--prefix` on the
+command line replaces as a whole; `operation-reflection`, `import-organizing`, `strict` and
+`require-explicit-values` take `true` or `false`. A `code-style` from the configuration file
+applies to the template sets of `generate` that offer code styles, such as `java`, and is ignored
+by sets that offer none, such as `swift`, `c` and `cpp`; a style that a set with code styles does
+not offer is an error, as for `--code-style`. The other keys are ignored by these commands, so one file serves every tool, but an unknown key or an
+invalid value stops them with an error that names the file, the key and the value, as for `generate`.
+Without a configuration file, or with `--no-config`, only the command line applies.
+
+```json
+{
+  "encoding": "ISO-8859-1",
+  "km3-primitives": "declared",
+  "asdl-enumerations": "never"
 }
 ```
 

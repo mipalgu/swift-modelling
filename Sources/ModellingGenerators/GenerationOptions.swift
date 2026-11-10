@@ -65,6 +65,16 @@ public struct GenerationOptions: Sendable, Equatable {
     /// the default style of the template set.
     public var codeStyle: String?
 
+    /// Whether ``codeStyle`` comes from a configuration, such as the `code-style` key of a
+    /// configuration file, rather than an explicit choice.
+    ///
+    /// A configured code style applies only to a template set that offers code styles. A set
+    /// that offers none, such as `swift`, `c` or `cpp`, ignores it, whereas it rejects an
+    /// explicit ``codeStyle``. A configured name that a set with code styles does not declare is
+    /// rejected with ``GenerationError/unknownCodeStyle(_:_:_:)``, as an explicit one is. The
+    /// default is `false`.
+    public var codeStyleIsConfigured: Bool = false
+
     /// The behaviours of the template language and its expression language.
     ///
     /// Options created with ``init(templatePaths:forceOverwrite:diff:redirectionPattern:includeSourceRoot:lineDelimiter:codeStyle:mtlOptions:)``
@@ -93,6 +103,39 @@ public struct GenerationOptions: Sendable, Equatable {
     /// With `nil`, the default, the resource set configures no scope and its resources keep the
     /// behaviour of a resource set without one.
     public var containerLookupScope: ContainerLookupScope? = nil
+
+    /// The character encoding in which the templates are read, if one is chosen.
+    ///
+    /// With `nil`, the default, every template is read as UTF-8, and a template that is not
+    /// valid UTF-8 is read as ISO-8859-1 instead, which accepts every byte, with a warning in
+    /// ``GenerationResult/decodingWarnings``. With an encoding, every template is read in that
+    /// encoding alone, without a warning, and a template that is not valid in it stops the
+    /// generation with ``GenerationError/templateSetInvalid(_:_:)``.
+    public var templateEncoding: TextEncoding? = nil
+
+    /// The character encoding in which a model export reads a model in a text format, if one
+    /// is chosen.
+    ///
+    /// A model export (see
+    /// ``GenerationPipeline/generate(modelURL:metamodelURL:language:outputDirectory:options:progress:)``)
+    /// reads a model in a text format, such as a metamodel written in KM3 or Emfatic, in this
+    /// encoding, and so does the registration of its metamodel if that is in a text format.
+    /// With `nil`, the default, such a document is read as UTF-8, and a model that is not valid
+    /// UTF-8 is read as ISO-8859-1 instead, which accepts every byte, with a warning in
+    /// ``GenerationResult/decodingWarnings``. With an encoding, it is read in that encoding
+    /// alone, without a warning, and a model that is not valid in it stops the export with
+    /// ``GenerationError/modelUnreadable(_:_:)``. XMI, Ecore and JSON documents are decoded as
+    /// their own rules prescribe, whatever this option says.
+    public var modelEncoding: TextEncoding? = nil
+
+    /// The character encoding in which the templates write a file whose `[file]` block names
+    /// no charset.
+    ///
+    /// UTF-8 is the default. A `[file]` block that names its charset, such as `'UTF-8'` for a
+    /// format that requires it, keeps that charset. A character that the encoding cannot hold
+    /// stops the generation with ``GenerationError/generationFailed(_:)``, which names the file
+    /// and the line and column of the character, and that file is not written.
+    public var outputEncoding: TextEncoding = .utf8
 
     /// Creates a set of options whose templates behave as in version 0.6.
     ///
@@ -227,4 +270,18 @@ public struct GenerationResult: Sendable, Equatable {
     /// Each warning is a `SourceDiagnostic`, such as a `let` block that was skipped because its
     /// value does not conform to the declared type of its variable.
     public internal(set) var warnings: [SourceDiagnostic] = []
+
+    /// The warnings of reading the templates, in the order in which the templates were read.
+    ///
+    /// A template that is not valid UTF-8, and was therefore read as ISO-8859-1 because
+    /// ``GenerationOptions/templateEncoding`` names no encoding, has a warning whose code is
+    /// `TextDecodingDiagnostic.decodedAsISOLatin1`. Its document is the path of the template
+    /// within the template set, such as `main.mtl`, and its range points at the first byte that
+    /// is not UTF-8. A generation from an Ecore model lists the warnings of reading a
+    /// transformation that replaces the bundled import transformation first, as
+    /// ``GenModelResult/decodingWarnings`` describes them. A model export lists the warning of
+    /// reading a model in a text format first, if ``GenerationOptions/modelEncoding`` names no
+    /// encoding and the model is not valid UTF-8; its document is the path of the model as the
+    /// location of the model gives it.
+    public internal(set) var decodingWarnings: [SourceDiagnostic] = []
 }

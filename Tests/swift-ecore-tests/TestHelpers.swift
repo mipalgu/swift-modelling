@@ -256,6 +256,12 @@ func cleanupTemporaryDirectory(_ url: URL) {
 
 // MARK: - Subprocess Execution
 
+/// The most bytes of standard output or standard error that a test reads from the tool.
+///
+/// The limit only bounds the buffer that collects the output, so it is set well above the
+/// longest help text or report that a test reads.
+let capturedOutputLimit = 1 << 20
+
 /// Executes a swift-ecore command and returns the result.
 ///
 /// - Parameters:
@@ -289,17 +295,60 @@ func executeSwiftEcore(
             arguments: Arguments(allArgs),
             environment: childEnvironment(environment),
             workingDirectory: workingDirectory.map { FilePath($0.path) },
-            output: .string(limit: 16384),
-            error: .string(limit: 16384)
+            output: .string(limit: capturedOutputLimit),
+            error: .string(limit: capturedOutputLimit)
         )
     }
 
     // Then
     return SubprocessResult(
         terminationStatus: result.terminationStatus,
-        stdout: captureOutput ? (result.standardOutput ?? "") : "",
-        stderr: captureOutput ? (result.standardError ?? "") : ""
+        stdout: captureOutput ? normalisedConsoleText(result.standardOutput ?? "") : "",
+        stderr: captureOutput ? normalisedConsoleText(result.standardError ?? "") : ""
     )
+}
+
+/// Executes a swift-ecore command with its standard error merged into its standard output.
+///
+/// Both streams of the tool share one pipe, as with `2>&1` in a shell, so the output shows
+/// the lines of both streams in the order in which the tool wrote them.
+///
+/// - Parameters:
+///   - command: The command to execute (e.g., "inspect", "convert").
+///   - arguments: Additional arguments for the command.
+/// - Returns: The subprocess execution result, whose `stdout` holds the combined output and
+///   whose `stderr` is empty.
+/// - Throws: Errors from subprocess execution or executable path resolution.
+@MainActor
+func executeSwiftEcoreWithCombinedOutput(command: String, arguments: [String] = []) async throws -> SubprocessResult {
+    let executablePath = try swiftEcoreExecutablePath()
+    let result = try await withProcessSlot {
+        try await Subprocess.run(
+            .path(FilePath(executablePath)),
+            arguments: Arguments([command] + arguments),
+            environment: childEnvironment([:]),
+            output: .string(limit: capturedOutputLimit),
+            error: .combinedWithOutput
+        )
+    }
+    return SubprocessResult(terminationStatus: result.terminationStatus, stdout: normalisedConsoleText(result.standardOutput ?? ""), stderr: "")
+}
+
+/// Text that a tool printed, with line feeds between its lines on every platform.
+///
+/// On Windows, standard output and standard error are in text mode, which ends each line
+/// that a tool prints with a carriage return and line feed. The captured text is brought
+/// back to the line feeds that the tool printed, so that tests compare the same text on
+/// every platform. Elsewhere, the text is returned unchanged.
+///
+/// - Parameter text: The text as captured from the standard output or standard error of a tool.
+/// - Returns: The text with each carriage return and line feed on Windows replaced by a line feed.
+func normalisedConsoleText(_ text: String) -> String {
+    #if os(Windows)
+    return text.replacingOccurrences(of: "\r\n", with: "\n")
+    #else
+    return text
+    #endif
 }
 
 // MARK: - Child Environment

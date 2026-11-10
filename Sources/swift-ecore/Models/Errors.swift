@@ -8,6 +8,7 @@
 
 import ECore
 import Foundation
+import ModellingCommandLine
 
 // MARK: - Error Types
 
@@ -34,7 +35,7 @@ enum ValidationError: Error, LocalizedError {
         case .fileNotFound(let path):
             return "File not found: \(path)"
         case .unsupportedFormat(let format):
-            return "Unsupported format: \(format)"
+            return DocumentError.unsupportedFormatDescription(format)
         case .parsingFailed(let format, let details):
             return "Failed to parse \(format): \(details)"
         case .failed(let errors, let warnings, let strict):
@@ -80,12 +81,50 @@ enum ConversionError: Error, LocalizedError {
     ///   - format: The name of the output format.
     case modelOutputFormat(String, format: String)
 
-    /// Names formats in prose.
+    /// A document was to be written in a format that is only read, such as Langium.
     ///
-    /// - Parameter formats: The formats.
-    /// - Returns: The names of the formats, separated by `or`, such as `ecore or json`.
-    private static func formatNames(_ formats: [ModelFormat]) -> String {
-        formats.map(\.rawValue).joined(separator: " or ")
+    /// - Parameters:
+    ///   - input: The name of the input file.
+    ///   - format: The output format.
+    ///   - isMetamodel: Whether the input is a metamodel rather than a model.
+    case readOnlyOutputFormat(String, format: ModelFormat, isMetamodel: Bool)
+
+    /// A level was given for an input that holds no multi-level model.
+    ///
+    /// The associated value is the name of the input file.
+    case levelWithoutDeepModel(String)
+
+    /// A multi-level model was to be written in a metamodel format without a level.
+    ///
+    /// - Parameters:
+    ///   - input: The name of the input file.
+    ///   - format: The name of the output format.
+    ///   - levels: The levels of the model, from the top down.
+    case deepModelNeedsLevel(String, format: String, levels: [Int])
+
+    /// The multi-level model has no level of that number.
+    ///
+    /// - Parameters:
+    ///   - level: The level given.
+    ///   - levels: The levels of the model, from the top down.
+    case noSuchLevel(Int, levels: [Int])
+
+    /// The advice to convert a document to one of the formats that can hold it.
+    ///
+    /// - Parameter isMetamodel: Whether the document is a metamodel rather than a model.
+    /// - Returns: For example `convert it to one of: ecore, json, km3, emf (Emfatic)`, listing
+    ///   the formats of the registry that can write the document.
+    private static func advice(isMetamodel: Bool) -> String {
+        let formats = isMetamodel ? ConvertCommand.metamodelFormats : ConvertCommand.modelFormats
+        return "convert it to one of: " + MetamodelRegistration.formatList(formats)
+    }
+
+    /// Lists the levels of a multi-level model.
+    ///
+    /// - Parameter levels: The levels, from the top down.
+    /// - Returns: The levels separated by commas, such as `2, 1, 0`.
+    private static func levelList(_ levels: [Int]) -> String {
+        levels.map(String.init).joined(separator: ", ")
     }
 
     /// A localised description of the error.
@@ -104,11 +143,20 @@ enum ConversionError: Error, LocalizedError {
         case .invalidModel(let errors):
             return "The model has \(errors) validation error(s); no output was written"
         case .metamodelOutputFormat(let input, let format):
-            return "\(input) is a metamodel, which cannot be written as \(format): "
-                + "convert it to \(Self.formatNames(ConvertCommand.metamodelFormats))"
+            return "\(input) is a metamodel, which cannot be written as \(format): " + Self.advice(isMetamodel: true)
         case .modelOutputFormat(let input, let format):
-            return "\(input) is a model, which cannot be written as \(format): "
-                + "convert it to \(Self.formatNames(ConvertCommand.modelFormats))"
+            return "\(input) is a model, which cannot be written as \(format): " + Self.advice(isMetamodel: false)
+        case .levelWithoutDeepModel(let input):
+            return "\(input) holds no multi-level model, so --\(ConvertCommand.levelOption) does not apply"
+        case .deepModelNeedsLevel(let input, let format, let levels):
+            return "\(input) is a multi-level model: give --\(ConvertCommand.levelOption) <level> to write the "
+                + "metamodel of one level as \(format) (levels: \(Self.levelList(levels))), or convert it to one of: "
+                + MetamodelRegistration.formatList(ConvertCommand.modelFormats)
+        case .noSuchLevel(let level, let levels):
+            return "The multi-level model has no level \(level) (levels: \(Self.levelList(levels)))"
+        case .readOnlyOutputFormat(let input, let format, let isMetamodel):
+            return "\(input) cannot be written as \(format.rawValue): \(format.description) documents are "
+                + "only read, not written; " + Self.advice(isMetamodel: isMetamodel)
         }
     }
 }
@@ -159,7 +207,7 @@ enum QueryError: Error, LocalizedError {
         case .fileNotFound(let path):
             return "File not found: \(path)"
         case .unsupportedFormat(let format):
-            return "Unsupported format: \(format)"
+            return DocumentError.unsupportedFormatDescription(format)
         case .invalidQuery(let details):
             return "Invalid query: \(details)"
         case .unsupportedQuery(let query):

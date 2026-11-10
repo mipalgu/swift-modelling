@@ -161,6 +161,21 @@ enum ComparisonVocabulary {
         /// Whether a feature cannot be changed.
         case readOnly = "read-only"
 
+        /// Whether the values of a multi-valued feature are ordered.
+        case ordered
+
+        /// Whether the values of a multi-valued feature are unique.
+        case unique
+
+        /// Whether a feature has no storage of its own and is computed when it is read.
+        case volatile
+
+        /// Whether a feature distinguishes being unset from holding its default value.
+        case unsettable
+
+        /// Whether a reference resolves proxies to objects in other documents when it is read.
+        case resolveProxies = "resolve proxies"
+
         /// The default value of a feature.
         case defaultValue = "default"
 

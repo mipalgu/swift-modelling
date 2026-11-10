@@ -83,7 +83,7 @@
                 They are the same thing
 
                 @Justification {
-                    Incorrect. Queries and macros serve different purposes—queries for computation, macros for text generation with structure.
+                    Incorrect. Queries and macros serve different purposes: queries for computation, macros for text generation with structure.
                 }
             }
 
@@ -91,7 +91,7 @@
                 Queries generate text, macros return values
 
                 @Justification {
-                    Incorrect. This is backwards—queries compute and return values, whilst macros generate and output text.
+                    Incorrect. This is backwards: queries compute and return values, whilst macros generate and output text.
                 }
             }
         }
