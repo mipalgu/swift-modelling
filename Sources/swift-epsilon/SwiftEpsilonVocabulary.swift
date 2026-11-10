@@ -17,7 +17,7 @@ enum SwiftEpsilonVocabulary {
     static let toolName = "swift-epsilon"
 
     /// The version that `--version` reports.
-    static let version = "0.7.0"
+    static let version = "0.8.0"
 
     /// The names of the command groups, one for each Epsilon language.
     enum Group {

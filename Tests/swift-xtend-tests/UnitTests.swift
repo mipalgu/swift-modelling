@@ -38,7 +38,7 @@ struct VocabularyTests {
     @Test("The names of the tool, commands and version")
     func names() {
         #expect(SwiftXtendVocabulary.toolName == "swift-xtend")
-        #expect(SwiftXtendVocabulary.version == "0.7.0")
+        #expect(SwiftXtendVocabulary.version == "0.8.0")
         #expect(SwiftXtendCommand.configuration.subcommands.count == 2)
         #expect(RunCommand.configuration.commandName == SwiftXtendVocabulary.Command.run)
         #expect(GenerateCommand.configuration.commandName == SwiftXtendVocabulary.Command.generate)

@@ -16,7 +16,7 @@ enum SwiftXtendVocabulary {
     static let toolName = "swift-xtend"
 
     /// The version that `--version` reports.
-    static let version = "0.7.0"
+    static let version = "0.8.0"
 
     /// The names of the subcommands.
     enum Command {

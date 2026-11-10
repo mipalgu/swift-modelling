@@ -15,7 +15,7 @@ struct HelpTests {
     func version() async throws {
         let run = try await runSwiftHenshin(["--version"])
         #expect(run.succeeded)
-        #expect(run.output == "0.7.0\n")
+        #expect(run.output == "0.8.0\n")
     }
 
     @Test("The overview lists every subcommand and the exit statuses")
