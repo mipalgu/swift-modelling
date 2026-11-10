@@ -4,6 +4,7 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import ArgumentParser
 import Foundation
 import Testing
 
@@ -272,14 +273,14 @@ struct CheckCompatEndToEndTests {
             "--metamodel", "Families=\(try CompatFixture.path("Families.ecore"))",
             "--target-metamodel", "Persons=\(try CompatFixture.path("Persons.ecore"))",
         ])
-        #expect(unmatched.exitCode == 64)
+        #expect(unmatched.exitCode == ExitCode.validationFailure.rawValue)
         #expect(unmatched.stderr.contains("--target-metamodel names 'Persons', which no --metamodel names"))
         let rename = try await executeSwiftATL(
             command: checkCompat, arguments: try CompatFixture.arguments(["--rename", "Member.firstName"]))
-        #expect(rename.exitCode == 64)
+        #expect(rename.exitCode == ExitCode.validationFailure.rawValue)
         #expect(rename.stderr.contains("Invalid renaming 'Member.firstName'"))
         let semantics = try await executeSwiftATL(
             command: checkCompat, arguments: try CompatFixture.arguments(["--semantics", "legacy"]))
-        #expect(semantics.exitCode == 64)
+        #expect(semantics.exitCode == ExitCode.validationFailure.rawValue)
     }
 }

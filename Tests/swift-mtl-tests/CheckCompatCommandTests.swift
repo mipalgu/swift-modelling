@@ -4,6 +4,7 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import ArgumentParser
 import Foundation
 import Testing
 
@@ -190,10 +191,10 @@ struct CheckCompatEndToEndTests {
         let several = try await executeSwiftMTL(
             command: checkCompat,
             arguments: try CompatFixture.arguments(extra: ["--metamodel", "shop=\(try CompatFixture.path("LibraryV2.ecore"))"]))
-        #expect(several.exitCode == 64)
+        #expect(several.exitCode == ExitCode.validationFailure.rawValue)
         #expect(several.stderr.contains("Give one --metamodel, not several (library, shop)"))
         let mode = try await executeSwiftMTL(
             command: checkCompat, arguments: try CompatFixture.arguments(extra: ["--mode", "totalIsomorphic"]))
-        #expect(mode.exitCode == 64)
+        #expect(mode.exitCode == ExitCode.validationFailure.rawValue)
     }
 }

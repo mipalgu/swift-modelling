@@ -4,6 +4,7 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import ArgumentParser
 import Foundation
 import Testing
 
@@ -173,7 +174,7 @@ struct OutputEncodingTests {
     @Test("An unknown encoding name is a usage error")
     func invalidName() async throws {
         let run = try await runSwiftEpsilon(["eol", "run", "greeting.eol", "--output-encoding", "EBCDIC"])
-        #expect(run.status == 64)
+        #expect(run.status == ExitCode.validationFailure.rawValue)
         #expect(run.error.contains("--output-encoding"), "\(run.error)")
     }
 

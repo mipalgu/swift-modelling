@@ -5,6 +5,7 @@
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
 import AQL
+import ArgumentParser
 import Foundation
 import ModellingCommandLine
 import Testing
@@ -230,10 +231,10 @@ struct CheckCompatEndToEndTests {
         }
         let invalid = try await runSwiftAQL([checkCompat] + (try CompatFixture.arguments(
             "self.books", ["--subtyping", "standard"])))
-        #expect(invalid.status == 64)
+        #expect(invalid.status == ExitCode.validationFailure.rawValue)
         let preset = try await runSwiftAQL([checkCompat] + (try CompatFixture.arguments(
             "self.books", ["--semantics", "access-refined"])))
-        #expect(preset.status == 64)
+        #expect(preset.status == ExitCode.validationFailure.rawValue)
     }
 
     @Test("writes the report as JSON with its verdict")
@@ -269,11 +270,11 @@ struct CheckCompatEndToEndTests {
     func validation() async throws {
         let variable = try await runSwiftAQL([checkCompat] + (try CompatFixture.arguments(
             "self.books", ["--variable", "self"])))
-        #expect(variable.status == 64)
+        #expect(variable.status == ExitCode.validationFailure.rawValue)
         #expect(variable.error.contains("Invalid variable 'self'"))
         let several = try await runSwiftAQL([checkCompat] + (try CompatFixture.arguments(
             "self.books", ["--metamodel", "shop=\(try CompatFixture.path("LibraryV2.ecore"))"])))
-        #expect(several.status == 64)
+        #expect(several.status == ExitCode.validationFailure.rawValue)
     }
 }
 

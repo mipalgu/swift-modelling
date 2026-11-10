@@ -4,6 +4,7 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import ArgumentParser
 import Foundation
 import Testing
 
@@ -137,7 +138,7 @@ struct EndToEndTests {
     ])
     func usageErrors(arguments: [String]) async throws {
         let run = try await runSwiftEpsilon(arguments)
-        #expect(run.status == 64, "\(run.error)")
+        #expect(run.status == ExitCode.validationFailure.rawValue, "\(run.error)")
         #expect(run.output.isEmpty)
     }
 

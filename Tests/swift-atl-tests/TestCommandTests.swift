@@ -1,3 +1,4 @@
+import ArgumentParser
 import Foundation
 import Subprocess
 import Testing
@@ -198,7 +199,7 @@ struct TestCommandTests {
 
         let (result, _) = try await timedTestRun([option, atlFile.path])
 
-        #expect(result.exitCode == 64)
+        #expect(result.exitCode == ExitCode.validationFailure.rawValue)
         #expect(result.stderr.contains("--timeout"))
     }
 }

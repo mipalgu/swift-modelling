@@ -4,6 +4,7 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import ArgumentParser
 import Foundation
 import Henshin
 import HenshinAnalysis
@@ -102,7 +103,7 @@ struct AnalyseTests {
     @Test("Invalid values of the options are usage errors", arguments: [["--direction", "sideways"], ["--granularity", "fine"], ["--format", "xml"]])
     func usage(arguments: [String]) async throws {
         let run = try await runSwiftHenshin(["analyse", "depot.henshin"] + arguments)
-        #expect(run.status == 64)
+        #expect(run.status == ExitCode.validationFailure.rawValue)
     }
 
     @Test("A module without rules has nothing to analyse")

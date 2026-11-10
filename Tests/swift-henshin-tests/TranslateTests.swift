@@ -4,6 +4,7 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import ArgumentParser
 import Henshin
 import Testing
 
@@ -59,7 +60,7 @@ struct TranslateTests {
         arguments: [["translate"], ["translate", "a", "-e", "b"], ["translate", "--table", "a"]])
     func usage(arguments: [String]) async throws {
         let run = try await runSwiftHenshin(arguments)
-        #expect(run.status == 64)
+        #expect(run.status == ExitCode.validationFailure.rawValue)
     }
 
     @Test("Names of list options are split at commas")

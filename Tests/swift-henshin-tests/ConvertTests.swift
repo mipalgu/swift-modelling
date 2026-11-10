@@ -4,6 +4,7 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import ArgumentParser
 import Foundation
 import Testing
 
@@ -63,7 +64,7 @@ struct ConvertTests {
     @Test("The output cannot be given twice")
     func usage() async throws {
         let run = try await runSwiftHenshin(["convert", "a.henshin", "b.henshin_text", "-o", "c.henshin_text"])
-        #expect(run.status == 64)
+        #expect(run.status == ExitCode.validationFailure.rawValue)
     }
 
     @Test("What Henshin Text cannot express is reported as a warning")

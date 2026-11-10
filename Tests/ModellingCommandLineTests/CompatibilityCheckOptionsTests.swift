@@ -389,7 +389,7 @@ struct CompatibilityCheckOptionsTests {
     func discussion() {
         let text = CompatibilityCheckOptions.discussion(module: "the transformation")
         #expect(text.contains("the transformation"))
-        for status in ["0", "1", "2", "3", "64"] { #expect(text.contains(status)) }
+        for status in ["0", "1", "2", "3", String(ExitCode.validationFailure.rawValue)] { #expect(text.contains(status)) }
         #expect(text.contains("--subtyping"))
         #expect(!text.contains("--semantics"))
         #expect(!text.contains("\u{2014}"))

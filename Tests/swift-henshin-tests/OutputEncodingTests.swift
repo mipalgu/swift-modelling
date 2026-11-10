@@ -4,6 +4,7 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import ArgumentParser
 import Foundation
 import Testing
 
@@ -126,7 +127,7 @@ struct OutputEncodingTests {
     @Test("An unknown encoding name is a usage error, and the commands that write describe the option")
     func invalidNameAndHelp() async throws {
         let run = try await runSwiftHenshin(["convert", Fixture.module, "--output-encoding", "EBCDIC"])
-        #expect(run.status == 64)
+        #expect(run.status == ExitCode.validationFailure.rawValue)
         #expect(run.error.contains("--output-encoding"), "\(run.error)")
         for command in ["apply", "convert", "explore"] {
             let help = try await runSwiftHenshin([command, "--help"])

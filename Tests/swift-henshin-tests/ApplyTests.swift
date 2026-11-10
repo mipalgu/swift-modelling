@@ -4,6 +4,7 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import ArgumentParser
 import ECore
 import Foundation
 import Henshin
@@ -129,7 +130,7 @@ struct ApplyTests {
         #expect(loose.error == "applied move(source=Bin(A), target=Bin(A), m=2, n=2): created 0, deleted 0\n")
         let both = try await runSwiftHenshin(
             ["apply", Fixture.module, "loop.xmi", "-u", "move", "--injective", "--non-injective"], in: directory)
-        #expect(both.status == 64)
+        #expect(both.status == ExitCode.validationFailure.rawValue)
     }
 
     @Test("--iteration-limit stops a loop unit with a warning")
@@ -144,7 +145,7 @@ struct ApplyTests {
         #expect(run.error.components(separatedBy: "applied touch(store=Depot(Central))").count == 4)
         let invalid = try await runSwiftHenshin(
             ["apply", Fixture.module, Fixture.model, "-u", "spin", "--iteration-limit", "0"], in: directory)
-        #expect(invalid.status == 64)
+        #expect(invalid.status == ExitCode.validationFailure.rawValue)
         #expect(invalid.error.contains("--iteration-limit must be at least 1"))
     }
 
@@ -216,10 +217,10 @@ struct ApplyTests {
     func usage() async throws {
         let dry = try await runSwiftHenshin(
             ["apply", Fixture.module, Fixture.model, "-u", "move", "--dry-run", "-o", "out.xmi"])
-        #expect(dry.status == 64)
+        #expect(dry.status == ExitCode.validationFailure.rawValue)
         #expect(dry.error.contains("--dry-run cannot be combined with --output"))
         let unit = try await runSwiftHenshin(["apply", Fixture.module, Fixture.model])
-        #expect(unit.status == 64)
+        #expect(unit.status == ExitCode.validationFailure.rawValue)
     }
 
     @Test("A Henshin Text module in ISO-8859-1 is read with a warning, or quietly with --encoding")

@@ -4,6 +4,7 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import ArgumentParser
 import Foundation
 import Testing
 
@@ -128,7 +129,7 @@ struct OutputEncodingTests {
     @Test("An unknown encoding name is a usage error, and both commands describe the option")
     func invalidNameAndHelp() async throws {
         let run = try await runSwiftXtend(["generate", "Enc.xtend", "-o", "out", "--output-encoding", "EBCDIC"])
-        #expect(run.status == 64)
+        #expect(run.status == ExitCode.validationFailure.rawValue)
         #expect(run.error.contains("--output-encoding"), "\(run.error)")
         for command in ["run", "generate"] {
             let help = try await runSwiftXtend([command, "--help"])

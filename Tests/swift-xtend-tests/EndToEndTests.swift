@@ -4,6 +4,7 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import ArgumentParser
 import Foundation
 import Testing
 
@@ -350,17 +351,17 @@ struct EndToEndTests {
     func generateValidation() async throws {
         try await withFixtures { directory in
             let noModel = try await runSwiftXtend(["generate", "Catalogue.xtend", "--output", "out"], in: directory)
-            #expect(noModel.status == 64)
+            #expect(noModel.status == ExitCode.validationFailure.rawValue)
             #expect(noModel.error.contains("--model"))
             let noOutput = try await runSwiftXtend(["generate", "Catalogue.xtend"] + Self.library, in: directory)
-            #expect(noOutput.status == 64)
+            #expect(noOutput.status == ExitCode.validationFailure.rawValue)
             let badConfiguration = try await runSwiftXtend(
                 ["generate", "Catalogue.xtend", "-o", "out", "--output-configuration", "docs"] + Self.library, in: directory)
-            #expect(badConfiguration.status == 64)
+            #expect(badConfiguration.status == ExitCode.validationFailure.rawValue)
             #expect(badConfiguration.error.contains("name=value"))
             let both = try await runSwiftXtend(
                 ["generate", "Catalogue.xtend", "-o", "out", "-q", "-v"] + Self.library, in: directory)
-            #expect(both.status == 64)
+            #expect(both.status == ExitCode.validationFailure.rawValue)
         }
     }
 
@@ -404,10 +405,10 @@ struct EndToEndTests {
     @Test("A command line that is wrong has status 64")
     func usage() async throws {
         let noMethod = try await runSwiftXtend(["run", "Report.xtend"])
-        #expect(noMethod.status == 64)
+        #expect(noMethod.status == ExitCode.validationFailure.rawValue)
         let unknown = try await runSwiftXtend(["bogus"])
-        #expect(unknown.status == 64)
+        #expect(unknown.status == ExitCode.validationFailure.rawValue)
         let noCommand = try await runSwiftXtend([])
-        #expect(noCommand.status == 0 || noCommand.status == 64)
+        #expect(noCommand.status == 0 || noCommand.status == ExitCode.validationFailure.rawValue)
     }
 }

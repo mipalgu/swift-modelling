@@ -4,6 +4,7 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import ArgumentParser
 import Foundation
 import Henshin
 import HenshinStateSpace
@@ -159,7 +160,7 @@ struct ExploreTests {
         arguments: [["--max-states", "0"], ["--max-objects", "0"], ["--workers", "0"], ["--max-depth", "-1"], ["--identity", "same"]])
     func usage(arguments: [String]) async throws {
         let run = try await runSwiftHenshin(["explore", "m.henshin", "m.xmi"] + arguments)
-        #expect(run.status == 64)
+        #expect(run.status == ExitCode.validationFailure.rawValue)
     }
 
     @Test("Exit statuses follow the outcomes")
