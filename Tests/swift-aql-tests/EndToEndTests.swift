@@ -113,7 +113,7 @@ struct EndToEndTests {
         #expect(help.output.contains("evaluate"))
         #expect(help.output.contains("query"))
         let version = try await runSwiftAQL(["--version"])
-        #expect(version.output == "0.8.0\n")
+        #expect(version.output == "0.8.1\n")
         let evaluateHelp = try await runSwiftAQL(["help", "evaluate"])
         for option in ["--model", "--expression", "--expression-file", "--context", "--metamodel", "--semantics"] {
             #expect(evaluateHelp.output.contains(option), "\(option)")

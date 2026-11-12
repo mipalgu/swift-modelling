@@ -20,7 +20,7 @@ struct EndToEndTests {
         #expect(run.succeeded)
         for group in ["eol", "evl", "etl", "egl"] { #expect(run.output.contains(group), "\(group)") }
         let version = try await runSwiftEpsilon(["--version"])
-        #expect(version.output == "0.8.0\n")
+        #expect(version.output == "0.8.1\n")
         let group = try await runSwiftEpsilon(["evl", "--help"])
         #expect(group.output.contains("validate"))
     }
