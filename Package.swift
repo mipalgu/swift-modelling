@@ -66,7 +66,6 @@ let package = Package(
         .package(url: "https://github.com/mipalgu/swift-henshin", branch: "development"),
         .package(url: "https://github.com/mipalgu/swift-epsilon", branch: "development"),
         .package(url: "https://github.com/mipalgu/swift-xtend", branch: "development"),
-        .package(url: "https://github.com/mipalgu/swift-docc-static", branch: "main"),
         .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.4.0"),
     ],
     targets: [
