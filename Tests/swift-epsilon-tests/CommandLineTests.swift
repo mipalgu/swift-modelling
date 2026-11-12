@@ -18,7 +18,7 @@ struct CommandLineTests {
     func groups() {
         let configuration = SwiftEpsilonCommand.configuration
         #expect(configuration.commandName == "swift-epsilon")
-        #expect(configuration.version == "0.8.0")
+        #expect(configuration.version == "0.8.1")
         let groups = configuration.subcommands.map { $0.configuration.commandName }
         #expect(groups == ["eol", "evl", "etl", "egl"])
         #expect(EOLCommand.configuration.subcommands.map { $0.configuration.commandName } == ["run"])
