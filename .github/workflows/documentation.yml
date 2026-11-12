@@ -32,12 +32,12 @@ jobs:
       - name: Swift version
         run: swift --version
 
-      - name: Build docc-static
-        run: swift build -c release --product docc-static
+      - name: Install docc-static
+        run: brew install mipalgu/tap/swift-docc-static
 
       - name: Generate documentation
         run: |
-          .build/release/docc-static generate \
+          docc-static generate \
             --package-path . \
             --output .build/documentation \
             --verbose
