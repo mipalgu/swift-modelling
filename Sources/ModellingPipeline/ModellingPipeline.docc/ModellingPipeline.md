@@ -45,6 +45,20 @@ A step takes the behaviours of its language as options: `mtlOptions` for a ``Gen
 
 A descriptor can list directories of modules that the set shares with other sets under `imports`, such as `["../expressions"]`, and its modules then import them as `[import expressions::c/]`.
 
+## Related Documentation
+
+### Libraries
+
+- [ATL](https://mipalgu.github.io/swift-atl/documentation/atl/) of [swift-atl](https://mipalgu.github.io/swift-atl/) - The transformation engine behind ``TransformationStep``
+- [MTL](https://mipalgu.github.io/swift-mtl/documentation/mtl/) of [swift-mtl](https://mipalgu.github.io/swift-mtl/) - The template engine behind ``GenerationStep``
+- [ECore](https://mipalgu.github.io/swift-ecore/documentation/ecore/) of [swift-ecore](https://mipalgu.github.io/swift-ecore/) - The resource sets and model formats that a ``ModelPipeline`` loads and saves
+- [ModellingGenerators](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/index.html) - Template sets and the generator model pipeline
+
+### Tutorials
+
+- Integrated Workflows: [Complete MDE Workflow: From Metamodel to Code](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/01-complete-mde-workflow/index.html)
+- [All tutorials](https://mipalgu.github.io/swift-modelling/tutorials/tutorials/index.html)
+
 ## Topics
 
 ### Pipelines

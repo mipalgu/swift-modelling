@@ -85,10 +85,11 @@ public struct GenerationOptions: Sendable, Equatable {
 
     /// How the templates read structural features that a model does not set.
     ///
-    /// With ``UnsetFeatureReads/defaults``, the default, an unset attribute reads as its
-    /// declared default or the default of its data type, and an unset many-valued feature as an
-    /// empty collection, as in the Eclipse Modeling Framework. With
-    /// ``UnsetFeatureReads/undefined`` every unset feature reads as undefined. The setting is
+    /// With [`UnsetFeatureReads.defaults`](https://mipalgu.github.io/swift-ecore/documentation/ecore/unsetfeaturereads/defaults/),
+    /// the default, an unset attribute reads as its declared default or the default of its
+    /// data type, and an unset many-valued feature as an empty collection, as in the Eclipse
+    /// Modeling Framework. With [`UnsetFeatureReads.undefined`](https://mipalgu.github.io/swift-ecore/documentation/ecore/unsetfeaturereads/undefined/)
+    /// every unset feature reads as undefined. The setting is
     /// part of ``mtlOptions``.
     public var unsetFeatureReads: UnsetFeatureReads {
         get { mtlOptions.unsetFeatureReads }

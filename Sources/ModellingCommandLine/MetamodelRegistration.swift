@@ -456,7 +456,7 @@ public enum MetamodelRegistration {
     /// Every root package of each file is registered, as
     /// ``registerMetamodels(at:into:announcement:verbose:debug:options:diagnosticOutput:)``
     /// registers them. Then each Complete OCL document is applied, in order, to the metamodels
-    /// together, as ``applyCompleteOCL(_:to:in:verbose:diagnosticOutput:)`` describes, so that
+    /// together, as ``applyCompleteOCL(_:to:in:verbose:encoding:diagnosticOutput:)`` describes, so that
     /// the registered packages carry the constraints of the documents.
     ///
     /// - Parameters:
@@ -469,7 +469,7 @@ public enum MetamodelRegistration {
     /// - Throws: The error of
     ///   ``registerMetamodels(at:into:announcement:verbose:debug:options:diagnosticOutput:)``
     ///   for the first file that cannot be registered, and the errors of
-    ///   ``applyCompleteOCL(_:to:in:verbose:diagnosticOutput:)``.
+    ///   ``applyCompleteOCL(_:to:in:verbose:encoding:diagnosticOutput:)``.
     @MainActor
     public static func resourceSet(
         registering paths: [String], applying documents: [String], verbose: Bool = false, debug: Bool = false,

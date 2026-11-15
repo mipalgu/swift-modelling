@@ -11,12 +11,14 @@ import ModellingGenerators
 
 /// A sequence of steps that load, transform, generate from and save models.
 ///
-/// A pipeline runs its ``steps`` in order over one ``ECore/ResourceSet``. Each model it loads
+/// A pipeline runs its ``steps`` in order over one
+/// [`ResourceSet`](https://mipalgu.github.io/swift-ecore/documentation/ecore/resourceset/). Each model it loads
 /// or creates is kept under a name, by which later steps refer to it: a transformation reads
 /// its source models and stores its target models by name, a generation passes the root objects
 /// of named models to its template, and a save writes a named model. Models are read and written
-/// with ``ECore/ModelIO``, in any format it supports, and what a conversion cannot keep is
-/// collected in one ``ECore/ConversionDiagnostics``. Progress is reported to a
+/// with [`ModelIO`](https://mipalgu.github.io/swift-ecore/documentation/ecore/modelio/), in any format it supports,
+/// and what a conversion cannot keep is collected in one
+/// [`ConversionDiagnostics`](https://mipalgu.github.io/swift-ecore/documentation/ecore/conversiondiagnostics/). Progress is reported to a
 /// `GenerationProgressReporter`.
 ///
 /// ## Example

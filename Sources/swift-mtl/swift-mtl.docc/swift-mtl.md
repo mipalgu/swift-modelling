@@ -1,4 +1,8 @@
-# swift-mtl
+# ``swift_mtl``
+
+@Metadata {
+    @DisplayName("swift-mtl")
+}
 
 Generate code from models using templates.
 
@@ -477,15 +481,53 @@ class [className/] {
 [/template]
 ```
 
+## Related Documentation
+
+### Library Documentation
+
+- [swift-mtl](https://mipalgu.github.io/swift-mtl/) - MTL model-to-text generation ([GitHub](https://github.com/mipalgu/swift-mtl))
+- [MTL](https://mipalgu.github.io/swift-mtl/documentation/mtl/) - MOFM2T (Acceleo style) templates that generate text from models
+- [AQL](https://mipalgu.github.io/swift-aql/documentation/aql/) - The Acceleo Query Language for model queries
+- [ModellingGenerators](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/index.html) - Generator models, the template sets for Java, Swift, C and C++, and the verification exports
+- [ModelTyping](https://mipalgu.github.io/swift-modelling/documentation/modeltyping/index.html) - The model typing checks behind `check-compat`
+
+### Tutorials
+
+- [All tutorials](https://mipalgu.github.io/swift-modelling/tutorials/tutorials/index.html)
+
+#### MTL Code Generation
+
+- [Hello World Template](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/mtl-01-hello-world/index.html)
+- [Expressions and Variables](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/mtl-02-expressions-variables/index.html)
+- [Control Flow](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/mtl-03-control-flow/index.html)
+- [File Blocks](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/mtl-04-file-blocks/index.html)
+- [Queries and Macros](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/mtl-05-queries-macros/index.html)
+- [Code Generation from Models](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/mtl-06-code-from-models/index.html)
+- [Protected Areas](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/mtl-07-protected-areas/index.html)
+- [Complete Code Generator](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/mtl-08-complete-generator/index.html)
+- [AQL in MTL Templates](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/aql-04-aql-in-mtl/index.html)
+
+#### Advanced MTL
+
+- [UML to Swift Code Generation](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/mtl-advanced-01-uml2swift/index.html)
+
+#### Multi-Level Modelling
+
+- [Multi-Level Modelling with Potency](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/multilevel-01-deep-modelling/index.html)
+
+#### Model Typing
+
+- [Reusing Modules with Model Typing](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/typing-01-check-compat/index.html)
+
+### References
+
+- [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec/MOFM2T/)
+- [Eclipse Acceleo](https://eclipse.dev/acceleo/)
+- [OMG OCL (Object Constraint Language)](https://www.omg.org/spec/OCL/)
+
 ## Topics
 
 ### Essentials
 
 - <doc:GettingStarted>
 - <doc:UnderstandingSwiftMTL>
-
-## See Also
-
-- [OMG MOFM2T (MOF Model-to-Text Transformation)](https://www.omg.org/spec/MOFM2T/)
-- [Eclipse Acceleo](https://eclipse.dev/acceleo/)
-- [OMG OCL (Object Constraint Language)](https://www.omg.org/spec/OCL/)

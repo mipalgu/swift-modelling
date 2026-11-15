@@ -1,4 +1,8 @@
-# swift-henshin
+# ``swift_henshin``
+
+@Metadata {
+    @DisplayName("swift-henshin")
+}
 
 Transform models with Henshin graph transformation rules, and analyse the rules.
 
@@ -426,7 +430,25 @@ the value. Without a configuration file, or with `--no-config`, only the command
 | 3 | `explore` found no violation, but an outcome is inconclusive because the state space is incomplete |
 | 64 | Invalid command line |
 
-## See Also
+## Related Documentation
+
+### Library Documentation
+
+- [swift-henshin](https://mipalgu.github.io/swift-henshin/) - Henshin graph transformation, critical pair analysis and state-space exploration ([GitHub](https://github.com/mipalgu/swift-henshin))
+- [Henshin](https://mipalgu.github.io/swift-henshin/documentation/henshin/) - Henshin graph transformation rules applied to Ecore models
+- [HenshinAnalysis](https://mipalgu.github.io/swift-henshin/documentation/henshinanalysis/) - Conflicts and dependencies of rules by critical pair analysis
+- [HenshinStateSpace](https://mipalgu.github.io/swift-henshin/documentation/henshinstatespace/) - State-space exploration and property checks
+
+### Tutorials
+
+- [All tutorials](https://mipalgu.github.io/swift-modelling/tutorials/tutorials/index.html)
+
+#### Graph Transformation with Henshin
+
+- [Graph Transformation Rules with Henshin](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/henshin-01-graph-rules/index.html)
+- [Analysing and Exploring Graph Transformations](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/henshin-02-analysis-exploration/index.html)
+
+### References
 
 - [Eclipse Henshin](https://eclipse.dev/henshin/)
 - [GROOVE](https://groove.cs.utwente.nl/)

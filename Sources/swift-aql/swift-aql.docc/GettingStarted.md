@@ -124,5 +124,18 @@ fi
 
 ## Next Steps
 
-- <doc:swift-aql> - The commands, variables and output in detail
-- The AQL tutorials of the Swift Modelling documentation
+- ``swift_aql`` - The commands, variables and output in detail
+- The [AQL tutorials](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/aql-01-basics/index.html) of the Swift Modelling documentation
+
+## Related Documentation
+
+### Tutorials
+
+- AQL Query Language: [AQL Basics](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/aql-01-basics/index.html)
+- Multi-Level Modelling: [Multi-Level Modelling with Potency](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/multilevel-01-deep-modelling/index.html)
+- Model Typing: [Reusing Modules with Model Typing](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/typing-01-check-compat/index.html)
+- [All tutorials](https://mipalgu.github.io/swift-modelling/tutorials/tutorials/index.html)
+
+### Library Documentation
+
+- [swift-aql](https://mipalgu.github.io/swift-aql/) - AQL model queries ([GitHub](https://github.com/mipalgu/swift-aql))

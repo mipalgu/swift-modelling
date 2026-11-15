@@ -71,7 +71,8 @@ public struct CodeStyleOptions: ParsableArguments, Sendable {
     /// Copies the code style of a run to generation options.
     ///
     /// A style from the configuration file is marked with
-    /// ``GenerationOptions/codeStyleIsConfigured``, so that a template set without code styles
+    /// [`GenerationOptions.codeStyleIsConfigured`](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/generationoptions/codestyleisconfigured/index.html),
+    /// so that a template set without code styles
     /// ignores it, whereas it rejects the option.
     ///
     /// - Parameters:

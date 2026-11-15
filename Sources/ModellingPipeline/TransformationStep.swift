@@ -88,7 +88,8 @@ public struct TransformationStep: Sendable {
     ///   - nativeHelpers: Helpers implemented in Swift (default: none).
     ///   - metamodelSearchPaths: The directories searched for `-- @path` metamodels (default: the
     ///     directory of the module).
-    ///   - unsetFeatureReads: How unset features read (default ``UnsetFeatureReads/defaults``).
+    ///   - unsetFeatureReads: How unset features read (default
+    ///     [`UnsetFeatureReads.defaults`](https://mipalgu.github.io/swift-ecore/documentation/ecore/unsetfeaturereads/defaults/)).
     ///   - targetURIs: The locations of target models by alias (default: transient URIs).
     @available(
         *, deprecated,
@@ -122,7 +123,8 @@ public struct TransformationStep: Sendable {
     ///   - nativeHelpers: Helpers implemented in Swift (default: none).
     ///   - metamodelSearchPaths: The directories searched for `-- @path` metamodels (default: the
     ///     directory of the module).
-    ///   - unsetFeatureReads: How unset features read (default ``UnsetFeatureReads/defaults``).
+    ///   - unsetFeatureReads: How unset features read (default
+    ///     [`UnsetFeatureReads.defaults`](https://mipalgu.github.io/swift-ecore/documentation/ecore/unsetfeaturereads/defaults/)).
     ///   - targetURIs: The locations of target models by alias (default: transient URIs).
     ///   - atlOptions: The behaviours of the ATL language in which the module is written.
     public init(
@@ -158,7 +160,8 @@ public struct TransformationStep: Sendable {
     ///   - nativeHelpers: Helpers implemented in Swift (default: none).
     ///   - metamodelSearchPaths: The directories searched for `-- @path` metamodels (default: the
     ///     directory of the module).
-    ///   - unsetFeatureReads: How unset features read (default ``UnsetFeatureReads/defaults``).
+    ///   - unsetFeatureReads: How unset features read (default
+    ///     [`UnsetFeatureReads.defaults`](https://mipalgu.github.io/swift-ecore/documentation/ecore/unsetfeaturereads/defaults/)).
     ///   - targetURIs: The locations of target models by alias (default: transient URIs).
     @available(
         *, deprecated,
@@ -192,7 +195,8 @@ public struct TransformationStep: Sendable {
     ///   - nativeHelpers: Helpers implemented in Swift (default: none).
     ///   - metamodelSearchPaths: The directories searched for `-- @path` metamodels (default: the
     ///     directory of the module).
-    ///   - unsetFeatureReads: How unset features read (default ``UnsetFeatureReads/defaults``).
+    ///   - unsetFeatureReads: How unset features read (default
+    ///     [`UnsetFeatureReads.defaults`](https://mipalgu.github.io/swift-ecore/documentation/ecore/unsetfeaturereads/defaults/)).
     ///   - targetURIs: The locations of target models by alias (default: transient URIs).
     ///   - atlOptions: The behaviours of the ATL language in which the module is written.
     public init(

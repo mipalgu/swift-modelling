@@ -1,4 +1,8 @@
-# swift-aql
+# ``swift_aql``
+
+@Metadata {
+    @DisplayName("swift-aql")
+}
 
 Evaluate AQL queries against models from the command line.
 
@@ -248,13 +252,43 @@ swift-aql evaluate --model Company.ecore --expression "self.eClassifiers.name"
 swift-aql evaluate --expression "Sequence{1, 2, 3}->sum()"
 ```
 
+## Related Documentation
+
+### Library Documentation
+
+- [swift-aql](https://mipalgu.github.io/swift-aql/) - AQL model queries ([GitHub](https://github.com/mipalgu/swift-aql))
+- [AQL](https://mipalgu.github.io/swift-aql/documentation/aql/) - The Acceleo Query Language for model queries
+- [AQLMultiLevel](https://mipalgu.github.io/swift-aql/documentation/aqlmultilevel/) - AQL for multi-level models: deep constraints and deep services
+- [ModelTyping](https://mipalgu.github.io/swift-modelling/documentation/modeltyping/index.html) - The model typing checks behind `check-compat`
+
+### Tutorials
+
+- [All tutorials](https://mipalgu.github.io/swift-modelling/tutorials/tutorials/index.html)
+
+#### AQL Query Language
+
+- [AQL Basics](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/aql-01-basics/index.html)
+- [Filtering and Selection](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/aql-02-filtering-selection/index.html)
+- [Collection Operations](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/aql-03-collection-operations/index.html)
+- [AQL in MTL Templates](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/aql-04-aql-in-mtl/index.html)
+- [Complex Queries](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/aql-05-complex-queries/index.html)
+- [Querying Models with AQL](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/06-querying-models/index.html)
+
+#### Multi-Level Modelling
+
+- [Multi-Level Modelling with Potency](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/multilevel-01-deep-modelling/index.html)
+
+#### Model Typing
+
+- [Reusing Modules with Model Typing](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/typing-01-check-compat/index.html)
+
+### References
+
+- [Eclipse Acceleo](https://eclipse.dev/acceleo/)
+- [OMG OCL (Object Constraint Language)](https://www.omg.org/spec/OCL/)
+
 ## Topics
 
 ### Essentials
 
 - <doc:GettingStarted>
-
-## See Also
-
-- [Eclipse Acceleo](https://eclipse.dev/acceleo/)
-- [OMG OCL (Object Constraint Language)](https://www.omg.org/spec/OCL/)

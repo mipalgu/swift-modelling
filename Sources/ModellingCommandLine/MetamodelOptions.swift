@@ -15,7 +15,7 @@ import ECore
 /// are inferred from the document itself.
 ///
 /// Commands include the option with `@OptionGroup` and obtain the resource set from
-/// ``resourceSet(verbose:)``.
+/// ``resourceSet(verbose:debug:options:)``.
 public struct MetamodelOptions: ParsableArguments, Sendable {
     /// The long name of the option.
     public static let optionName = "metamodel"

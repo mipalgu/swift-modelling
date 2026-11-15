@@ -23,6 +23,29 @@ let result = try await GenerationPipeline.generate(
 print(result.files.count)
 ```
 
+## Related Documentation
+
+### Command-Line Tools
+
+- [swift-ecore](https://mipalgu.github.io/swift-modelling/documentation/swift_ecore/index.html) - `genmodel` and `generate` create generator models, code and verification exports
+- [swift-atl](https://mipalgu.github.io/swift-modelling/documentation/swift_atl/index.html) - `generate` goes from an Ecore model to code in one step
+- [swift-mtl](https://mipalgu.github.io/swift-modelling/documentation/swift_mtl/index.html) - `generate --template-set` runs any template set on models
+
+### Tutorials
+
+- Java Code Generation: [From Ecore to a Generator Model](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/java-01-ecore-to-genmodel/index.html)
+- Java Code Generation: [From a Generator Model to Java](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/java-02-genmodel-to-java/index.html)
+- Formal Verification Exports: [Checking a Metamodel with Alloy](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/verification-01-alloy/index.html)
+- MTL Code Generation: [Complete Code Generator](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/mtl-08-complete-generator/index.html)
+- [All tutorials](https://mipalgu.github.io/swift-modelling/tutorials/tutorials/index.html)
+
+### Libraries
+
+- [GenModel](https://mipalgu.github.io/swift-ecore/documentation/genmodel/) of [swift-ecore](https://mipalgu.github.io/swift-ecore/) - Eclipse generator models
+- [OCL](https://mipalgu.github.io/swift-ecore/documentation/ocl/) of [swift-ecore](https://mipalgu.github.io/swift-ecore/) - The OCL invariants that the verification exports translate
+- [MTL](https://mipalgu.github.io/swift-mtl/documentation/mtl/) of [swift-mtl](https://mipalgu.github.io/swift-mtl/) - The template engine that runs the template sets
+- [ATL](https://mipalgu.github.io/swift-atl/documentation/atl/) of [swift-atl](https://mipalgu.github.io/swift-atl/) - The transformation engine that imports Ecore models into generator models
+
 ## Topics
 
 ### Articles

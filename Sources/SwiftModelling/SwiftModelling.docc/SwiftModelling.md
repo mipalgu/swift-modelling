@@ -18,13 +18,13 @@ SwiftModelling provides a comprehensive suite of CLI tools for Model-Driven Engi
 
 ### CLI Tools
 
-- swift-ecore: Model validation, conversion, querying, generator models and code generation
-- swift-atl: Model transformation execution and generation from Ecore models
-- swift-mtl: Template-based code generation
-- swift-aql: Evaluation of AQL queries against models
-- swift-henshin: Henshin graph transformation: applying rules and units, validation, conflict and dependency analysis, and state-space exploration
-- swift-epsilon: Epsilon languages: EOL programs, EVL constraints, ETL transformations and EGL templates
-- swift-xtend: Xtend methods and generators run on models
+- [swift-ecore](https://mipalgu.github.io/swift-modelling/documentation/swift_ecore/index.html): Model validation, conversion, querying, generator models and code generation
+- [swift-atl](https://mipalgu.github.io/swift-modelling/documentation/swift_atl/index.html): Model transformation execution and generation from Ecore models
+- [swift-mtl](https://mipalgu.github.io/swift-modelling/documentation/swift_mtl/index.html): Template-based code generation
+- [swift-aql](https://mipalgu.github.io/swift-modelling/documentation/swift_aql/index.html): Evaluation of AQL queries against models
+- [swift-henshin](https://mipalgu.github.io/swift-modelling/documentation/swift_henshin/index.html): Henshin graph transformation: applying rules and units, validation, conflict and dependency analysis, and state-space exploration
+- [swift-epsilon](https://mipalgu.github.io/swift-modelling/documentation/swift_epsilon/index.html): Epsilon languages: EOL programs, EVL constraints, ETL transformations and EGL templates
+- [swift-xtend](https://mipalgu.github.io/swift-modelling/documentation/swift_xtend/index.html): Xtend methods and generators run on models
 
 The documentation of each tool lists its commands and options, and describes its features in detail.
 
@@ -32,19 +32,19 @@ The documentation of each tool lists its commands and options, and describes its
 
 The tools `swift-ecore`, `swift-atl`, `swift-mtl` and `swift-aql` are built on four packages, each a pure Swift implementation without Java dependencies:
 
-- **swift-ecore**: the Ecore metamodel, resources, and XMI and JSON serialisation
-- **swift-atl**: the ATL parser and execution engine
-- **swift-mtl**: the MTL parser, runtime and generation engine
-- **swift-aql**: the AQL expression language that templates and queries share
+- **[swift-ecore](https://mipalgu.github.io/swift-ecore/)**: the Ecore metamodel, resources, and XMI and JSON serialisation
+- **[swift-atl](https://mipalgu.github.io/swift-atl/)**: the ATL parser and execution engine
+- **[swift-mtl](https://mipalgu.github.io/swift-mtl/)**: the MTL parser, runtime and generation engine
+- **[swift-aql](https://mipalgu.github.io/swift-aql/)**: the AQL expression language that templates and queries share
 
-The tools `swift-henshin`, `swift-epsilon` and `swift-xtend` build on the packages of the same names, which implement Henshin, the Epsilon languages and Xtend in pure Swift on swift-ecore.
+The tools `swift-henshin`, `swift-epsilon` and `swift-xtend` build on the packages of the same names, [swift-henshin](https://mipalgu.github.io/swift-henshin/), [swift-epsilon](https://mipalgu.github.io/swift-epsilon/) and [swift-xtend](https://mipalgu.github.io/swift-xtend/), which implement Henshin, the Epsilon languages and Xtend in pure Swift on swift-ecore.
 
 Besides the tools, this package offers these library products:
 
-- **ModellingGenerators**: the generator model pipeline and the bundled template sets for Swift, Java, C and C++
-- **ModellingPipeline**: steps for running ATL transformations and MTL generations on models in memory, a locator for template sets in the resource directories of other packages, and a pipeline that loads, transforms, generates from and saves models in sequence
-- **ModelTyping**: model types and the checks of `check-compat` that decide whether an ATL transformation, an MTL template or an AQL expression written for one metamodel can be reused with another
-- **ModellingCommandLine**: the option groups that the tools share, such as `--param`, `--template-path`, `--metamodel`, `--code-style`, `--encoding` and `--semantics`, and a parser for families of `name=value` options, for command-line tools of other packages
+- **[ModellingGenerators](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/index.html)**: the generator model pipeline and the bundled template sets for Swift, Java, C and C++
+- **[ModellingPipeline](https://mipalgu.github.io/swift-modelling/documentation/modellingpipeline/index.html)**: steps for running ATL transformations and MTL generations on models in memory, a locator for template sets in the resource directories of other packages, and a pipeline that loads, transforms, generates from and saves models in sequence
+- **[ModelTyping](https://mipalgu.github.io/swift-modelling/documentation/modeltyping/index.html)**: model types and the checks of `check-compat` that decide whether an ATL transformation, an MTL template or an AQL expression written for one metamodel can be reused with another
+- **[ModellingCommandLine](https://mipalgu.github.io/swift-modelling/documentation/modellingcommandline/index.html)**: the option groups that the tools share, such as `--param`, `--template-path`, `--metamodel`, `--code-style`, `--encoding` and `--semantics`, and a parser for families of `name=value` options, for command-line tools of other packages
 
 All model types are value types (structs) for thread safety, with ID-based reference resolution for bidirectional relationships. Resources provide object ownership and cross-reference resolution as in the Eclipse Modeling Framework, using actor-based concurrency.
 
@@ -58,24 +58,24 @@ All model types are value types (structs) for thread safety, with ID-based refer
 
 Convert an Ecore model into an Eclipse generator model (`.genmodel`) and into Java that compiles against the EMF runtime, with `swift-ecore genmodel` and `swift-ecore generate --language java`, or in one step with `swift-atl generate --language java`.
 
-- Converting Ecore to GenModel and Java: the commands, every option and the files written, with the Eclipse extended library example.
-- Matching Eclipse: how the output relates to Eclipse's generator, and the options that choose between its behaviours.
-- Both articles belong to the ModellingGenerators documentation, which also covers template sets and Java generation. Find them in the sidebar or on the front page of this site.
+- [Converting Ecore to GenModel and Java](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/convertingecoretojava/index.html): the commands, every option and the files written, with the Eclipse extended library example.
+- [Matching Eclipse](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/matchingeclipse/index.html): how the output relates to Eclipse's generator, and the options that choose between its behaviours.
+- Both articles belong to the [ModellingGenerators documentation](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/index.html), which also covers template sets and Java generation. Find them in the sidebar or on the front page of this site.
 - <doc:Tutorials>: a step-by-step tutorial on the same conversion.
 
 ### From Ecore to Swift
 
 Generate Swift model code that compiles against the ECore runtime, from an Ecore model or a generator model, with `swift-ecore generate` (Swift is its default language) or `swift-atl generate --language swift`. The code is written by the bundled `swift` template set, so it can be customised with `--template-path` like the Java output.
 
-- Swift Generation: what the set writes for classes, enumerations, data types, packages and factories, how names are made safe, and how existing files are merged. Find it in the ModellingGenerators documentation.
+- [Swift Generation](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/swiftgeneration/index.html): what the set writes for classes, enumerations, data types, packages and factories, how names are made safe, and how existing files are merged. Find it in the ModellingGenerators documentation.
 
 ### Incremental Execution
 
 Applications that keep a model open, such as editors, can bring the results of queries and transformations up to date after each change instead of computing them afresh. Incremental execution is offered by the libraries only: every command of the tools reads its files, runs once and exits, so it has no incremental form.
 
-- **ATL**: `ATLIncrementalTransformation` of the swift-atl package executes a module once, records what its guards and bindings read, and propagates later changes of the source models to the target models with `update()`. The article Incremental Transformations of the ATL library describes it.
-- **AQL**: `AQLIncrementalExpression` of the swift-aql package keeps the value of an expression up to date and reports the elements added to and removed from it, and `AQLQueryObserver` refreshes many expressions at once. The article Incremental Queries of the AQL library describes them.
-- **Ecore**: the ECore library of the swift-ecore package provides what both build on: change observation with `ResourceChangeQueue`, dependencies with `ModelDependencies` and `ModelDependencyRecorder`, and their impact with `ModelChangeImpact`, as its article Incremental Evaluation describes.
+- **ATL**: `ATLIncrementalTransformation` of the swift-atl package executes a module once, records what its guards and bindings read, and propagates later changes of the source models to the target models with `update()`. The article [Incremental Transformations](https://mipalgu.github.io/swift-atl/documentation/atl/incrementaltransformations/) of the ATL library describes it.
+- **AQL**: `AQLIncrementalExpression` of the swift-aql package keeps the value of an expression up to date and reports the elements added to and removed from it, and `AQLQueryObserver` refreshes many expressions at once. The article [Incremental Queries](https://mipalgu.github.io/swift-aql/documentation/aql/incrementalqueries/) of the AQL library describes them.
+- **Ecore**: the ECore library of the swift-ecore package provides what both build on: change observation with `ResourceChangeQueue`, dependencies with `ModelDependencies` and `ModelDependencyRecorder`, and their impact with `ModelChangeImpact`, as its article [Incremental Evaluation](https://mipalgu.github.io/swift-ecore/documentation/ecore/incrementalevaluation/) describes.
 
 Changes must be made through the editing operations of `Resource`, such as `eSetWithChanges(objectId:feature:value:)`, so that they are observed.
 
@@ -259,6 +259,32 @@ The libraries keep the API of version 0.6, and with it the behaviour of version 
 - `GenerationOptions` and `GenModelImportOptions` have a `containerLookupScope`, which the generation pipelines give the resource sets they create. It is `nil` by default, which leaves the resource sets without a configured scope.
 - `GenerationOptions.templateEncoding` and `GenerationStep.templateEncoding` name the encoding of the templates, and `GenModelImportOptions.transformationEncoding` that of a transformation that replaces the bundled one. They are `nil` by default, which reads UTF-8 with a fallback to ISO-8859-1; the warnings of the fallback are reported in `decodingWarnings` of `GenerationResult`, `GenerationStep.Result` and `GenModelResult`.
 - `ModellingCommandLine` offers `SourceEncodingOptions` for `--encoding`, `SourceFile` to read a source file in the chosen encoding, `OutputEncodingOptions` for `--output-encoding`, `OutputFile` to write a file or save a model in the chosen output encoding, and `FileDiagnosticReport` to write the warnings and errors of reading a file to standard error. `MetamodelRegistration.registerMetamodels(at:into:announcement:verbose:debug:options:diagnosticOutput:)` registers every root package of a metamodel file in any metamodel format, as `--metamodel` does, `KM3Options` offers `--km3-primitives`, `GrammarImportOptions` the options of grammar imports and `MetamodelFormatOptions` both together, `CompleteOCLOptions` offers `--ocl`, `LevelCrossingOptions` and `DeepViewOptions` offer `--level-crossing` and `--deep-view`, `MultiLevelSupport` reads multi-level models and their deep views, `ATLDeepViewHelpers` offers ATL transformations and queries the deep services on the objects of a view, `MetamodelRegistration.holdsMetamodel(at:registry:)` decides with the format registry whether a file is a metamodel, and `ModelFileFormat.detectedInstanceFormat(of:explicit:)` chooses the format in which a model is read, from its contents when its extension names no format.
+
+## Related Documentation
+
+### Libraries
+
+- [swift-ecore](https://mipalgu.github.io/swift-ecore/) - EMF/Ecore metamodelling, OCL, generator models and multi-level modelling ([GitHub](https://github.com/mipalgu/swift-ecore))
+- [swift-aql](https://mipalgu.github.io/swift-aql/) - AQL model queries ([GitHub](https://github.com/mipalgu/swift-aql))
+- [swift-mtl](https://mipalgu.github.io/swift-mtl/) - MTL model-to-text generation ([GitHub](https://github.com/mipalgu/swift-mtl))
+- [swift-atl](https://mipalgu.github.io/swift-atl/) - ATL model transformations ([GitHub](https://github.com/mipalgu/swift-atl))
+- [swift-henshin](https://mipalgu.github.io/swift-henshin/) - Henshin graph transformation, critical pair analysis and state-space exploration ([GitHub](https://github.com/mipalgu/swift-henshin))
+- [swift-epsilon](https://mipalgu.github.io/swift-epsilon/) - Epsilon model management languages (EOL, EVL, ETL and EGL) ([GitHub](https://github.com/mipalgu/swift-epsilon))
+- [swift-xtend](https://mipalgu.github.io/swift-xtend/) - Xtend generators and transformations ([GitHub](https://github.com/mipalgu/swift-xtend))
+
+### Command-Line Tools
+
+- [swift-ecore](https://mipalgu.github.io/swift-modelling/documentation/swift_ecore/index.html) - Ecore metamodels and models
+- [swift-aql](https://mipalgu.github.io/swift-modelling/documentation/swift_aql/index.html) - AQL queries
+- [swift-mtl](https://mipalgu.github.io/swift-modelling/documentation/swift_mtl/index.html) - MTL templates and template sets
+- [swift-atl](https://mipalgu.github.io/swift-modelling/documentation/swift_atl/index.html) - ATL transformations, queries and generation
+- [swift-henshin](https://mipalgu.github.io/swift-modelling/documentation/swift_henshin/index.html) - Henshin graph transformations and their analysis
+- [swift-epsilon](https://mipalgu.github.io/swift-modelling/documentation/swift_epsilon/index.html) - Epsilon EOL, EVL, ETL and EGL programs
+- [swift-xtend](https://mipalgu.github.io/swift-modelling/documentation/swift_xtend/index.html) - Xtend methods and generators
+
+### Tutorials
+
+- <doc:Tutorials> - Step-by-step tutorials for every tool
 
 ## Topics
 

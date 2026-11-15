@@ -11,6 +11,8 @@
     @Chapter(name: "Ecore Metamodeling") {
         Define metamodels and work with model instances using Ecore.
 
+        The [swift-ecore](https://mipalgu.github.io/swift-ecore/) documentation describes the library, and [swift-ecore](https://mipalgu.github.io/swift-modelling/documentation/swift_ecore/index.html) the command-line tool.
+
         @Image(source: "ecore-metamodeling.svg", alt: "Ecore Metamodeling Workflow")
 
         @TutorialReference(tutorial: "doc:01-first-metamodel")
@@ -24,6 +26,8 @@
 
     @Chapter(name: "ATL Transformations") {
         Transform models with the Atlas Transformation Language.
+
+        The [swift-atl](https://mipalgu.github.io/swift-atl/) documentation describes the library, and [swift-atl](https://mipalgu.github.io/swift-modelling/documentation/swift_atl/index.html) the command-line tool.
 
         @Image(source: "atl-transformations.svg", alt: "ATL Transformations")
 
@@ -40,6 +44,8 @@
     @Chapter(name: "MTL Code Generation") {
         Generate code from models using the Model-to-Text Language.
 
+        The [swift-mtl](https://mipalgu.github.io/swift-mtl/) documentation describes the library, and [swift-mtl](https://mipalgu.github.io/swift-modelling/documentation/swift_mtl/index.html) the command-line tool.
+
         @Image(source: "mtl-code-generation.svg", alt: "MTL Code Generation Workflow")
 
         @TutorialReference(tutorial: "doc:MTL-01-hello-world")
@@ -55,6 +61,8 @@
     @Chapter(name: "Java Code Generation") {
         Take an Ecore model to a generator model and to Java for the Eclipse Modeling Framework.
 
+        The [GenModel](https://mipalgu.github.io/swift-ecore/documentation/genmodel/) library of [swift-ecore](https://mipalgu.github.io/swift-ecore/) and [ModellingGenerators](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/index.html) describe the libraries, and [swift-ecore](https://mipalgu.github.io/swift-modelling/documentation/swift_ecore/index.html) the command-line tool.
+
         @Image(source: "mtl-code-generation.svg", alt: "Java Code Generation Workflow")
 
         @TutorialReference(tutorial: "doc:Java-01-ecore-to-genmodel")
@@ -63,6 +71,8 @@
 
     @Chapter(name: "AQL Query Language") {
         Query and navigate models with the Acceleo Query Language.
+
+        The [swift-aql](https://mipalgu.github.io/swift-aql/) documentation describes the library, and [swift-aql](https://mipalgu.github.io/swift-modelling/documentation/swift_aql/index.html) the command-line tool.
 
         @Image(source: "aql-querying.svg", alt: "AQL Model Querying")
 
@@ -76,6 +86,8 @@
     @Chapter(name: "OCL Constraints") {
         Define and validate model constraints with the Object Constraint Language.
 
+        The [OCL](https://mipalgu.github.io/swift-ecore/documentation/ocl/) library of [swift-ecore](https://mipalgu.github.io/swift-ecore/) describes the language, and [swift-ecore](https://mipalgu.github.io/swift-modelling/documentation/swift_ecore/index.html) the command-line tool.
+
         @Image(source: "ocl-constraints.svg", alt: "OCL Model Constraints")
 
         @TutorialReference(tutorial: "doc:OCL-01-constraints")
@@ -83,6 +95,8 @@
 
     @Chapter(name: "Metamodel Languages and Formats") {
         Write metamodels in KM3, EMOF, Emfatic, Xcore and OCLinEcore, and read UML class models.
+
+        The [swift-ecore](https://mipalgu.github.io/swift-ecore/) documentation describes the library, and [swift-ecore](https://mipalgu.github.io/swift-modelling/documentation/swift_ecore/index.html) the command-line tool.
 
         @Image(source: "metamodel-formats.svg", alt: "Metamodel languages and formats around Ecore")
 
@@ -95,6 +109,8 @@
     @Chapter(name: "From Grammars to Metamodels") {
         Import the abstract syntax of a language from ASDL, Stratego, Xtext, Langium and SDF3.
 
+        The [swift-ecore](https://mipalgu.github.io/swift-ecore/) documentation describes the library, and [swift-ecore](https://mipalgu.github.io/swift-modelling/documentation/swift_ecore/index.html) the command-line tool.
+
         @Image(source: "grammar-import.svg", alt: "Grammar notations imported into Ecore metamodels")
 
         @TutorialReference(tutorial: "doc:Grammar-01-abstract-syntax")
@@ -104,6 +120,8 @@
     @Chapter(name: "Formal Verification Exports") {
         Export metamodels, constraints and models to Alloy, TLA+, Event-B and Lean.
 
+        [Verification Exports](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/verificationexports/index.html) of [ModellingGenerators](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/index.html) describes the exports, and [swift-ecore](https://mipalgu.github.io/swift-modelling/documentation/swift_ecore/index.html) the command-line tool.
+
         @Image(source: "verification-exports.svg", alt: "An Ecore metamodel with OCL invariants exported to verification languages")
 
         @TutorialReference(tutorial: "doc:Verification-01-alloy")
@@ -112,6 +130,8 @@
     @Chapter(name: "Multi-Level Modelling") {
         Model domains with more than two levels, with clabjects, potency and deep views.
 
+        The [MultiLevel](https://mipalgu.github.io/swift-ecore/documentation/multilevel/) library of [swift-ecore](https://mipalgu.github.io/swift-ecore/) and the [AQLMultiLevel](https://mipalgu.github.io/swift-aql/documentation/aqlmultilevel/) library of [swift-aql](https://mipalgu.github.io/swift-aql/) describe the libraries, and [swift-ecore](https://mipalgu.github.io/swift-modelling/documentation/swift_ecore/index.html) the command-line tool.
+
         @Image(source: "multi-level.svg", alt: "Three levels of a product catalogue, each an instance of the level above")
 
         @TutorialReference(tutorial: "doc:MultiLevel-01-deep-modelling")
@@ -119,6 +139,8 @@
 
     @Chapter(name: "Graph Transformation with Henshin") {
         Apply, validate and convert Henshin rules, find their conflicts and dependencies, and explore the states they reach.
+
+        The [swift-henshin](https://mipalgu.github.io/swift-henshin/) documentation describes the library, and [swift-henshin](https://mipalgu.github.io/swift-modelling/documentation/swift_henshin/index.html) the command-line tool.
 
         @Image(source: "graph-transformation.svg", alt: "A Henshin module and a model, with the commands of swift-henshin and what they produce")
 
@@ -129,6 +151,8 @@
     @Chapter(name: "Epsilon Languages") {
         Query, validate, transform and generate text from models with EOL, EVL, ETL and EGL.
 
+        The [swift-epsilon](https://mipalgu.github.io/swift-epsilon/) documentation describes the library, and [swift-epsilon](https://mipalgu.github.io/swift-modelling/documentation/swift_epsilon/index.html) the command-line tool.
+
         @Image(source: "epsilon-languages.svg", alt: "The Families model passes through the four commands of swift-epsilon: EOL, EVL, ETL and EGL")
 
         @TutorialReference(tutorial: "doc:Epsilon-01-eol-evl")
@@ -138,6 +162,8 @@
     @Chapter(name: "Code Generation with Xtend") {
         Generate files from models with Xtend rich strings, and call dispatch methods on models.
 
+        The [swift-xtend](https://mipalgu.github.io/swift-xtend/) documentation describes the library, and [swift-xtend](https://mipalgu.github.io/swift-modelling/documentation/swift_xtend/index.html) the command-line tool.
+
         @Image(source: "xtend-generation.svg", alt: "A model of a poster is read by two Xtend classes: Measure computes results and changes the model, and Pictures generates an SVG picture and a legend")
 
         @TutorialReference(tutorial: "doc:Xtend-01-code-generation")
@@ -146,6 +172,8 @@
     @Chapter(name: "Model Typing") {
         Check whether ATL transformations, MTL templates and AQL queries can be reused with a revised metamodel.
 
+        The [ModelTyping](https://mipalgu.github.io/swift-modelling/documentation/modeltyping/index.html) documentation describes the library, and the `check-compat` commands of [swift-atl](https://mipalgu.github.io/swift-modelling/documentation/swift_atl/index.html), [swift-mtl](https://mipalgu.github.io/swift-modelling/documentation/swift_mtl/index.html) and [swift-aql](https://mipalgu.github.io/swift-modelling/documentation/swift_aql/index.html) the command-line tools.
+
         @Image(source: "model-typing.svg", alt: "Modules written against version 1 of a metamodel have a footprint, which check-compat compares with version 2 to reach a verdict")
 
         @TutorialReference(tutorial: "doc:Typing-01-check-compat")
@@ -153,6 +181,8 @@
 
     @Chapter(name: "Integrated Workflows") {
         Complete end-to-end model-driven engineering workflows.
+
+        The [swift-ecore](https://mipalgu.github.io/swift-ecore/), [swift-atl](https://mipalgu.github.io/swift-atl/) and [swift-mtl](https://mipalgu.github.io/swift-mtl/) documentation describes the libraries, and [swift-ecore](https://mipalgu.github.io/swift-modelling/documentation/swift_ecore/index.html), [swift-atl](https://mipalgu.github.io/swift-modelling/documentation/swift_atl/index.html) and [swift-mtl](https://mipalgu.github.io/swift-modelling/documentation/swift_mtl/index.html) the command-line tools.
 
         @Image(source: "integrated-workflows.svg", alt: "Integrated MDE Workflows")
 
@@ -163,6 +193,8 @@
 
     @Chapter(name: "Advanced Tutorials") {
         Deep-dive tutorials covering advanced model transformation techniques.
+
+        The [swift-atl](https://mipalgu.github.io/swift-atl/) and [swift-mtl](https://mipalgu.github.io/swift-mtl/) documentation describes the libraries, and [swift-atl](https://mipalgu.github.io/swift-modelling/documentation/swift_atl/index.html) and [swift-mtl](https://mipalgu.github.io/swift-modelling/documentation/swift_mtl/index.html) the command-line tools.
 
         @Image(source: "advanced-tutorials.svg", alt: "Advanced MDE Tutorials")
 

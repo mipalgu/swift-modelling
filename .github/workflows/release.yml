@@ -90,7 +90,7 @@ jobs:
           fi
 
           echo '  on_macos do' >> Formula/swift-modelling.rb
-          echo '    depends_on :xcode => ["26.0", :build]' >> Formula/swift-modelling.rb
+          echo '    depends_on :xcode => ["26.3", :build]' >> Formula/swift-modelling.rb
           echo '  end' >> Formula/swift-modelling.rb
           echo '' >> Formula/swift-modelling.rb
           echo '  on_linux do' >> Formula/swift-modelling.rb
