@@ -15,9 +15,11 @@ extension XMIReferenceStyle: @retroactive ExpressibleByArgument {}
 
 /// The command line option that chooses how a written XMI model spells references into itself.
 ///
-/// With ``XMIReferenceStyle/encoded``, the default, a command writes a model in its usual
+/// With [`XMIReferenceStyle.encoded`](https://mipalgu.github.io/swift-ecore/documentation/ecore/xmireferencestyle/encoded/),
+/// the default, a command writes a model in its usual
 /// layout, where a reference to an object of the same document holds a fragment with a
-/// leading `#`, such as `#//@classifiers.0`. With ``XMIReferenceStyle/plain``, the model is
+/// leading `#`, such as `#//@classifiers.0`. With
+/// [`XMIReferenceStyle.plain`](https://mipalgu.github.io/swift-ecore/documentation/ecore/xmireferencestyle/plain/), the model is
 /// written in the layout of the Eclipse Modeling Framework, with references as attribute values,
 /// and a reference into the same document holds the fragment alone, such as `//@classifiers.0`,
 /// as Eclipse writes XMI model files. Both styles load again.
@@ -100,9 +102,11 @@ public struct ReferenceStyleOptions: ParsableArguments, Sendable {
 
     /// The options with which a command writes an XMI model in the chosen style.
     ///
-    /// The encoded style keeps the layout of ``XMISerializationOptions/legacy``, so a command
-    /// writes the same text as without the option. The plain style applies only to references
-    /// written as attributes, so it selects the layout of ``XMISerializationOptions/emf`` with
+    /// The encoded style keeps the layout of
+    /// [`XMISerializationOptions.legacy`](https://mipalgu.github.io/swift-ecore/documentation/ecore/xmiserializationoptions/legacy/),
+    /// so a command writes the same text as without the option. The plain style applies only
+    /// to references written as attributes, so it selects the layout of
+    /// [`XMISerializationOptions.emf`](https://mipalgu.github.io/swift-ecore/documentation/ecore/xmiserializationoptions/emf/) with
     /// the plain style applied.
     public var serializationOptions: XMISerializationOptions {
         guard referenceStyle != .encoded else { return .legacy }

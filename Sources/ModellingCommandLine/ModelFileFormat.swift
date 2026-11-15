@@ -25,9 +25,10 @@ public enum ModelFileFormat {
     /// - Parameters:
     ///   - url: The location of the file.
     ///   - explicit: The name of a format given on the command line, if any, such as `json`.
-    /// - Returns: ``ECore/ModelFormat/json`` or ``ECore/ModelFormat/uml`` if the explicit
-    ///   format or, without one, the file extension names JSON or UML, and
-    ///   ``ECore/ModelFormat/xmi`` otherwise.
+    /// - Returns: [`ModelFormat.json`](https://mipalgu.github.io/swift-ecore/documentation/ecore/modelformat/json/)
+    ///   or [`ModelFormat.uml`](https://mipalgu.github.io/swift-ecore/documentation/ecore/modelformat/uml/)
+    ///   if the explicit format or, without one, the file extension names JSON or UML, and
+    ///   [`ModelFormat.xmi`](https://mipalgu.github.io/swift-ecore/documentation/ecore/modelformat/xmi/) otherwise.
     public static func instanceFormat(of url: URL, explicit: String? = nil) -> ModelFormat {
         instanceFormat(named: explicit.map { ModelFormat(fileExtension: $0) } ?? ModelFormat.detect(url: url))
     }
@@ -35,9 +36,11 @@ public enum ModelFileFormat {
     /// The format in which a model instance is held, given the format that names it.
     ///
     /// - Parameter named: The format that a name, an extension or the contents of a file name.
-    /// - Returns: ``ECore/ModelFormat/json``, ``ECore/ModelFormat/uml`` and
-    ///   ``ECore/ModelFormat/metadepth`` as they are, and ``ECore/ModelFormat/xmi`` for any
-    ///   other format or none.
+    /// - Returns: [`ModelFormat.json`](https://mipalgu.github.io/swift-ecore/documentation/ecore/modelformat/json/),
+    ///   [`ModelFormat.uml`](https://mipalgu.github.io/swift-ecore/documentation/ecore/modelformat/uml/) and
+    ///   [`ModelFormat.metadepth`](https://mipalgu.github.io/swift-ecore/documentation/ecore/modelformat/metadepth/)
+    ///   as they are, and [`ModelFormat.xmi`](https://mipalgu.github.io/swift-ecore/documentation/ecore/modelformat/xmi/)
+    ///   for any other format or none.
     private static func instanceFormat(named: ModelFormat?) -> ModelFormat {
         switch named {
         case .json?: return .json
@@ -58,8 +61,12 @@ public enum ModelFileFormat {
     /// - Parameters:
     ///   - url: The location of the file.
     ///   - explicit: The name of a format given on the command line, if any, such as `json`.
-    /// - Returns: ``ECore/ModelFormat/json``, ``ECore/ModelFormat/uml`` or ``ECore/ModelFormat/xmi``.
-    /// - Throws: ``ECore/ModelFormatError/undetectableFormat(_:)`` with the path of the file
+    /// - Returns: [`ModelFormat.json`](https://mipalgu.github.io/swift-ecore/documentation/ecore/modelformat/json/),
+    ///   [`ModelFormat.uml`](https://mipalgu.github.io/swift-ecore/documentation/ecore/modelformat/uml/) or
+    ///   [`ModelFormat.xmi`](https://mipalgu.github.io/swift-ecore/documentation/ecore/modelformat/xmi/).
+    /// - Throws:
+    ///   [`ModelFormatError.undetectableFormat(_:)`](https://mipalgu.github.io/swift-ecore/documentation/ecore/modelformaterror/undetectableformat(_:)/)
+    ///   with the path of the file
     ///   if its extension names no format and its contents are neither XML nor JSON; the
     ///   error lists the supported formats.
     public static func detectedInstanceFormat(of url: URL, explicit: String? = nil) throws -> ModelFormat {

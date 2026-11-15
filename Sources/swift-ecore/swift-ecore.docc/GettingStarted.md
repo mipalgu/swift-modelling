@@ -184,10 +184,29 @@ done
 ## Next Steps
 
 - <doc:UnderstandingSwiftEcore> - Learn about metamodel concepts
-- **swift-atl** - Transform models with ATL
-- **swift-mtl** - Generate code with MTL templates
+- ``swift_ecore`` - The commands and options in detail
+- [swift-atl](https://mipalgu.github.io/swift-modelling/documentation/swift_atl/index.html) - Transform models with ATL
+- [swift-mtl](https://mipalgu.github.io/swift-modelling/documentation/swift_mtl/index.html) - Generate code with MTL templates
 
-## See Also
+## Related Documentation
+
+### Tutorials
+
+- Ecore Metamodelling: [Creating Your First Ecore Metamodel](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/01-first-metamodel/index.html)
+- OCL Constraints: [OCL Constraints and Validation](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/ocl-01-constraints/index.html)
+- Metamodel Languages and Formats: [Metamodels in KM3](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/formats-01-km3/index.html)
+- From Grammars to Metamodels: [Importing Abstract Syntax](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/grammar-01-abstract-syntax/index.html)
+- Formal Verification Exports: [Checking a Metamodel with Alloy](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/verification-01-alloy/index.html)
+- Java Code Generation: [From Ecore to a Generator Model](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/java-01-ecore-to-genmodel/index.html)
+- Multi-Level Modelling: [Multi-Level Modelling with Potency](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/multilevel-01-deep-modelling/index.html)
+- Integrated Workflows: [Complete MDE Workflow: From Metamodel to Code](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/01-complete-mde-workflow/index.html)
+- [All tutorials](https://mipalgu.github.io/swift-modelling/tutorials/tutorials/index.html)
+
+### Library Documentation
+
+- [swift-ecore](https://mipalgu.github.io/swift-ecore/) - EMF/Ecore metamodelling, OCL, generator models and multi-level modelling ([GitHub](https://github.com/mipalgu/swift-ecore))
+
+### References
 
 - [Eclipse Modeling Framework (EMF)](https://eclipse.dev/emf/)
 - [OMG MOF (Meta Object Facility)](https://www.omg.org/mof/)

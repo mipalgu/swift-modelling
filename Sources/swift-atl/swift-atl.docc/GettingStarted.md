@@ -326,7 +326,7 @@ complexity metrics, `test` to run tests over files or a directory,
 `compile` to compile a transformation, `query` to evaluate an ATL
 query and write the files it produces, and `generate` to create
 generator models and source code from Ecore models. See
-<doc:swift-atl> for the options of each command.
+``swift_atl`` for the options of each command.
 
 ### Batch Processing
 
@@ -446,10 +446,25 @@ swift-atl analyze MyTransformation.atl --metrics complexity,helpers
 ## Next Steps
 
 - <doc:UnderstandingSwiftATL> - Learn ATL concepts
-- **swift-ecore** - Validate models
-- **swift-mtl** - Generate code from transformed models
+- ``swift_atl`` - The commands and options in detail
+- [swift-ecore](https://mipalgu.github.io/swift-modelling/documentation/swift_ecore/index.html) - Validate models
+- [swift-mtl](https://mipalgu.github.io/swift-modelling/documentation/swift_mtl/index.html) - Generate code from transformed models
 
-## See Also
+## Related Documentation
+
+### Tutorials
+
+- ATL Transformations: [Creating Your First ATL Transformation](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/01-first-transformation/index.html)
+- Advanced ATL: [Class to Relational Transformation](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/atl-advanced-01-class2relational/index.html)
+- Multi-Level Modelling: [Multi-Level Modelling with Potency](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/multilevel-01-deep-modelling/index.html)
+- Model Typing: [Reusing Modules with Model Typing](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/typing-01-check-compat/index.html)
+- [All tutorials](https://mipalgu.github.io/swift-modelling/tutorials/tutorials/index.html)
+
+### Library Documentation
+
+- [swift-atl](https://mipalgu.github.io/swift-atl/) - ATL model transformations ([GitHub](https://github.com/mipalgu/swift-atl))
+
+### References
 
 - [Eclipse ATL (Atlas Transformation Language)](https://eclipse.dev/atl/)
 - [OMG QVT (Query/View/Transformation)](https://www.omg.org/spec/QVT/)

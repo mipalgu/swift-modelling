@@ -1,4 +1,8 @@
-# swift-epsilon
+# ``swift_epsilon``
+
+@Metadata {
+    @DisplayName("swift-epsilon")
+}
 
 Run Epsilon programs, validations, transformations and templates against models from the command line.
 
@@ -295,7 +299,25 @@ swift-epsilon egl generate accounts.egx --model Bank=bank.xmi -m Bank.ecore \
     --output generated
 ```
 
-## See Also
+## Related Documentation
+
+### Library Documentation
+
+- [swift-epsilon](https://mipalgu.github.io/swift-epsilon/) - Epsilon model management languages (EOL, EVL, ETL and EGL) ([GitHub](https://github.com/mipalgu/swift-epsilon))
+- [EOL](https://mipalgu.github.io/swift-epsilon/documentation/eol/) - Programs in the Epsilon Object Language
+- [EVL](https://mipalgu.github.io/swift-epsilon/documentation/evl/) - Model validation with the Epsilon Validation Language
+- [ETL](https://mipalgu.github.io/swift-epsilon/documentation/etl/) - Model transformation with the Epsilon Transformation Language
+- [EGL](https://mipalgu.github.io/swift-epsilon/documentation/egl/) - Text generation with the Epsilon Generation Language and EGX
+
+### Tutorials
+
+- [All tutorials](https://mipalgu.github.io/swift-modelling/tutorials/tutorials/index.html)
+
+#### Epsilon Languages
+
+- [Querying and Validating Models with EOL and EVL](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/epsilon-01-eol-evl/index.html)
+- [Transforming Models and Generating Text with ETL and EGL](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/epsilon-02-etl-egl/index.html)
+
+### References
 
 - [Eclipse Epsilon](https://eclipse.dev/epsilon/)
-- [swift-epsilon](https://github.com/mipalgu/swift-epsilon)

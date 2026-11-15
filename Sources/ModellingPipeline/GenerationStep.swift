@@ -179,7 +179,8 @@ public struct GenerationStep: Sendable {
     /// A configured code style applies only to a template set that offers code styles; a set
     /// that offers none ignores it, whereas it rejects an explicit one. A configured name that a
     /// set with code styles does not declare stops the step with
-    /// ``GenerationError/unknownCodeStyle(_:_:_:)``. The default is `false`.
+    /// [`GenerationError.unknownCodeStyle(_:_:_:)`](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/generationerror/unknowncodestyle(_:_:_:)/index.html).
+    /// The default is `false`.
     public var codeStyleIsConfigured: Bool = false
 
     /// Creates a generation step whose templates behave as in version 0.6.
@@ -193,7 +194,8 @@ public struct GenerationStep: Sendable {
     ///   - serviceProviders: Further providers of services (default: none).
     ///   - outputDirectory: The directory that the templates write below.
     ///   - generatorOptions: The options of the generator (default options).
-    ///   - unsetFeatureReads: How unset features read (default ``UnsetFeatureReads/defaults``).
+    ///   - unsetFeatureReads: How unset features read (default
+    ///     [`UnsetFeatureReads.defaults`](https://mipalgu.github.io/swift-ecore/documentation/ecore/unsetfeaturereads/defaults/)).
     @available(
         *, deprecated,
         message: "Use init(templates:templatePaths:parameters:serviceProviders:outputDirectory:generatorOptions:mtlOptions:); pass mtlOptions: .legacy to keep the behaviour of version 0.6"

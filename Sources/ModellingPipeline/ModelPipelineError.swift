@@ -8,8 +8,8 @@ import Foundation
 
 /// The problems that the steps of a model pipeline report.
 ///
-/// Problems with template sets are reported as ``ModellingGenerators/GenerationError``; the
-/// cases here concern transformations, single template modules and the models of a pipeline.
+/// Problems with template sets are reported as
+/// [`GenerationError`](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/generationerror/index.html); the cases here concern transformations, single template modules and the models of a pipeline.
 /// Every case carries the location or name needed to tell the user what to correct.
 public enum ModelPipelineError: Error, Sendable, Equatable {
     /// A transformation module cannot be read or parsed.

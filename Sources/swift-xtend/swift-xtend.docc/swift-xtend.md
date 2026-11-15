@@ -1,4 +1,8 @@
-# swift-xtend
+# ``swift_xtend``
+
+@Metadata {
+    @DisplayName("swift-xtend")
+}
 
 Run Xtend code generators and model methods from the command line.
 
@@ -185,7 +189,21 @@ generated files are written to standard output.
 - `run` cannot call a method that needs a file system access; use `generate` for generators.
 - Arguments of collection types other than all instances of a model class cannot be given.
 
-## See Also
+## Related Documentation
+
+### Library Documentation
+
+- [swift-xtend](https://mipalgu.github.io/swift-xtend/) - Xtend generators and transformations ([GitHub](https://github.com/mipalgu/swift-xtend))
+- [Xtend](https://mipalgu.github.io/swift-xtend/documentation/xtend/) - Xtend templates and transformations over Ecore models
+
+### Tutorials
+
+- [All tutorials](https://mipalgu.github.io/swift-modelling/tutorials/tutorials/index.html)
+
+#### Code Generation with Xtend
+
+- [Code Generation with Xtend](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/xtend-01-code-generation/index.html)
+
+### References
 
 - [Eclipse Xtend](https://eclipse.dev/Xtext/xtend/documentation/)
-- [swift-xtend](https://github.com/mipalgu/swift-xtend)

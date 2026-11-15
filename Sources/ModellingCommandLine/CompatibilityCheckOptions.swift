@@ -270,7 +270,7 @@ public struct CompatibilityMetamodels: Sendable {
 /// the preset of ``SemanticsOptions``, so `--semantics` keeps its meaning across the tools.
 ///
 /// Commands include the options with `@OptionGroup`, check their module with `ReuseChecker`
-/// in ``run(isolation:_:)``, and describe them with ``discussion(module:)``.
+/// in ``run(isolation:encoding:_:)``, and describe them with ``discussion(module:)``.
 public struct CompatibilityCheckOptions: ParsableArguments, Sendable {
     /// The name of the command that checks compatibility in each tool.
     public static let commandName = "check-compat"

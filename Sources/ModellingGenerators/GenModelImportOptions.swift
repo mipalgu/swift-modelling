@@ -97,10 +97,11 @@ public struct GenModelImportOptions: Sendable, Equatable {
 
     /// How the transformation reads structural features that a source model does not set.
     ///
-    /// With ``UnsetFeatureReads/defaults``, the default, an unset attribute reads as its
-    /// declared default or the default of its data type, and an unset many-valued feature as an
-    /// empty collection, as in the Eclipse Modeling Framework. With
-    /// ``UnsetFeatureReads/undefined`` every unset feature reads as undefined.
+    /// With [`UnsetFeatureReads.defaults`](https://mipalgu.github.io/swift-ecore/documentation/ecore/unsetfeaturereads/defaults/),
+    /// the default, an unset attribute reads as its declared default or the default of its
+    /// data type, and an unset many-valued feature as an empty collection, as in the Eclipse
+    /// Modeling Framework. With [`UnsetFeatureReads.undefined`](https://mipalgu.github.io/swift-ecore/documentation/ecore/unsetfeaturereads/undefined/)
+    /// every unset feature reads as undefined.
     public var unsetFeatureReads: UnsetFeatureReads
 
     /// The behaviours of the ATL language in which the transformation is written.

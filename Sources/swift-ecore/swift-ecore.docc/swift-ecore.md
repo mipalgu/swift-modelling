@@ -1,4 +1,8 @@
-# swift-ecore
+# ``swift_ecore``
+
+@Metadata {
+    @DisplayName("swift-ecore")
+}
 
 Work with Ecore metamodels and model instances.
 
@@ -971,15 +975,76 @@ swift-ecore validate migrated.xmi --metamodel improved.ecore
 swift-ecore compare legacy.xmi migrated.xmi --metamodel legacy.ecore --metamodel improved.ecore --summary
 ```
 
+## Related Documentation
+
+### Library Documentation
+
+- [swift-ecore](https://mipalgu.github.io/swift-ecore/) - EMF/Ecore metamodelling, OCL, generator models and multi-level modelling ([GitHub](https://github.com/mipalgu/swift-ecore))
+- [ECore](https://mipalgu.github.io/swift-ecore/documentation/ecore/) - Metamodels, models and resources, with XMI and JSON serialisation
+- [OCL](https://mipalgu.github.io/swift-ecore/documentation/ocl/) - The Object Constraint Language for constraints and queries
+- [GenModel](https://mipalgu.github.io/swift-ecore/documentation/genmodel/) - Eclipse generator models
+- [MultiLevel](https://mipalgu.github.io/swift-ecore/documentation/multilevel/) - Multi-level (deep) modelling with clabjects, levels and potency
+- [ModellingGenerators](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/index.html) - Generator models, the template sets for Java, Swift, C and C++, and the verification exports
+
+### Tutorials
+
+- [All tutorials](https://mipalgu.github.io/swift-modelling/tutorials/tutorials/index.html)
+
+#### Ecore Metamodelling
+
+- [Creating Your First Ecore Metamodel](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/01-first-metamodel/index.html)
+- [Working with Model Instances](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/02-model-instances/index.html)
+- [Metamodel Relationships](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/03-metamodel-relationships/index.html)
+- [Advanced Metamodel Features](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/04-advanced-features/index.html)
+- [JSON and XMI Formats](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/05-xmi-json-conversion/index.html)
+- [Querying Models with AQL](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/06-querying-models/index.html)
+- [Cross-Resource References](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/07-cross-resource-refs/index.html)
+
+#### OCL Constraints
+
+- [OCL Constraints and Validation](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/ocl-01-constraints/index.html)
+- [Constraints in OCLinEcore and Complete OCL](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/formats-04-ocl-languages/index.html)
+
+#### Metamodel Languages and Formats
+
+- [Metamodels in KM3](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/formats-01-km3/index.html)
+- [EMOF Metamodels and UML Models](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/formats-02-uml-emof/index.html)
+- [Textual Metamodels with Emfatic and Xcore](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/formats-03-emfatic-xcore/index.html)
+- [Constraints in OCLinEcore and Complete OCL](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/formats-04-ocl-languages/index.html)
+
+#### From Grammars to Metamodels
+
+- [Importing Abstract Syntax](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/grammar-01-abstract-syntax/index.html)
+- [Importing Grammars](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/grammar-02-concrete-syntax/index.html)
+
+#### Formal Verification Exports
+
+- [Checking a Metamodel with Alloy](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/verification-01-alloy/index.html)
+
+#### Java Code Generation
+
+- [From Ecore to a Generator Model](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/java-01-ecore-to-genmodel/index.html)
+- [From a Generator Model to Java](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/java-02-genmodel-to-java/index.html)
+
+#### Multi-Level Modelling
+
+- [Multi-Level Modelling with Potency](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/multilevel-01-deep-modelling/index.html)
+
+#### Integrated Workflows
+
+- [Complete MDE Workflow: From Metamodel to Code](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/01-complete-mde-workflow/index.html)
+- [Model Refactoring Pipeline](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/02-model-refactoring-pipeline/index.html)
+- [Cross-Format Integration](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/03-cross-format-integration/index.html)
+
+### References
+
+- [Eclipse Modeling Framework (EMF)](https://eclipse.dev/emf/)
+- [OMG MOF (Meta Object Facility)](https://www.omg.org/mof/)
+- [OMG XMI (XML Metadata Interchange)](https://www.omg.org/spec/XMI/)
+
 ## Topics
 
 ### Essentials
 
 - <doc:GettingStarted>
 - <doc:UnderstandingSwiftEcore>
-
-## See Also
-
-- [Eclipse Modeling Framework (EMF)](https://eclipse.dev/emf/)
-- [OMG MOF (Meta Object Facility)](https://www.omg.org/mof/)
-- [OMG XMI (XML Metadata Interchange)](https://www.omg.org/spec/XMI/)

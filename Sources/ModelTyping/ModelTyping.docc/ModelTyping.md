@@ -62,6 +62,26 @@ A ``CompatibilityReport`` lists its findings as ``TypingDiagnostic`` values, eac
 - Jeanneret, Glinz and Baudry, [Estimating footprints of model operations](https://doi.org/10.1145/1985793.1985875), ICSE 2011, pp. 601-610.
 - Degueule, Combemale, Blouin, Barais and Jézéquel, [Melange: a meta-language for modular and reusable development of DSLs](https://doi.org/10.1145/2814251.2814252), SLE 2015, pp. 25-36.
 
+## Related Documentation
+
+### Command-Line Tools
+
+- [swift-atl](https://mipalgu.github.io/swift-modelling/documentation/swift_atl/index.html) - `check-compat` for ATL transformations
+- [swift-mtl](https://mipalgu.github.io/swift-modelling/documentation/swift_mtl/index.html) - `check-compat` for MTL templates
+- [swift-aql](https://mipalgu.github.io/swift-modelling/documentation/swift_aql/index.html) - `check-compat` for AQL expressions
+
+### Tutorials
+
+- Model Typing: [Reusing Modules with Model Typing](https://mipalgu.github.io/swift-modelling/tutorials/swiftmodelling/typing-01-check-compat/index.html)
+- [All tutorials](https://mipalgu.github.io/swift-modelling/tutorials/tutorials/index.html)
+
+### Libraries
+
+- [ATL](https://mipalgu.github.io/swift-atl/documentation/atl/) of [swift-atl](https://mipalgu.github.io/swift-atl/) - The ATL modules that are checked
+- [MTL](https://mipalgu.github.io/swift-mtl/documentation/mtl/) of [swift-mtl](https://mipalgu.github.io/swift-mtl/) - The MTL modules that are checked
+- [AQL](https://mipalgu.github.io/swift-aql/documentation/aql/) of [swift-aql](https://mipalgu.github.io/swift-aql/) - The AQL expressions that are checked
+- [ECore](https://mipalgu.github.io/swift-ecore/documentation/ecore/) of [swift-ecore](https://mipalgu.github.io/swift-ecore/) - The metamodels that model types are made from
+
 ## Topics
 
 ### Checking Reuse

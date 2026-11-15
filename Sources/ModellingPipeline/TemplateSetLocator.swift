@@ -12,7 +12,8 @@ import ModellingGenerators
 /// A resource directory holds template sets in the layout of the bundled one: a directory for
 /// each language, named after it, with a `templateset.json` descriptor. The locator searches its
 /// ``bundledRoots`` in order, so that a client library ships its own sets in its resource bundle
-/// and finds them like the sets of ``ModellingGenerators``, whose directory is the default root.
+/// and finds them like the sets of [`ModellingGenerators`](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/index.html), whose directory
+/// is the default root.
 ///
 /// A template set can also be named by its directory, which then stands on its own; see
 /// ``assemble(templateSet:templatePaths:)``.
@@ -35,7 +36,8 @@ public struct TemplateSetLocator: Sendable, Equatable {
     /// Creates a locator.
     ///
     /// - Parameter bundledRoots: The directories that hold template sets, in search order
-    ///   (default: the directory of the template sets bundled with ``ModellingGenerators``).
+    ///   (default: the directory of the template sets bundled with
+    ///   [`ModellingGenerators`](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/index.html)).
     public init(bundledRoots: [URL] = TemplateSet.defaultBundledRoots) {
         self.bundledRoots = bundledRoots
     }
@@ -62,8 +64,10 @@ public struct TemplateSetLocator: Sendable, Equatable {
     ///   - language: The language, which names the template set.
     ///   - templatePaths: Override directories, searched after the roots; later entries take
     ///     precedence over earlier ones.
-    /// - Returns: The assembled set; call ``TemplateSet/remove()`` when it is no longer needed.
-    /// - Throws: The errors of ``TemplateSet/assemble(language:templatePaths:bundledRoots:)``.
+    /// - Returns: The assembled set; call [`TemplateSet.remove()`](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/templateset/remove()/index.html)
+    ///   when it is no longer needed.
+    /// - Throws: The errors of
+    ///   [`TemplateSet.assemble(language:templatePaths:bundledRoots:)`](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/templateset/assemble(language:templatepaths:bundledroots:)/index.html).
     public func assemble(language: String, templatePaths: [URL] = []) throws -> TemplateSet {
         try TemplateSet.assemble(language: language, templatePaths: templatePaths, bundledRoots: bundledRoots)
     }
@@ -78,9 +82,11 @@ public struct TemplateSetLocator: Sendable, Equatable {
     /// - Parameters:
     ///   - reference: The path of a template set directory, or the name of a language.
     ///   - templatePaths: Override directories; later entries take precedence over earlier ones.
-    /// - Returns: The assembled set; call ``TemplateSet/remove()`` when it is no longer needed.
-    /// - Throws: ``GenerationError/templateSetInvalid(_:_:)`` if a path names no directory with a
-    ///   descriptor, and the errors of ``assemble(language:templatePaths:)``.
+    /// - Returns: The assembled set; call [`TemplateSet.remove()`](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/templateset/remove()/index.html)
+    ///   when it is no longer needed.
+    /// - Throws:
+    ///   [`GenerationError.templateSetInvalid(_:_:)`](https://mipalgu.github.io/swift-modelling/documentation/modellinggenerators/generationerror/templatesetinvalid(_:_:)/index.html)
+    ///   if a path names no directory with a descriptor, and the errors of ``assemble(language:templatePaths:)``.
     public func assemble(templateSet reference: String, templatePaths: [URL] = []) throws -> TemplateSet {
         let directory = URL(fileURLWithPath: reference).standardizedFileURL
         if Self.isTemplateSet(directory) {
