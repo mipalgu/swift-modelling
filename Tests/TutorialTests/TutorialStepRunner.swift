@@ -247,7 +247,7 @@ struct TutorialReplayEnvironment: Sendable {
                     try await Self.collect(execution, timeout: timeout)
                 }
             }
-            let (output, timedOut) = result.closureOutput
+            let (output, timedOut) = result.closureResult
             switch result.terminationStatus {
             case .exited(let code):
                 return ScriptRun(
