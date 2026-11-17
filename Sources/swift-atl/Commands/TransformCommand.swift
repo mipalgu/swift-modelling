@@ -121,6 +121,8 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
 
             \(ReferenceStyleOptions.discussion(written: "target models of metamodels that are not built in"))
 
+            \(DocumentURIOptions.discussion(written: "target models of metamodels that are not built in"))
+
             \(UnsetFeatureOptions.discussion(reader: "the rules of the transformation"))
 
             \(ATLSemanticsOptions.discussion(reader: "the transformation"))
@@ -225,6 +227,9 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
 
     /// How XMI target models spell references into themselves.
     @OptionGroup var referenceStyleOptions: ReferenceStyleOptions
+
+    /// How XMI target models refer to elements of other documents, such as the source models.
+    @OptionGroup var documentURIOptions: DocumentURIOptions
 
     @Flag(name: .shortAndLong, help: "Enable verbose output")
     var verbose: Bool = false
@@ -421,14 +426,13 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
                 verbose: verbose
             )
 
-            // Target resources carry their metamodels, so they are written in their namespaces
+            // Target resources carry their metamodels, so they are written in their namespaces,
+            // and their file locations, against which references to other models are made relative
             let targetResourceSet = settings.makeResourceSet()
             await MetamodelRegistration.register(module.targetMetamodels.values, into: targetResourceSet)
             var targetModels: OrderedDictionary<String, Resource> = [:]
             for (alias, path) in targetMapping {
-                let builtIn = module.targetMetamodels[alias].map(isBuiltIn) ?? false
-                let resource = Resource(
-                    uri: builtIn ? URL(fileURLWithPath: path).absoluteString : "file://\(path)")
+                let resource = Resource(uri: URIReference.canonicalise(URL(fileURLWithPath: path).absoluteString))
                 await resource.setResourceSet(targetResourceSet)
                 targetModels[alias] = resource
 
@@ -476,7 +480,7 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
                 verbose: verbose,
                 emfLayoutAliases: Set(
                     module.targetMetamodels.filter { isBuiltIn($0.value) }.map(\.key)),
-                xmiOptions: referenceStyleOptions.serializationOptions(settings: settings),
+                xmiOptions: targetSerializationOptions(settings: settings),
                 encoding: outputEncodingOptions.encoding(settings: settings)
             )
             withExtendedLifetime(targetResourceSet) {}
@@ -498,6 +502,17 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
             print("\(validateOnly ? "Validation" : "Transformation") failed: \(error.localizedDescription)")
             throw ExitCode.failure
         }
+    }
+
+    /// The options with which target models of metamodels that are not built in are written as XMI.
+    ///
+    /// - Parameter settings: The settings of the run, whose configuration file is consulted.
+    /// - Returns: The options of the reference style of the run, with the URIs of other
+    ///   documents written as `--document-uris` chooses.
+    private func targetSerializationOptions(settings: SemanticsSettings) -> XMISerializationOptions {
+        var options = referenceStyleOptions.serializationOptions(settings: settings)
+        documentURIOptions.apply(to: &options)
+        return options
     }
 
     /// Checks a transformation and its models without running it.

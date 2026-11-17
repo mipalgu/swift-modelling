@@ -116,8 +116,12 @@ swift-ecore generate model/library.ecore --language c --output c-src/
 ### swift-atl
 
 ```bash
-# Run a transformation
+# Run a transformation; the target refers to elements of the source by relative URIs
 swift-atl transform Families2Persons.atl --source families.xmi --target persons.xmi
+
+# Refer to elements of the source by their full URIs instead
+swift-atl transform TaskNotes.atl --source models/tasks.xmi --target output/notes.xmi \
+  --document-uris absolute
 
 # Check a transformation against its metamodels without running it
 swift-atl transform Families2Persons.atl --validate-only \

@@ -63,6 +63,7 @@ swift-atl transform <transformation-file> [options]
 - `--output-format <xmi|json>` - Format of the target models (default: from the file extension)
 - `--metamodel-path <directory>` - Directory searched for metamodels named by `-- @path` directives (repeatable)
 - `--reference-style <encoded|plain>` - How an XMI target spells references into its own document (default `encoded`, or the `reference-style` key of the configuration file); see the output layout below
+- `--document-uris <relative|absolute>` - How an XMI target refers to elements of other documents, such as the source models (default `relative`); see the output layout below
 - `--unset-features <defaults|undefined>` - How the rules read features that a model does not set (default `defaults`); see below
 - `--source-metamodel <[name=]file.ecore>` - Metamodel file for a source metamodel, matched to the metamodels after `from` (or `refining`) by order or by name (repeatable)
 - `--target-metamodel <[name=]file.ecore>` - Metamodel file for a target metamodel, matched to the metamodels after `create` in the same way (repeatable)
@@ -132,6 +133,8 @@ create OUT : GenModel from IN : Ecore;
 
 **Output layout.** A target that is an instance of a built-in metamodel is written in the layout of the Eclipse Modeling Framework: references to other models are `uri#fragment` attribute values (`ecorePackage="library.ecore#/"`), with relative URIs and name-based fragments, so that the result opens unchanged in the Eclipse tooling. Other targets keep the usual layout, unless `--reference-style plain` is given: such an XMI target is then also written in the layout of the Eclipse Modeling Framework, and a reference into the same document holds the fragment alone (`peer="/0"`) rather than `#/0`, as Eclipse writes XMI model files. `encoded`, the default, keeps the usual layout. Both styles load again.
 
+**References to source models.** A target can refer to elements of a source model, such as an element that no rule transforms, assigned to a non-containment reference. The target names the source model relative to its own location, `tasks.xmi#//@tasks.1` for a source model in the same directory or `../models/tasks.xmi#//@tasks.1` for one in another directory, so it holds no absolute path and loads again as long as the models keep their relative locations. `--document-uris absolute` writes the full URI of the source model instead, such as a `file:` URI, for an XMI target of a metamodel that is not built in. A URI that cannot be made relative, such as one on another drive, is written in full either way.
+
 **Empty targets.** A transformation whose rules match nothing still succeeds and writes each target as an empty model: an XMI document holding only the `xmi:XMI` element, or an empty JSON array.
 
 **Examples:**
@@ -171,6 +174,10 @@ swift-atl transform Library2Report.atl \
 # Write same-document references of an XMI target as Eclipse writes XMI model files
 swift-atl transform Families2Persons.atl --source families.xmi --target persons.xmi \
     --reference-style plain
+
+# Refer to elements of the source models by their full URIs
+swift-atl transform TaskNotes.atl --source models/tasks.xmi --target output/notes.xmi \
+    --document-uris absolute
 
 # Metamodel files by name rather than by position
 swift-atl transform Families2Persons.atl --source families.xmi --source-metamodel Families.ecore \
