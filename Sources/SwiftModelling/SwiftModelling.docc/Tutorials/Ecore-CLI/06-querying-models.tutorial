@@ -97,9 +97,17 @@
             @Step {
                 Navigate bidirectional references.
 
-                @Code(name: "queries/employee-companies.aql", file: step-37-employee-companies.aql)
+                @Code(name: "queries/colleagues.aql", file: step-37-colleagues.aql)
 
-                Starting from an employee, navigate back to their employer using the opposite reference. Evaluate it with an employee as the context, for example `--context emp1`. AQL makes bidirectional navigation natural.
+                `employees` of a `Company` and `employer` of a `Person` are opposites of each other: the metamodel declares them with `eOpposite`, so whenever an employee is in the `employees` of a company, that company is the `employer` of the employee. A query can therefore walk in both directions. This one starts from an employee, goes up to the company through `employer`, comes back down through `employees`, leaves out the employee itself with `excluding(self)`, and collects the names of the colleagues. The lines that start with two hyphens are comments.
+            }
+
+            @Step {
+                Evaluate the navigation with an employee as the context.
+
+                @Code(name: "Terminal", file: step-37-evaluate-colleagues.sh)
+
+                The context of these queries is an employee, here `emp1`, so `self` is that employee and not the company. The first command follows `employer` alone and prints the one company of the employee. The second continues down through `employees` and prints every employee of that company, including `emp1` itself. The third evaluates `colleagues.aql`, which drops the employee, and the last shows that the same file answers for another context, here the manager `mgr1`. Evaluating `self.employer` with the company as the context fails, because a company has no `employer`.
             }
 
             @Step {

@@ -135,7 +135,7 @@ struct Ecore06Tests {
     @Test("Step 8: Validate employee companies navigation query")
     func testStep08EmployeeCompaniesQuery() async throws {
         // Load the employee companies query
-        let queryPath = tutorialResourcesPath.appendingPathComponent("step-37-employee-companies.aql")
+        let queryPath = tutorialResourcesPath.appendingPathComponent("step-37-colleagues.aql")
 
         #expect(FileManager.default.fileExists(atPath: queryPath.path))
 
@@ -143,6 +143,43 @@ struct Ecore06Tests {
 
         // Verify query navigates opposite reference
         #expect(content.contains("self.employer"))
+    }
+
+    @Test("Step 8: Navigation goes up through employer and back down through employees")
+    func testStep08NavigatesBothDirections() async throws {
+        let content = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-37-colleagues.aql"), encoding: .utf8)
+
+        #expect(content.contains("self.employer"))
+        #expect(content.contains(".employees"))
+        #expect(content.contains("excluding(self)"))
+    }
+
+    @Test("Step 8: Evaluate command shows the output of every query")
+    func testStep08EvaluateCommand() async throws {
+        let content = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-37-evaluate-colleagues.sh"), encoding: .utf8)
+
+        #expect(content.contains("swift-aql query company-model.xmi --query \"self.employer\" --context \"emp1\""))
+        #expect(content.contains("--query-file queries/colleagues.aql --context \"emp1\""))
+        #expect(content.contains("--query-file queries/colleagues.aql --context \"mgr1\""))
+        #expect(content.contains("# Output: Company(Tech Innovations Ltd)"))
+        #expect(content.contains("# Output: [\"Bob Smith\", \"Carol Williams\"]"))
+        #expect(content.contains("# Output: [\"Alice Johnson\", \"Bob Smith\"]"))
+    }
+
+    @Test("Step 8: The tutorial shows the query file and then its evaluation")
+    func testStep08TutorialOrder() async throws {
+        let tutorial = tutorialResourcesPath
+            .deletingLastPathComponent()
+            .appendingPathComponent("Tutorials")
+            .appendingPathComponent("Ecore-CLI")
+            .appendingPathComponent("06-querying-models.tutorial")
+        let content = try String(contentsOf: tutorial, encoding: .utf8)
+
+        let query = try #require(content.range(of: "file: step-37-colleagues.aql"))
+        let run = try #require(content.range(of: "file: step-37-evaluate-colleagues.sh"))
+        let stats = try #require(content.range(of: "file: step-38-company-stats.aql"))
+        #expect(query.lowerBound < run.lowerBound)
+        #expect(run.lowerBound < stats.lowerBound)
     }
 
     @Test("Step 9: Validate company stats query")
@@ -192,7 +229,8 @@ struct Ecore06Tests {
             "step-34-employee-names.aql",
             "step-35-count-by-status.aql",
             "step-36-engineering-managers.aql",
-            "step-37-employee-companies.aql",
+            "step-37-colleagues.aql",
+            "step-37-evaluate-colleagues.sh",
             "step-38-company-stats.aql",
             "step-39-validate-with-queries.sh"
         ]
@@ -272,7 +310,7 @@ struct Ecore06Tests {
     func testQueryContextAndNavigation() async throws {
         // Verify queries use appropriate context
         let companyQuery = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-31-all-employees.aql"), encoding: .utf8)
-        let employeeQuery = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-37-employee-companies.aql"), encoding: .utf8)
+        let employeeQuery = try String(contentsOf: tutorialResourcesPath.appendingPathComponent("step-37-colleagues.aql"), encoding: .utf8)
 
         // Company-context query navigates to employees
         #expect(companyQuery.contains("self.employees"))

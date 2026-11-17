@@ -1,0 +1,7 @@
+-- Evaluate this query with an employee as the context.
+-- Up: the employer reference leads to the company.
+-- Down: the opposite reference, employees, leads back to all its employees.
+let employer = self.employer in
+employer.employees
+  ->excluding(self)
+  ->collect(colleague | colleague.name)
