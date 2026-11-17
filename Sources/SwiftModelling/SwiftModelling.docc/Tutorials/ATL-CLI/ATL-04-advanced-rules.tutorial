@@ -1,10 +1,12 @@
-@Tutorial(time: 40) {
+@Tutorial(time: 50) {
     @Intro(title: "Advanced Rule Patterns") {
         Explore advanced ATL rule patterns including lazy rules, called rules, and imperative sections.
 
         In this tutorial, you'll learn when and how to use different rule types for sophisticated transformation scenarios.
 
-        You'll discover how lazy rules enable on-demand element creation and how called rules provide explicit control over transformation flow.
+        You'll discover how lazy rules enable on-demand element creation, how they differ from matched rules in the model they produce, and how called rules provide explicit control over transformation flow.
+
+        The tutorial gives you the source metamodel and the transformations. Writing the target metamodel, creating a sample project and running the transformations with swift-atl are exercises for you: by now you have done each of them in an earlier tutorial, and the hints along the way tell you where to look.
 
         @Image(source: "atl-transformations.svg", alt: "ATL Transformations")
     }
@@ -13,16 +15,16 @@
         @ContentAndMedia {
             Lazy rules create target elements only when explicitly requested. Unlike matched rules that automatically apply to all matching source elements, lazy rules provide on-demand element creation.
 
-            Lazy rules are defined with the `lazy rule` keyword and invoked using `thisModule.resolveLazy` or through bindings.
+            Lazy rules are defined with the `lazy rule` keywords and invoked like an operation of the module, as in `thisModule.TaskSummary(task)`, usually from a binding of another rule. Each call returns the target element that the call created.
         }
 
         @Steps {
             @Step {
-                Create a metamodel with optional relationships.
+                Create the source metamodel, which describes projects.
 
                 @Code(name: "Project.ecore", file: atl-04-step-01-project-metamodel.ecore)
 
-                This metamodel defines Project, Task, and Resource classes with various relationships.
+                A Project contains its Tasks and Resources. A Task has a name, a priority and a completed flag, and a Resource has a name and a type.
             }
 
             @Step {
@@ -30,23 +32,71 @@
 
                 @Code(name: "ProjectTransform.atl", file: atl-04-step-02-lazy-rule.atl)
 
-                Lazy rules only execute when explicitly called, useful for optional or conditional transformations.
+                Lazy rules only execute when explicitly called, useful for optional or conditional transformations. Nothing calls this rule yet, so running the transformation now would write an empty report.
             }
 
             @Step {
-                Call a lazy rule from a matched rule.
+                Call the lazy rule from a matched rule.
 
                 @Code(name: "ProjectTransform.atl", file: atl-04-step-03-calling-lazy.atl)
 
-                Use `thisModule.resolveLazy` to invoke lazy rules selectively.
+                The matched rule HighPriorityProject runs for the project. Its `summaries` binding selects the tasks with a priority above 5 and calls `thisModule.TaskSummary(task)` for each of them, so only those tasks get a Summary.
             }
 
             @Step {
-                Create multiple lazy rules.
+                Exercise: write the target metamodel, `Report.ecore`, yourself.
 
-                @Code(name: "ProjectTransform.atl", file: atl-04-step-04-multiple-lazy.atl)
+                The transformation creates elements of the Report metamodel, which this tutorial does not give you. Derive it from the rules: every `Report!X` in a `to` pattern is a class X, and every binding `feature <- expression` is a feature of that class. The expression tells you the type of the feature: a string literal or a name gives an `EString`, a priority an `EInt`, and a collection such as the result of `collect` makes the feature many-valued. An element that a rule creates for a binding of another element, such as a Summary for the `summaries` of a Document, is usually contained by that element, so `summaries` is a containment reference. Give the package the name `Report`, as in the `-- @path` directive, and save it beside the transformation. Start with what these rules need, and extend the metamodel as later steps add classes and features. <doc:01-first-metamodel> shows how to write and validate a metamodel, and <doc:03-metamodel-relationships> how to declare containment and other references.
+            }
 
-                Different lazy rules handle different transformation scenarios on demand.
+            @Step {
+                Exercise: create a sample project and run the transformation on it.
+
+                Write a small model of Project.ecore to transform, as in <doc:02-model-instances>. A good test input has tasks on both sides of the priority threshold of 5 and at least one completed task, for example three tasks with the priorities 8, 6 and 2, of which the first is completed, and two resources. Then run the transformation as in <doc:01-first-transformation>, with a command of the form `swift-atl transform ProjectTransform.atl --source IN=project.xmi --target OUT=report.xmi`. For that example, the report holds one Document with two Summaries, for the tasks with the priorities 8 and 6, with the statuses `Done` and `Pending`. The task with the priority 2 was never passed to the lazy rule, so no Summary exists for it.
+            }
+
+            @Step {
+                Create multiple lazy rules and choose between them for each task.
+
+                @Code(name: "ProjectTransform.atl", file: atl-04-step-06-multiple-lazy.atl)
+
+                Different lazy rules handle different transformation scenarios on demand. The matched rule now summarises every task, calling DetailedTaskSummary for a high-priority task and TaskSummary for the others. Add the class DetailedSummary to your metamodel: its elements go into `summaries`, so it must be a subclass of Summary, as <doc:04-advanced-features> explains. Run the transformation again. For the example project, the report has three summaries: the two high-priority tasks become DetailedSummary elements, marked `xsi:type="rep:DetailedSummary"` and carrying their priority and description, and the task with the priority 2 becomes a plain Summary.
+            }
+        }
+    }
+
+    @Section(title: "Lazy Rules Compared with Matched Rules") {
+        @ContentAndMedia {
+            A matched rule runs once for every source element that its pattern and guard accept, whether or not anything refers to the result. When a binding of another rule names a source element, ATL replaces it with the target element that the matched rule created for it.
+
+            A lazy rule runs only when it is called, and every call creates new target elements. A `unique lazy rule` creates its targets on the first call for a source element and returns the same targets on every later call.
+
+            Try each of the following transformations on your sample project, writing each report to a file of its own so that you can compare them. Each step says what you should observe.
+        }
+
+        @Steps {
+            @Step {
+                Write the intent of the first lazy version, a report that summarises the high-priority tasks, with a matched rule instead.
+
+                @Code(name: "ProjectTransformMatched.atl", file: atl-04-step-07-matched-rule.atl)
+
+                TaskSummary is now an ordinary matched rule, and the `summaries` binding passes the selected tasks themselves rather than calling a rule. ATL resolves each task to the Summary that TaskSummary created for it. Try it: the Document contains the same two summaries as before, but the matched rule also created a Summary for the task with the priority 2, which nothing asked for. That Summary is contained in nothing, so the report has a second root element beside the Document. To avoid it with a matched rule, you would repeat the selection as a guard of TaskSummary, `(s.priority > 5)`, and keep the two conditions in step. With a lazy rule, the caller alone decides which tasks are summarised.
+            }
+
+            @Step {
+                Call a lazy rule twice for the same tasks: once for the summaries of all tasks, and again for the highlights.
+
+                @Code(name: "ProjectHighlights.atl", file: atl-04-step-08-lazy-called-twice.atl)
+
+                The `highlights` of a Document should refer to summaries that the Document already contains, so add `highlights` to your metamodel as a many-valued reference to Summary that is not a containment reference. Try it: every call of a lazy rule creates a new element, so the report has five summaries rather than three. The Document contains one for each task, and each high-priority task has a second Summary, a copy that the highlights refer to. The copies are contained in nothing, so they are root elements of the report.
+            }
+
+            @Step {
+                Declare the lazy rule as `unique`.
+
+                @Code(name: "ProjectHighlights.atl", file: atl-04-step-09-unique-lazy.atl)
+
+                Only the first line of the rule changes. A unique lazy rule remembers the elements that it created for each source element, so the second call for a task returns the Summary of the first call. Try it: the report has three summaries, all inside the Document, and the highlights refer to the first two of them, as in `<highlights href="#//@summaries.0"/>`. A matched rule gives the same structure when two bindings name the same task, because both resolve to the one Summary that it created. Use a plain lazy rule when each call should produce a separate element, a unique lazy rule when calls for the same element should share one result, and a matched rule when every element of a type needs a result.
             }
         }
     }
@@ -55,40 +105,46 @@
         @ContentAndMedia {
             Called rules are explicitly invoked procedures that can create multiple target elements and execute imperative code. They provide procedural control flow within declarative transformations.
 
-            The `do` block enables imperative operations like assignments, loops, and conditional execution.
+            The `do` block enables imperative operations like assignments, conditional statements and loops. Its statements end with a semicolon, and an imperative `if` takes its condition in parentheses and its branches in braces.
         }
 
         @Steps {
             @Step {
                 Define a called rule.
 
-                @Code(name: "ProjectTransform.atl", file: atl-04-step-05-called-rule.atl)
+                @Code(name: "ProjectTransform.atl", file: atl-04-step-10-called-rule.atl)
 
-                Called rules are invoked explicitly and can accept parameters.
+                Called rules are invoked explicitly and can accept parameters. Unlike a matched rule, a called rule has no `from` section, so it only runs when it is called: with only this rule, the transformation writes an empty report. The rule creates a StatusReport, another class for your metamodel.
             }
 
             @Step {
                 Add an imperative do block.
 
-                @Code(name: "ProjectTransform.atl", file: atl-04-step-06-do-block.atl)
+                @Code(name: "ProjectTransform.atl", file: atl-04-step-11-do-block.atl)
 
-                The `do` block contains imperative code that executes after target element creation.
+                The `using` section declares local variables of the rule. The `do` block contains imperative code that executes after the target element has been created and its bindings applied, so it can assign `t.completionRate`. The operator `div` divides two Integers and drops the remainder, which suits an integer attribute; `/` would give a Real.
             }
 
             @Step {
                 Combine called rules with matched rules.
 
-                @Code(name: "ProjectTransform.atl", file: atl-04-step-07-combined-rules.atl)
+                @Code(name: "ProjectTransform.atl", file: atl-04-step-12-combined-rules.atl)
 
-                Matched rules invoke called rules to handle complex transformation scenarios.
+                The matched rule calls the lazy rule from a binding and the called rule from its `do` block. The StatusReport that the called rule creates is not contained in the Document, so it becomes a root element of the report.
             }
 
             @Step {
                 Build a complete transformation with advanced patterns.
 
-                @Code(name: "ProjectTransform.atl", file: atl-04-step-08-complete-transformation.atl)
+                @Code(name: "ProjectTransform.atl", file: atl-04-step-13-complete-transformation.atl)
 
-                The complete transformation demonstrates lazy rules, called rules, and imperative sections working together.
+                The complete transformation demonstrates lazy rules, called rules, and imperative sections working together. It needs every class and feature of your metamodel, including the ResourceItems that the second lazy rule creates for the `resources` of a Document.
+            }
+
+            @Step {
+                Exercise: check your metamodel with the complete transformation.
+
+                Run the complete transformation on your sample project. For the example project, with the tasks of priority 8 (completed), 6 and 2 and two resources, a correct metamodel gives a report with two root elements. The Document has the completion rate 33 and the status message `Project in progress: 33% complete`, and contains two Summaries, for the tasks with a priority of at least 3, each with its priority level, and two ResourceItems with their categories. Beside it, the StatusReport records 3 tasks, a completion of 33 and 2 resources. If your metamodel lacks a feature or a class, swift-atl stops with a message such as `Transformation failed: Invalid operation: Property 'statusMessage' not found in class 'Document'` or `Transformation failed: Type error: Class 'ResourceItem' not found in model 'OUT'`. If the summaries appear as root elements that the Document only refers to, as in `<summaries href="#/1"/>`, the `summaries` reference is not a containment reference.
             }
         }
     }
@@ -101,7 +157,7 @@
                 When target elements should only be created on demand
 
                 @Justification(reaction: "Correct!") {
-                    Lazy rules enable conditional element creation. They only execute when explicitly invoked, whereas matched rules automatically process all matching elements.
+                    Lazy rules only execute when explicitly invoked, whereas matched rules automatically process all matching elements. The matched version of the high-priority report also created a Summary for every task with a lower priority, which nothing asked for.
                 }
             }
 
@@ -118,6 +174,34 @@
 
                 @Justification(reaction: "Incorrect!") {
                     Model size doesn't determine rule type. Lazy rules are about conditional creation, not optimisation.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            A binding calls the lazy rule `TaskSummary` for a task that an earlier binding has already passed to it. What does the second call return?
+
+            @Choice(isCorrect: false) {
+                The Summary that the first call created
+
+                @Justification(reaction: "Not quite!") {
+                    That is what a `unique lazy rule` does. A plain lazy rule keeps no record of its earlier calls.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                A new Summary for the same task
+
+                @Justification(reaction: "That's right!") {
+                    Every call of a lazy rule creates new target elements. That is why the highlights of the plain lazy version referred to copies of the summaries rather than to the summaries inside the Document.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                Nothing, because a lazy rule runs at most once for each source element
+
+                @Justification(reaction: "Incorrect!") {
+                    A lazy rule runs every time it is called. Only a matched rule runs once for each source element, and only a unique lazy rule returns its earlier result.
                 }
             }
         }
@@ -157,7 +241,7 @@
                 Create new target elements
 
                 @Justification(reaction: "Try again!") {
-                    Target elements are created in the `to` section. The `do` block executes after creation.
+                    Both can lead to new target elements: a binding can call a lazy rule, and a `do` block can call a called rule. The target elements of the rule itself are created by its `to` section before the `do` block runs.
                 }
             }
 

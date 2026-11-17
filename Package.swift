@@ -431,7 +431,8 @@ let package = Package(
                 "swift-aql",
             ],
             resources: [
-                .copy("Resources")
+                .copy("Resources"),
+                .copy("Fixtures"),
             ],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency")

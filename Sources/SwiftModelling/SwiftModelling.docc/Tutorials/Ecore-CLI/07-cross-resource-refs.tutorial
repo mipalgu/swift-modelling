@@ -24,7 +24,35 @@
             }
 
             @Step {
-                Understand the `href` syntax used in XMI for cross-resource references: `href="targetFile.xmi#fragment"`, where the part before `#` is the URI of the target resource, relative to the referring file, and the part after it is the fragment that names the object within that resource. A fragment that does not start with `/` names an object by its identifier, the value of its `xmi:id` or of its ID attribute, so `#it` names the object whose `xmi:id` is `it`. An identifier stays valid when objects are added or reordered. A fragment that starts with `/` names an object by its position instead: `/0` names the first root object of a file with several roots, and a path such as `//@employees.1` names the second object of the `employees` containment of a single root.
+                See how an XMI file refers to an object of another file.
+
+                @Code(name: "ProjectA.xmi", file: ecore-07-step-03-project.xmi)
+
+                This is `ProjectA.xmi`, a file that you create and use later in this tutorial. Its last element, `relatedDepartments`, holds no object of its own. It holds an `href`, which is how XMI writes a reference to an object that lives in another file: `href="SharedDeps.xmi#it"`.
+            }
+
+            @Step {
+                Read the two parts of an `href`.
+
+                @Code(name: "ProjectA.xmi", file: ecore-07-step-03-project.xmi)
+
+                The part before the `#` is the URI of the target resource, here `SharedDeps.xmi`. It is relative to the file that contains the `href`, so the two files sit in the same directory. The part after the `#` is the fragment, here `it`, which names the object within that resource.
+            }
+
+            @Step {
+                Find the object that the fragment names in the target file.
+
+                @Code(name: "SharedDeps.xmi", file: ecore-07-step-02-shared.xmi)
+
+                This is `SharedDeps.xmi`, which you also create later. A fragment that does not start with `/` is an identifier: the value of the `xmi:id`, or of an ID attribute, of the target object. The fragment `it` names the object with `xmi:id="it"`. An identifier stays valid when objects are added or reordered, so the tutorial uses it.
+            }
+
+            @Step {
+                Name an object by its position instead, with a fragment that starts with `/`.
+
+                @Code(name: "SharedDeps.xmi", file: ecore-07-step-02-shared.xmi)
+
+                Such a fragment is a path. In a file with several root objects, such as this one, `/0` names the first root object and `/1` the second. In a file with a single root, `//@employees.1` names the second object of the `employees` containment of that root. A path stops pointing at the right object when objects are inserted or reordered.
             }
         }
     }

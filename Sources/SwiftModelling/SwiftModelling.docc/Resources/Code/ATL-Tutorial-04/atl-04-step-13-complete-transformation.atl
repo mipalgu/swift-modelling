@@ -9,7 +9,7 @@ helper context Project!Project def: completionPercentage(): Integer =
     let completedCount : Integer = self.tasks->select(t | t.completed)->size() in
     let totalCount : Integer = self.tasks->size() in
     if totalCount > 0 then
-        (completedCount * 100) / totalCount
+        (completedCount * 100) div totalCount
     else
         0
     endif;
@@ -37,17 +37,17 @@ lazy rule ResourceListing {
         )
 }
 
--- Called rule: creates executive summaries
-rule CreateExecutiveSummary(proj : Project!Project) {
+-- Called rule: creates status reports
+rule CreateStatusReport(proj : Project!Project, taskCount : Integer) {
     to
-        summary: Report!ExecutiveSummary (
+        report: Report!StatusReport (
             projectName <- proj.name,
+            totalTasks <- taskCount,
             completion <- proj.completionPercentage(),
-            taskCount <- proj.tasks->size(),
             resourceCount <- proj.resources->size()
         )
     do {
-        summary;
+        report;
     }
 }
 
@@ -59,22 +59,22 @@ rule ProjectToReport {
         t: Report!Document (
             name <- s.name,
             completionRate <- s.completionPercentage(),
-            taskSummaries <- s.tasks
+            summaries <- s.tasks
                 ->select(task | task.priority >= 3)
                 ->collect(task | thisModule.TaskSummary(task)),
             resources <- s.resources
                 ->collect(res | thisModule.ResourceListing(res))
         )
     do {
-        -- Create executive summary via called rule
-        thisModule.CreateExecutiveSummary(s);
-        
+        -- Create a status report via the called rule
+        thisModule.CreateStatusReport(s, s.tasks->size());
+
         -- Add completion status message
-        if s.completionPercentage() = 100 then
-            t.statusMessage <- 'Project complete!'
-        else
-            t.statusMessage <- 'Project in progress: ' + 
-                s.completionPercentage().toString() + '% complete'
-        endif;
+        if (s.completionPercentage() = 100) {
+            t.statusMessage <- 'Project complete!';
+        } else {
+            t.statusMessage <- 'Project in progress: ' +
+                s.completionPercentage().toString() + '% complete';
+        }
     }
 }

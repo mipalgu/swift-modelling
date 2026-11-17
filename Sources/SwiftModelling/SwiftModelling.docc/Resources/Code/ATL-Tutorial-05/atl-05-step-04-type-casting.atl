@@ -4,9 +4,10 @@
 module OrganisationTransform;
 create OUT: Report from IN: Organisation;
 
--- Helper using oclAsType to access subtype features
+-- Helper using oclAsType to access subtype features:
+-- check the type with oclIsKindOf first, then cast
 helper context Organisation!Employee def: getManagerTeamSize(): Integer =
-    if self.oclIsTypeOf(Organisation!Manager) then
+    if self.oclIsKindOf(Organisation!Manager) then
         self.oclAsType(Organisation!Manager).teamSize
     else
         0

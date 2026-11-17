@@ -8,18 +8,20 @@ create OUT: Report from IN: Project;
 rule ProjectReport {
     from
         s: Project!Project
+    using {
+        completedCount : Integer = s.tasks->select(task | task.completed)->size();
+        totalCount : Integer = s.tasks->size();
+    }
     to
         t: Report!Document (
             name <- s.name
         )
     do {
         -- Imperative code: calculate completion percentage
-        let completedCount : Integer = s.tasks->select(task | task.completed)->size() in
-        let totalCount : Integer = s.tasks->size() in
-        if totalCount > 0 then
-            t.completionRate <- (completedCount * 100) / totalCount
-        else
-            t.completionRate <- 0
-        endif;
+        if (totalCount > 0) {
+            t.completionRate <- (completedCount * 100) div totalCount;
+        } else {
+            t.completionRate <- 0;
+        }
     }
 }

@@ -13,7 +13,7 @@
         @ContentAndMedia {
             Collections in ATL are manipulated using OCL (Object Constraint Language) operations. These operations provide functional-style collection processing.
 
-            Common operations include `collect` (map), `select` (filter), and `reject` (inverse filter).
+            Each of these operations takes an iterator expression such as `c | c.title`: the variable before the bar stands for one element at a time, and the expression after it is evaluated for that element. `collect` builds a new collection from the values of the expression, `select` keeps the elements for which it is true, and `reject` keeps those for which it is false.
         }
 
         @Steps {
@@ -30,7 +30,7 @@
 
                 @Code(name: "UniversityTransform.atl", file: atl-03-step-02-collect-operation.atl)
 
-                The `collect` operation maps each element to a new value, creating a new collection.
+                `self.courses->collect(c | c.title)` evaluates `c.title` once for each course and returns a new collection of the titles, one for each course. The result does not have to be a set of distinct values, so collecting from a Sequence or an OrderedSet gives a Sequence in the same order, and collecting from a Set or a Bag gives a Bag. For a department whose courses have 4, 4 and 2 credits, `collect(c | c.credits)` gives `Sequence{4, 4, 2}`, keeping both fours. `collect` never reduces the collection to a single value: to do that, follow it with an operation such as `sum()`, which turns that Sequence into 10, as the complete transformation does with the credits of the courses. If the expression itself returns a collection, swift-atl adds its elements to the result one by one, as OCL specifies; Eclipse ATL keeps such collections nested, so write `->flatten()` after `collect` when a transformation must behave the same in both.
             }
 
             @Step {
@@ -123,29 +123,29 @@
         }
 
         @MultipleChoice {
-            What does `collect` do to a collection?
+            What does `self.courses->collect(c | c.credits)` return?
 
             @Choice(isCorrect: false) {
-                It combines all elements into one
+                A single value that combines the credits of all courses, such as their total
 
                 @Justification(reaction: "Try again!") {
-                    That's what operations like `sum` or string concatenation do. `collect` transforms each element.
+                    `collect` never reduces a collection to one value. Combining the values is the job of an operation applied to its result, such as `->sum()` in the `totalCredits` helper of the complete transformation.
                 }
             }
 
             @Choice(isCorrect: true) {
-                It maps each element to a new value
+                A new collection holding the value of `c.credits` for each course
 
                 @Justification(reaction: "That's right!") {
-                    `collect` applies a transformation to each element, creating a new collection with the results. It's equivalent to `map` in other languages.
+                    `collect` evaluates the expression after the bar for each element and collects the results. The courses of a department are ordered, so the result is a Sequence of credits in the order of the courses, such as `Sequence{4, 4, 2}`. Collecting from a Set would give a Bag, because several elements may give the same value.
                 }
             }
 
             @Choice(isCorrect: false) {
-                It filters elements based on a condition
+                Only the courses that have a value for `c.credits`
 
                 @Justification(reaction: "Not correct!") {
-                    Filtering is done by `select` and `reject`. `collect` transforms every element in the collection.
+                    `collect` does not choose elements: it keeps a value for every element, and returns the credits rather than the courses. Choosing elements by a Boolean condition is what `select` and `reject` do.
                 }
             }
         }
@@ -154,10 +154,10 @@
             Can you chain collection operations together?
 
             @Choice(isCorrect: true) {
-                Yes, operations return collections that can be chained
+                Yes, an operation can follow any operation that returns a collection
 
                 @Justification(reaction: "Exactly!") {
-                    Collection operations return new collections, so you can chain them: `collection->select(...)->collect(...)`. This enables functional-style programming.
+                    `select`, `reject` and `collect` return new collections, so you can chain them: `collection->select(...)->collect(...)`. An operation that returns a single value, such as `exists`, `forAll`, `size` or `sum`, ends the chain of collection operations.
                 }
             }
 
@@ -165,7 +165,7 @@
                 No, only one operation per expression
 
                 @Justification(reaction: "Incorrect!") {
-                    You can chain as many operations as needed. Each operation returns a collection that the next operation processes.
+                    You can chain as many operations as needed. The `advancedCourseTitles` helper chains `select` and `collect`, and `totalCredits` chains `collect` and `sum`.
                 }
             }
 
