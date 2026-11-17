@@ -138,18 +138,18 @@ struct ATL02to08Tests {
     @Test("Tutorial 04: Verify called rule syntax")
     func testTutorial04CalledRule() async throws {
         let tutorial04Path = resourcesPath.appendingPathComponent("ATL-Tutorial-04")
-        let step05Path = tutorial04Path.appendingPathComponent("atl-04-step-05-called-rule.atl")
+        let step10Path = tutorial04Path.appendingPathComponent("atl-04-step-10-called-rule.atl")
 
-        let content = try String(contentsOf: step05Path, encoding: .utf8)
+        let content = try String(contentsOf: step10Path, encoding: .utf8)
         #expect(content.contains("rule") && content.contains("("))
     }
 
     @Test("Tutorial 04: Verify do block")
     func testTutorial04DoBlock() async throws {
         let tutorial04Path = resourcesPath.appendingPathComponent("ATL-Tutorial-04")
-        let step06Path = tutorial04Path.appendingPathComponent("atl-04-step-06-do-block.atl")
+        let step11Path = tutorial04Path.appendingPathComponent("atl-04-step-11-do-block.atl")
 
-        let content = try String(contentsOf: step06Path, encoding: .utf8)
+        let content = try String(contentsOf: step11Path, encoding: .utf8)
         #expect(content.contains("do {"))
     }
 
@@ -186,18 +186,18 @@ struct ATL02to08Tests {
     @Test("Tutorial 05: Verify string operations")
     func testTutorial05StringOperations() async throws {
         let tutorial05Path = resourcesPath.appendingPathComponent("ATL-Tutorial-05")
-        let step05Path = tutorial05Path.appendingPathComponent("atl-05-step-05-string-operations.atl")
+        let step10Path = tutorial05Path.appendingPathComponent("atl-05-step-10-string-operations.atl")
 
-        let content = try String(contentsOf: step05Path, encoding: .utf8)
+        let content = try String(contentsOf: step10Path, encoding: .utf8)
         #expect(content.contains("toUpper") || content.contains("concat") || content.contains("+"))
     }
 
     @Test("Tutorial 05: Verify numeric operations")
     func testTutorial05NumericOperations() async throws {
         let tutorial05Path = resourcesPath.appendingPathComponent("ATL-Tutorial-05")
-        let step06Path = tutorial05Path.appendingPathComponent("atl-05-step-06-numeric-operations.atl")
+        let step11Path = tutorial05Path.appendingPathComponent("atl-05-step-11-numeric-operations.atl")
 
-        let content = try String(contentsOf: step06Path, encoding: .utf8)
+        let content = try String(contentsOf: step11Path, encoding: .utf8)
         #expect(content.contains(">") || content.contains("->sum()"))
     }
 

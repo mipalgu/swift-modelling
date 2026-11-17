@@ -5,7 +5,7 @@ module ProjectTransform;
 create OUT: Report from IN: Project;
 
 -- Lazy rule 1: creates brief task summaries
-lazy rule BriefTaskSummary {
+lazy rule TaskSummary {
     from
         s: Project!Task
     to
@@ -23,7 +23,23 @@ lazy rule DetailedTaskSummary {
         t: Report!DetailedSummary (
             title <- s.name,
             status <- if s.completed then 'Done' else 'Pending' endif,
-            priority <- s.priority,
+            priorityLevel <- s.priority,
             description <- 'Priority ' + s.priority.toString() + ' task'
+        )
+}
+
+-- Matched rule that chooses a lazy rule for each task
+rule HighPriorityProject {
+    from
+        s: Project!Project
+    to
+        t: Report!Document (
+            name <- s.name,
+            summaries <- s.tasks->collect(task |
+                if task.priority > 5 then
+                    thisModule.DetailedTaskSummary(task)
+                else
+                    thisModule.TaskSummary(task)
+                endif)
         )
 }

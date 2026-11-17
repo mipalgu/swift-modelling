@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<proj:Project xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:proj="http://www.example.org/project" name="Garden Shed">
+  <tasks name="Pour slab" priority="8" completed="true"/>
+  <tasks name="Frame walls" priority="6" completed="false"/>
+  <tasks name="Paint trim" priority="2" completed="false"/>
+  <resources name="Concrete mixer" type="Equipment"/>
+  <resources name="Carpenter" type="Person"/>
+</proj:Project>

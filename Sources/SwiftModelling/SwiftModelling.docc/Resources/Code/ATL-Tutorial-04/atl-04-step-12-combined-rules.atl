@@ -15,12 +15,12 @@ lazy rule TaskSummary {
         )
 }
 
--- Called rule: creates detailed reports
-rule CreateDetailedReport(proj : Project!Project) {
+-- Called rule: explicitly invoked to create status reports
+rule CreateStatusReport(proj : Project!Project, taskCount : Integer) {
     to
-        report: Report!DetailedDocument (
+        report: Report!StatusReport (
             projectName <- proj.name,
-            taskCount <- proj.tasks->size()
+            totalTasks <- taskCount
         )
     do {
         report;
@@ -37,7 +37,7 @@ rule MainProjectReport {
             summaries <- s.tasks->collect(task | thisModule.TaskSummary(task))
         )
     do {
-        -- Call the called rule to create additional report
-        thisModule.CreateDetailedReport(s);
+        -- Call the called rule to create an additional status report
+        thisModule.CreateStatusReport(s, s.tasks->size());
     }
 }

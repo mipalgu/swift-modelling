@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:rep="http://www.example.org/report" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <rep:Document name="Garden Shed">
+        <summaries title="Pour slab" status="Done"/>
+        <summaries title="Frame walls" status="Pending"/>
+        <summaries title="Paint trim" status="Pending"/>
+        <highlights href="#/1"/>
+        <highlights href="#/2"/>
+    </rep:Document>
+    <rep:Summary title="Pour slab" status="Done"/>
+    <rep:Summary title="Frame walls" status="Pending"/>
+</xmi:XMI>

@@ -1,0 +1,5 @@
+-- @path Organisation=/Organisation/Organisation.ecore
+
+-- Query: the same team sizes, casting every employee without checking its type
+query UncheckedTeamSizes = Organisation!Employee.allInstances()
+    ->collect(e | e.name + ': ' + e.oclAsType(Organisation!Manager).teamSize.toString());

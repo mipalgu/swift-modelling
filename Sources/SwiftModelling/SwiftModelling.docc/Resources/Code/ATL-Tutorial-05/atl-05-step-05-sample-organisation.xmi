@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<org:Department xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:org="http://www.example.org/organisation" name="Engineering">
+  <employees xsi:type="org:Manager" name="Aiko Tanaka" id="1" teamSize="4"/>
+  <employees xsi:type="org:Developer" name="Ben Okafor" id="2" programmingLanguage="Swift"/>
+  <employees xsi:type="org:Manager" name="Carla Mendes" id="3" teamSize="2"/>
+</org:Department>

@@ -1,0 +1,13 @@
+-- @path Organisation=/Organisation/Organisation.ecore
+
+-- Query: the team size of every employee, checking the type before casting
+query TeamSizes = Organisation!Employee.allInstances()
+    ->collect(e | e.name + ': ' + e.getManagerTeamSize().toString());
+
+-- Helper from the type casting step
+helper context Organisation!Employee def: getManagerTeamSize(): Integer =
+    if self.oclIsKindOf(Organisation!Manager) then
+        self.oclAsType(Organisation!Manager).teamSize
+    else
+        0
+    endif;
