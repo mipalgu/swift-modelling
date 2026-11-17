@@ -56,4 +56,39 @@ struct Ecore07Tests {
         // Check for the href to the external file
         #expect(content.contains("href=\"SharedDeps.xmi#it\""))
     }
+
+    // MARK: - The href explanation
+
+    @Test("Step 1.2: The href that the tutorial explains names an identifier of the shared library")
+    func testHrefMatchesSharedIdentifier() async throws {
+        let project = try String(
+            contentsOf: tutorialCodePath.appendingPathComponent("ecore-07-step-03-project.xmi"), encoding: .utf8)
+        let shared = try String(
+            contentsOf: tutorialCodePath.appendingPathComponent("ecore-07-step-02-shared.xmi"), encoding: .utf8)
+
+        #expect(project.contains("<relatedDepartments href=\"SharedDeps.xmi#it\"/>"))
+        #expect(shared.contains("xmi:id=\"it\""))
+    }
+
+    @Test("Step 1.2: The tutorial shows ProjectA.xmi before it explains the href")
+    func testTutorialShowsFileBeforeExplaining() async throws {
+        let tutorial = tutorialCodePath
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Tutorials")
+            .appendingPathComponent("Ecore-CLI")
+            .appendingPathComponent("07-cross-resource-refs.tutorial")
+        let content = try String(contentsOf: tutorial, encoding: .utf8)
+
+        let firstShown = try #require(content.range(of: "file: ecore-07-step-03-project.xmi"))
+        let sharedCreated = try #require(content.range(of: "file: ecore-07-step-02-shared.xmi"))
+        let explanation = try #require(content.range(of: "Read the two parts of an `href`"))
+        #expect(firstShown.lowerBound < sharedCreated.lowerBound)
+        #expect(content.contains("a file that you create and use later in this tutorial"))
+        #expect(content.contains("`/0`"))
+        #expect(content.contains("`//@employees.1`"))
+        #expect(firstShown.lowerBound < explanation.lowerBound)
+        #expect(explanation.lowerBound < sharedCreated.lowerBound)
+    }
 }
