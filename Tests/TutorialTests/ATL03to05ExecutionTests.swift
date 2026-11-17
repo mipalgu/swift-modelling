@@ -524,7 +524,7 @@ struct ATL03to05ExecutionTests {
             let body = step.drop { $0 != "{" }.dropFirst().dropLast()
             var paragraphs: [String] = []
             var current = ""
-            for line in body.split(separator: "\n", omittingEmptySubsequences: false) {
+            for line in body.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline) {
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
                 if trimmed.isEmpty {
                     if !current.isEmpty { paragraphs.append(current) }
