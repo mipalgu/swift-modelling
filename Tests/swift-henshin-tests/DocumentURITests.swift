@@ -4,6 +4,7 @@
 //
 //  Copyright © 2026 Rene Hexel. All rights reserved.
 //
+import ArgumentParser
 import ECore
 import EMFBase
 import Foundation
@@ -343,7 +344,7 @@ struct DocumentURITests {
         try workspace.write(#"{ "document-uris": "sideways" }"#, to: Self.configurationFile)
         let (fromFile, fileText) = try await rename(in: workspace, to: "output/notes.xmi")
 
-        #expect(fromCommandLine.status == 64, "\(fromCommandLine.error)")
+        #expect(fromCommandLine.status == ExitCode.validationFailure.rawValue, "\(fromCommandLine.error)")
         #expect(fromCommandLine.error.contains("sideways"), "\(fromCommandLine.error)")
         #expect(commandLineText == nil)
         #expect(fromFile.status == 1, "\(fromFile.error)")
