@@ -127,6 +127,8 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
 
             \(ATLSemanticsOptions.discussion(reader: "the transformation"))
 
+            \(SiblingRuleConflictOptions.discussion(reader: "the transformation"))
+
             \(SourceEncodingOptions.discussion(reader: "the transformation"))
 
             \(OutputEncodingOptions.discussion(writer: "the target models"))
@@ -260,6 +262,10 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
     @OptionGroup(title: "Evaluation")
     var atlSemanticsOptions: ATLSemanticsOptions
 
+    /// What a source element that two sub-rules of the same rule both match gives.
+    @OptionGroup(title: "Evaluation")
+    var siblingRuleConflictOptions: SiblingRuleConflictOptions
+
     /// The preset of the behaviours, standard or that of version 0.6.
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
@@ -287,7 +293,8 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
 
     func run() async throws {
         let settings = try semanticsOptions.settings()
-        let atlOptions = atlSemanticsOptions.atlOptions(settings: settings)
+        var atlOptions = atlSemanticsOptions.atlOptions(settings: settings)
+        siblingRuleConflictOptions.apply(to: &atlOptions, settings: settings)
         if verbose {
             print("Starting ATL transformation: \(transformation)")
             print("Source model files: \(source)")
@@ -432,7 +439,7 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
             await MetamodelRegistration.register(module.targetMetamodels.values, into: targetResourceSet)
             var targetModels: OrderedDictionary<String, Resource> = [:]
             for (alias, path) in targetMapping {
-                let resource = Resource(uri: URIReference.canonicalise(URL(fileURLWithPath: path).absoluteString))
+                let resource = Resource(uri: OutputFile.documentURI(ofPath: path))
                 await resource.setResourceSet(targetResourceSet)
                 targetModels[alias] = resource
 
@@ -480,7 +487,7 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
                 verbose: verbose,
                 emfLayoutAliases: Set(
                     module.targetMetamodels.filter { isBuiltIn($0.value) }.map(\.key)),
-                xmiOptions: targetSerializationOptions(settings: settings),
+                xmiOptions: referenceStyleOptions.serializationOptions(settings: settings, documentURIs: documentURIOptions),
                 encoding: outputEncodingOptions.encoding(settings: settings)
             )
             withExtendedLifetime(targetResourceSet) {}
@@ -502,17 +509,6 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
             print("\(validateOnly ? "Validation" : "Transformation") failed: \(error.localizedDescription)")
             throw ExitCode.failure
         }
-    }
-
-    /// The options with which target models of metamodels that are not built in are written as XMI.
-    ///
-    /// - Parameter settings: The settings of the run, whose configuration file is consulted.
-    /// - Returns: The options of the reference style of the run, with the URIs of other
-    ///   documents written as `--document-uris` chooses.
-    private func targetSerializationOptions(settings: SemanticsSettings) -> XMISerializationOptions {
-        var options = referenceStyleOptions.serializationOptions(settings: settings)
-        documentURIOptions.apply(to: &options)
-        return options
     }
 
     /// Checks a transformation and its models without running it.

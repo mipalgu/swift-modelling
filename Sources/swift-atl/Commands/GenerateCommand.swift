@@ -54,6 +54,8 @@ struct GenerateCommand: AsyncParsableCommand {
 
             \(ATLSemanticsOptions.discussion(reader: "a transformation given with --transformations"))
 
+            \(SiblingRuleConflictOptions.discussion(reader: "the import transformation"))
+
             \(SourceEncodingOptions.discussion(reader: "a transformation given with --transformations, the templates and the modules they import"))
 
             \(OutputEncodingOptions.discussion(writer: "the generator model and of the generated files whose template names no charset"))
@@ -155,6 +157,11 @@ struct GenerateCommand: AsyncParsableCommand {
     /// The behaviours of the ATL source of the import transformation.
     @OptionGroup(title: "Evaluation")
     var atlSemanticsOptions: ATLSemanticsOptions
+
+    /// What a source element that two sub-rules of the same rule of the import transformation
+    /// both match gives.
+    @OptionGroup(title: "Evaluation")
+    var siblingRuleConflictOptions: SiblingRuleConflictOptions
 
     /// The preset of the behaviours, standard or that of version 0.6.
     @OptionGroup(title: "Evaluation")
@@ -267,7 +274,9 @@ struct GenerateCommand: AsyncParsableCommand {
     /// - Returns: The import options.
     /// - Throws: ``ValidationError`` if the transformation location does not exist.
     func importOptions(settings: SemanticsSettings) throws -> GenModelImportOptions {
-        var options = GenModelImportOptions(atlOptions: atlSemanticsOptions.atlOptions(settings: settings))
+        var atlOptions = atlSemanticsOptions.atlOptions(settings: settings)
+        siblingRuleConflictOptions.apply(to: &atlOptions, settings: settings)
+        var options = GenModelImportOptions(atlOptions: atlOptions)
         GenModelDefaultsOptions.applyProjectSettings(
             basePackage: basePackage, prefixes: prefix, complianceLevel: jdkLevel, settings: settings, to: &options)
         options.modelProject = modelProject

@@ -91,6 +91,22 @@ public struct ReferenceStyleOptions: ParsableArguments, Sendable {
         return resolved.serializationOptions
     }
 
+    /// The options with which a command writes an XMI model in the reference style and the
+    /// style of document URIs of a run.
+    ///
+    /// - Parameters:
+    ///   - settings: The settings of the run, whose configuration file is consulted.
+    ///   - documentURIs: The option that chooses how the model refers to other documents.
+    /// - Returns: The options of ``serializationOptions(settings:)``, writing the URIs of other
+    ///   documents in the style of ``DocumentURIOptions/style(settings:)``.
+    public func serializationOptions(
+        settings: SemanticsSettings, documentURIs: DocumentURIOptions
+    ) -> XMISerializationOptions {
+        var options = serializationOptions(settings: settings)
+        documentURIs.apply(to: &options, settings: settings)
+        return options
+    }
+
     /// A paragraph that describes the option in the discussion of a command.
     ///
     /// - Parameter written: What the command writes, in the plural, such as `target models`.

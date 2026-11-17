@@ -89,7 +89,7 @@ final class ModelWorkspace {
             guard !packages.isEmpty else { throw SwiftEpsilonError.targetWithoutMetamodel(binding.name) }
             let model = await EOLModel.empty(
                 name: binding.name, packages: packages, resourceSet: resourceSet,
-                uri: URL(fileURLWithPath: binding.path).absoluteString, aliases: binding.aliases)
+                uri: OutputFile.documentURI(ofPath: binding.path), aliases: binding.aliases)
             log("Created target model \(binding.name) for \(binding.path) (\(packages.map(\.name).joined(separator: ", ")))")
             models.append(model)
         }

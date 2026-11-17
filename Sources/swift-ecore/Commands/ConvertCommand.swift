@@ -19,7 +19,8 @@ import MultiLevel
 /// name. References to other metamodel files keep their file names. With one or more
 /// `--metamodel` files, the model is read with the classes of those metamodels and written
 /// with package-qualified classes and typed references. Whatever cannot be kept is reported as a warning on standard
-/// error, and `--reference-style` chooses how an XMI output spells references into itself.
+/// error, `--reference-style` chooses how an XMI output spells references into itself, and
+/// `--document-uris` how it refers to other documents.
 struct ConvertCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "convert",
@@ -59,6 +60,8 @@ struct ConvertCommand: AsyncParsableCommand {
             error of a grammar, stops the conversion.
 
             \(ReferenceStyleOptions.discussion(written: "outputs"))
+
+            \(DocumentURIOptions.discussion(written: "model outputs"))
 
             \(SourceEncodingOptions.discussion(reader: EncodingVocabulary.encodedDocuments))
 
@@ -139,6 +142,9 @@ struct ConvertCommand: AsyncParsableCommand {
 
     /// How an XMI output spells references into itself.
     @OptionGroup var referenceStyleOptions: ReferenceStyleOptions
+
+    /// How an XMI output refers to elements of other documents.
+    @OptionGroup var documentURIOptions: DocumentURIOptions
 
     /// The long name of the option that selects the level of a multi-level model to export.
     static let levelOption = "level"
@@ -265,10 +271,12 @@ struct ConvertCommand: AsyncParsableCommand {
 
         // Save output
         if verbose { print("Writing \(writeFormat.description)...") }
+        let settings = try configurationOptions.settings()
         diagnostics.merge(
             try await OutputFile.save(
-                resource, to: outputURL, format: writeFormat, xmiOptions: referenceStyleOptions.serializationOptions(settings: try configurationOptions.settings()),
-                encoding: outputEncodingOptions.encoding(settings: try configurationOptions.settings())))
+                resource, to: outputURL, format: writeFormat,
+                xmiOptions: referenceStyleOptions.serializationOptions(settings: settings, documentURIs: documentURIOptions),
+                encoding: outputEncodingOptions.encoding(settings: settings)))
         withExtendedLifetime(resourceSet) {}
         ConversionWarningReport.write(
             diagnostics, metamodelGiven: metamodelOptions.isGiven || deepModel != nil || isMetamodel)

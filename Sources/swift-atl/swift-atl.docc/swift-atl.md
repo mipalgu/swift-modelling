@@ -63,7 +63,7 @@ swift-atl transform <transformation-file> [options]
 - `--output-format <xmi|json>` - Format of the target models (default: from the file extension)
 - `--metamodel-path <directory>` - Directory searched for metamodels named by `-- @path` directives (repeatable)
 - `--reference-style <encoded|plain>` - How an XMI target spells references into its own document (default `encoded`, or the `reference-style` key of the configuration file); see the output layout below
-- `--document-uris <relative|absolute>` - How an XMI target refers to elements of other documents, such as the source models (default `relative`); see the output layout below
+- `--document-uris <relative|absolute>` - How an XMI target refers to elements of other documents, such as the source models (default `relative`, or the `document-uris` key of the configuration file); see the output layout below
 - `--unset-features <defaults|undefined>` - How the rules read features that a model does not set (default `defaults`); see below
 - `--source-metamodel <[name=]file.ecore>` - Metamodel file for a source metamodel, matched to the metamodels after `from` (or `refining`) by order or by name (repeatable)
 - `--target-metamodel <[name=]file.ecore>` - Metamodel file for a target metamodel, matched to the metamodels after `create` in the same way (repeatable)
@@ -78,6 +78,7 @@ swift-atl transform <transformation-file> [options]
 - `--collection-range-syntax <ocl|eclipse>` - Whether collection literals accept integer ranges such as `Sequence{1..3}` (`ocl`, the default) or reject them as Eclipse ATL and version 0.6 do (`eclipse`)
 - `--integer-division <real|truncating>` - Whether `/` divides two Integers into a Real, so `7 / 2` is `3.5`, as in OCL and Eclipse ATL (`real`, the default), or truncates the quotient to an Integer as version 0.6 did (`truncating`)
 - `--bag-representation <bag|sequence>` - Whether `Bag{...}`, `asBag()` and `collect` on a Set give Bags, a collection kind of their own as in OCL and Eclipse ATL (`bag`, the default), or Sequences as in version 0.6 (`sequence`)
+- `--sibling-rule-conflicts <warning|error>` - What a source element that two rules extending the same rule both match gives: the first of them that applies, with a warning on standard error (`warning`, the default, or the `sibling-rule-conflicts` key of the configuration file), or an error that stops the run and writes no target (`error`); see Sub-rules below
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax`, `--integer-division` and `--bag-representation` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
@@ -101,6 +102,14 @@ swift-atl transform <transformation-file> [options]
 **Integer division.** `/` divides two Integers into a Real, as in OCL and Eclipse ATL, so `7 / 2` is `3.5` and `8 / 2` is `4.0`; `div` gives the truncated Integer quotient. `--integer-division truncating` (or `--semantics legacy`) makes `/` truncate the quotient of two Integers, as version 0.6 did. `transform` and `query` run ATL source with the option, and `generate` runs a transformation given with `--transformations` with it.
 
 **Bags.** A Bag is a collection kind of its own, as in OCL and Eclipse ATL: `Bag{...}`, `asBag()`, and `collect` on a Set or a Bag give Bags, and so does navigating a feature over a Set or a Bag, as `collect` would. A Bag keeps its duplicates, is neither a Sequence nor a Set for `oclIsKindOf`, reports `Bag` as its `oclType()`, is written as `Bag{2, 1, 2}`, and equals a collection that holds each element equally often, in any order. It has no positions, so `at()` on a Bag is an error. A Bag receives the helpers declared for `Bag(T)`, then those for `Collection(T)`, then those for `OclAny`, but not those for `Sequence(T)`. `--bag-representation sequence` (or `--semantics legacy`) makes them Sequences, as version 0.6 did. `transform` and `query` run ATL source with the option, and `generate` runs a transformation given with `--transformations` with it.
+
+**Sub-rules.** When two rules that extend the same rule both match a source element, the element is transformed as in Eclipse ATL by the first of them that matches: the rules with a guard are tried before those without one, each in declaration order. The run goes on and writes its targets, and a warning on standard error names the element, the rules and the rule they extend, and says which of them is applied:
+
+```
+Warning: Rules 'FinishedTask' and 'AnyTask', which extend rule 'Task2Note', both match Task 'reviewing'; only 'FinishedTask' is applied, because sub-rules with a guard are tried before those without one, each in declaration order
+```
+
+The warning is written whether or not `--verbose` or `--quiet` is given. `--sibling-rule-conflicts error`, or the `sibling-rule-conflicts` key of the configuration file, makes such a match an error instead: the run stops with an error that names the rules and the element, and writes no target. Two rules that do not extend the same rule and match the same element are always an error.
 
 **Validation only.** `--validate-only` reports a metamodel without classifiers, a model element type that its metamodel does not define, a binding of a feature that the class of its target element does not have, in the rules and helper contexts of the module, and a rule that uses `drop` outside refining mode. It then maps and loads the source models and maps the target models that are given. Expressions are not type-checked. With `--quiet`, nothing is printed on success.
 
@@ -178,6 +187,10 @@ swift-atl transform Families2Persons.atl --source families.xmi --target persons.
 # Refer to elements of the source models by their full URIs
 swift-atl transform TaskNotes.atl --source models/tasks.xmi --target output/notes.xmi \
     --document-uris absolute
+
+# Stop instead of warning when two rules extending the same rule match an element
+swift-atl transform TaskNotes.atl --source models/tasks.xmi --target output/notes.xmi \
+    --sibling-rule-conflicts error
 
 # Metamodel files by name rather than by position
 swift-atl transform Families2Persons.atl --source families.xmi --source-metamodel Families.ecore \
@@ -273,6 +286,7 @@ The command is the ATL entry to the shared generation pipeline. An Ecore model i
 - `--collection-range-syntax <ocl|eclipse>` - Whether a transformation given with `--transformations` may use integer ranges such as `Sequence{1..3}` (`ocl`, the default) or not, as in Eclipse ATL and version 0.6 (`eclipse`)
 - `--integer-division <real|truncating>` - Whether `/` in a transformation given with `--transformations` divides two Integers into a Real, as in OCL and Eclipse ATL (`real`, the default), or truncates the quotient as version 0.6 did (`truncating`)
 - `--bag-representation <bag|sequence>` - Whether `Bag{...}`, `asBag()` and `collect` on a Set in a transformation given with `--transformations` give Bags, as in OCL and Eclipse ATL (`bag`, the default), or Sequences as version 0.6 did (`sequence`)
+- `--sibling-rule-conflicts <warning|error>` - What a source element that two rules extending the same rule of a transformation given with `--transformations` both match gives: the first of them that applies, with a warning on standard error (`warning`, the default, or the `sibling-rule-conflicts` key of the configuration file), or an error that stops the command (`error`)
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`) for every behaviour option above; a behaviour option that is given overrides it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none

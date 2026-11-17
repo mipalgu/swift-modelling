@@ -244,6 +244,8 @@ swift-ecore convert <input-file> --output <output-file> [options]
   levels when `--validate` checks it (default `declared`)
 - `--reference-style <encoded|plain>` - How an XMI output spells references into itself
   (default `encoded`)
+- `--document-uris <relative|absolute>` - How an XMI output refers to elements of other documents
+  (default `relative`, or the `document-uris` key of the configuration file)
 - `--force` - Overwrite the output file if it exists
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none (see Environment and Configuration File below)
 - `-v, --verbose` - Show progress
@@ -295,6 +297,14 @@ Framework, with references as attribute values holding the fragment alone
 (`type="cls:DataType //@classifiers.0"`), as Eclipse writes XMI model files. Both styles load
 again.
 
+A model that refers to elements of another document, such as a note that refers to tasks in
+`tasks.xmi`, refers to it from the XMI output relative to the output:
+`../models/tasks.xmi#//@tasks.1` for an output in another directory, `tasks.xmi#//@tasks.1` for one
+beside it. The output then holds no absolute path and loads again as long as the documents keep
+their relative locations. `--document-uris absolute` writes the full URI of the other document
+instead, such as a `file:` URI. A URI that cannot be made relative, such as one on another drive,
+is written in full either way.
+
 **Examples:**
 
 ```bash
@@ -309,6 +319,9 @@ swift-ecore convert data.txt result.xmi --input-format json --output-format xmi
 
 # Write XMI whose same-document references match the files Eclipse writes
 swift-ecore convert model.json model.xmi --metamodel MyMetamodel.ecore --reference-style plain
+
+# Refer to the elements of other documents by their full URIs
+swift-ecore convert models/notes.xmi output/notes.xmi --metamodel Notes.ecore --document-uris absolute
 
 # Convert a metamodel to JSON and back
 swift-ecore convert shop.ecore shop.json
@@ -905,7 +918,7 @@ honour the following keys, each of which the option of the same name on the comm
 | `convert`, `validate`, `inspect`, `compare`, `statistics` | also `output-encoding` |
 | `validate` | also `strict-aql`, `strict` and `require-explicit-values` |
 | `convert`, `validate`, `inspect` | also `level-crossing` |
-| `convert` | also `reference-style` |
+| `convert` | also `reference-style` and `document-uris` |
 | `create` | `encoding`, `km3-primitives`, `package-name`, `ns-uri`, `ns-prefix`, `asdl-enumerations`, `langium-types`, `sdf3-labels`, `output-encoding` |
 | `genmodel` | `semantics`, `container-scope`, `unset-features`, `output-encoding`, `defaults`, `root-extends-class`, `operation-reflection`, `import-organizing`, `base-package`, `prefix`, `jdk-level` |
 | `generate` | also `code-style`, `defaults`, `root-extends-class`, `operation-reflection`, `import-organizing` |

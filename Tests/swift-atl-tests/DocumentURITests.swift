@@ -331,6 +331,48 @@ struct DocumentURITests {
         #expect(implicitText == explicitText)
     }
 
+    @Test("takes the style of the configuration file, which the command line overrides")
+    @MainActor
+    func configurationKey() async throws {
+        let workspace = try Workspace(source: "models/tasks.xmi")
+        defer { cleanupTemporaryDirectory(workspace.root) }
+        try workspace.write(#"{ "document-uris": "absolute" }"#, to: ".swift-modelling.json")
+        let sourceURI = URIReference.canonicalise(
+            workspace.root.appendingPathComponent("models/tasks.xmi").absoluteString)
+
+        let (configured, configuredText) = try await transform(
+            workspace, source: "models/tasks.xmi", target: "output/configured.xmi")
+        let (overridden, overriddenText) = try await transform(
+            workspace, source: "models/tasks.xmi", target: "output/overridden.xmi", extra: [Self.option, "relative"])
+        let (ignored, ignoredText) = try await transform(
+            workspace, source: "models/tasks.xmi", target: "output/ignored.xmi", extra: ["--no-config"])
+
+        #expect(configured.succeeded, "\(configured.stdout)\(configured.stderr)")
+        #expect(Self.hrefs("blocker", in: configuredText ?? "") == ["\(sourceURI)#//@tasks.1"], "\(configuredText ?? "")")
+        #expect(overridden.succeeded, "\(overridden.stdout)\(overridden.stderr)")
+        #expect(Self.hrefs("blocker", in: overriddenText ?? "") == ["../models/tasks.xmi#//@tasks.1"])
+        #expect(ignored.succeeded, "\(ignored.stdout)\(ignored.stderr)")
+        #expect(Self.hrefs("blocker", in: ignoredText ?? "") == ["../models/tasks.xmi#//@tasks.1"])
+        let names = try await Self.referencedNames(in: workspace, target: "output/configured.xmi")
+        #expect(names.follows == ["reviewing", "publishing"])
+    }
+
+    @Test("rejects a value of the configuration key that is not a document URI style")
+    @MainActor
+    func rejectsUnknownConfiguredStyle() async throws {
+        let workspace = try Workspace(source: "tasks.xmi")
+        defer { cleanupTemporaryDirectory(workspace.root) }
+        try workspace.write(#"{ "document-uris": "sideways" }"#, to: ".swift-modelling.json")
+
+        let (result, text) = try await transform(workspace, source: "tasks.xmi", target: "notes.xmi")
+
+        #expect(!result.succeeded)
+        for expected in ["'document-uris'", "'sideways'", "relative", "absolute"] {
+            #expect(result.stderr.contains(expected), "\(expected) is missing from: \(result.stderr)")
+        }
+        #expect(text == nil)
+    }
+
     @Test("rejects a value that is not a document URI style")
     @MainActor
     func rejectsUnknownStyle() async throws {

@@ -29,6 +29,9 @@ struct XtendSession {
     /// The character encoding of the files that the command writes.
     let outputEncoding: TextEncoding
 
+    /// The settings of the run, with the configuration file that the command line selects.
+    let settings: SemanticsSettings
+
     /// The classes that the sources declare, in source order.
     var classes: [XtendClass] { program.parseResults.flatMap(\.file.classes) }
 
@@ -77,7 +80,7 @@ struct XtendSession {
         guard errors == 0 else { throw SwiftXtendError.invalidProgram(errors) }
         return XtendSession(
             resourceSet: resourceSet, models: models, program: program,
-            outputEncoding: options.outputEncodingOptions.encoding(settings: settings))
+            outputEncoding: options.outputEncodingOptions.encoding(settings: settings), settings: settings)
     }
 
     /// Loads one model into a resource set.

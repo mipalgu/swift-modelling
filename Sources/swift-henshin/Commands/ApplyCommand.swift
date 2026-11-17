@@ -46,6 +46,8 @@ struct ApplyCommand: AsyncParsableCommand {
             loop units after a number of iterations, with a warning. --\(Key.trace) lists \
             every rule application, with its match, on standard error.
 
+            \(DocumentURIOptions.discussion(written: "models, written or printed,"))
+
             \(SwiftHenshinCommand.matchingDiscussion)
 
             \(SwiftHenshinCommand.metamodelDiscussion)
@@ -133,6 +135,9 @@ struct ApplyCommand: AsyncParsableCommand {
     /// The character encoding of the model file written.
     @OptionGroup var outputEncodingOptions: OutputEncodingOptions
 
+    /// How an XMI model, written or printed, refers to elements of other documents.
+    @OptionGroup var documentURIOptions: DocumentURIOptions
+
     /// Checks the combination of options.
     ///
     /// - Throws: A validation error if the iteration limit is not positive, or
@@ -199,12 +204,13 @@ struct ApplyCommand: AsyncParsableCommand {
             parameterLines.forEach { print($0) }
         } else if let output {
             try await ModelFile.save(
-                target.resource, to: output,
+                target.resource, to: output, xmiOptions: documentURIOptions.serializationOptions(settings: settings),
                 encoding: outputEncodingOptions.encoding(configuration: settings.configuration))
             log.progress("wrote \(output)")
             parameterLines.forEach { print($0) }
         } else {
-            let text = try await ModelFile.text(of: target)
+            let text = try await ModelFile.text(
+                of: target, xmiOptions: documentURIOptions.serializationOptions(settings: settings))
             print(text, terminator: text.hasSuffix("\n") ? "" : "\n")
             parameterLines.forEach(log.line)
         }

@@ -30,13 +30,18 @@ public enum DocumentURIStyle: String, Sendable, CaseIterable, ExpressibleByArgum
 /// document. A URI that cannot be expressed relative to the written model, such as one on
 /// another drive or of another scheme, is written in full either way.
 ///
+/// The `document-uris` key of the configuration file chooses the style as well, and the option
+/// overrides it.
+///
 /// Commands that write model instances include the option with `@OptionGroup` and apply the
-/// chosen style to the options of their XMI serialiser with ``apply(to:)``.
+/// style of a run to the options of their XMI serialiser with ``apply(to:settings:)``, or
+/// obtain those options from ``serializationOptions(settings:)`` or, together with a reference
+/// style, from ``ReferenceStyleOptions/serializationOptions(settings:documentURIs:)``.
 public struct DocumentURIOptions: ParsableArguments, Sendable {
-    /// The long name of the option.
+    /// The long name of the option, and the key of the configuration file.
     public static let optionName = "document-uris"
 
-    /// The style that applies when the command line chooses none.
+    /// The style that applies when neither the command line nor the configuration file chooses one.
     public static let defaultStyle = DocumentURIStyle.relative
 
     /// The values of the option, separated as in the usage of a command.
@@ -64,14 +69,38 @@ public struct DocumentURIOptions: ParsableArguments, Sendable {
 
     /// The style given on the command line, or ``defaultStyle`` if none is.
     ///
-    /// Setting this property gives the style as if on the command line.
+    /// The style that applies to a run of a command that reads a configuration file also depends
+    /// on that file; ``style(settings:)`` resolves it. Setting this property gives the style as
+    /// if on the command line.
     public var style: DocumentURIStyle {
         get { explicitStyle ?? Self.defaultStyle }
         set { explicitStyle = newValue }
     }
 
-    /// Creates the option with nothing given, which writes relative URIs.
+    /// Creates the option with nothing given, which writes relative URIs unless the
+    /// configuration file says otherwise.
     public init() {}
+
+    /// The style that applies to a run.
+    ///
+    /// - Parameter settings: The settings of the run, whose configuration file is consulted.
+    /// - Returns: The style given on the command line, else the `document-uris` of the
+    ///   configuration file, else ``defaultStyle``.
+    public func style(settings: SemanticsSettings) -> DocumentURIStyle {
+        explicitStyle ?? settings.configuration.documentURIs ?? Self.defaultStyle
+    }
+
+    /// The options with which a command that offers no reference style writes an XMI model.
+    ///
+    /// - Parameter settings: The settings of the run, whose configuration file is consulted.
+    /// - Returns: The layout of
+    ///   [`XMISerializationOptions.legacy`](https://mipalgu.github.io/swift-ecore/documentation/ecore/xmiserializationoptions/legacy/),
+    ///   writing the URIs of other documents in the style of ``style(settings:)``.
+    public func serializationOptions(settings: SemanticsSettings) -> XMISerializationOptions {
+        var options = XMISerializationOptions.legacy
+        apply(to: &options, settings: settings)
+        return options
+    }
 
     /// A paragraph that describes the option in the discussion of a command.
     ///
@@ -81,7 +110,7 @@ public struct DocumentURIOptions: ParsableArguments, Sendable {
         "--\(optionName) chooses how XMI \(written) refer to elements of other documents. " + styles
     }
 
-    /// Copies the chosen style to serialisation options.
+    /// Copies the style given on the command line to serialisation options.
     ///
     /// Only
     /// [`relativeURIs`](https://mipalgu.github.io/swift-ecore/documentation/ecore/xmiserializationoptions/relativeuris/)
@@ -90,5 +119,18 @@ public struct DocumentURIOptions: ParsableArguments, Sendable {
     /// - Parameter options: The serialisation options to update.
     public func apply(to options: inout XMISerializationOptions) {
         options.relativeURIs = style == .relative
+    }
+
+    /// Copies the style of a run to serialisation options.
+    ///
+    /// Only
+    /// [`relativeURIs`](https://mipalgu.github.io/swift-ecore/documentation/ecore/xmiserializationoptions/relativeuris/)
+    /// changes, so the options keep their layout.
+    ///
+    /// - Parameters:
+    ///   - options: The serialisation options to update.
+    ///   - settings: The settings of the run, whose configuration file is consulted.
+    public func apply(to options: inout XMISerializationOptions, settings: SemanticsSettings) {
+        options.relativeURIs = style(settings: settings) == .relative
     }
 }

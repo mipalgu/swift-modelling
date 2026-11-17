@@ -90,6 +90,19 @@ public enum OutputFile {
         return diagnostics
     }
 
+    /// The URI of the document in a file that a command writes.
+    ///
+    /// A command gives a model that it creates for a file this URI, so that the model refers
+    /// to itself and to other documents as the file it is written to.
+    ///
+    /// - Parameter path: The path of the file, as given on the command line, absolute or
+    ///   relative to the current directory.
+    /// - Returns: The canonical `file:` URI of the file, with an absolute path and without `.`
+    ///   and `..` segments.
+    public static func documentURI(ofPath path: String) -> String {
+        URIReference.canonicalise(URL(fileURLWithPath: path).absoluteString)
+    }
+
     /// The warning that a JSON file was written in UTF-8 instead of the encoding asked for.
     ///
     /// - Parameters:
