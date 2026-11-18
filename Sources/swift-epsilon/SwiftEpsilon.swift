@@ -64,6 +64,8 @@ struct SwiftEpsilonCommand: AsyncParsableCommand {
         URIs its file uses, and a model file that is itself a metamodel, such as an Ecore \
         file, is typed by the Ecore metamodel. A model is only written if \
         --\(SwiftEpsilonVocabulary.OptionName.store) names it, once the run has succeeded.
+
+        \(DocumentURIOptions.discussion(written: "target and stored models"))
         """
 
     /// A paragraph that describes the parameters of a program.
@@ -72,8 +74,9 @@ struct SwiftEpsilonCommand: AsyncParsableCommand {
         variable of the program. --\(SwiftEpsilonVocabulary.OptionName.maximumCallDepth) \
         limits the depth of nested operation calls. With \
         --\(SwiftEpsilonVocabulary.OptionName.verbose), every step is reported on standard \
-        error. The configuration file may name the encoding of the source files and the \
-        container lookup scope of the models.
+        error. The configuration file may name the encoding of the source files, the \
+        container lookup scope of the models and, with its \(DocumentURIOptions.optionName) key, \
+        how written models refer to other documents.
         """
 
     /// A paragraph that describes the exit statuses that every command shares.

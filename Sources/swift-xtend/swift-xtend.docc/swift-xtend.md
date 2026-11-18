@@ -52,6 +52,7 @@ swift-xtend run <file.xtend> --method <method> [options]
 - `-o, --output <file>` - Write the model to this file, in the format that its extension names
 - `--encoding <name>` - The character encoding of the Xtend sources and of the metamodels and models in text formats, such as KM3
 - `--output-encoding <name>` - The character encoding of the model written with `--output` (default: UTF-8)
+- `--document-uris <relative|absolute>` - How the XMI model written with `--output` refers to elements of other documents (default `relative`, or the `document-uris` key of the configuration file)
 - `--semantics <standard|legacy>`, `--config <file>`, `--no-config` - The behaviours of the languages and the configuration file
 - `-v, --verbose` - Report progress on standard error
 
@@ -79,6 +80,14 @@ with `print` or `println` is printed before the result.
 With `--output`, the objects that the method created with `new` are written to the file as a
 new model, for example the target of a transformation. If it created none, the first model is
 written after the method has run, which is useful for methods that change the model.
+
+A written model that refers to elements of another model, such as a created note that refers to
+a task of the model it was given, names that model relative to the written file:
+`../models/tasks.xmi#//@tasks.1` for a model in another directory, `tasks.xmi#//@tasks.1` for one
+beside it. The file then holds no absolute path and loads again as long as the models keep their
+relative locations. `--document-uris absolute` writes the full URI of the other model instead,
+such as a `file:` URI. A URI that cannot be made relative, such as one on another drive, is
+written in full either way.
 
 A source that refers to the types of a metamodel needs `--metamodel`, so that its imports and
 parameter types are known.

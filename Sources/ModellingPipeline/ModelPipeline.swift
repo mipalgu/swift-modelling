@@ -63,9 +63,27 @@ public struct ModelPipeline: Sendable {
 
         /// Writes a named model to a file.
         ///
-        /// Without a format, the format is taken from the file extension.
-        case save(name: String, url: URL, format: ModelFormat? = nil, xmiOptions: XMISerializationOptions = .legacy)
+        /// Without a format, the format is taken from the file extension. Without XMI options,
+        /// an XMI document is written with ``ModelPipeline/defaultXMIOptions``, which refer to
+        /// other documents relative to the file; options given to the step are used as they are.
+        case save(
+            name: String, url: URL, format: ModelFormat? = nil,
+            xmiOptions: XMISerializationOptions = ModelPipeline.defaultXMIOptions)
     }
+
+    /// The options with which a save step writes XMI when it is given none.
+    ///
+    /// They keep the layout of
+    /// [`XMISerializationOptions.legacy`](https://mipalgu.github.io/swift-ecore/documentation/ecore/xmiserializationoptions/legacy/)
+    /// and write the URI of another document relative to the saved file, such as
+    /// `../models/tasks.xmi#//@tasks.1`, so that the file holds no absolute path and keeps
+    /// referring to the other document when both are moved together. A URI that cannot be
+    /// made relative, such as one of another scheme or on another drive, is written in full.
+    public static let defaultXMIOptions: XMISerializationOptions = {
+        var options = XMISerializationOptions.legacy
+        options.relativeURIs = true
+        return options
+    }()
 
     /// What a pipeline produced.
     public struct Result: Sendable {

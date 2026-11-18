@@ -231,5 +231,7 @@ enum ConfigurationVocabulary {
 
     /// The paragraph on the configuration file of the convert command, which also writes XMI.
     static let conversionDiscussion = ConfigurationFileOptions.discussion(
-        keys: writingKeys + [LevelCrossingOptions.optionName, ReferenceStyleOptions.optionName])
+        keys: writingKeys + [
+            LevelCrossingOptions.optionName, ReferenceStyleOptions.optionName, DocumentURIOptions.optionName,
+        ])
 }

@@ -11,9 +11,10 @@ import Testing
 /// OCL expressions through the swift-atl command-line tool.
 ///
 /// The tests check that every ATL file of these tutorials parses, that each transformation of the
-/// advanced rules tutorial runs on the sample project of the reference solution of its exercises
-/// and writes the report that the tutorial describes, and that the behaviour the tutorials describe
-/// for `collect` and `oclAsType` is the behaviour of the tool.
+/// advanced rules tutorial runs on the sample project of the example solutions of its exercises
+/// and writes the report that the tutorial describes, that the section of example solutions shows
+/// each metamodel, command, output and report as the tools produce them, and that the behaviour
+/// the tutorials describe for `collect` and `oclAsType` is the behaviour of the tool.
 @Suite("ATL Tutorials 03-05: Execution")
 struct ATL03to05ExecutionTests {
 
@@ -193,30 +194,91 @@ struct ATL03to05ExecutionTests {
         #expect(tutorial.contains("gives a Bag"))
     }
 
-    // MARK: - Tutorial 04: reference solution of the exercises
+    // MARK: - Tutorial 04: example solutions of the exercises
 
-    /// The directory that holds the reference solution of the exercises of the advanced rules
-    /// tutorial: the target metamodel, a sample project and the reports that the transformations
-    /// write for it.
-    static let fixturesPath = URL(fileURLWithPath: #filePath)
-        .deletingLastPathComponent()
-        .appendingPathComponent("Fixtures/ATL-Tutorial-04")
+    /// The versions of the target metamodel in the example solutions of the advanced rules
+    /// tutorial, in the order in which the tutorial extends the metamodel.
+    static let reportMetamodels = [
+        "atl-04-step-15-report-metamodel.ecore",
+        "atl-04-step-21-report-detailed-summary.ecore",
+        "atl-04-step-28-report-highlights.ecore",
+        "atl-04-step-35-report-status.ecore",
+        completeReportMetamodel,
+    ]
 
-    /// The location of a fixture of the advanced rules tutorial.
+    /// The complete target metamodel of the example solutions, which the complete transformation needs.
+    static let completeReportMetamodel = "atl-04-step-36-report-complete.ecore"
+
+    /// The sample project of the example solutions.
+    static let sampleProject = "atl-04-step-16-sample-project.xmi"
+
+    /// The source metamodel of the advanced rules tutorial.
+    static let projectMetamodel = "atl-04-step-01-project-metamodel.ecore"
+
+    /// The title of the section of the advanced rules tutorial that holds the example solutions.
+    static let solutionsTitle = "Example Solutions"
+
+    /// The marker that starts the instruction of an exercise step of the advanced rules tutorial.
+    static let exerciseMarker = "Exercise:"
+
+    /// The text of the advanced rules tutorial.
     ///
-    /// - Parameter name: The file name of the fixture.
-    /// - Returns: The location of the fixture.
-    static func fixture(_ name: String) -> URL {
-        fixturesPath.appendingPathComponent(name)
+    /// - Returns: The text of the tutorial file.
+    /// - Throws: An error if the tutorial cannot be read.
+    static func advancedRulesTutorial() throws -> String {
+        try String(
+            contentsOf: tutorialsPath.appendingPathComponent("ATL-04-advanced-rules.tutorial"), encoding: .utf8)
     }
 
-    /// The text of a fixture of the advanced rules tutorial.
+    /// The text of a block directive, from its name to its closing brace.
     ///
-    /// - Parameter name: The file name of the fixture.
-    /// - Returns: The text of the fixture.
-    /// - Throws: An error if the fixture cannot be read.
-    static func fixtureText(_ name: String) throws -> String {
-        try String(contentsOf: fixture(name), encoding: .utf8)
+    /// - Parameters:
+    ///   - text: The text that holds the directive.
+    ///   - start: The position at which the directive starts.
+    /// - Returns: The directive with its body, or `nil` if its braces do not balance.
+    static func block(in text: Substring, from start: Substring.Index) -> Substring? {
+        guard let open = text[start...].firstIndex(of: "{") else { return nil }
+        var depth = 0
+        var index = open
+        while index < text.endIndex {
+            switch text[index] {
+            case "{": depth += 1
+            case "}":
+                depth -= 1
+                if depth == 0 { return text[start...index] }
+            default: break
+            }
+            index = text.index(after: index)
+        }
+        return nil
+    }
+
+    /// The blocks of a directive within a text, in document order.
+    ///
+    /// - Parameters:
+    ///   - directive: The directive, such as `@Step`.
+    ///   - text: The text to search.
+    /// - Returns: Each block of the directive with its body.
+    static func blocks(_ directive: String, in text: Substring) -> [Substring] {
+        var found: [Substring] = []
+        var rest = text
+        while let range = rest.range(of: directive + " {"), let body = block(in: text, from: range.lowerBound) {
+            found.append(body)
+            rest = text[body.endIndex...]
+        }
+        return found
+    }
+
+    /// The main flow of the advanced rules tutorial, its section of example solutions and the rest.
+    ///
+    /// - Returns: The text before the section of example solutions, the section itself, and the
+    ///   text after it.
+    /// - Throws: An error if the tutorial cannot be read or has no section of example solutions.
+    static func advancedRulesParts() throws -> (mainFlow: Substring, solutions: Substring, remainder: Substring) {
+        let tutorial = try advancedRulesTutorial()[...]
+        let heading = try #require(tutorial.range(of: "@Section(title: \"\(solutionsTitle)\")"))
+        let section = try #require(block(in: tutorial, from: heading.lowerBound))
+        return (tutorial[..<heading.lowerBound], section, tutorial[section.endIndex...])
     }
 
     /// Runs a transformation of the advanced rules tutorial on the sample project.
@@ -227,7 +289,7 @@ struct ATL03to05ExecutionTests {
     /// - Parameters:
     ///   - resource: The resource of the transformation.
     ///   - name: The file name under which the tutorial saves the transformation.
-    ///   - report: The text of the target metamodel, by default that of the reference solution.
+    ///   - report: The text of the target metamodel, by default that of the complete example solution.
     /// - Returns: The result of the command and the report it wrote, if any.
     /// - Throws: An error if a file cannot be prepared or the tool cannot be run.
     @MainActor
@@ -237,10 +299,12 @@ struct ATL03to05ExecutionTests {
         let workspace = try makeWorkspace()
         defer { try? FileManager.default.removeItem(at: workspace) }
         try copy(
-            [(resource: "atl-04-step-01-project-metamodel.ecore", name: "Project.ecore"), (resource: resource, name: name)],
+            [
+                (resource: projectMetamodel, name: "Project.ecore"), (resource: resource, name: name),
+                (resource: sampleProject, name: "project.xmi"),
+            ],
             of: 4, to: workspace)
-        try FileManager.default.copyItem(at: fixture("project.xmi"), to: workspace.appendingPathComponent("project.xmi"))
-        try (report ?? fixtureText("Report.ecore"))
+        try (report ?? text(of: completeReportMetamodel, in: 4))
             .write(to: workspace.appendingPathComponent("Report.ecore"), atomically: true, encoding: .utf8)
         let result = try await ATLAdvanced02Tests.execute(
             tool: "swift-atl",
@@ -253,7 +317,7 @@ struct ATL03to05ExecutionTests {
     @Test("CLI: The reference Report metamodel validates")
     @MainActor
     func testReportMetamodelValidates() async throws {
-        let result = try await executeSwiftEcore(command: "validate", arguments: [Self.fixture("Report.ecore").path])
+        let result = try await executeSwiftEcore(command: "validate", arguments: [Self.resource(Self.completeReportMetamodel, of: 4).path])
         #expect(result.succeeded, "Report.ecore should validate: \(result.stdout)\(result.stderr)")
     }
 
@@ -263,15 +327,15 @@ struct ATL03to05ExecutionTests {
         let result = try await executeSwiftEcore(
             command: "validate",
             arguments: [
-                Self.fixture("project.xmi").path,
-                "--metamodel", Self.resource("atl-04-step-01-project-metamodel.ecore", of: 4).path,
+                Self.resource(Self.sampleProject, of: 4).path,
+                "--metamodel", Self.resource(Self.projectMetamodel, of: 4).path,
             ])
         #expect(result.succeeded, "project.xmi should validate: \(result.stdout)\(result.stderr)")
     }
 
     @Test("Content: The sample project is the example project that the tutorial describes")
     func testSampleProjectMatchesTutorial() throws {
-        let content = try Self.fixtureText("project.xmi")
+        let content = try Self.text(of: Self.sampleProject, in: 4)
         #expect(content.contains("priority=\"8\" completed=\"true\""))
         #expect(content.contains("priority=\"6\" completed=\"false\""))
         #expect(content.contains("priority=\"2\" completed=\"false\""))
@@ -280,7 +344,7 @@ struct ATL03to05ExecutionTests {
 
     @Test("Content: The reference metamodel declares every class and feature that the transformations bind")
     func testReportMetamodelFeatures() throws {
-        let content = try Self.fixtureText("Report.ecore")
+        let content = try Self.text(of: Self.completeReportMetamodel, in: 4)
         let names = [
             "Document", "Summary", "DetailedSummary", "ResourceItem", "StatusReport", "name", "completionRate",
             "statusMessage", "summaries", "highlights", "resources", "title", "status", "priorityLevel",
@@ -303,8 +367,12 @@ struct ATL03to05ExecutionTests {
         /// The file name under which the tutorial saves the transformation.
         let name: String
 
-        /// The fixture that holds the report the transformation writes, if there is one.
+        /// The resource that holds the report the transformation writes, if there is one.
         let expectedReport: String?
+
+        /// The position in ``reportMetamodels`` of the version of the target metamodel with which
+        /// the example solutions reach this transformation.
+        let metamodelVersion: Int
 
         /// Lines that the report must contain, in this order.
         let expectedLines: [String]
@@ -316,16 +384,17 @@ struct ATL03to05ExecutionTests {
     static let reportRuns = [
         ReportRun(
             resource: "atl-04-step-02-lazy-rule.atl", name: "ProjectTransform.atl", expectedReport: nil,
-            expectedLines: ["<xmi:XMI xmi:version=\"2.0\" xmlns:xmi=\"http://www.omg.org/XMI\"/>"]),
+            metamodelVersion: 0, expectedLines: ["<xmi:XMI xmi:version=\"2.0\" xmlns:xmi=\"http://www.omg.org/XMI\"/>"]),
         ReportRun(
             resource: "atl-04-step-03-calling-lazy.atl", name: "ProjectTransform.atl",
-            expectedReport: "report-calling-lazy.xmi",
+            expectedReport: "atl-04-step-20-report-calling-lazy.xmi", metamodelVersion: 0,
             expectedLines: [
                 "<summaries title=\"Pour slab\" status=\"Done\"/>",
                 "<summaries title=\"Frame walls\" status=\"Pending\"/>",
             ]),
         ReportRun(
-            resource: "atl-04-step-06-multiple-lazy.atl", name: "ProjectTransform.atl", expectedReport: nil,
+            resource: "atl-04-step-06-multiple-lazy.atl", name: "ProjectTransform.atl",
+            expectedReport: "atl-04-step-24-report-multiple-lazy.xmi", metamodelVersion: 1,
             expectedLines: [
                 "<summaries xsi:type=\"rep:DetailedSummary\" title=\"Pour slab\" status=\"Done\" priorityLevel=\"8\" description=\"Priority 8 task\"/>",
                 "<summaries xsi:type=\"rep:DetailedSummary\" title=\"Frame walls\" status=\"Pending\" priorityLevel=\"6\" description=\"Priority 6 task\"/>",
@@ -333,29 +402,29 @@ struct ATL03to05ExecutionTests {
             ]),
         ReportRun(
             resource: "atl-04-step-07-matched-rule.atl", name: "ProjectTransformMatched.atl",
-            expectedReport: "report-matched.xmi", expectedLines: []),
+            expectedReport: "atl-04-step-27-report-matched.xmi", metamodelVersion: 1, expectedLines: []),
         ReportRun(
             resource: "atl-04-step-08-lazy-called-twice.atl", name: "ProjectHighlights.atl",
-            expectedReport: "report-highlights.xmi", expectedLines: []),
+            expectedReport: "atl-04-step-31-report-highlights.xmi", metamodelVersion: 2, expectedLines: []),
         ReportRun(
             resource: "atl-04-step-09-unique-lazy.atl", name: "ProjectHighlights.atl",
-            expectedReport: "report-unique.xmi",
+            expectedReport: "atl-04-step-34-report-unique.xmi", metamodelVersion: 2,
             expectedLines: ["<highlights href=\"#//@summaries.0\"/>", "<highlights href=\"#//@summaries.1\"/>"]),
         ReportRun(
             resource: "atl-04-step-10-called-rule.atl", name: "ProjectTransform.atl", expectedReport: nil,
-            expectedLines: ["<xmi:XMI xmi:version=\"2.0\" xmlns:xmi=\"http://www.omg.org/XMI\"/>"]),
+            metamodelVersion: 3, expectedLines: ["<xmi:XMI xmi:version=\"2.0\" xmlns:xmi=\"http://www.omg.org/XMI\"/>"]),
         ReportRun(
             resource: "atl-04-step-11-do-block.atl", name: "ProjectTransform.atl", expectedReport: nil,
-            expectedLines: ["name=\"Garden Shed\" completionRate=\"33\"/>"]),
+            metamodelVersion: 3, expectedLines: ["name=\"Garden Shed\" completionRate=\"33\"/>"]),
         ReportRun(
             resource: "atl-04-step-12-combined-rules.atl", name: "ProjectTransform.atl", expectedReport: nil,
-            expectedLines: [
+            metamodelVersion: 3, expectedLines: [
                 "<summaries title=\"Paint trim\" status=\"Pending\"/>",
                 "<rep:StatusReport projectName=\"Garden Shed\" totalTasks=\"3\"/>",
             ]),
         ReportRun(
             resource: "atl-04-step-13-complete-transformation.atl", name: "ProjectTransform.atl",
-            expectedReport: "report-complete.xmi",
+            expectedReport: "atl-04-step-39-report-complete.xmi", metamodelVersion: 4,
             expectedLines: [
                 "<rep:Document name=\"Garden Shed\" completionRate=\"33\" statusMessage=\"Project in progress: 33% complete\">",
                 "<summaries title=\"Pour slab\" status=\"Done\" priorityLevel=\"8\"/>",
@@ -373,7 +442,7 @@ struct ATL03to05ExecutionTests {
         #expect(result.succeeded, "\(run.resource) should run: \(result.stdout)\(result.stderr)")
         let actual = Self.lines(of: try #require(report, "\(run.resource) should write a report"))
         if let expectedReport = run.expectedReport {
-            #expect(actual == Self.lines(of: try Self.fixtureText(expectedReport)))
+            #expect(actual == Self.lines(of: try Self.text(of: expectedReport, in: 4)))
         }
         var remaining = actual[...]
         for line in run.expectedLines {
@@ -385,14 +454,205 @@ struct ATL03to05ExecutionTests {
         }
     }
 
+    // MARK: - Tutorial 04: section of example solutions
+
+    /// The code that the steps of the example solutions show, in step order, each with the name
+    /// under which the tutorial shows it and its resource.
+    static let solutionCodes: [(name: String, file: String)] = [
+        ("Report.ecore", "atl-04-step-15-report-metamodel.ecore"),
+        ("project.xmi", sampleProject),
+        ("Terminal", "atl-04-step-17-validate.sh"),
+        ("ProjectTransform.atl", "atl-04-step-03-calling-lazy.atl"),
+        ("Terminal", "atl-04-step-19-run-calling-lazy.sh"),
+        ("report.xmi", "atl-04-step-20-report-calling-lazy.xmi"),
+        ("Report.ecore", "atl-04-step-21-report-detailed-summary.ecore"),
+        ("ProjectTransform.atl", "atl-04-step-06-multiple-lazy.atl"),
+        ("Terminal", "atl-04-step-23-run-multiple-lazy.sh"),
+        ("report.xmi", "atl-04-step-24-report-multiple-lazy.xmi"),
+        ("ProjectTransformMatched.atl", "atl-04-step-07-matched-rule.atl"),
+        ("Terminal", "atl-04-step-26-run-matched.sh"),
+        ("report-matched.xmi", "atl-04-step-27-report-matched.xmi"),
+        ("Report.ecore", "atl-04-step-28-report-highlights.ecore"),
+        ("ProjectHighlights.atl", "atl-04-step-08-lazy-called-twice.atl"),
+        ("Terminal", "atl-04-step-30-run-highlights.sh"),
+        ("report-highlights.xmi", "atl-04-step-31-report-highlights.xmi"),
+        ("ProjectHighlights.atl", "atl-04-step-09-unique-lazy.atl"),
+        ("Terminal", "atl-04-step-33-run-unique.sh"),
+        ("report-unique.xmi", "atl-04-step-34-report-unique.xmi"),
+        ("Report.ecore", "atl-04-step-35-report-status.ecore"),
+        ("Report.ecore", completeReportMetamodel),
+        ("ProjectTransform.atl", "atl-04-step-13-complete-transformation.atl"),
+        ("Terminal", "atl-04-step-38-run-complete.sh"),
+        ("report.xmi", "atl-04-step-39-report-complete.xmi"),
+    ]
+
+    /// The option of `swift-atl transform` that binds a target model to the file it writes.
+    static let targetOption = "--target"
+
+    /// The separator between the name of a model and its file in a model binding, as in `OUT=report.xmi`.
+    static let modelBindingSeparator: Character = "="
+
+    @Test("Tutorial: The example solutions are the last section, directly before the assessments")
+    func testSolutionsSectionPosition() throws {
+        let (mainFlow, _, remainder) = try Self.advancedRulesParts()
+        #expect(mainFlow.contains("@Section(title: \"Called Rules and Imperative Sections\")"))
+        #expect(mainFlow.components(separatedBy: "@Section(").count - 1 == 3)
+        #expect(remainder.drop(while: \.isWhitespace).hasPrefix("@Assessments"))
+        #expect(!remainder.contains("@Section("))
+    }
+
+    @Test("Tutorial: The example solutions show the files, commands and reports of the exercises in order")
+    func testSolutionsCodes() throws {
+        let solutions = try Self.advancedRulesParts().solutions
+        let codes = TutorialCatalogue.codes(in: String(solutions)).map { "\($0.name): \($0.file)" }
+        #expect(codes == Self.solutionCodes.map { "\($0.name): \($0.file)" })
+        for metamodel in Self.reportMetamodels {
+            #expect(Self.solutionCodes.contains { $0.name == "Report.ecore" && $0.file == metamodel }, "\(metamodel)")
+        }
+        for run in Self.reportRuns {
+            guard let report = run.expectedReport else { continue }
+            #expect(Self.solutionCodes.contains { $0.file == report }, "The solutions should show \(report)")
+        }
+    }
+
+    @Test("Tutorial: Every step of the example solutions has an instruction, one code and at most one caption")
+    func testSolutionsStepShape() throws {
+        let solutions = try Self.advancedRulesParts().solutions
+        let steps = Self.blocks("@Step", in: solutions)
+        #expect(steps.count == Self.solutionCodes.count)
+        for step in steps {
+            let body = step.drop { $0 != "{" }.dropFirst().dropLast()
+            var paragraphs: [String] = []
+            var current = ""
+            for line in body.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline) {
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                if trimmed.isEmpty {
+                    if !current.isEmpty { paragraphs.append(current) }
+                    current = ""
+                } else {
+                    current += trimmed + " "
+                }
+            }
+            if !current.isEmpty { paragraphs.append(current) }
+            let isCode: (String) -> Bool = { $0.hasPrefix("@Code(") }
+            #expect(paragraphs.filter(isCode).count == 1, "\(step)")
+            #expect((1...2).contains(paragraphs.filter { !isCode($0) }.count), "\(step)")
+            #expect(paragraphs.first.map(isCode) == false, "\(step)")
+        }
+    }
+
+    @Test("Tutorial: The introduction and every exercise point to the example solutions")
+    func testExercisesPointToSolutions() throws {
+        let mainFlow = try Self.advancedRulesParts().mainFlow
+        let intro = try #require(Self.blocks("@Intro(title: \"Advanced Rule Patterns\")", in: mainFlow).first)
+        #expect(intro.contains("\"\(Self.solutionsTitle)\""))
+        let exercises = Self.blocks("@Step", in: mainFlow).filter { $0.contains(Self.exerciseMarker) }
+        #expect(exercises.count == 3)
+        for exercise in exercises {
+            #expect(exercise.contains("\"\(Self.solutionsTitle)\""), "\(exercise)")
+        }
+    }
+
+    @Test("CLI: Every version of the Report metamodel in the example solutions validates", arguments: reportMetamodels)
+    @MainActor
+    func testReportMetamodelVersionValidates(_ metamodel: String) async throws {
+        let result = try await executeSwiftEcore(command: "validate", arguments: [Self.resource(metamodel, of: 4).path])
+        #expect(result.succeeded, "\(metamodel) should validate: \(result.stdout)\(result.stderr)")
+    }
+
+    @Test(
+        "CLI: Each version of the Report metamodel suffices for the transformations up to its point",
+        arguments: Array(reportMetamodels.indices))
+    @MainActor
+    func testReportMetamodelVersionSuffices(_ version: Int) async throws {
+        let metamodel = try Self.text(of: Self.reportMetamodels[version], in: 4)
+        let runs = Self.reportRuns.filter { $0.metamodelVersion <= version }
+        #expect(!runs.isEmpty)
+        for run in runs {
+            let (result, report) = try await Self.runReport(run.resource, as: run.name, report: metamodel)
+            #expect(result.succeeded, "\(run.resource) should run: \(result.stdout)\(result.stderr)")
+            if let expectedReport = run.expectedReport {
+                #expect(
+                    Self.lines(of: report ?? "") == Self.lines(of: try Self.text(of: expectedReport, in: 4)),
+                    "\(run.resource) with \(Self.reportMetamodels[version])")
+            }
+        }
+    }
+
+    @Test(
+        "CLI: Each extension of the Report metamodel is needed by a transformation at its point",
+        arguments: Array(reportMetamodels.indices.dropFirst()))
+    @MainActor
+    func testReportMetamodelExtensionNeeded(_ version: Int) async throws {
+        let previous = try Self.text(of: Self.reportMetamodels[version - 1], in: 4)
+        var failures = 0
+        for run in Self.reportRuns where run.metamodelVersion == version {
+            let (result, _) = try await Self.runReport(run.resource, as: run.name, report: previous)
+            if !result.succeeded { failures += 1 }
+        }
+        #expect(failures > 0, "A transformation should need \(Self.reportMetamodels[version])")
+    }
+
+    @Test("CLI: Replaying the example solutions prints the documented output and writes the reports shown")
+    @MainActor
+    func testSolutionsReplay() async throws {
+        let solutions = try Self.advancedRulesParts().solutions
+        let workspace = try Self.makeWorkspace()
+        defer { try? FileManager.default.removeItem(at: workspace) }
+        try Self.copy([(resource: Self.projectMetamodel, name: "Project.ecore")], of: 4, to: workspace)
+        var written = Set<String>()
+        var commandCount = 0
+        var reportCount = 0
+        for code in TutorialCatalogue.codes(in: String(solutions)) {
+            let source = Self.resource(code.file, of: 4)
+            switch code.kind {
+            case .terminal:
+                let script = try String(contentsOf: source, encoding: .utf8)
+                var output = ""
+                written = []
+                for command in Self.lines(of: script)
+                where command.first != TutorialReplayConfiguration.commentCharacter {
+                    let words = command.split(separator: " ").map(String.init)
+                    let tool = try #require(words.first)
+                    #expect(TutorialReplayConfiguration.toolNames.contains(tool), "\(code.file): \(command)")
+                    let result = try await ATLAdvanced02Tests.execute(
+                        tool: tool, arguments: Array(words.dropFirst()), in: workspace)
+                    #expect(result.succeeded, "\(code.file): \(command): \(result.stdout)\(result.stderr)")
+                    output += result.stdout
+                    commandCount += 1
+                    for (option, value) in zip(words, words.dropFirst()) where option == Self.targetOption {
+                        written.insert(String(value.split(separator: Self.modelBindingSeparator).last ?? ""))
+                    }
+                }
+                let documented = DocumentedOutput.expectedLines(inScript: script).map {
+                    DocumentedOutput.normalised($0.text)
+                }
+                #expect(Self.lines(of: output).map { DocumentedOutput.normalised($0) } == documented, "\(code.file)")
+            case .file where written.contains(code.name):
+                let report = try String(contentsOf: workspace.appendingPathComponent(code.name), encoding: .utf8)
+                let shown = try String(contentsOf: source, encoding: .utf8)
+                #expect(Self.lines(of: report) == Self.lines(of: shown), "\(code.file)")
+                reportCount += 1
+            case .file:
+                let destination = workspace.appendingPathComponent(code.name)
+                try? FileManager.default.removeItem(at: destination)
+                try FileManager.default.copyItem(at: source, to: destination)
+            case .display:
+                Issue.record("The example solutions should show no output block: \(code.file)")
+            }
+        }
+        #expect(commandCount >= Self.solutionCodes.filter { $0.name == "Terminal" }.count)
+        #expect(reportCount == Self.reportRuns.compactMap(\.expectedReport).count)
+    }
+
     @Test("Content: The reports differ as the comparison section describes")
     func testComparisonReports() throws {
         func count(_ text: String, _ marker: String) -> Int { text.components(separatedBy: marker).count - 1 }
-        let lazy = try Self.fixtureText("report-calling-lazy.xmi")
-        let matched = try Self.fixtureText("report-matched.xmi")
-        let twice = try Self.fixtureText("report-highlights.xmi")
-        let unique = try Self.fixtureText("report-unique.xmi")
-        let complete = try Self.fixtureText("report-complete.xmi")
+        let lazy = try Self.text(of: "atl-04-step-20-report-calling-lazy.xmi", in: 4)
+        let matched = try Self.text(of: "atl-04-step-27-report-matched.xmi", in: 4)
+        let twice = try Self.text(of: "atl-04-step-31-report-highlights.xmi", in: 4)
+        let unique = try Self.text(of: "atl-04-step-34-report-unique.xmi", in: 4)
+        let complete = try Self.text(of: "atl-04-step-39-report-complete.xmi", in: 4)
         #expect(count(lazy, "title=") == 2)
         #expect(!lazy.contains("Paint trim"))
         #expect(count(matched, "title=") == 3)
@@ -464,7 +724,7 @@ struct ATL03to05ExecutionTests {
     @Test("CLI: The complete transformation reports the metamodel mistakes as the tutorial says", arguments: metamodelMistakes)
     @MainActor
     func testMetamodelMistake(_ mistake: MetamodelMistake) async throws {
-        let reference = try Self.fixtureText("Report.ecore")
+        let reference = try Self.text(of: Self.completeReportMetamodel, in: 4)
         let pattern = try NSRegularExpression(pattern: mistake.pattern, options: [.dotMatchesLineSeparators])
         let range = NSRange(reference.startIndex..., in: reference)
         #expect(pattern.numberOfMatches(in: reference, range: range) == 1, "\(mistake.description)")
@@ -485,15 +745,17 @@ struct ATL03to05ExecutionTests {
         }
     }
 
-    @Test("Tutorial: The advanced rules tutorial leaves the metamodel, model and runs as exercises")
+    @Test("Tutorial: The main flow of the advanced rules tutorial leaves the metamodel, model and runs as exercises")
     func testExercises() throws {
-        let tutorial = try String(
-            contentsOf: Self.tutorialsPath.appendingPathComponent("ATL-04-advanced-rules.tutorial"), encoding: .utf8)
+        let tutorial = try Self.advancedRulesTutorial()
+        let (mainFlow, solutions, _) = try Self.advancedRulesParts()
         #expect(!tutorial.contains("resolveLazy"))
         #expect(tutorial.contains("thisModule.TaskSummary(task)"))
-        #expect(!tutorial.contains("name: \"Report.ecore\""))
-        #expect(!tutorial.contains("name: \"Terminal\""))
+        #expect(!mainFlow.contains("name: \"Report.ecore\""))
+        #expect(!mainFlow.contains("name: \"Terminal\""))
         #expect(!tutorial.contains("name: \"Output\""))
+        #expect(solutions.contains("name: \"Report.ecore\""))
+        #expect(solutions.contains("name: \"Terminal\""))
         for link in [
             "<doc:01-first-metamodel>", "<doc:02-model-instances>", "<doc:03-metamodel-relationships>",
             "<doc:04-advanced-features>", "<doc:01-first-transformation>",

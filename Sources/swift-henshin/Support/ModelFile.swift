@@ -27,6 +27,14 @@ struct LoadedModel: Sendable {
 /// contents (see `ModelFileFormat`), and written in the format that the extension of the
 /// output file names, XMI by default.
 enum ModelFile {
+    /// The options with which a model is written when a command chooses none: the usual
+    /// layout, referring to other documents relative to the written file.
+    static let defaultXMIOptions: XMISerializationOptions = {
+        var options = XMISerializationOptions.legacy
+        options.relativeURIs = DocumentURIOptions.defaultStyle == .relative
+        return options
+    }()
+
     /// Loads a model into a resource set.
     ///
     /// What the reader could not keep, such as a class that no metamodel defines, is
@@ -57,25 +65,36 @@ enum ModelFile {
     /// - Parameters:
     ///   - resource: The resource that holds the model.
     ///   - path: The path of the file to write.
+    ///   - xmiOptions: The options with which an XMI model is written, which choose how it refers
+    ///     to other documents (default: relative to the file).
     ///   - encoding: The character encoding of the file (default: UTF-8).
     /// - Throws: ``OutputFileError`` if the encoding cannot hold a character of the model, and
     ///   the error of the serialiser or of the file system.
-    static func save(_ resource: Resource, to path: String, encoding: TextEncoding = .utf8) async throws {
+    static func save(
+        _ resource: Resource, to path: String, xmiOptions: XMISerializationOptions = defaultXMIOptions,
+        encoding: TextEncoding = .utf8
+    ) async throws {
         let url = URL(fileURLWithPath: path)
         let diagnostics = try await OutputFile.save(
-            resource, to: url, format: ModelFileFormat.instanceFormat(of: url), encoding: encoding)
+            resource, to: url, format: ModelFileFormat.instanceFormat(of: url), xmiOptions: xmiOptions,
+            encoding: encoding)
         ConversionWarningReport.write(diagnostics, metamodelGiven: true)
     }
 
     /// Renders a model as the text of a document.
     ///
-    /// - Parameter model: The model, which is rendered in the format in which it was read.
+    /// The document refers to other documents as the model file that was read would.
+    ///
+    /// - Parameters:
+    ///   - model: The model, which is rendered in the format in which it was read.
+    ///   - xmiOptions: The options with which an XMI model is rendered, which choose how it
+    ///     refers to other documents (default: relative to the model file).
     /// - Returns: The text of the document.
     /// - Throws: The error of the serialiser.
-    static func text(of model: LoadedModel) async throws -> String {
+    static func text(of model: LoadedModel, xmiOptions: XMISerializationOptions = defaultXMIOptions) async throws -> String {
         var diagnostics = ConversionDiagnostics()
         let text = try await ModelIO.serialise(
-            model.resource, format: model.format, relativeTo: URL(fileURLWithPath: model.path),
+            model.resource, format: model.format, relativeTo: URL(fileURLWithPath: model.path), xmiOptions: xmiOptions,
             diagnostics: &diagnostics)
         ConversionWarningReport.write(diagnostics, metamodelGiven: true)
         return text

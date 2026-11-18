@@ -76,7 +76,8 @@ struct RunConfiguration: Sendable {
         encoding = execution.encodingOptions.encoding(settings: settings)
         metamodelLoadOptions.textEncoding = encoding
         outputEncoding = execution.outputEncodingOptions.encoding(settings: settings)
-        xmiOptions = models.referenceStyleOptions.serializationOptions(settings: settings)
+        xmiOptions = models.referenceStyleOptions.serializationOptions(
+            settings: settings, documentURIs: models.documentURIOptions)
         verbose = execution.verbose
     }
 }

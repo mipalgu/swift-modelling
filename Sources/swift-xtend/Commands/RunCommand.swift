@@ -35,6 +35,8 @@ struct RunCommand: AsyncParsableCommand {
 
             \(SourceEncodingOptions.discussion(reader: "the Xtend source files"))
 
+            \(DocumentURIOptions.discussion(written: "models written by --\(SwiftXtendVocabulary.OptionName.output)"))
+
             \(OutputEncodingOptions.discussion(writer: "the model written by --output"))
 
             \(SemanticsOptions.discussion())
@@ -76,6 +78,9 @@ struct RunCommand: AsyncParsableCommand {
             valueName: SwiftXtendVocabulary.ValueName.outputModel))
     var output: String?
 
+    /// How the model written by `--output` refers to elements of other documents.
+    @OptionGroup var documentURIOptions: DocumentURIOptions
+
     /// Calls the method and prints its result.
     ///
     /// - Throws: ``SwiftXtendError`` if the program cannot be run or the call fails.
@@ -103,7 +108,7 @@ struct RunCommand: AsyncParsableCommand {
             guard let values else { throw failure ?? SwiftXtendError.argumentBinding(method, "no overload matches") }
             var target: Resource?
             if let output {
-                target = await session.resourceSet.createResource(uri: URL(fileURLWithPath: output).absoluteString)
+                target = await session.resourceSet.createResource(uri: OutputFile.documentURI(ofPath: output))
             }
             let interpreter = try XtendInterpreter(program: session.program, resources: session.models, targetResource: target)
             if programOptions.verbose { XtendSession.report("Calling \(xtendClass.qualifiedName).\(method)") }
@@ -122,7 +127,9 @@ struct RunCommand: AsyncParsableCommand {
                 if programOptions.verbose { XtendSession.report("Writing \(output)") }
                 let url = URL(fileURLWithPath: output)
                 try await OutputFile.save(
-                    resource, to: url, format: ModelFileFormat.instanceFormat(of: url), encoding: session.outputEncoding)
+                    resource, to: url, format: ModelFileFormat.instanceFormat(of: url),
+                    xmiOptions: documentURIOptions.serializationOptions(settings: session.settings),
+                    encoding: session.outputEncoding)
             }
         } catch {
             throw SwiftXtendError.execution(error)

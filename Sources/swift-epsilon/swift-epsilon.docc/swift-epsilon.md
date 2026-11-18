@@ -52,12 +52,25 @@ Every command binds its models by name, as Epsilon does:
   (repeatable).
 - `-m, --metamodel <file.ecore>` - A metamodel of the models in any
   metamodel format, such as Ecore, JSON, KM3 or EMOF (repeatable).
+- `--document-uris <relative|absolute>` - How an XMI model that is
+  written refers to elements of other documents (default `relative`, or
+  the `document-uris` key of the configuration file).
 
 A model is read in the format of its extension (`xmi`, `json` or `uml`)
 or, for any other extension, of its contents, and a model that is
 written takes the format of the extension of its file. A model is never
 written unless `--target` or `--store` names it, and nothing is written
 when the run fails.
+
+A target or stored model that refers to elements of another model, such
+as a target note that refers to a task of a model read with `--model`,
+names that model relative to its own file: `../models/tasks.xmi#//@tasks.1`
+for a model in another directory, `tasks.xmi#//@tasks.1` for one beside
+it. The written model then holds no absolute path and loads again as
+long as the models keep their relative locations. `--document-uris
+absolute` writes the full URI of the other model instead, such as a
+`file:` URI. A URI that cannot be made relative, such as one on another
+drive, is written in full either way.
 
 Each model read with `--model` is typed by the metamodels whose
 namespace URIs its file uses, and each target by the metamodels that no

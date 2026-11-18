@@ -70,6 +70,8 @@ swift-henshin apply <module> <model> --unit <name> [options]
   encoding in its declaration and writes a character that the encoding cannot hold as a numeric
   character reference; JSON is always written in UTF-8, with a warning on standard error
 - `--encoding <name>` - The character encoding of a `.henshin_text` module
+- `--document-uris <relative|absolute>` - How an XMI model, written or printed, refers to elements
+  of other documents (default `relative`; see Output below)
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the
   `.swift-modelling.json` found from the current directory, or read none (see Configuration File
   below)
@@ -91,6 +93,13 @@ which it was read. The parameter values that the unit reports (for a rule, every
 its variables; for other units, the output and input-output parameters) are printed as
 `name = value` lines: on standard output, or on standard error while the model is printed on
 standard output. Objects are printed as their class followed by their label, as in `Bin(A)`.
+
+A model that refers to elements of another document, such as a note that refers to tasks in
+`tasks.xmi`, refers to it relative to the file written, `../models/tasks.xmi#//@tasks.1` for a
+file in another directory, or, when it is printed, relative to the model file that was read. The
+model then holds no absolute path. `--document-uris absolute` writes the full URI of the other
+document instead, such as a `file:` URI. A URI that cannot be made relative, such as one on
+another drive, is written in full either way.
 
 **Trace.** `--trace` writes one line per rule application, in order, such as
 `applied move(source=Bin(A), target=Bin(B), m=0, n=2): created 0, deleted 0`, with the matched
@@ -407,6 +416,7 @@ the same names, and an option given on the command line overrides its key:
 | `output-encoding` | `--output-encoding <name>` | `apply`, `explore`, `convert` |
 | `check-dangling` | `--check-dangling` (`true`), `--no-dangling-check` (`false`) | `apply`, `explore`, `analyse` |
 | `injective` | `--injective` (`true`), `--non-injective` (`false`) | `apply`, `explore` |
+| `document-uris` | `--document-uris <relative\|absolute>` | `apply` |
 
 ```json
 {

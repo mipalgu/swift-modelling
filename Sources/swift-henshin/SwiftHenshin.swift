@@ -100,6 +100,6 @@ struct SwiftHenshinCommand: AsyncParsableCommand {
     /// A paragraph that describes the configuration file of the commands that read modules.
     static let configurationDiscussion = ConfigurationFileOptions.discussion(keys: [
         SourceEncodingOptions.optionName, OutputEncodingOptions.optionName, MatchingOptionName.checkDangling,
-        MatchingOptionName.injective,
+        MatchingOptionName.injective, DocumentURIOptions.optionName,
     ]) + " A key that does not apply to the command is ignored."
 }

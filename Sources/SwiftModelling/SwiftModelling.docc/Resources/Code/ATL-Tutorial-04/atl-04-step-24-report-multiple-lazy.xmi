@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rep:Document xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rep="http://www.example.org/report" name="Garden Shed">
+    <summaries xsi:type="rep:DetailedSummary" title="Pour slab" status="Done" priorityLevel="8" description="Priority 8 task"/>
+    <summaries xsi:type="rep:DetailedSummary" title="Frame walls" status="Pending" priorityLevel="6" description="Priority 6 task"/>
+    <summaries title="Paint trim" status="Pending"/>
+</rep:Document>

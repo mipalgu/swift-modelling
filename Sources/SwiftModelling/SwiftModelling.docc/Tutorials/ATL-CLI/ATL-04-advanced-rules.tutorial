@@ -6,7 +6,7 @@
 
         You'll discover how lazy rules enable on-demand element creation, how they differ from matched rules in the model they produce, and how called rules provide explicit control over transformation flow.
 
-        The tutorial gives you the source metamodel and the transformations. Writing the target metamodel, creating a sample project and running the transformations with swift-atl are exercises for you: by now you have done each of them in an earlier tutorial, and the hints along the way tell you where to look.
+        The tutorial gives you the source metamodel and the transformations. Writing the target metamodel, creating a sample project and running the transformations with swift-atl are exercises for you: by now you have done each of them in an earlier tutorial, and the hints along the way tell you where to look. Once you have tried an exercise, you can compare your work with the example solution in the section "Example Solutions" at the end, which shows every file, every swift-atl command with its output, and every report.
 
         @Image(source: "atl-transformations.svg", alt: "ATL Transformations")
     }
@@ -46,13 +46,13 @@
             @Step {
                 Exercise: write the target metamodel, `Report.ecore`, yourself.
 
-                The transformation creates elements of the Report metamodel, which this tutorial does not give you. Derive it from the rules: every `Report!X` in a `to` pattern is a class X, and every binding `feature <- expression` is a feature of that class. The expression tells you the type of the feature: a string literal or a name gives an `EString`, a priority an `EInt`, and a collection such as the result of `collect` makes the feature many-valued. An element that a rule creates for a binding of another element, such as a Summary for the `summaries` of a Document, is usually contained by that element, so `summaries` is a containment reference. Give the package the name `Report`, as in the `-- @path` directive, and save it beside the transformation. Start with what these rules need, and extend the metamodel as later steps add classes and features. <doc:01-first-metamodel> shows how to write and validate a metamodel, and <doc:03-metamodel-relationships> how to declare containment and other references.
+                The transformation creates elements of the Report metamodel, which is yours to write. Derive it from the rules: every `Report!X` in a `to` pattern is a class X, and every binding `feature <- expression` is a feature of that class. The expression tells you the type of the feature: a string literal or a name gives an `EString`, a priority an `EInt`, and a collection such as the result of `collect` makes the feature many-valued. An element that a rule creates for a binding of another element, such as a Summary for the `summaries` of a Document, is usually contained by that element, so `summaries` is a containment reference. Give the package the name `Report`, as in the `-- @path` directive, and save it beside the transformation. Start with what these rules need, and extend the metamodel as later steps add classes and features. <doc:01-first-metamodel> shows how to write and validate a metamodel, and <doc:03-metamodel-relationships> how to declare containment and other references. An example solution is in the section "Example Solutions" at the end of this tutorial.
             }
 
             @Step {
                 Exercise: create a sample project and run the transformation on it.
 
-                Write a small model of Project.ecore to transform, as in <doc:02-model-instances>. A good test input has tasks on both sides of the priority threshold of 5 and at least one completed task, for example three tasks with the priorities 8, 6 and 2, of which the first is completed, and two resources. Then run the transformation as in <doc:01-first-transformation>, with a command of the form `swift-atl transform ProjectTransform.atl --source IN=project.xmi --target OUT=report.xmi`. For that example, the report holds one Document with two Summaries, for the tasks with the priorities 8 and 6, with the statuses `Done` and `Pending`. The task with the priority 2 was never passed to the lazy rule, so no Summary exists for it.
+                Write a small model of Project.ecore to transform, as in <doc:02-model-instances>. A good test input has tasks on both sides of the priority threshold of 5 and at least one completed task, for example three tasks with the priorities 8, 6 and 2, of which the first is completed, and two resources. Then run the transformation as in <doc:01-first-transformation>, with a command of the form `swift-atl transform ProjectTransform.atl --source IN=project.xmi --target OUT=report.xmi`. For that example, the report holds one Document with two Summaries, for the tasks with the priorities 8 and 6, with the statuses `Done` and `Pending`. The task with the priority 2 was never passed to the lazy rule, so no Summary exists for it. An example solution is in the section "Example Solutions" at the end of this tutorial.
             }
 
             @Step {
@@ -144,7 +144,217 @@
             @Step {
                 Exercise: check your metamodel with the complete transformation.
 
-                Run the complete transformation on your sample project. For the example project, with the tasks of priority 8 (completed), 6 and 2 and two resources, a correct metamodel gives a report with two root elements. The Document has the completion rate 33 and the status message `Project in progress: 33% complete`, and contains two Summaries, for the tasks with a priority of at least 3, each with its priority level, and two ResourceItems with their categories. Beside it, the StatusReport records 3 tasks, a completion of 33 and 2 resources. If your metamodel lacks a feature or a class, swift-atl stops with a message such as `Transformation failed: Invalid operation: Property 'statusMessage' not found in class 'Document'` or `Transformation failed: Type error: Class 'ResourceItem' not found in model 'OUT'`. If the summaries appear as root elements that the Document only refers to, as in `<summaries href="#/1"/>`, the `summaries` reference is not a containment reference.
+                Run the complete transformation on your sample project. For the example project, with the tasks of priority 8 (completed), 6 and 2 and two resources, a correct metamodel gives a report with two root elements. The Document has the completion rate 33 and the status message `Project in progress: 33% complete`, and contains two Summaries, for the tasks with a priority of at least 3, each with its priority level, and two ResourceItems with their categories. Beside it, the StatusReport records 3 tasks, a completion of 33 and 2 resources. If your metamodel lacks a feature or a class, swift-atl stops with a message such as `Transformation failed: Invalid operation: Property 'statusMessage' not found in class 'Document'` or `Transformation failed: Type error: Class 'ResourceItem' not found in model 'OUT'`. If the summaries appear as root elements that the Document only refers to, as in `<summaries href="#/1"/>`, the `summaries` reference is not a containment reference. An example solution is in the section "Example Solutions" at the end of this tutorial.
+            }
+        }
+    }
+
+    @Section(title: "Example Solutions") {
+        @ContentAndMedia {
+            This section works through an example solution of each exercise of this tutorial, in the order in which the tutorial poses them. Try each exercise yourself first, then compare your files, commands and reports with the ones shown here.
+
+            The steps build the target metamodel, `Report.ecore`, in the same small increments in which the tutorial asks for it, and run each transformation on one sample project, in the directory that holds `Project.ecore` and your transformations. Each run first shows the version of the transformation that it uses, as you may have moved on to a later version since.
+        }
+
+        @Steps {
+            @Step {
+                Write the target metamodel that the first rules need.
+
+                @Code(name: "Report.ecore", file: atl-04-step-15-report-metamodel.ecore)
+
+                The rules of the step that calls the lazy rule create a Document with a `name` and `summaries`, and a Summary with a `title` and a `status`. All three attributes take strings, so they are `EString` attributes. The `summaries` binding collects several Summaries that belong to the Document, so it is a containment reference with the upper bound -1, which makes it many-valued. The package name `Report` matches the `-- @path` directive; the namespace URI and the prefix `rep`, which appears in the reports below, are your choice.
+            }
+
+            @Step {
+                Create the sample project.
+
+                @Code(name: "project.xmi", file: atl-04-step-16-sample-project.xmi)
+
+                The project Garden Shed has three tasks with the priorities 8, 6 and 2, of which the first is completed, and two resources. The tasks and resources are the contents of the Project, so they are written as child elements named after the containment references `tasks` and `resources`.
+            }
+
+            @Step {
+                Check both files with swift-ecore.
+
+                @Code(name: "Terminal", file: atl-04-step-17-validate.sh)
+
+                `swift-ecore validate` checks that a metamodel is well formed and, with `--metamodel`, that a model conforms to its metamodel.
+            }
+
+            @Step {
+                Take the transformation that calls the lazy rule for the high-priority tasks.
+
+                @Code(name: "ProjectTransform.atl", file: atl-04-step-03-calling-lazy.atl)
+
+                This is the version from the step that calls the lazy rule from a matched rule. If you have moved on to a later version, save this one as `ProjectTransform.atl` again, so that the run below writes the report that this section shows.
+            }
+
+            @Step {
+                Run the transformation on the sample project.
+
+                @Code(name: "Terminal", file: atl-04-step-19-run-calling-lazy.sh)
+
+                `--source IN=project.xmi` binds the model IN of the `create` line to the sample project, and `--target OUT=report.xmi` names the file that receives the model OUT. swift-atl finds `Project.ecore` and `Report.ecore` beside the transformation through its `-- @path` directives.
+            }
+
+            @Step {
+                Open the report that the transformation wrote.
+
+                @Code(name: "report.xmi", file: atl-04-step-20-report-calling-lazy.xmi)
+
+                The Document contains one Summary for each of the two tasks with a priority above 5. The task Paint trim, with the priority 2, was never passed to the lazy rule, so the report has no Summary for it.
+            }
+
+            @Step {
+                Add the class DetailedSummary to the metamodel.
+
+                @Code(name: "Report.ecore", file: atl-04-step-21-report-detailed-summary.ecore)
+
+                DetailedSummary names Summary in `eSuperTypes`, so it inherits `title` and `status`, and a DetailedSummary can be an element of `summaries`, whose type is Summary. Its own attributes are the two that only DetailedTaskSummary binds: `priorityLevel`, an `EInt` because it takes the priority of a task, and `description`, an `EString`.
+            }
+
+            @Step {
+                Take the transformation with the two lazy rules.
+
+                @Code(name: "ProjectTransform.atl", file: atl-04-step-06-multiple-lazy.atl)
+
+                The matched rule now summarises every task, and chooses DetailedTaskSummary for a task with a priority above 5.
+            }
+
+            @Step {
+                Check the extended metamodel and run the transformation again.
+
+                @Code(name: "Terminal", file: atl-04-step-23-run-multiple-lazy.sh)
+
+                The run replaces `report.xmi` with the new report.
+            }
+
+            @Step {
+                Open the new report.
+
+                @Code(name: "report.xmi", file: atl-04-step-24-report-multiple-lazy.xmi)
+
+                Every task now has a summary. The two high-priority tasks became DetailedSummary elements, which carry their priority and description. As the type of `summaries` is Summary, `xsi:type="rep:DetailedSummary"` records the subclass of each. Paint trim became a plain Summary.
+            }
+
+            @Step {
+                Take the version of the first report that uses a matched rule instead of the lazy rule.
+
+                @Code(name: "ProjectTransformMatched.atl", file: atl-04-step-07-matched-rule.atl)
+
+                It creates the same kinds of elements as before, so the metamodel needs no change.
+            }
+
+            @Step {
+                Run it into a report of its own.
+
+                @Code(name: "Terminal", file: atl-04-step-26-run-matched.sh)
+
+                Writing to `report-matched.xmi` leaves `report.xmi` as it is, for comparison.
+            }
+
+            @Step {
+                Compare the report of the matched rule with the first report.
+
+                @Code(name: "report-matched.xmi", file: atl-04-step-27-report-matched.xmi)
+
+                The Document contains the same two summaries as the first report. The matched rule also created a Summary for Paint trim, which nothing contains, so it is a second root element, and the report wraps its two root elements in an `xmi:XMI` element.
+            }
+
+            @Step {
+                Add the `highlights` reference to the metamodel.
+
+                @Code(name: "Report.ecore", file: atl-04-step-28-report-highlights.ecore)
+
+                The highlights refer to Summaries that `summaries` already contains. An element has only one container, so `highlights` is a many-valued reference to Summary without `containment`.
+            }
+
+            @Step {
+                Take the transformation that calls the lazy rule twice.
+
+                @Code(name: "ProjectHighlights.atl", file: atl-04-step-08-lazy-called-twice.atl)
+
+                The `summaries` binding calls TaskSummary for every task, and the `highlights` binding calls it again for each high-priority task.
+            }
+
+            @Step {
+                Check the metamodel and run the transformation.
+
+                @Code(name: "Terminal", file: atl-04-step-30-run-highlights.sh)
+
+                This report goes to `report-highlights.xmi`.
+            }
+
+            @Step {
+                Open the report with the highlights.
+
+                @Code(name: "report-highlights.xmi", file: atl-04-step-31-report-highlights.xmi)
+
+                The report has five summaries. The Document contains one for each task, and the second calls created two more, for Pour slab and Frame walls, which are root elements beside the Document. The highlights refer to these copies, `#/1` and `#/2`, the second and third root elements, rather than to the summaries inside the Document.
+            }
+
+            @Step {
+                Declare the lazy rule as `unique`.
+
+                @Code(name: "ProjectHighlights.atl", file: atl-04-step-09-unique-lazy.atl)
+
+                Only the first line of the rule changes.
+            }
+
+            @Step {
+                Run the unique version into a report of its own.
+
+                @Code(name: "Terminal", file: atl-04-step-33-run-unique.sh)
+
+                Writing to `report-unique.xmi` keeps both versions of the highlights report for comparison.
+            }
+
+            @Step {
+                Compare the report of the unique lazy rule with the previous one.
+
+                @Code(name: "report-unique.xmi", file: atl-04-step-34-report-unique.xmi)
+
+                The report has three summaries, all inside the Document, which is the only root element again. The highlights refer to the first two summaries of the Document, `#//@summaries.0` and `#//@summaries.1`, which summarise Pour slab and Frame walls.
+            }
+
+            @Step {
+                Add the class StatusReport and the attribute `completionRate` for the called rules.
+
+                @Code(name: "Report.ecore", file: atl-04-step-35-report-status.ecore)
+
+                The called rule CreateStatusReport binds `projectName`, a string, and `totalTasks`, an Integer. The `do` block of the step on imperative code assigns `completionRate` to the Document, so Document gains an `EInt` attribute. Nothing contains a StatusReport, so no reference refers to it. This version suffices for the first three steps of "Called Rules and Imperative Sections".
+            }
+
+            @Step {
+                Complete the metamodel for the complete transformation.
+
+                @Code(name: "Report.ecore", file: atl-04-step-36-report-complete.ecore)
+
+                The complete transformation also binds `completion` and `resourceCount` of a StatusReport, `statusMessage` of a Document, and `resources`, which contains the ResourceItems, each with a `name` and a `category`. Its lazy rule TaskSummary binds `priorityLevel` of a plain Summary, so the attribute moves up from DetailedSummary to Summary, from which DetailedSummary still inherits it.
+            }
+
+            @Step {
+                Take the complete transformation.
+
+                @Code(name: "ProjectTransform.atl", file: atl-04-step-13-complete-transformation.atl)
+
+                This is the version from the last step of "Called Rules and Imperative Sections".
+            }
+
+            @Step {
+                Check the complete metamodel and run the complete transformation.
+
+                @Code(name: "Terminal", file: atl-04-step-38-run-complete.sh)
+
+                If your own metamodel makes the run stop with a message about a missing property or class, compare it with the complete metamodel above.
+            }
+
+            @Step {
+                Open the complete report.
+
+                @Code(name: "report.xmi", file: atl-04-step-39-report-complete.xmi)
+
+                The Document has the completion rate 33 and its status message, and contains the summaries of the two tasks with a priority of at least 3, each with its priority level, and the two resource items. The StatusReport that the called rule created is the second root element, and records 3 tasks, a completion of 33 and 2 resources.
             }
         }
     }

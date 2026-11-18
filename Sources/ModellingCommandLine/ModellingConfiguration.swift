@@ -70,9 +70,9 @@ public struct ModellingConfiguration: Sendable, Equatable {
     /// ``MTLSemanticsOptions``, ``ATLSemanticsOptions``, ``LetTypeMismatchOptions``,
     /// ``UnsetFeatureOptions``, ``SourceEncodingOptions``, ``OutputEncodingOptions``,
     /// ``KM3Options``, ``GrammarImportOptions``, ``LevelCrossingOptions``,
-    /// ``CompleteOCLOptions``, ``ReferenceStyleOptions``, ``CodeStyleOptions`` and
-    /// ``GenModelDefaultsOptions`` define, and the names of ``ValidationOptionName`` and
-    /// ``MatchingOptionName``.
+    /// ``CompleteOCLOptions``, ``ReferenceStyleOptions``, ``DocumentURIOptions``,
+    /// ``SiblingRuleConflictOptions``, ``CodeStyleOptions`` and ``GenModelDefaultsOptions``
+    /// define, and the names of ``ValidationOptionName`` and ``MatchingOptionName``.
     public static let keys: [String] = [
         SemanticsOptions.OptionName.semantics,
         MTLSemanticsOptions.OptionName.blockLineBreaks,
@@ -90,6 +90,7 @@ public struct ModellingConfiguration: Sendable, Equatable {
         ATLSemanticsOptions.OptionName.collectionRangeSyntax,
         ATLSemanticsOptions.OptionName.integerDivision,
         ATLSemanticsOptions.OptionName.bagRepresentation,
+        SiblingRuleConflictOptions.optionName,
         SemanticsOptions.OptionName.containerScope,
         LetTypeMismatchOptions.optionName,
         UnsetFeatureOptions.optionName,
@@ -106,6 +107,7 @@ public struct ModellingConfiguration: Sendable, Equatable {
         LevelCrossingOptions.optionName,
         CompleteOCLOptions.optionName,
         ReferenceStyleOptions.optionName,
+        DocumentURIOptions.optionName,
         CodeStyleOptions.optionName,
         GenModelDefaultsOptions.OptionName.defaults,
         GenModelDefaultsOptions.OptionName.rootExtendsClass,
@@ -172,6 +174,10 @@ public struct ModellingConfiguration: Sendable, Equatable {
     /// What a Bag value is when ATL expressions evaluate (`bag-representation`).
     public var bagRepresentation: ATLBagRepresentation?
 
+    /// What a source element that two sub-rules of the same ATL rule both match gives
+    /// (`sibling-rule-conflicts`).
+    public var siblingRuleConflicts: ATLSiblingRuleConflicts?
+
     /// The objects whose containers a model answers for (`container-scope`).
     public var containerLookupScope: ContainerLookupScope?
 
@@ -223,6 +229,9 @@ public struct ModellingConfiguration: Sendable, Equatable {
 
     /// How written XMI models spell references into themselves (`reference-style`).
     public var referenceStyle: XMIReferenceStyle?
+
+    /// How written XMI models refer to other documents (`document-uris`).
+    public var documentURIs: DocumentURIStyle?
 
     /// The code style of generated text (`code-style`).
     public var codeStyle: String?
@@ -328,6 +337,7 @@ public struct ModellingConfiguration: Sendable, Equatable {
         collectionRangeSyntax = try reader.value(of: ATLSemanticsOptions.OptionName.collectionRangeSyntax)
         integerDivision = try reader.value(of: ATLSemanticsOptions.OptionName.integerDivision)
         bagRepresentation = try reader.value(of: ATLSemanticsOptions.OptionName.bagRepresentation)
+        siblingRuleConflicts = try reader.value(of: SiblingRuleConflictOptions.optionName)
         containerLookupScope = try reader.value(of: SemanticsOptions.OptionName.containerScope)
         letTypeMismatches = try reader.value(of: LetTypeMismatchOptions.optionName)
         unsetFeatures = try reader.value(of: UnsetFeatureOptions.optionName)
@@ -344,6 +354,7 @@ public struct ModellingConfiguration: Sendable, Equatable {
         levelCrossing = try reader.value(of: LevelCrossingOptions.optionName)
         completeOCLDocuments = try reader.paths(CompleteOCLOptions.optionName, relativeTo: url.deletingLastPathComponent())
         referenceStyle = try reader.value(of: ReferenceStyleOptions.optionName)
+        documentURIs = try reader.value(of: DocumentURIOptions.optionName)
         codeStyle = try reader.string(CodeStyleOptions.optionName)
         genModelDefaults = try reader.value(of: GenModelDefaultsOptions.OptionName.defaults)
         rootExtendsClass = try reader.string(GenModelDefaultsOptions.OptionName.rootExtendsClass)

@@ -86,6 +86,9 @@ swift-ecore validate instance.xmi --metamodel schema.ecore
 # Convert a model from XMI to JSON, with the classes and references of its metamodel
 swift-ecore convert library.xmi library.json --metamodel library.ecore
 
+# Write references to other documents by their full URIs rather than relative to the output
+swift-ecore convert models/notes.xmi output/notes.xmi --metamodel Notes.ecore --document-uris absolute
+
 # Show every class of a metamodel with its features
 swift-ecore inspect metamodel.ecore --detail full
 
@@ -116,8 +119,16 @@ swift-ecore generate model/library.ecore --language c --output c-src/
 ### swift-atl
 
 ```bash
-# Run a transformation
+# Run a transformation; the target refers to elements of the source by relative URIs
 swift-atl transform Families2Persons.atl --source families.xmi --target persons.xmi
+
+# Refer to elements of the source by their full URIs instead
+swift-atl transform TaskNotes.atl --source models/tasks.xmi --target output/notes.xmi \
+  --document-uris absolute
+
+# Stop with an error, rather than warn, when two rules extending the same rule match an element
+swift-atl transform TaskNotes.atl --source models/tasks.xmi --target output/notes.xmi \
+  --sibling-rule-conflicts error
 
 # Check a transformation against its metamodels without running it
 swift-atl transform Families2Persons.atl --validate-only \
@@ -173,7 +184,7 @@ swift-epsilon eol run report.eol --model Bank=bank.xmi -m Bank.ecore
 # Check a model against EVL constraints
 swift-epsilon evl validate rules.evl --model Bank=bank.xmi -m Bank.ecore
 
-# Transform a model with ETL
+# Transform a model with ETL; the target refers to elements of other models by relative URIs
 swift-epsilon etl transform bank2ledger.etl --model Bank=bank.xmi \
   --target Ledger=ledger.xmi -m Bank.ecore -m Ledger.ecore
 

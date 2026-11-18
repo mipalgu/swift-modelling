@@ -43,6 +43,9 @@ struct ModelOptions: ParsableArguments, Sendable {
     /// How stored XMI models spell references into themselves.
     @OptionGroup var referenceStyleOptions: ReferenceStyleOptions
 
+    /// How stored XMI models refer to elements of other documents.
+    @OptionGroup var documentURIOptions: DocumentURIOptions
+
     /// Creates the options with nothing given.
     init() {}
 }
