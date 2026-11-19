@@ -397,8 +397,9 @@ swift-atl validate transformation.atl --check-metamodels \
 
 ### test
 
-Run parsing, validation and transformation execution tests on ATL
-files, or on a directory of them.
+Check that ATL files, or the files of a directory, parse, and that each
+module has a name and is not empty. The transformations are not executed:
+use `transform` to run one on a model.
 
 ```bash
 swift-atl test [<atl-files> ...] [options]

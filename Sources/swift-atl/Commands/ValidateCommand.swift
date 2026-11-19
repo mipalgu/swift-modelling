@@ -513,11 +513,3 @@ struct ValidateCommand: AsyncParsableCommand, ATLSourceReading, ATLOutputWriting
         return report
     }
 }
-
-// MARK: - Test Command
-
-/// Command for testing ATL transformation files.
-///
-/// The test command runs comprehensive tests on ATL transformation files,
-/// including parsing tests, semantic validation tests, and transformation
-/// execution tests with sample data.

@@ -10,19 +10,21 @@ import ArgumentParser
 import Foundation
 import ModellingCommandLine
 
-/// Command for testing ATL transformation files.
+/// Command for checking ATL transformation files.
 ///
-/// The test command runs comprehensive tests on ATL transformation files,
-/// including parsing tests, validation tests, and transformation execution tests.
-/// It can test individual files or entire directories of ATL transformations.
+/// The test command checks that each ATL transformation file parses, that its
+/// module has a name, and that the module is not empty. It does not execute
+/// the transformations. It can check individual files or entire directories
+/// of ATL transformations.
 struct TestCommand: AsyncParsableCommand, ATLSourceReading, ATLOutputWriting {
     static let configuration = CommandConfiguration(
         commandName: "test",
         abstract: "Test ATL transformation files",
         discussion: """
-            Runs comprehensive tests on ATL transformation files including parsing tests,
-            validation tests, and transformation execution tests. Can test individual files
-            or entire directories of ATL transformations.
+            Checks that each ATL transformation file parses, that its module has a name,
+            and that the module is not empty. The transformations are not executed: use
+            'transform' to run one on a model. Can check individual files or entire
+            directories of ATL transformations.
 
             \(ATLSemanticsOptions.discussion(reader: "the transformations"))
 
