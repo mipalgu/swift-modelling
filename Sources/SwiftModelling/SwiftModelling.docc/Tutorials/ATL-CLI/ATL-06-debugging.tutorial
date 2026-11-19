@@ -18,9 +18,25 @@
 
         @Steps {
             @Step {
+                Create the source metamodel that the transformations of this tutorial read.
+
+                @Code(name: "Source.ecore", file: atl-06-step-01-source-metamodel.ecore)
+
+                The transformations of this tutorial read a Container, which holds its Elements in `elements` and lists some of them in `children`. An Element has a `name` and a `description`, both strings, an optional `parent` and a list of related `items`. The helpers of the tutorial navigate each of these features, and `parent` and `items` are the references whose undefined or empty values they guard against. Save it as Source.ecore, where the `-- @path` directives of the transformations find it.
+            }
+
+            @Step {
+                Create the target metamodel for the items that the transformations produce.
+
+                @Code(name: "Target.ecore", file: atl-06-step-02-target-metamodel.ecore)
+
+                The rules of this tutorial turn each Element into an Item of the Target metamodel and bind `name` and `description`, both strings. Each Item is a root element of the target model, so the metamodel needs no containment reference. Save it as Target.ecore beside Source.ecore.
+            }
+
+            @Step {
                 Recognise common error patterns.
 
-                @Code(name: "DebugExample.atl", file: atl-06-step-01-common-errors.atl)
+                @Code(name: "DebugExample.atl", file: atl-06-step-03-common-errors.atl)
 
                 This example shows typical error scenarios: undefined bindings, null references, and type mismatches.
             }
@@ -28,7 +44,7 @@
             @Step {
                 Add defensive checks.
 
-                @Code(name: "DebugExample.atl", file: atl-06-step-02-defensive-checks.atl)
+                @Code(name: "DebugExample.atl", file: atl-06-step-04-defensive-checks.atl)
 
                 Use `oclIsUndefined()` and type checks to prevent runtime errors.
             }
@@ -36,7 +52,7 @@
             @Step {
                 Validate helper results.
 
-                @Code(name: "DebugExample.atl", file: atl-06-step-03-helper-validation.atl)
+                @Code(name: "DebugExample.atl", file: atl-06-step-05-helper-validation.atl)
 
                 Ensure helpers return valid values before using them in bindings.
             }
@@ -44,7 +60,7 @@
             @Step {
                 Handle edge cases.
 
-                @Code(name: "DebugExample.atl", file: atl-06-step-04-edge-cases.atl)
+                @Code(name: "DebugExample.atl", file: atl-06-step-06-edge-cases.atl)
 
                 Test boundary conditions like empty collections and optional references.
             }
@@ -62,7 +78,7 @@
             @Step {
                 Add logging helpers for debugging.
 
-                @Code(name: "DebugExample.atl", file: atl-06-step-05-logging-helpers.atl)
+                @Code(name: "DebugExample.atl", file: atl-06-step-07-logging-helpers.atl)
 
                 Create helpers that output diagnostic information during transformation.
             }
@@ -70,7 +86,7 @@
             @Step {
                 Debug collection operations.
 
-                @Code(name: "DebugExample.atl", file: atl-06-step-06-collection-debugging.atl)
+                @Code(name: "DebugExample.atl", file: atl-06-step-08-collection-debugging.atl)
 
                 Verify collection operations produce expected results.
             }
@@ -78,7 +94,7 @@
             @Step {
                 Test transformations incrementally.
 
-                @Code(name: "DebugExample.atl", file: atl-06-step-07-incremental-testing.atl)
+                @Code(name: "DebugExample.atl", file: atl-06-step-09-incremental-testing.atl)
 
                 Build transformations gradually, testing each rule independently.
             }
@@ -86,9 +102,33 @@
             @Step {
                 Build a robust transformation with error handling.
 
-                @Code(name: "DebugExample.atl", file: atl-06-step-08-robust-transformation.atl)
+                @Code(name: "DebugExample.atl", file: atl-06-step-10-robust-transformation.atl)
 
                 The complete transformation demonstrates defensive programming and error handling techniques.
+            }
+
+            @Step {
+                Create a sample garden with three elements to transform.
+
+                @Code(name: "source.xmi", file: atl-06-step-11-sample-source.xmi)
+
+                The Garden is the parent of the Vegetable Bed and the Herb Spiral and lists both as its items, and the container lists them as its children. A reference such as `//@elements.0` names an element by its position in `elements`. The Vegetable Bed has no description.
+            }
+
+            @Step {
+                Validate the new files and run the robust transformation on the sample garden.
+
+                @Code(name: "Terminal", file: atl-06-step-12-run-complete.sh)
+
+                `--source IN=source.xmi` binds the model IN of the `create` line to the sample garden, and `--target OUT=target.xmi` names the file that receives the model OUT. swift-atl finds `Source.ecore` and `Target.ecore` beside the transformation through its `-- @path` directives.
+            }
+
+            @Step {
+                Look at the target model that the transformation wrote.
+
+                @Code(name: "target.xmi", file: atl-06-step-13-target.xmi)
+
+                `safeName` returns the name of the parent of an element, so both beds become Items named Garden, and the Garden itself, which has no parent, becomes an Item named Root Element instead of stopping the run. The Vegetable Bed has no description, so the conditional binding supplies the default text.
             }
         }
     }

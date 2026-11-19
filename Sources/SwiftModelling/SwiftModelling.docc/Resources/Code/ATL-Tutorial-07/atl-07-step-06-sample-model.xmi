@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mdl:Container xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:mdl="http://www.example.org/refining/model">
+  <elements name="Parser" version="1"/>
+  <elements name="Formatter" version="2" deprecated="true"/>
+  <elements name="Scheduler" version="3"/>
+</mdl:Container>

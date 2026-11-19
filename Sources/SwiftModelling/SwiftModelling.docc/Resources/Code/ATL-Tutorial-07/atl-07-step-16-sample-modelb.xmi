@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:mdb="http://www.example.org/multisource/modelb">
+  <mdb:ElementB name="Tiles" refId="1"/>
+  <mdb:ElementB name="Seeds" refId="2"/>
+  <mdb:ElementB name="Paint" refId="1"/>
+</xmi:XMI>

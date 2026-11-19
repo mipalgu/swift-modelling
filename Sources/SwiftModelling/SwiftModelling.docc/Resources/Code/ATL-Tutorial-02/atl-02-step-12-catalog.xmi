@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:libcat="http://www.example.org/library/catalog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <libcat:Item title="The Lantern Keeper" category="Classic" description="Published 1894 (19th century) by Harriet Quill"/>
+    <libcat:Item title="Winter Ledger" category="Classic" description="Published 1931 (20th century) by Harriet Quill"/>
+    <libcat:Item title="Northern Tides" category="Modern" description="Published 1978 (20th century) by Jonah Brightwater"/>
+    <libcat:Item title="Glass Orchard" category="Modern" description="Published 2015 (21st century) by Jonah Brightwater"/>
+</xmi:XMI>

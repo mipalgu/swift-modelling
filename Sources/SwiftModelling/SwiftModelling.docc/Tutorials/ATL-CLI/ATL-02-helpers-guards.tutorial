@@ -26,9 +26,17 @@
             }
 
             @Step {
+                Create the target metamodel for the catalogue that the transformation produces.
+
+                @Code(name: "Catalog.ecore", file: atl-02-step-02-catalog-metamodel.ecore)
+
+                The rules of this tutorial turn books into Items of the Catalog metamodel. They bind `title` to the title of the book, `category` to `'Classic'` or `'Modern'`, and, in the complete transformation, `description` to the publication information that the helpers compute, all strings. Each Item is a root element of the catalogue, so the metamodel needs no containment reference. This Catalog is not the one of the tutorial on collections and has a namespace URI of its own. Save it beside Library.ecore, where the `-- @path` directives of the transformations find both metamodels.
+            }
+
+            @Step {
                 Define an attribute helper to compute derived information.
 
-                @Code(name: "LibraryTransform.atl", file: atl-02-step-02-attribute-helper.atl)
+                @Code(name: "LibraryTransform.atl", file: atl-02-step-03-attribute-helper.atl)
 
                 The `isClassic` attribute helper determines if a book was published before 1950.
             }
@@ -36,7 +44,7 @@
             @Step {
                 Add a query helper for formatting.
 
-                @Code(name: "LibraryTransform.atl", file: atl-02-step-03-query-helper.atl)
+                @Code(name: "LibraryTransform.atl", file: atl-02-step-04-query-helper.atl)
 
                 Query helpers are standalone functions that can be called with any argument.
             }
@@ -44,7 +52,7 @@
             @Step {
                 Combine multiple helpers in one transformation.
 
-                @Code(name: "LibraryTransform.atl", file: atl-02-step-04-combined-helpers.atl)
+                @Code(name: "LibraryTransform.atl", file: atl-02-step-05-combined-helpers.atl)
 
                 Use both attribute and query helpers to build complex transformations.
             }
@@ -62,7 +70,7 @@
             @Step {
                 Add a simple guard condition.
 
-                @Code(name: "LibraryTransform.atl", file: atl-02-step-05-simple-guard.atl)
+                @Code(name: "LibraryTransform.atl", file: atl-02-step-06-simple-guard.atl)
 
                 This rule only transforms books published after 1950.
             }
@@ -70,7 +78,7 @@
             @Step {
                 Use helpers in guard conditions.
 
-                @Code(name: "LibraryTransform.atl", file: atl-02-step-06-helper-guard.atl)
+                @Code(name: "LibraryTransform.atl", file: atl-02-step-07-helper-guard.atl)
 
                 Guard conditions can call attribute helpers, combining reusable logic with selective application.
             }
@@ -78,7 +86,7 @@
             @Step {
                 Create multiple rules with different guards.
 
-                @Code(name: "LibraryTransform.atl", file: atl-02-step-07-multiple-guards.atl)
+                @Code(name: "LibraryTransform.atl", file: atl-02-step-08-multiple-guards.atl)
 
                 Different rules handle different subsets of source elements based on their guards.
             }
@@ -86,9 +94,33 @@
             @Step {
                 Build a complete transformation with helpers and guards.
 
-                @Code(name: "LibraryTransform.atl", file: atl-02-step-08-complete-transformation.atl)
+                @Code(name: "LibraryTransform.atl", file: atl-02-step-09-complete-transformation.atl)
 
                 The complete transformation demonstrates how helpers and guards work together to create sophisticated model transformations.
+            }
+
+            @Step {
+                Create a sample library with two authors and four books to transform.
+
+                @Code(name: "library.xmi", file: atl-02-step-10-sample-library.xmi)
+
+                The books were published in three centuries, two before 1950 and two after it. Each book refers to its author by position among the root elements: `/0` is the first author and `/1` the second. A model with more than one root element wraps them in an `xmi:XMI` element.
+            }
+
+            @Step {
+                Validate the new files and run the complete transformation on the sample library.
+
+                @Code(name: "Terminal", file: atl-02-step-11-run-complete.sh)
+
+                `--source IN=library.xmi` binds the model IN of the `create` line to the sample library, and `--target OUT=catalog.xmi` names the file that receives the model OUT. swift-atl finds `Library.ecore` and `Catalog.ecore` beside the transformation through its `-- @path` directives.
+            }
+
+            @Step {
+                Look at the catalogue that the transformation wrote.
+
+                @Code(name: "catalog.xmi", file: atl-02-step-12-catalog.xmi)
+
+                The Lantern Keeper and Winter Ledger appeared before 1950, so the guard of ClassicBook holds for them, and the other two books match ModernBook. Each description combines the helpers: `formatYear` names the century of the year, and `publicationInfo` adds the name of the author.
             }
         }
     }

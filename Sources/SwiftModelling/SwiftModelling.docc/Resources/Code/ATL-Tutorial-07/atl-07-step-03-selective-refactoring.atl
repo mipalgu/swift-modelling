@@ -1,7 +1,7 @@
 -- @path Model=/Model/Model.ecore
 
 module RefiningExample;
-refining Model;
+create OUT: Model refining IN: Model;
 
 -- Only transform elements matching criteria
 rule UpdateSpecificElements {

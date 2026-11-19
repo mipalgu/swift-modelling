@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:mtg="http://www.example.org/multisource/target" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <mtg:Item name="Kitchen" source="ModelA"/>
+    <mtg:Item name="Garden" source="ModelA"/>
+    <mtg:Item name="Tiles" source="ModelB"/>
+    <mtg:Item name="Seeds" source="ModelB"/>
+    <mtg:Item name="Paint" source="ModelB"/>
+    <mtg:Combined nameA="Kitchen" nameB="Tiles" combined="Kitchen + Tiles"/>
+    <mtg:Combined nameA="Kitchen" nameB="Seeds" combined="Kitchen + Seeds"/>
+    <mtg:Combined nameA="Kitchen" nameB="Paint" combined="Kitchen + Paint"/>
+    <mtg:Combined nameA="Garden" nameB="Tiles" combined="Garden + Tiles"/>
+    <mtg:Combined nameA="Garden" nameB="Seeds" combined="Garden + Seeds"/>
+    <mtg:Combined nameA="Garden" nameB="Paint" combined="Garden + Paint"/>
+</xmi:XMI>

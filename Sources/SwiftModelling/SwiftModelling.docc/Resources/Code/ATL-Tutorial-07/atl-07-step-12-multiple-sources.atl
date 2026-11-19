@@ -6,4 +6,4 @@ module MultiModelExample;
 create OUT: Target from INA: ModelA, INB: ModelB;
 
 -- Access elements from both source models
--- Use INA!Type and INB!Type to distinguish sources
+-- Use ModelA!Type and ModelB!Type, the metamodels of INA and INB

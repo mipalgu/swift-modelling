@@ -26,9 +26,17 @@
             }
 
             @Step {
+                Create the target metamodel for the report that the complete transformation produces.
+
+                @Code(name: "Report.ecore", file: atl-05-step-02-report-metamodel.ecore)
+
+                The rule DepartmentToReport at the end of this tutorial creates a DepartmentReport of the Report metamodel for each department. It binds `name` and `statistics` to strings, and `employees` to the result of `collect`, one line of text for each employee, so `employees` is a many-valued `EString` attribute rather than a reference. The earlier steps define only helpers, which create no target elements, so this metamodel serves every transformation of the tutorial. Save it beside Organisation.ecore, where the `-- @path` directives of the transformations find it.
+            }
+
+            @Step {
                 Use navigation expressions.
 
-                @Code(name: "OrganisationTransform.atl", file: atl-05-step-02-navigation.atl)
+                @Code(name: "OrganisationTransform.atl", file: atl-05-step-03-navigation.atl)
 
                 Navigate through relationships using `.`, which also reaches a many-valued reference such as `self.employees`, and call collection operations such as `collect` and `size` with `->`.
             }
@@ -36,7 +44,7 @@
             @Step {
                 Apply type checking operations.
 
-                @Code(name: "OrganisationTransform.atl", file: atl-05-step-03-type-checking.atl)
+                @Code(name: "OrganisationTransform.atl", file: atl-05-step-04-type-checking.atl)
 
                 Use `oclIsTypeOf` for exact type matches and `oclIsKindOf` for subtype matches.
             }
@@ -44,7 +52,7 @@
             @Step {
                 Perform type casting with `oclAsType`, checking the type first.
 
-                @Code(name: "OrganisationTransform.atl", file: atl-05-step-04-type-casting.atl)
+                @Code(name: "OrganisationTransform.atl", file: atl-05-step-05-type-casting.atl)
 
                 `oclAsType(Organisation!Manager)` states that the employee is a Manager, so that `teamSize` can be read. The cast converts nothing: if the object is a Manager, or an instance of a subclass of Manager, it returns the same object. If it is not, swift-atl stops the transformation with a type error, and an undefined value stays undefined. The helper therefore checks with `oclIsKindOf`, which accepts exactly the objects that the cast accepts, and returns 0 for every other employee.
             }
@@ -52,7 +60,7 @@
             @Step {
                 Create a sample department to try the cast on.
 
-                @Code(name: "organisation.xmi", file: atl-05-step-05-sample-organisation.xmi)
+                @Code(name: "organisation.xmi", file: atl-05-step-06-sample-organisation.xmi)
 
                 The department has two managers and one developer. The `xsi:type` attribute of each employee names its concrete class.
             }
@@ -60,7 +68,7 @@
             @Step {
                 Write a query that reports the team size of every employee with the checked cast.
 
-                @Code(name: "TeamSizes.atl", file: atl-05-step-06-guarded-query.atl)
+                @Code(name: "TeamSizes.atl", file: atl-05-step-07-guarded-query.atl)
 
                 A query unit starts with `query Name = expression;` instead of a module header and may define helpers, so you can evaluate an expression over a model without a target metamodel. `Organisation!Employee.allInstances()` returns every employee of the model, managers and developers alike.
             }
@@ -68,7 +76,7 @@
             @Step {
                 Evaluate the query with swift-atl.
 
-                @Code(name: "Terminal", file: atl-05-step-07-run-guarded.sh)
+                @Code(name: "Terminal", file: atl-05-step-08-run-guarded.sh)
 
                 `swift-atl query` binds the model to the Organisation metamodel named by the `-- @path` directive and prints the value of the query. Ben Okafor is a Developer, so the check fails for him and the helper returns 0 without casting.
             }
@@ -76,7 +84,7 @@
             @Step {
                 Write the same query without the check, casting every employee.
 
-                @Code(name: "UncheckedTeamSizes.atl", file: atl-05-step-08-unchecked-query.atl)
+                @Code(name: "UncheckedTeamSizes.atl", file: atl-05-step-09-unchecked-query.atl)
 
                 The cast is correct for the two managers, but not for the developer.
             }
@@ -84,7 +92,7 @@
             @Step {
                 Evaluate the unchecked query.
 
-                @Code(name: "Terminal", file: atl-05-step-09-run-unchecked.sh)
+                @Code(name: "Terminal", file: atl-05-step-10-run-unchecked.sh)
 
                 The cast of Ben Okafor fails, and swift-atl reports the type error and exits with a non-zero status. Nothing else is printed: the error ends the whole query, not just the value for one employee. In a transformation, the same error ends the run before the target model is written. So an unchecked cast is only safe where the type is already certain, for example because the rule's source pattern or guard has established it.
             }
@@ -102,7 +110,7 @@
             @Step {
                 Use string operations.
 
-                @Code(name: "OrganisationTransform.atl", file: atl-05-step-10-string-operations.atl)
+                @Code(name: "OrganisationTransform.atl", file: atl-05-step-11-string-operations.atl)
 
                 OCL string operations include `concat`, `substring`, `toUpper`, `toLower`, and `size`.
             }
@@ -110,7 +118,7 @@
             @Step {
                 Apply numeric operations and comparisons.
 
-                @Code(name: "OrganisationTransform.atl", file: atl-05-step-11-numeric-operations.atl)
+                @Code(name: "OrganisationTransform.atl", file: atl-05-step-12-numeric-operations.atl)
 
                 Numeric operations include arithmetic, comparison, and aggregate functions like `sum`, `min`, and `max`.
             }
@@ -118,7 +126,7 @@
             @Step {
                 Combine complex collection operations.
 
-                @Code(name: "OrganisationTransform.atl", file: atl-05-step-12-complex-collections.atl)
+                @Code(name: "OrganisationTransform.atl", file: atl-05-step-13-complex-collections.atl)
 
                 Chain collection operations and use advanced queries like `flatten`, `union`, and `intersection`.
             }
@@ -126,7 +134,7 @@
             @Step {
                 Build a complete transformation with advanced OCL.
 
-                @Code(name: "OrganisationTransform.atl", file: atl-05-step-13-complete-transformation.atl)
+                @Code(name: "OrganisationTransform.atl", file: atl-05-step-14-complete-transformation.atl)
 
                 The complete transformation demonstrates sophisticated OCL expressions in a practical context.
             }

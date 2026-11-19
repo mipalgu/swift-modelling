@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tgt:Item xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:tgt="http://www.example.org/optimisation/target" name="Backlog" count="3">
+    <names>Login page</names>
+    <names>Search</names>
+    <names>Release notes</names>
+</tgt:Item>
