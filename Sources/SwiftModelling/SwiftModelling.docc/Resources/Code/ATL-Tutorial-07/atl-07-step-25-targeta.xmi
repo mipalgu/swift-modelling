@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:tga="http://www.example.org/multitarget/targeta" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <tga:ItemA name="Morning shift"/>
+    <tga:ItemA name="Evening shift"/>
+</xmi:XMI>

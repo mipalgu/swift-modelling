@@ -18,9 +18,25 @@
 
         @Steps {
             @Step {
+                Create the source metamodel that the transformations of this tutorial read.
+
+                @Code(name: "Source.ecore", file: atl-08-step-01-source-metamodel.ecore)
+
+                The transformations of this tutorial read Containers, each with a `name` and a list of `elements`. An Element has a `name`, an `active` flag and an integer `priority`, and a SpecialElement is an Element with a `specialValue` of its own. The helpers filter and count the elements of a container by these features. Save it as Source.ecore, where the `-- @path` directives of the transformations find it.
+            }
+
+            @Step {
+                Create the target metamodel for the items that the transformations produce.
+
+                @Code(name: "Target.ecore", file: atl-08-step-02-target-metamodel.ecore)
+
+                The rules of this tutorial create Items and SpecialItems of the Target metamodel. An Item binds `name`, the integer `count` and `names`, which receives one string for each active element, so `names` is a many-valued `EString` attribute rather than a reference. A SpecialItem binds `name` and `specialProperty`, both strings. Save it as Target.ecore beside Source.ecore.
+            }
+
+            @Step {
                 Identify inefficient patterns.
 
-                @Code(name: "OptimisationExample.atl", file: atl-08-step-01-inefficient-patterns.atl)
+                @Code(name: "OptimisationExample.atl", file: atl-08-step-03-inefficient-patterns.atl)
 
                 Common anti-patterns include nested iterations, redundant filtering, and repeated collection traversals.
             }
@@ -28,7 +44,7 @@
             @Step {
                 Cache expensive computations.
 
-                @Code(name: "OptimisationExample.atl", file: atl-08-step-02-caching-results.atl)
+                @Code(name: "OptimisationExample.atl", file: atl-08-step-04-caching-results.atl)
 
                 Store expensive computation results in helpers to avoid recalculation.
             }
@@ -36,7 +52,7 @@
             @Step {
                 Optimise collection operations.
 
-                @Code(name: "OptimisationExample.atl", file: atl-08-step-03-optimised-collections.atl)
+                @Code(name: "OptimisationExample.atl", file: atl-08-step-05-optimised-collections.atl)
 
                 Combine operations and avoid unnecessary intermediate collections.
             }
@@ -44,7 +60,7 @@
             @Step {
                 Use appropriate rule types.
 
-                @Code(name: "OptimisationExample.atl", file: atl-08-step-04-efficient-rules.atl)
+                @Code(name: "OptimisationExample.atl", file: atl-08-step-06-efficient-rules.atl)
 
                 Choose matched, lazy, or called rules based on transformation requirements.
             }
@@ -62,7 +78,7 @@
             @Step {
                 Minimise helper call overhead.
 
-                @Code(name: "OptimisationExample.atl", file: atl-08-step-05-helper-optimisation.atl)
+                @Code(name: "OptimisationExample.atl", file: atl-08-step-07-helper-optimisation.atl)
 
                 Reduce the number of helper calls in performance-critical sections.
             }
@@ -70,7 +86,7 @@
             @Step {
                 Avoid unnecessary type checking.
 
-                @Code(name: "OptimisationExample.atl", file: atl-08-step-06-type-optimisation.atl)
+                @Code(name: "OptimisationExample.atl", file: atl-08-step-08-type-optimisation.atl)
 
                 Use guard conditions instead of repeated type checks in bindings.
             }
@@ -78,7 +94,7 @@
             @Step {
                 Profile and measure improvements.
 
-                @Code(name: "OptimisationExample.atl", file: atl-08-step-07-profiling.atl)
+                @Code(name: "OptimisationExample.atl", file: atl-08-step-09-profiling.atl)
 
                 Measure transformation performance to identify actual bottlenecks.
             }
@@ -86,9 +102,33 @@
             @Step {
                 Build an optimised transformation.
 
-                @Code(name: "OptimisationExample.atl", file: atl-08-step-08-complete-optimised.atl)
+                @Code(name: "OptimisationExample.atl", file: atl-08-step-10-complete-optimised.atl)
 
                 The complete transformation demonstrates all optimisation techniques working together.
+            }
+
+            @Step {
+                Create a sample backlog with four elements, and an empty archive, to transform.
+
+                @Code(name: "source.xmi", file: atl-08-step-11-sample-source.xmi)
+
+                Dark mode sets no `active` flag, so it reads as false, the default of a Boolean attribute. Release notes is a SpecialElement, so its `xsi:type` attribute names that class. The Archive container has no elements. A model with more than one root element wraps them in an `xmi:XMI` element.
+            }
+
+            @Step {
+                Validate the new files and run the complete transformation on the sample backlog.
+
+                @Code(name: "Terminal", file: atl-08-step-12-run-complete.sh)
+
+                `--source IN=source.xmi` binds the model IN of the `create` line to the sample model, and `--target OUT=target.xmi` names the file that receives the model OUT. swift-atl finds `Source.ecore` and `Target.ecore` beside the transformation through its `-- @path` directives.
+            }
+
+            @Step {
+                Look at the target model that the transformation wrote.
+
+                @Code(name: "target.xmi", file: atl-08-step-13-target.xmi)
+
+                The guard of OptimisedTransform skips the empty Archive, so the transformation creates a single Item, for the Backlog. Its `count` is the number of active elements, 3, and `names` holds their names in order, leaving out the inactive Dark mode. A model with a single root element needs no `xmi:XMI` element.
             }
         }
     }

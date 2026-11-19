@@ -1,7 +1,7 @@
 -- @path Model=/Model/Model.ecore
 
 module RefiningExample;
-refining Model;
+create OUT: Model refining IN: Model;
 
 -- Helper to identify elements needing refactoring
 helper context Model!Element def: needsRefactoring(): Boolean =

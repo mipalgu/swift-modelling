@@ -322,7 +322,7 @@ swift-atl transform Families2Persons.atl --validate-only \
 
 Beyond `validate` and `transform`, the tool offers `parse` to
 display the structure of a transformation, `analyze` for
-complexity metrics, `test` to run tests over files or a directory,
+complexity metrics, `test` to check that the files of a directory parse,
 `compile` to compile a transformation, `query` to evaluate an ATL
 query and write the files it produces, and `generate` to create
 generator models and source code from Ecore models. See

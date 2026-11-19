@@ -12,7 +12,7 @@ rule CoordinatedTransform {
     to
         t: Target!Item (
             nameFromA <- a.name,
-            relatedB <- INB!ElementB.allInstances()
+            relatedB <- ModelB!ElementB.allInstancesFrom('INB')
                 ->select(b | b.refId = a.id)
                 ->collect(b | b.name)
         )

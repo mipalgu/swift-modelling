@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<src:Container xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:src="http://www.example.org/debugging/source" children="//@elements.1 //@elements.2">
+  <elements name="Garden" description="The whole garden" items="//@elements.1 //@elements.2"/>
+  <elements name="Vegetable Bed" parent="//@elements.0"/>
+  <elements name="Herb Spiral" description="Rosemary, thyme and sage" parent="//@elements.0"/>
+</src:Container>

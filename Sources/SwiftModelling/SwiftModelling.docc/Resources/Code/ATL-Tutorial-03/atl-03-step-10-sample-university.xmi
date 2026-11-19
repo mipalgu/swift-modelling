@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:uni="http://www.example.org/university">
+  <uni:Department name="Physics">
+    <courses code="PHYS101" title="Mechanics" credits="4" level="100"/>
+    <courses code="PHYS301" title="Optics" credits="4" level="300"/>
+    <courses code="PHYS501" title="Quantum Field Theory" credits="6" level="500"/>
+  </uni:Department>
+  <uni:Department name="History">
+    <courses code="HIST101" title="World History" credits="3" level="100"/>
+    <courses code="HIST210" title="Ancient Rome" credits="3" level="200"/>
+  </uni:Department>
+</xmi:XMI>

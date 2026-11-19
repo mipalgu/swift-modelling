@@ -71,7 +71,7 @@ public struct ModellingConfiguration: Sendable, Equatable {
     /// ``UnsetFeatureOptions``, ``SourceEncodingOptions``, ``OutputEncodingOptions``,
     /// ``KM3Options``, ``GrammarImportOptions``, ``LevelCrossingOptions``,
     /// ``CompleteOCLOptions``, ``ReferenceStyleOptions``, ``DocumentURIOptions``,
-    /// ``SiblingRuleConflictOptions``, ``CodeStyleOptions`` and ``GenModelDefaultsOptions``
+    /// ``SiblingRuleConflictOptions``, ``SubRulePrecedenceOptions``, ``CodeStyleOptions`` and ``GenModelDefaultsOptions``
     /// define, and the names of ``ValidationOptionName`` and ``MatchingOptionName``.
     public static let keys: [String] = [
         SemanticsOptions.OptionName.semantics,
@@ -91,6 +91,7 @@ public struct ModellingConfiguration: Sendable, Equatable {
         ATLSemanticsOptions.OptionName.integerDivision,
         ATLSemanticsOptions.OptionName.bagRepresentation,
         SiblingRuleConflictOptions.optionName,
+        SubRulePrecedenceOptions.optionName,
         SemanticsOptions.OptionName.containerScope,
         LetTypeMismatchOptions.optionName,
         UnsetFeatureOptions.optionName,
@@ -177,6 +178,10 @@ public struct ModellingConfiguration: Sendable, Equatable {
     /// What a source element that two sub-rules of the same ATL rule both match gives
     /// (`sibling-rule-conflicts`).
     public var siblingRuleConflicts: ATLSiblingRuleConflicts?
+
+    /// Which ATL rule transforms a source element that a rule and a rule extending it both match
+    /// (`sub-rule-precedence`).
+    public var subRulePrecedence: ATLSubRulePrecedence?
 
     /// The objects whose containers a model answers for (`container-scope`).
     public var containerLookupScope: ContainerLookupScope?
@@ -338,6 +343,7 @@ public struct ModellingConfiguration: Sendable, Equatable {
         integerDivision = try reader.value(of: ATLSemanticsOptions.OptionName.integerDivision)
         bagRepresentation = try reader.value(of: ATLSemanticsOptions.OptionName.bagRepresentation)
         siblingRuleConflicts = try reader.value(of: SiblingRuleConflictOptions.optionName)
+        subRulePrecedence = try reader.value(of: SubRulePrecedenceOptions.optionName)
         containerLookupScope = try reader.value(of: SemanticsOptions.OptionName.containerScope)
         letTypeMismatches = try reader.value(of: LetTypeMismatchOptions.optionName)
         unsetFeatures = try reader.value(of: UnsetFeatureOptions.optionName)

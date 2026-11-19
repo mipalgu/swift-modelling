@@ -129,6 +129,8 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
 
             \(SiblingRuleConflictOptions.discussion(reader: "the transformation"))
 
+            \(SubRulePrecedenceOptions.discussion(reader: "the transformation"))
+
             \(SourceEncodingOptions.discussion(reader: "the transformation"))
 
             \(OutputEncodingOptions.discussion(writer: "the target models"))
@@ -266,6 +268,10 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
     @OptionGroup(title: "Evaluation")
     var siblingRuleConflictOptions: SiblingRuleConflictOptions
 
+    /// Which rule transforms a source element that a rule and a rule extending it both match.
+    @OptionGroup(title: "Evaluation")
+    var subRulePrecedenceOptions: SubRulePrecedenceOptions
+
     /// The preset of the behaviours, standard or that of version 0.6.
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
@@ -295,6 +301,7 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
         let settings = try semanticsOptions.settings()
         var atlOptions = atlSemanticsOptions.atlOptions(settings: settings)
         siblingRuleConflictOptions.apply(to: &atlOptions, settings: settings)
+        subRulePrecedenceOptions.apply(to: &atlOptions, settings: settings)
         if verbose {
             print("Starting ATL transformation: \(transformation)")
             print("Source model files: \(source)")

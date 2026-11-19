@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:lib="http://www.example.org/library">
+  <lib:Author name="Harriet Quill" birthYear="1862"/>
+  <lib:Author name="Jonah Brightwater" birthYear="1951"/>
+  <lib:Book title="The Lantern Keeper" isbn="LIB-0001" yearPublished="1894" author="/0"/>
+  <lib:Book title="Winter Ledger" isbn="LIB-0002" yearPublished="1931" author="/0"/>
+  <lib:Book title="Northern Tides" isbn="LIB-0003" yearPublished="1978" author="/1"/>
+  <lib:Book title="Glass Orchard" isbn="LIB-0004" yearPublished="2015" author="/1"/>
+</xmi:XMI>

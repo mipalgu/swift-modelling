@@ -1,7 +1,7 @@
 -- @path Model=/Model/Model.ecore
 
 module RefiningExample;
-refining Model;
+create OUT: Model refining IN: Model;
 
 -- Refining mode: unmatched elements copied automatically
 -- Only transform specific elements

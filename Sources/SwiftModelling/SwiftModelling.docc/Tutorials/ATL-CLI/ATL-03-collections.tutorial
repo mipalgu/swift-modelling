@@ -26,9 +26,17 @@
             }
 
             @Step {
+                Create the target metamodel for the catalogue that the transformation produces.
+
+                @Code(name: "Catalog.ecore", file: atl-03-step-02-catalog-metamodel.ecore)
+
+                The complete transformation at the end of this tutorial turns each Department into a Program of the Catalog metamodel. Its rules bind `name` to the name of the department and `type` to `'Graduate'` or `'Undergraduate'`, both strings, and `totalCredits` to the sum of the credits of the courses, an integer. Each Program is a root element of the catalogue, so the metamodel needs no containment reference. Save it beside University.ecore, where the `-- @path` directives of the transformations find both metamodels.
+            }
+
+            @Step {
                 Use `collect` to extract values from collections.
 
-                @Code(name: "UniversityTransform.atl", file: atl-03-step-02-collect-operation.atl)
+                @Code(name: "UniversityTransform.atl", file: atl-03-step-03-collect-operation.atl)
 
                 `self.courses->collect(c | c.title)` evaluates `c.title` once for each course and returns a new collection of the titles, one for each course. The result does not have to be a set of distinct values, so collecting from a Sequence or an OrderedSet gives a Sequence in the same order, and collecting from a Set or a Bag gives a Bag. For a department whose courses have 4, 4 and 2 credits, `collect(c | c.credits)` gives `Sequence{4, 4, 2}`, keeping both fours. `collect` never reduces the collection to a single value: to do that, follow it with an operation such as `sum()`, which turns that Sequence into 10, as the complete transformation does with the credits of the courses. If the expression itself returns a collection, swift-atl adds its elements to the result one by one, as OCL specifies; Eclipse ATL keeps such collections nested, so write `->flatten()` after `collect` when a transformation must behave the same in both.
             }
@@ -36,7 +44,7 @@
             @Step {
                 Use `select` to filter collections.
 
-                @Code(name: "UniversityTransform.atl", file: atl-03-step-03-select-operation.atl)
+                @Code(name: "UniversityTransform.atl", file: atl-03-step-04-select-operation.atl)
 
                 The `select` operation creates a new collection containing only elements that satisfy a condition.
             }
@@ -44,7 +52,7 @@
             @Step {
                 Use `reject` for inverse filtering.
 
-                @Code(name: "UniversityTransform.atl", file: atl-03-step-04-reject-operation.atl)
+                @Code(name: "UniversityTransform.atl", file: atl-03-step-05-reject-operation.atl)
 
                 The `reject` operation is the opposite of `select`, excluding elements that match the condition.
             }
@@ -62,7 +70,7 @@
             @Step {
                 Use `exists` to test if any element matches.
 
-                @Code(name: "UniversityTransform.atl", file: atl-03-step-05-exists-operation.atl)
+                @Code(name: "UniversityTransform.atl", file: atl-03-step-06-exists-operation.atl)
 
                 The `exists` operation returns true if at least one element satisfies the condition.
             }
@@ -70,7 +78,7 @@
             @Step {
                 Use `forAll` to test if all elements match.
 
-                @Code(name: "UniversityTransform.atl", file: atl-03-step-06-forall-operation.atl)
+                @Code(name: "UniversityTransform.atl", file: atl-03-step-07-forall-operation.atl)
 
                 The `forAll` operation returns true only if every element satisfies the condition.
             }
@@ -78,7 +86,7 @@
             @Step {
                 Combine collection operations.
 
-                @Code(name: "UniversityTransform.atl", file: atl-03-step-07-combined-operations.atl)
+                @Code(name: "UniversityTransform.atl", file: atl-03-step-08-combined-operations.atl)
 
                 Chain multiple operations together for complex collection processing.
             }
@@ -86,9 +94,33 @@
             @Step {
                 Build a complete transformation with collection operations.
 
-                @Code(name: "UniversityTransform.atl", file: atl-03-step-08-complete-transformation.atl)
+                @Code(name: "UniversityTransform.atl", file: atl-03-step-09-complete-transformation.atl)
 
                 The complete transformation demonstrates practical collection manipulation in model transformations.
+            }
+
+            @Step {
+                Create a sample university with two departments to transform.
+
+                @Code(name: "university.xmi", file: atl-03-step-10-sample-university.xmi)
+
+                Physics offers a course at level 500 and History offers none, so each of the two rules matches one department. A model with more than one root element wraps them in an `xmi:XMI` element.
+            }
+
+            @Step {
+                Validate the new files and run the complete transformation on the sample university.
+
+                @Code(name: "Terminal", file: atl-03-step-11-run-complete.sh)
+
+                `--source IN=university.xmi` binds the model IN of the `create` line to the sample university, and `--target OUT=catalog.xmi` names the file that receives the model OUT. swift-atl finds `University.ecore` and `Catalog.ecore` beside the transformation through its `-- @path` directives.
+            }
+
+            @Step {
+                Look at the catalogue that the transformation wrote.
+
+                @Code(name: "catalog.xmi", file: atl-03-step-12-catalog.xmi)
+
+                Physics has a graduate course, so the rule GraduateDepartment created its Program, with 4 + 4 + 6 = 14 credits. History has none, so UndergraduateDepartment created its Program, with 3 + 3 = 6 credits.
             }
         }
     }

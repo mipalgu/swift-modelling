@@ -13,82 +13,236 @@
         @ContentAndMedia {
             Refining mode enables in-place transformations where unmatched elements are automatically copied to the output. This is useful for model refactoring and partial transformations.
 
-            Declare refining mode with `refining` instead of `create` in the module header.
+            Declare refining mode in the module header with `refining` in place of `from`, as in `create OUT: Model refining IN: Model;`. The target model OUT starts as a copy of the source model IN and conforms to the same metamodel.
         }
 
         @Steps {
             @Step {
+                Create the metamodel that the refining transformations read and write.
+
+                @Code(name: "Model.ecore", file: atl-07-step-01-model-metamodel.ecore)
+
+                A refining transformation reads and writes models of one metamodel. A Container holds its Elements in `elements` and the Summaries that a lazy rule adds in `summaries`. An Element has a `name`, an integer `version` and a `deprecated` flag, and a Summary records the `elementName` of an element. Save it as Model.ecore, where the `-- @path` directives of the transformations find it.
+            }
+
+            @Step {
                 Understand refining mode syntax.
 
-                @Code(name: "RefiningExample.atl", file: atl-07-step-01-refining-mode.atl)
+                @Code(name: "RefiningExample.atl", file: atl-07-step-02-refining-mode.atl)
 
-                Refining mode uses `refining` and automatically copies unmatched elements.
+                The header `create OUT: Model refining IN: Model;` declares a refining transformation, which automatically copies unmatched elements. Without any rules, OUT is an unchanged copy of IN.
             }
 
             @Step {
                 Refactor model elements selectively.
 
-                @Code(name: "RefiningExample.atl", file: atl-07-step-02-selective-refactoring.atl)
+                @Code(name: "RefiningExample.atl", file: atl-07-step-03-selective-refactoring.atl)
 
-                Only matched elements are transformed; others pass through unchanged.
+                Only matched elements are transformed; others pass through unchanged. In refining mode the target pattern element `t` denotes the matched element itself, so the rule raises the version of each element older than version 2 in place.
             }
 
             @Step {
                 Combine matched and lazy rules in refining mode.
 
-                @Code(name: "RefiningExample.atl", file: atl-07-step-03-refining-with-lazy.atl)
+                @Code(name: "RefiningExample.atl", file: atl-07-step-04-refining-with-lazy.atl)
 
-                Use lazy rules to create new elements whilst refactoring existing ones.
+                Use lazy rules to create new elements whilst refactoring existing ones. The matched rule SummariseContainer refines each container in place, calling the lazy rule CreateSummary for each of its elements to add a new Summary to its summaries.
             }
 
             @Step {
                 Build a complete refactoring transformation.
 
-                @Code(name: "RefiningExample.atl", file: atl-07-step-04-complete-refactoring.atl)
+                @Code(name: "RefiningExample.atl", file: atl-07-step-05-complete-refactoring.atl)
 
-                This transformation demonstrates practical model refactoring using refining mode.
+                This transformation demonstrates practical model refactoring using refining mode: it renames each deprecated element and clears its flag, and copies every other element unchanged.
+            }
+
+            @Step {
+                Create a sample model with three elements to refine.
+
+                @Code(name: "model.xmi", file: atl-07-step-06-sample-model.xmi)
+
+                The Formatter is the only deprecated element. The Parser and the Scheduler set no `deprecated` flag, so it reads as false, the default of a Boolean attribute.
+            }
+
+            @Step {
+                Validate the new files and refine the sample model with the complete refactoring.
+
+                @Code(name: "Terminal", file: atl-07-step-07-run-refining.sh)
+
+                `--source IN=model.xmi` binds the source model IN of the header to the sample model, and `--target OUT=refined.xmi` names the file that receives the refined copy OUT. swift-atl takes refining mode from the header and finds `Model.ecore` beside the transformation through its `-- @path` directive.
+            }
+
+            @Step {
+                Look at the refined model that the transformation wrote.
+
+                @Code(name: "refined.xmi", file: atl-07-step-08-refined.xmi)
+
+                Only the Formatter has changed: it is now Updated_Formatter and no longer deprecated. The Parser and the Scheduler, which no rule matches, are copied as they are.
             }
         }
     }
 
-    @Section(title: "Multi-Model Transformations") {
+    @Section(title: "Multiple Source Models") {
         @ContentAndMedia {
-            Complex transformations may consume multiple source models or produce multiple target models. ATL supports arbitrary source/target model configurations.
+            Complex transformations may consume multiple source models. The module header names each source model with its metamodel, as in `create OUT: Target from INA: ModelA, INB: ModelB;`.
 
-            Declare multiple models in the module header and reference them by name in rules.
+            Rules refer to the types of a source model through its metamodel, such as `ModelA!ElementA`, and `allInstancesFrom` selects the instances of one model by its name.
         }
 
         @Steps {
             @Step {
-                Set up multiple source models.
+                Create the metamodel of the first source model.
 
-                @Code(name: "MultiModelExample.atl", file: atl-07-step-05-multiple-sources.atl)
+                @Code(name: "ModelA.ecore", file: atl-07-step-09-modela-metamodel.ecore)
 
-                Transformations can read from multiple source models simultaneously.
+                An ElementA has a `name` and an integer `id`, by which the elements of the second source model refer to it. Save it as ModelA.ecore, where the `-- @path` directives of the transformations find it.
             }
 
             @Step {
-                Generate multiple target models.
+                Create the metamodel of the second source model.
 
-                @Code(name: "MultiModelExample.atl", file: atl-07-step-06-multiple-targets.atl)
+                @Code(name: "ModelB.ecore", file: atl-07-step-10-modelb-metamodel.ecore)
 
-                Rules can create elements in different target models based on transformation logic.
+                An ElementB has a `name` and a `refId`, the id of the ElementA that it belongs to. Save it as ModelB.ecore beside ModelA.ecore.
+            }
+
+            @Step {
+                Create the target metamodel that combines the two source models.
+
+                @Code(name: "Target.ecore", file: atl-07-step-11-target-metamodel.ecore)
+
+                The rules of this section create Items and Combined elements. An Item has a `name` and the `source` model that it comes from, and the coordinating rule fills `nameFromA` and `relatedB`, which receives one name for each related ElementB and so is a many-valued `EString` attribute. A Combined element holds `nameA`, `nameB` and the `combined` text. Save it as Target.ecore.
+            }
+
+            @Step {
+                Set up multiple source models.
+
+                @Code(name: "MultiModelExample.atl", file: atl-07-step-12-multiple-sources.atl)
+
+                Transformations can read from multiple source models simultaneously. The header binds INA to ModelA and INB to ModelB, and every type in a rule names its metamodel, never its model.
             }
 
             @Step {
                 Coordinate rules across models.
 
-                @Code(name: "MultiModelExample.atl", file: atl-07-step-07-cross-model-rules.atl)
+                @Code(name: "MultiModelExample.atl", file: atl-07-step-13-cross-model-rules.atl)
 
-                Complex transformations coordinate multiple rules that work across different models.
+                Complex transformations coordinate multiple rules that work across different models. For each ElementA, `ModelB!ElementB.allInstancesFrom('INB')` collects the elements of the source model INB, and the rule keeps the names of those whose refId is the id of the ElementA.
             }
 
             @Step {
                 Build a complete multi-model transformation.
 
-                @Code(name: "MultiModelExample.atl", file: atl-07-step-08-complete-multi-model.atl)
+                @Code(name: "MultiModelExample.atl", file: atl-07-step-14-complete-multi-model.atl)
 
-                This transformation demonstrates sophisticated multi-model processing.
+                This transformation demonstrates sophisticated multi-model processing. TransformA and TransformB turn the elements of each source model into Items, and CombineModels, whose source pattern takes one element from each model, creates a Combined element for every pair of an ElementA and an ElementB.
+            }
+
+            @Step {
+                Create a sample model for the first source model.
+
+                @Code(name: "modela.xmi", file: atl-07-step-15-sample-modela.xmi)
+
+                The Kitchen and the Garden are two rooms, each with its id. A model with more than one root element wraps them in an `xmi:XMI` element.
+            }
+
+            @Step {
+                Create a sample model for the second source model.
+
+                @Code(name: "modelb.xmi", file: atl-07-step-16-sample-modelb.xmi)
+
+                Three materials name the room they belong to by its id: the Tiles and the Paint belong to the Kitchen, and the Seeds to the Garden.
+            }
+
+            @Step {
+                Validate the new files and run the complete transformation on both sample models.
+
+                @Code(name: "Terminal", file: atl-07-step-17-run-multiple-sources.sh)
+
+                The transformation reads two source models, so the command gives one `--source` option for each: `INA=modela.xmi` and `INB=modelb.xmi` bind the models of the header to the sample models, and `--target OUT=target.xmi` names the file that receives the model OUT.
+            }
+
+            @Step {
+                Look at the target model that the transformation wrote.
+
+                @Code(name: "target.xmi", file: atl-07-step-18-target.xmi)
+
+                Each room and each material becomes an Item that records its source model. CombineModels has no guard, so it creates a Combined element for each of the six pairs of a room and a material, not only for the materials that belong to the room; a guard such as `(b.refId = a.id)` would keep only those.
+            }
+        }
+    }
+
+    @Section(title: "Multiple Target Models") {
+        @ContentAndMedia {
+            Complex transformations may also produce multiple target models. The module header names each target model with its metamodel, as in `create OUTA: TargetA, OUTB: TargetB from IN: Source;`.
+
+            Each element that a rule creates goes to the target model of the metamodel of its type, so one rule can create elements in several target models.
+        }
+
+        @Steps {
+            @Step {
+                Create the source metamodel of the transformation.
+
+                @Code(name: "Source.ecore", file: atl-07-step-19-source-metamodel.ecore)
+
+                An Element has a `name`. Save it as Source.ecore, where the `-- @path` directives of the transformation find it.
+            }
+
+            @Step {
+                Create the metamodel of the first target model.
+
+                @Code(name: "TargetA.ecore", file: atl-07-step-20-targeta-metamodel.ecore)
+
+                An ItemA has a `name`. Save it as TargetA.ecore beside Source.ecore.
+            }
+
+            @Step {
+                Create the metamodel of the second target model.
+
+                @Code(name: "TargetB.ecore", file: atl-07-step-21-targetb-metamodel.ecore)
+
+                An ItemB has a `title` in place of a name. Save it as TargetB.ecore beside the other metamodels.
+            }
+
+            @Step {
+                Generate multiple target models.
+
+                @Code(name: "MultiModelExample.atl", file: atl-07-step-22-multiple-targets.atl)
+
+                Rules can create elements in different target models based on transformation logic. ToTargets creates an ItemA, which goes to OUTA, and an ItemB, which goes to OUTB, from each Element. A single rule with two target pattern elements does this, because only one matched rule may transform a source element: two rules that both match `Source!Element` would stop the run with a rule conflict.
+            }
+
+            @Step {
+                Create a sample model with two elements to transform.
+
+                @Code(name: "source.xmi", file: atl-07-step-23-sample-source.xmi)
+
+                The two shifts are Elements with a name each. A model with more than one root element wraps them in an `xmi:XMI` element.
+            }
+
+            @Step {
+                Validate the new files and run the transformation on the sample model.
+
+                @Code(name: "Terminal", file: atl-07-step-24-run-multiple-targets.sh)
+
+                The transformation writes two target models, so the command gives one `--target` option for each: `OUTA=targeta.xmi` and `OUTB=targetb.xmi` name the files that receive the models of the header, and `--source IN=source.xmi` binds the source model to the sample.
+            }
+
+            @Step {
+                Look at the first target model that the transformation wrote.
+
+                @Code(name: "targeta.xmi", file: atl-07-step-25-targeta.xmi)
+
+                OUTA holds one ItemA for each Element, with the name of the Element.
+            }
+
+            @Step {
+                Look at the second target model that the transformation wrote.
+
+                @Code(name: "targetb.xmi", file: atl-07-step-26-targetb.xmi)
+
+                OUTB holds the corresponding ItemB for each Element, with the name of the Element as its title.
             }
         }
     }
@@ -157,23 +311,23 @@
                 By the order of rule definitions
 
                 @Justification(reaction: "Try again!") {
-                    Rule order doesn't determine target models. You explicitly specify the target model in each rule.
+                    Rule order doesn't determine target models. The type of each target pattern element does.
                 }
             }
 
             @Choice(isCorrect: true) {
-                By prefixing the type with the target model name
+                By the metamodel of the type of the target pattern element
 
                 @Justification(reaction: "Exactly!") {
-                    Use syntax like `OUT1!Type` or `OUT2!Type` to specify which target model should contain the created element.
+                    Each target model conforms to its own metamodel, so an element of type `TargetA!ItemA` goes to OUTA and one of type `TargetB!ItemB` goes to OUTB, even when the same rule creates both.
                 }
             }
 
             @Choice(isCorrect: false) {
-                ATL automatically decides based on metamodel
+                By prefixing the type with the target model name
 
                 @Justification(reaction: "Incorrect!") {
-                    You must explicitly specify the target model. ATL doesn't automatically determine it.
+                    The name before the `!` of a type always names a metamodel, such as TargetA, never a model such as OUTA.
                 }
             }
         }
