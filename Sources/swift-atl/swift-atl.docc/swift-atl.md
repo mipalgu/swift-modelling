@@ -79,6 +79,7 @@ swift-atl transform <transformation-file> [options]
 - `--integer-division <real|truncating>` - Whether `/` divides two Integers into a Real, so `7 / 2` is `3.5`, as in OCL and Eclipse ATL (`real`, the default), or truncates the quotient to an Integer as version 0.6 did (`truncating`)
 - `--bag-representation <bag|sequence>` - Whether `Bag{...}`, `asBag()` and `collect` on a Set give Bags, a collection kind of their own as in OCL and Eclipse ATL (`bag`, the default), or Sequences as in version 0.6 (`sequence`)
 - `--sibling-rule-conflicts <warning|error>` - What a source element that two rules extending the same rule both match gives: the first of them that applies, with a warning on standard error (`warning`, the default, or the `sibling-rule-conflicts` key of the configuration file), or an error that stops the run and writes no target (`error`); see Sub-rules below
+- `--sub-rule-precedence <eclipse|extending-rule>` - Which rule transforms a source element that a rule and a rule extending it both match: the rule with a guard before the extending rules that have none, as in Eclipse ATL (`eclipse`, the default of `--semantics standard`), or the extending rule (`extending-rule`, the default of `--semantics legacy`); the `sub-rule-precedence` key of the configuration file chooses it too; see Sub-rules below
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`); `--collection-range-syntax`, `--integer-division` and `--bag-representation` override it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none
@@ -192,6 +193,10 @@ swift-atl transform TaskNotes.atl --source models/tasks.xmi --target output/note
 swift-atl transform TaskNotes.atl --source models/tasks.xmi --target output/notes.xmi \
     --sibling-rule-conflicts error
 
+# Let a rule that extends another transform the elements that both match, as in version 0.6
+swift-atl transform TaskNotes.atl --source models/tasks.xmi --target output/notes.xmi \
+    --sub-rule-precedence extending-rule
+
 # Metamodel files by name rather than by position
 swift-atl transform Families2Persons.atl --source families.xmi --source-metamodel Families.ecore \
     --target persons.xmi --target-metamodel Persons=Persons.ecore
@@ -287,6 +292,7 @@ The command is the ATL entry to the shared generation pipeline. An Ecore model i
 - `--integer-division <real|truncating>` - Whether `/` in a transformation given with `--transformations` divides two Integers into a Real, as in OCL and Eclipse ATL (`real`, the default), or truncates the quotient as version 0.6 did (`truncating`)
 - `--bag-representation <bag|sequence>` - Whether `Bag{...}`, `asBag()` and `collect` on a Set in a transformation given with `--transformations` give Bags, as in OCL and Eclipse ATL (`bag`, the default), or Sequences as version 0.6 did (`sequence`)
 - `--sibling-rule-conflicts <warning|error>` - What a source element that two rules extending the same rule of a transformation given with `--transformations` both match gives: the first of them that applies, with a warning on standard error (`warning`, the default, or the `sibling-rule-conflicts` key of the configuration file), or an error that stops the command (`error`)
+- `--sub-rule-precedence <eclipse|extending-rule>` - Which rule of a transformation given with `--transformations` transforms a source element that a rule and a rule extending it both match: the rule with a guard before the extending rules that have none, as in Eclipse ATL (`eclipse`, the default of `--semantics standard`), or the extending rule (`extending-rule`, the default of `--semantics legacy`); the `sub-rule-precedence` key of the configuration file chooses it too
 - `--semantics <standard|legacy>` - The behaviour of this release (`standard`, the default) or of version 0.6 (`legacy`) for every behaviour option above; a behaviour option that is given overrides it
 - `--container-scope <any-resource|this-resource>` - Whether a model finds the containers of objects of the other models of the run that it holds in containment references (`any-resource`, the default) or only of its own objects (`this-resource`, as in version 0.6); without the option, it follows the preset
 - `--config <file>`, `--no-config` - Read the named configuration file instead of the `.swift-modelling.json` found from the current directory, or read none

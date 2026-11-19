@@ -56,6 +56,8 @@ struct GenerateCommand: AsyncParsableCommand {
 
             \(SiblingRuleConflictOptions.discussion(reader: "the import transformation"))
 
+            \(SubRulePrecedenceOptions.discussion(reader: "the import transformation"))
+
             \(SourceEncodingOptions.discussion(reader: "a transformation given with --transformations, the templates and the modules they import"))
 
             \(OutputEncodingOptions.discussion(writer: "the generator model and of the generated files whose template names no charset"))
@@ -162,6 +164,11 @@ struct GenerateCommand: AsyncParsableCommand {
     /// both match gives.
     @OptionGroup(title: "Evaluation")
     var siblingRuleConflictOptions: SiblingRuleConflictOptions
+
+    /// Which rule of the import transformation transforms a source element that a rule and a
+    /// rule extending it both match.
+    @OptionGroup(title: "Evaluation")
+    var subRulePrecedenceOptions: SubRulePrecedenceOptions
 
     /// The preset of the behaviours, standard or that of version 0.6.
     @OptionGroup(title: "Evaluation")
@@ -276,6 +283,7 @@ struct GenerateCommand: AsyncParsableCommand {
     func importOptions(settings: SemanticsSettings) throws -> GenModelImportOptions {
         var atlOptions = atlSemanticsOptions.atlOptions(settings: settings)
         siblingRuleConflictOptions.apply(to: &atlOptions, settings: settings)
+        subRulePrecedenceOptions.apply(to: &atlOptions, settings: settings)
         var options = GenModelImportOptions(atlOptions: atlOptions)
         GenModelDefaultsOptions.applyProjectSettings(
             basePackage: basePackage, prefixes: prefix, complianceLevel: jdkLevel, settings: settings, to: &options)

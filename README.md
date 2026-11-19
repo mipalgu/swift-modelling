@@ -130,6 +130,10 @@ swift-atl transform TaskNotes.atl --source models/tasks.xmi --target output/note
 swift-atl transform TaskNotes.atl --source models/tasks.xmi --target output/notes.xmi \
   --sibling-rule-conflicts error
 
+# Let a rule that extends another transform the elements that both match, as in version 0.6
+swift-atl transform TaskNotes.atl --source models/tasks.xmi --target output/notes.xmi \
+  --sub-rule-precedence extending-rule
+
 # Check a transformation against its metamodels without running it
 swift-atl transform Families2Persons.atl --validate-only \
   --source-metamodel Families.ecore --target-metamodel Persons.ecore
