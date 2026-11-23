@@ -499,7 +499,7 @@ extension ATL02to08Tests {
     static let createKeyword = "create "
 
     /// The queries that evaluate every helper of the tutorials on debugging and on performance that
-    /// their rules do not call, except `timestamp`, which calls a helper that the tutorial never defines.
+    /// their rules do not call.
     /// The helper of the step on common errors is evaluated only for the elements that have a parent,
     /// for which it works.
     static let helperQueries = [
@@ -676,6 +676,81 @@ extension ATL02to08Tests {
             unit, arguments: ["--source", "IN:Source=\(metamodel.sampleName)"], in: workspace)
         #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
         #expect(Checks.lines(of: result.stdout) == [query.expected])
+    }
+}
+
+// MARK: - Tutorial 08: profiling
+
+extension ATL02to08Tests {
+    /// The resource of the step that profiles a transformation with the clock of swift-atl.
+    static let profilingFile = "atl-08-step-09-profiling.atl"
+
+    /// The text that the timing helper of the profiling step puts before the time it reads.
+    static let timestampPrefix = "Processing at time: "
+
+    /// The smallest number of milliseconds since the Unix epoch that a clock reads today, which
+    /// distinguishes a reading in milliseconds from one in seconds.
+    static let earliestPlausibleReading = 1_000_000_000_000
+
+    /// The most milliseconds that the two readings of the profiling step may differ by, which is far
+    /// longer than the rule takes.
+    static let longestPlausibleDuration = 60_000
+
+    /// The time that the lines of a log give, in the order in which the timing helper wrote them.
+    ///
+    /// - Parameter log: The text that the transformation wrote to standard error.
+    /// - Returns: The number of milliseconds of each line that holds the text of the timing helper.
+    static func readings(in log: String) -> [Int] {
+        Checks.lines(of: log).compactMap { line in
+            guard let prefix = line.range(of: timestampPrefix) else { return nil }
+            return Int(line[prefix.upperBound...].prefix { $0.isNumber })
+        }
+    }
+
+    @Test("CLI: The profiling step of tutorial 08 runs and reads the clock in milliseconds")
+    @MainActor
+    func testProfilingStepReadsClock() async throws {
+        let metamodel = Self.metamodels[2]
+        let workspace = try Checks.makeWorkspace()
+        defer { try? FileManager.default.removeItem(at: workspace) }
+        try Checks.copy(
+            [
+                (resource: metamodel.sourceFile, name: metamodel.sourceName),
+                (resource: metamodel.targetFile, name: metamodel.targetName),
+                (resource: Self.profilingFile, name: metamodel.transformationName),
+                (resource: metamodel.sampleFile, name: metamodel.sampleName),
+            ], of: metamodel.tutorial, to: workspace)
+
+        let result = try await ATLAdvanced02Tests.execute(
+            tool: "swift-atl",
+            arguments: [
+                "transform", metamodel.transformationName, "--source", "IN=\(metamodel.sampleName)",
+                "--target", "OUT=target.xmi",
+            ], in: workspace)
+
+        #expect(result.succeeded, "\(result.stdout)\(result.stderr)")
+        let target = try String(contentsOf: workspace.appendingPathComponent("target.xmi"), encoding: .utf8)
+        #expect(target.contains("name=\"Backlog\" count=\"3\""), "\(target)")
+        let readings = Self.readings(in: result.stderr)
+        #expect(readings.count == 2, "\(result.stderr)")
+        guard let started = readings.first, let finished = readings.last else { return }
+        #expect(started > Self.earliestPlausibleReading, "\(result.stderr)")
+        #expect(finished >= started, "\(result.stderr)")
+        #expect(finished - started < Self.longestPlausibleDuration, "\(result.stderr)")
+    }
+
+    @Test("Tutorial: The profiling step of tutorial 08 says what getCurrentTime returns and shows no timing")
+    func testProfilingStepCaption() throws {
+        let tutorial = try String(
+            contentsOf: Checks.tutorialsPath.appendingPathComponent(Self.metamodels[2].tutorialFile),
+            encoding: .utf8)
+        let step = try #require(
+            Checks.blocks("@Step", in: tutorial[...]).first { $0.contains("file: \(Self.profilingFile)") })
+        #expect(step.contains("getCurrentTime()"))
+        #expect(step.contains("extension of swift-atl"))
+        #expect(step.contains("milliseconds"))
+        #expect(!step.contains("# Output"))
+        Checks.expectStepShape(step)
     }
 }
 
