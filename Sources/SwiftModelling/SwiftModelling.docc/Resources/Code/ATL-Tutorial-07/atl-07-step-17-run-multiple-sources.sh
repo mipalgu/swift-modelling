@@ -26,7 +26,7 @@ swift-ecore validate modelb.xmi --metamodel ModelB.ecore
 # Validation completed successfully
 
 # Transform both sample models, with one --source option for each source model
-swift-atl transform MultiModelExample.atl --source INA=modela.xmi --source INB=modelb.xmi --target OUT=target.xmi
+swift-atl transform MultiSourceExample.atl --source INA=modela.xmi --source INB=modelb.xmi --target OUT=target.xmi
 
 # Output (the time varies):
 # Transformation completed successfully in 5.854ms

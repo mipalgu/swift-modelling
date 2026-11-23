@@ -4,14 +4,14 @@
 module DebugExample;
 create OUT: Target from IN: Source;
 
--- Test one rule at a time
+-- Test one rule at a time, tracing the value that it binds
 rule SimpleTransform {
     from
         s: Source!Element
     to
         t: Target!Item (
-            name <- s.name
+            name <- s.name.debug('SimpleTransform name')
         )
 }
 
--- Add more rules incrementally after testing above
+-- Add more rules incrementally after testing the one above

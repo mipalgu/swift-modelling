@@ -2,7 +2,7 @@
 -- @path TargetA=/TargetA/TargetA.ecore
 -- @path TargetB=/TargetB/TargetB.ecore
 
-module MultiModelExample;
+module MultiTargetExample;
 create OUTA: TargetA, OUTB: TargetB from IN: Source;
 
 -- Create one element in each target model from the same source element

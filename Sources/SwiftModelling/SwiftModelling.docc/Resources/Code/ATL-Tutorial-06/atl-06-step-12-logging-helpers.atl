@@ -1,0 +1,14 @@
+-- @path Source=/Source/Source.ecore
+-- @path Target=/Target/Target.ecore
+
+module DebugExample;
+create OUT: Target from IN: Source;
+
+-- Debug helper that describes the element being processed
+helper context Source!Element def: debugInfo(): String =
+    'Processing: ' + self.name + ' (type: ' + self.oclType().name + ')';
+
+-- debug(message) prints the message and the value to the console and
+-- returns the value unchanged, so it can wrap any expression
+helper context Source!Element def: tracedName(): String =
+    self.name.debug(self.debugInfo());

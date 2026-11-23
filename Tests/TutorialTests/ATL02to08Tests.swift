@@ -206,7 +206,7 @@ struct ATL02to08Tests {
     @Test("Tutorial 06: Verify defensive checks")
     func testTutorial06DefensiveChecks() async throws {
         let tutorial06Path = resourcesPath.appendingPathComponent("ATL-Tutorial-06")
-        let step02Path = tutorial06Path.appendingPathComponent("atl-06-step-04-defensive-checks.atl")
+        let step02Path = tutorial06Path.appendingPathComponent("atl-06-step-07-defensive-checks.atl")
 
         let content = try String(contentsOf: step02Path, encoding: .utf8)
         #expect(content.contains("oclIsUndefined"))
@@ -215,7 +215,7 @@ struct ATL02to08Tests {
     @Test("Tutorial 06: Verify error handling pattern")
     func testTutorial06ErrorHandling() async throws {
         let tutorial06Path = resourcesPath.appendingPathComponent("ATL-Tutorial-06")
-        let step08Path = tutorial06Path.appendingPathComponent("atl-06-step-10-robust-transformation.atl")
+        let step08Path = tutorial06Path.appendingPathComponent("atl-06-step-16-robust-transformation.atl")
 
         let content = try String(contentsOf: step08Path, encoding: .utf8)
         #expect(content.contains("if") && content.contains("else"))
@@ -329,7 +329,7 @@ extension ATL02to08Tests {
             tutorial: 6, tutorialFile: "ATL-06-debugging.tutorial", sourceName: "Source.ecore",
             sourceFile: "atl-06-step-01-source-metamodel.ecore", targetName: "Target.ecore",
             targetFile: "atl-06-step-02-target-metamodel.ecore", transformationName: "DebugExample.atl",
-            sampleFile: "atl-06-step-11-sample-source.xmi", sampleName: "source.xmi",
+            sampleFile: "atl-06-step-03-sample-source.xmi", sampleName: "source.xmi",
             features: [
                 Checks.ExpectedFeature(className: "Item", name: "name", type: "//EString", isMany: false),
                 Checks.ExpectedFeature(className: "Item", name: "description", type: "//EString", isMany: false),
@@ -399,10 +399,10 @@ extension ATL02to08Tests {
             "<libcat:Item title=\"Northern Tides\" category=\"Modern\" description=\"Published 1978 (20th century) by Jonah Brightwater\"/>",
             "<libcat:Item title=\"Glass Orchard\" category=\"Modern\" description=\"Published 2015 (21st century) by Jonah Brightwater\"/>",
         ],
-        "atl-06-step-10-robust-transformation.atl": [
-            "<tgt:Item name=\"Root Element\" description=\"The whole garden\"/>",
-            "<tgt:Item name=\"Garden\" description=\"No description provided\"/>",
-            "<tgt:Item name=\"Garden\" description=\"Rosemary, thyme and sage\"/>",
+        "atl-06-step-16-robust-transformation.atl": [
+            "<tgt:Item name=\"Garden\" description=\"The whole garden\"/>",
+            "<tgt:Item name=\"Vegetable Bed\" description=\"Part of Garden, no description provided\"/>",
+            "<tgt:Item name=\"Herb Spiral\" description=\"Rosemary, thyme and sage\"/>",
         ],
         "atl-08-step-10-complete-optimised.atl": [
             "name=\"Backlog\" count=\"3\">",
@@ -439,15 +439,18 @@ extension ATL02to08Tests {
         /// The resource that shows the target model.
         let resultFile: String
 
-        /// The number of commands that the script runs.
+        /// The least number of commands that the replay of the whole tutorial runs.
         let commands: Int
+
+        /// Whether the sample model is shown between the complete transformation and the run, rather
+        /// than earlier in the tutorial.
+        var showsSampleBeforeRun = true
 
         /// The steps in order, each with the name under which the tutorial shows it and its resource.
         var codes: [(name: String, file: String)] {
-            [
-                (metamodel.transformationName, transformationFile), (metamodel.sampleName, metamodel.sampleFile),
-                ("Terminal", scriptFile), (resultName, resultFile),
-            ]
+            [(metamodel.transformationName, transformationFile)]
+                + (showsSampleBeforeRun ? [(metamodel.sampleName, metamodel.sampleFile)] : [])
+                + [("Terminal", scriptFile), (resultName, resultFile)]
         }
 
         var testDescription: String { metamodel.tutorialFile }
@@ -462,9 +465,9 @@ extension ATL02to08Tests {
             resultFile: "atl-02-step-12-catalog.xmi", commands: 3),
         RunSteps(
             metamodel: metamodels[1], section: "Debugging Techniques",
-            transformationFile: "atl-06-step-10-robust-transformation.atl",
-            scriptFile: "atl-06-step-12-run-complete.sh", resultName: "target.xmi",
-            resultFile: "atl-06-step-13-target.xmi", commands: 4),
+            transformationFile: "atl-06-step-16-robust-transformation.atl",
+            scriptFile: "atl-06-step-17-run-complete.sh", resultName: "target.xmi",
+            resultFile: "atl-06-step-18-target.xmi", commands: 7, showsSampleBeforeRun: false),
         RunSteps(
             metamodel: metamodels[2], section: "Advanced Optimisation Techniques",
             transformationFile: "atl-08-step-10-complete-optimised.atl",
@@ -497,30 +500,34 @@ extension ATL02to08Tests {
 
     /// The queries that evaluate every helper of the tutorials on debugging and on performance that
     /// their rules do not call, except `timestamp`, which calls a helper that the tutorial never defines.
+    /// The helper of the step on common errors is evaluated only for the elements that have a parent,
+    /// for which it works.
     static let helperQueries = [
+        HelperQuery(
+            metamodel: metamodels[1], modules: ["atl-06-step-04-common-errors.atl"],
+            expression: "Source!Element.allInstances()->select(e | not e.parent.oclIsUndefined())->collect(e | e.parentLabel())",
+            expected: "Sequence{'Part of Garden', 'Part of Garden'}"),
         HelperQuery(
             metamodel: metamodels[1],
             modules: [
-                "atl-06-step-03-common-errors.atl", "atl-06-step-04-defensive-checks.atl",
-                "atl-06-step-05-helper-validation.atl", "atl-06-step-06-edge-cases.atl",
-                "atl-06-step-07-logging-helpers.atl", "atl-06-step-08-collection-debugging.atl",
+                "atl-06-step-07-defensive-checks.atl", "atl-06-step-10-empty-collections.atl",
+                "atl-06-step-11-edge-cases.atl", "atl-06-step-12-logging-helpers.atl",
+                "atl-06-step-13-collection-debugging.atl",
             ],
             expression: """
-                Source!Element.allInstances()->select(e | not e.parent.oclIsUndefined())->collect(e | e.errorProne())
-                    ->union(Source!Element.allInstances()->collect(e |
-                        e.safeName() + ', ' + e.getCount().toString() + ', ' + e.debugInfo()))
+                Source!Element.allInstances()->collect(e | e.parentLabel() + ', ' + e.itemCount().toString()
+                        + ', ' + e.hasItems().toString() + ', ' + e.tracedName())
                     ->union(Source!Container.allInstances()->collect(c |
                         c.firstElementName() + ', ' + c.verifiedChildren->size().toString()))
                 """,
             expected: """
-                Sequence{'Garden', 'Garden', 'No parent, 2, Processing: Garden (type: Element)', \
-                'Garden, 0, Processing: Vegetable Bed (type: Element)', \
-                'Garden, 0, Processing: Herb Spiral (type: Element)', 'Garden, 2'}
+                Sequence{'Top level, 2, true, Garden', 'Part of Garden, 0, false, Vegetable Bed', \
+                'Part of Garden, 0, false, Herb Spiral', 'Garden, 2'}
                 """),
         HelperQuery(
-            metamodel: metamodels[1], modules: ["atl-06-step-10-robust-transformation.atl"],
-            expression: "Source!Container.allInstances()->collect(c | c.validChildren->collect(e | e.safeName()))",
-            expected: "Sequence{'Garden', 'Garden'}"),
+            metamodel: metamodels[1], modules: ["atl-06-step-16-robust-transformation.atl"],
+            expression: "Source!Element.allInstances()->collect(e | e.displayName() + ' / ' + e.parentLabel())",
+            expected: "Sequence{'Garden / Top level', 'Vegetable Bed / Part of Garden', 'Herb Spiral / Part of Garden'}"),
         HelperQuery(
             metamodel: metamodels[2],
             modules: [
@@ -826,7 +833,7 @@ extension ATL02to08Tests {
                         feature("Combined", "combined", "//EString"),
                     ]),
             ],
-            targetMetamodels: ["Target"], sourceKeyword: "from", transformationName: "MultiModelExample.atl",
+            targetMetamodels: ["Target"], sourceKeyword: "from", transformationName: "MultiSourceExample.atl",
             modules: [
                 "atl-07-step-12-multiple-sources.atl", "atl-07-step-13-cross-model-rules.atl",
                 "atl-07-step-14-complete-multi-model.atl",
@@ -861,7 +868,7 @@ extension ATL02to08Tests {
                     features: [feature("ItemB", "title", "//EString")]),
             ],
             targetMetamodels: ["TargetA", "TargetB"], sourceKeyword: "from",
-            transformationName: "MultiModelExample.atl",
+            transformationName: "MultiTargetExample.atl",
             modules: ["atl-07-step-22-multiple-targets.atl"],
             sources: [
                 ModelBinding(
@@ -933,10 +940,8 @@ extension ATL02to08Tests {
                 "<mtg:Item name=\"Kitchen\" source=\"ModelA\"/>", "<mtg:Item name=\"Garden\" source=\"ModelA\"/>",
                 "<mtg:Item name=\"Tiles\" source=\"ModelB\"/>", "<mtg:Item name=\"Seeds\" source=\"ModelB\"/>",
                 "<mtg:Item name=\"Paint\" source=\"ModelB\"/>",
-            ] + ["Kitchen", "Garden"].flatMap { a in
-                ["Tiles", "Seeds", "Paint"].map { b in
-                    "<mtg:Combined nameA=\"\(a)\" nameB=\"\(b)\" combined=\"\(a) + \(b)\"/>"
-                }
+            ] + [("Kitchen", "Tiles"), ("Kitchen", "Paint"), ("Garden", "Seeds")].map { a, b in
+                "<mtg:Combined nameA=\"\(a)\" nameB=\"\(b)\" combined=\"\(a) + \(b)\"/>"
             }
         ],
         "atl-07-step-22-multiple-targets.atl": [

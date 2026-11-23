@@ -88,6 +88,8 @@
             Complex transformations may consume multiple source models. The module header names each source model with its metamodel, as in `create OUT: Target from INA: ModelA, INB: ModelB;`.
 
             Rules refer to the types of a source model through its metamodel, such as `ModelA!ElementA`, and `allInstancesFrom` selects the instances of one model by its name.
+
+            A rule may also take one element from each source model, as in `from a: ModelA!ElementA, b: ModelB!ElementB`. Such a source pattern matches every combination of its elements, so for 2 elements of the first kind and 3 of the second it matches 6 pairs. Usually only some pairs belong together, for example those in which one element refers to the other by a key, and a guard after the last pattern element, such as `(b.refId = a.id)`, keeps exactly those.
         }
 
         @Steps {
@@ -118,15 +120,15 @@
             @Step {
                 Set up multiple source models.
 
-                @Code(name: "MultiModelExample.atl", file: atl-07-step-12-multiple-sources.atl)
+                @Code(name: "MultiSourceExample.atl", file: atl-07-step-12-multiple-sources.atl)
 
-                Transformations can read from multiple source models simultaneously. The header binds INA to ModelA and INB to ModelB, and every type in a rule names its metamodel, never its model.
+                Transformations can read from multiple source models simultaneously. The header binds INA to ModelA and INB to ModelB, and every type in a rule names its metamodel, never its model. Save the module as MultiSourceExample.atl, after its name.
             }
 
             @Step {
                 Coordinate rules across models.
 
-                @Code(name: "MultiModelExample.atl", file: atl-07-step-13-cross-model-rules.atl)
+                @Code(name: "MultiSourceExample.atl", file: atl-07-step-13-cross-model-rules.atl)
 
                 Complex transformations coordinate multiple rules that work across different models. For each ElementA, `ModelB!ElementB.allInstancesFrom('INB')` collects the elements of the source model INB, and the rule keeps the names of those whose refId is the id of the ElementA.
             }
@@ -134,9 +136,9 @@
             @Step {
                 Build a complete multi-model transformation.
 
-                @Code(name: "MultiModelExample.atl", file: atl-07-step-14-complete-multi-model.atl)
+                @Code(name: "MultiSourceExample.atl", file: atl-07-step-14-complete-multi-model.atl)
 
-                This transformation demonstrates sophisticated multi-model processing. TransformA and TransformB turn the elements of each source model into Items, and CombineModels, whose source pattern takes one element from each model, creates a Combined element for every pair of an ElementA and an ElementB.
+                TransformA and TransformB turn the elements of each source model into Items. CombineModels takes one element from each model, and its guard `(b.refId = a.id)` keeps only the pairs in which the ElementB refers to the ElementA, so it creates one Combined element for each ElementB that belongs to an ElementA. Without the guard, it would create one for every pair, whether or not the two elements are related. CombineModels matches pairs, not single elements, so it does not conflict with TransformA or TransformB.
             }
 
             @Step {
@@ -168,7 +170,7 @@
 
                 @Code(name: "target.xmi", file: atl-07-step-18-target.xmi)
 
-                Each room and each material becomes an Item that records its source model. CombineModels has no guard, so it creates a Combined element for each of the six pairs of a room and a material, not only for the materials that belong to the room; a guard such as `(b.refId = a.id)` would keep only those.
+                Each room and each material becomes an Item that records its source model. CombineModels created three Combined elements, one for each material with the room that it belongs to: the Tiles and the Paint with the Kitchen, and the Seeds with the Garden. Of the six pairs of a room and a material, the guard rejected the three in which the material belongs to the other room.
             }
         }
     }
@@ -208,9 +210,9 @@
             @Step {
                 Generate multiple target models.
 
-                @Code(name: "MultiModelExample.atl", file: atl-07-step-22-multiple-targets.atl)
+                @Code(name: "MultiTargetExample.atl", file: atl-07-step-22-multiple-targets.atl)
 
-                Rules can create elements in different target models based on transformation logic. ToTargets creates an ItemA, which goes to OUTA, and an ItemB, which goes to OUTB, from each Element. A single rule with two target pattern elements does this, because only one matched rule may transform a source element: two rules that both match `Source!Element` would stop the run with a rule conflict.
+                Save this module as MultiTargetExample.atl, after its name, so that it does not replace the module of the previous section. ToTargets creates an ItemA, which goes to OUTA, and an ItemB, which goes to OUTB, from each Element. A single rule with two target pattern elements does this, because only one matched rule may transform a source element: two rules that both match `Source!Element` would stop the run with a rule conflict.
             }
 
             @Step {
@@ -300,6 +302,34 @@
 
                 @Justification(reaction: "Not required!") {
                     Lazy rules use the same syntax in both normal and refining modes.
+                }
+            }
+        }
+
+        @MultipleChoice {
+            A rule has the source pattern `a: ModelA!ElementA, b: ModelB!ElementB` and no guard. The first source model holds 2 ElementA elements and the second 3 ElementB elements. How many times does the rule match?
+
+            @Choice(isCorrect: false) {
+                3 times, once for each ElementB
+
+                @Justification(reaction: "Not quite!") {
+                    The rule does not pair each ElementB with one related ElementA by itself. Without a guard, nothing relates the two pattern elements.
+                }
+            }
+
+            @Choice(isCorrect: true) {
+                6 times, once for every pair of an ElementA and an ElementB
+
+                @Justification(reaction: "Correct!") {
+                    A source pattern with several elements matches every combination of them, 2 × 3 = 6 pairs here. A guard such as `(b.refId = a.id)` keeps only the pairs that belong together.
+                }
+            }
+
+            @Choice(isCorrect: false) {
+                5 times, once for each element of either model
+
+                @Justification(reaction: "Incorrect!") {
+                    That is how often two single-element rules such as TransformA and TransformB match together. A rule with two pattern elements matches pairs.
                 }
             }
         }

@@ -1,0 +1,8 @@
+-- @path Source=/Source/Source.ecore
+
+-- Query: the label of every element of the garden
+query ParentLabels = Source!Element.allInstances()->collect(e | e.parentLabel());
+
+-- Helper from the step on common errors
+helper context Source!Element def: parentLabel(): String =
+    'Part of ' + self.parent.name;

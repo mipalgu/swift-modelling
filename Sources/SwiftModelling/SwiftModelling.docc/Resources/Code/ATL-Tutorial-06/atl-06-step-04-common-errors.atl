@@ -1,0 +1,11 @@
+-- @path Source=/Source/Source.ecore
+-- @path Target=/Target/Target.ecore
+
+module DebugExample;
+create OUT: Target from IN: Source;
+
+-- Common error: using a value reached through an optional reference
+-- without checking it. For an element without a parent, self.parent is
+-- undefined, and so is self.parent.name, which the + cannot join.
+helper context Source!Element def: parentLabel(): String =
+    'Part of ' + self.parent.name;

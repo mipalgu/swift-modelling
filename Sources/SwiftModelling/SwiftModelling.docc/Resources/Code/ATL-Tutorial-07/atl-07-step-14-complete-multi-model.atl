@@ -2,7 +2,7 @@
 -- @path ModelB=/ModelB/ModelB.ecore
 -- @path Target=/Target/Target.ecore
 
-module MultiModelExample;
+module MultiSourceExample;
 create OUT: Target from INA: ModelA, INB: ModelB;
 
 -- Transform from first source model
@@ -16,7 +16,7 @@ rule TransformA {
         )
 }
 
--- Transform from second source model  
+-- Transform from second source model
 rule TransformB {
     from
         s: ModelB!ElementB
@@ -27,11 +27,13 @@ rule TransformB {
         )
 }
 
--- Combine information from both models
+-- Combine each element of the first model with the elements of the
+-- second model that refer to it: without the guard, the rule would
+-- match every pair of an ElementA and an ElementB
 rule CombineModels {
     from
         a: ModelA!ElementA,
-        b: ModelB!ElementB
+        b: ModelB!ElementB (b.refId = a.id)
     to
         t: Target!Combined (
             nameA <- a.name,

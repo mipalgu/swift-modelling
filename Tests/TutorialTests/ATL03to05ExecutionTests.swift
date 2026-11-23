@@ -654,7 +654,11 @@ struct ATL03to05ExecutionTests {
     ///
     /// Each file is saved under its name, each command of a Terminal step must succeed and print
     /// the output that the script documents, and each file shown after a Terminal step that wrote
-    /// it must have the content that the command wrote.
+    /// it must have the content that the command wrote. A script marked with
+    /// ``TutorialReplayConfiguration/expectedErrorMarker`` must instead have a command that fails.
+    /// The output of a command is what it writes to standard error, such as the trace of `debug`
+    /// or the message of a failure, followed by what it writes to standard output, as a terminal
+    /// shows it for these tools.
     ///
     /// - Parameters:
     ///   - codes: The code directives in step order.
@@ -674,7 +678,9 @@ struct ATL03to05ExecutionTests {
             switch code.kind {
             case .terminal:
                 let script = try String(contentsOf: source, encoding: .utf8)
+                let expectsError = TutorialStepChecks.expectsError(script)
                 var output = ""
+                var failures = 0
                 written = []
                 for command in Self.lines(of: script)
                 where command.first != TutorialReplayConfiguration.commentCharacter {
@@ -683,13 +689,16 @@ struct ATL03to05ExecutionTests {
                     #expect(TutorialReplayConfiguration.toolNames.contains(tool), "\(code.file): \(command)")
                     let result = try await ATLAdvanced02Tests.execute(
                         tool: tool, arguments: Array(words.dropFirst()), in: workspace)
-                    #expect(result.succeeded, "\(code.file): \(command): \(result.stdout)\(result.stderr)")
-                    output += result.stdout
+                    if !result.succeeded { failures += 1 }
+                    #expect(
+                        result.succeeded || expectsError, "\(code.file): \(command): \(result.stdout)\(result.stderr)")
+                    output += result.stderr + result.stdout
                     commandCount += 1
                     for (option, value) in zip(words, words.dropFirst()) where option == Self.targetOption {
                         written.insert(String(value.split(separator: Self.modelBindingSeparator).last ?? ""))
                     }
                 }
+                #expect(!expectsError || failures > 0, "\(code.file) expects an error, but every command succeeded")
                 let documented = DocumentedOutput.expectedLines(inScript: script).map {
                     DocumentedOutput.normalised($0.text)
                 }

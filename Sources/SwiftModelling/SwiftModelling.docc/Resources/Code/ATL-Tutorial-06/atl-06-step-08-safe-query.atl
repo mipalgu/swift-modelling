@@ -1,0 +1,12 @@
+-- @path Source=/Source/Source.ecore
+
+-- Query: the label of every element of the garden
+query ParentLabels = Source!Element.allInstances()->collect(e | e.parentLabel());
+
+-- Helper from the step on defensive checks
+helper context Source!Element def: parentLabel(): String =
+    if self.parent.oclIsUndefined() then
+        'Top level'
+    else
+        'Part of ' + self.parent.name
+    endif;

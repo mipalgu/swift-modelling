@@ -1,0 +1,14 @@
+-- @path Source=/Source/Source.ecore
+-- @path Target=/Target/Target.ecore
+
+module DebugExample;
+create OUT: Target from IN: Source;
+
+-- A many-valued reference is never undefined: an element without items
+-- has an empty collection, so size() needs no check
+helper context Source!Element def: itemCount(): Integer =
+    self.items->size();
+
+-- Test a collection with isEmpty() or notEmpty(), not with oclIsUndefined()
+helper context Source!Element def: hasItems(): Boolean =
+    self.items->notEmpty();

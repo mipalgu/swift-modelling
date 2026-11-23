@@ -128,7 +128,7 @@
 
                 @Code(name: "OrganisationTransform.atl", file: atl-05-step-13-complex-collections.atl)
 
-                Chain collection operations and use advanced queries like `flatten`, `union`, and `intersection`.
+                Chain collection operations: `managerNames` selects the managers, collects their names and orders them with `sortedBy`, and `hasSwiftDevelopers` selects the developers and asks with `exists` whether one of them programs in Swift. For the sample department, they give `Sequence{'Aiko Tanaka', 'Carla Mendes'}` and true.
             }
 
             @Step {

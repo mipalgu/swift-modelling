@@ -54,7 +54,7 @@
 
                 @Code(name: "OptimisationExample.atl", file: atl-08-step-05-optimised-collections.atl)
 
-                Combine operations and avoid unnecessary intermediate collections.
+                Combine the conditions of successive filters into one `select`. Every `select` traverses its collection and builds a new one, so two `select` operations in a row traverse the elements twice and build an intermediate collection that only the second one reads.
             }
 
             @Step {
@@ -202,10 +202,10 @@
             }
 
             @Choice(isCorrect: true) {
-                Chain operations together instead of creating intermediate collections
+                Combine conditions so that each collection is traversed as few times as possible
 
                 @Justification(reaction: "Exactly!") {
-                    Chaining operations like `collection->select(...)-> collect(...)` is more efficient than storing intermediate results in separate variables.
+                    Every collection operation traverses its input and builds a new collection. One `select` with the condition `a and b` does the work of `select(a)` followed by `select(b)` in a single traversal, without the intermediate collection.
                 }
             }
 

@@ -11,9 +11,9 @@
 
     @Section(title: "Understanding Transformation Errors") {
         @ContentAndMedia {
-            ATL transformations can fail for various reasons: missing bindings, type mismatches, undefined references, or OCL expression errors.
+            ATL transformations can fail for various reasons: a value that is undefined where an operation needs one, a type mismatch, an undefined reference, or an error in an OCL expression.
 
-            Understanding error messages and common failure patterns is essential for efficient debugging.
+            The most common of these is an undefined value. An optional reference, such as the parent of an element, is undefined when the model sets nothing for it, and so is every value reached through it. swift-atl does not stop at the navigation itself, but at the first operation that needs a real value, which may be far from the navigation that produced the undefined one. In this section you write a helper that fails in this way, watch it fail on a sample model, and then fix it.
         }
 
         @Steps {
@@ -22,7 +22,7 @@
 
                 @Code(name: "Source.ecore", file: atl-06-step-01-source-metamodel.ecore)
 
-                The transformations of this tutorial read a Container, which holds its Elements in `elements` and lists some of them in `children`. An Element has a `name` and a `description`, both strings, an optional `parent` and a list of related `items`. The helpers of the tutorial navigate each of these features, and `parent` and `items` are the references whose undefined or empty values they guard against. Save it as Source.ecore, where the `-- @path` directives of the transformations find it.
+                The transformations of this tutorial read a Container, which holds its Elements in `elements` and lists some of them in `children`. An Element has a `name` and a `description`, both strings, an optional `parent` and a list of related `items`. A single-valued feature such as `parent` or `description` can be undefined, whereas a many-valued one such as `items` is at worst empty. Save it as Source.ecore, where the `-- @path` directives of the transformations find it.
             }
 
             @Step {
@@ -34,91 +34,131 @@
             }
 
             @Step {
-                Recognise common error patterns.
+                Create a sample garden with three elements, on which you can try each helper of this tutorial.
 
-                @Code(name: "DebugExample.atl", file: atl-06-step-03-common-errors.atl)
+                @Code(name: "source.xmi", file: atl-06-step-03-sample-source.xmi)
 
-                This example shows typical error scenarios: undefined bindings, null references, and type mismatches.
+                The Garden is the parent of the Vegetable Bed and the Herb Spiral and lists both as its items, and the container lists them as its children. A reference such as `//@elements.0` names an element by its position in `elements`. The Garden itself has no parent, and the Vegetable Bed has no description, so the sample has the undefined values that this tutorial guards against.
             }
 
             @Step {
-                Add defensive checks.
+                Recognise a common error: using a value reached through an optional reference without checking it.
 
-                @Code(name: "DebugExample.atl", file: atl-06-step-04-defensive-checks.atl)
+                @Code(name: "DebugExample.atl", file: atl-06-step-04-common-errors.atl)
 
-                Use `oclIsUndefined()` and type checks to prevent runtime errors.
+                `parentLabel` describes where an element sits. For an element without a parent, `self.parent` is undefined, so `self.parent.name` is undefined too, and `+` cannot join an undefined value to a string. The helper looks harmless, and it works for every element that has a parent.
             }
 
             @Step {
-                Validate helper results.
+                Write a query that evaluates the helper for every element of the garden.
 
-                @Code(name: "DebugExample.atl", file: atl-06-step-05-helper-validation.atl)
+                @Code(name: "ParentLabels.atl", file: atl-06-step-05-unsafe-query.atl)
 
-                Ensure helpers return valid values before using them in bindings.
+                As in <doc:ATL-05-ocl-expressions>, a query unit starts with `query Name = expression;` and may define helpers, so you can try a helper on a model without running a whole transformation.
+            }
+
+            @Step {
+                Validate the new files and evaluate the query on the sample garden.
+
+                @Code(name: "Terminal", file: atl-06-step-06-run-unsafe-query.sh)
+
+                The Garden has no parent, so the helper fails for it, and the error ends the whole query: no label is printed, not even those of the two beds. The message names the failed operation, not the helper or the element, which is why the techniques of the next section help you find where an undefined value comes from.
+            }
+
+            @Step {
+                Add a defensive check.
+
+                @Code(name: "DebugExample.atl", file: atl-06-step-07-defensive-checks.atl)
+
+                `oclIsUndefined()` is true for an undefined value, so the helper now checks the reference before it navigates through it, and gives an element without a parent the label `Top level` instead.
+            }
+
+            @Step {
+                Take the defensive helper into the query.
+
+                @Code(name: "ParentLabels.atl", file: atl-06-step-08-safe-query.atl)
+
+                Only the helper changes; the query expression stays the same.
+            }
+
+            @Step {
+                Evaluate the query again.
+
+                @Code(name: "Terminal", file: atl-06-step-09-run-safe-query.sh)
+
+                Every element now has a label: the Garden is at the top level, and both beds are part of the Garden.
+            }
+
+            @Step {
+                Know which values can be undefined: a collection is empty rather than undefined.
+
+                @Code(name: "DebugExample.atl", file: atl-06-step-10-empty-collections.atl)
+
+                A many-valued reference such as `items` always gives a collection. For the two beds, which list no items, it is an empty collection, so `size()` gives 0 without any check. Test a collection with `isEmpty()` or `notEmpty()`; `oclIsUndefined()` is false even for an empty collection.
             }
 
             @Step {
                 Handle edge cases.
 
-                @Code(name: "DebugExample.atl", file: atl-06-step-06-edge-cases.atl)
+                @Code(name: "DebugExample.atl", file: atl-06-step-11-edge-cases.atl)
 
-                Test boundary conditions like empty collections and optional references.
+                An operation that picks one element of a collection, such as `first()`, has nothing to pick from an empty collection and gives an undefined value. The helper therefore checks `notEmpty()` first and returns a default text for an empty container.
             }
         }
     }
 
     @Section(title: "Debugging Techniques") {
         @ContentAndMedia {
-            Systematic debugging involves tracing execution, validating intermediate results, and testing transformations incrementally.
+            Systematic debugging involves tracing execution, checking intermediate results, and testing transformations incrementally.
 
-            Use logging helpers, incremental development, and careful testing to identify issues.
+            The operation `debug(message)` can be applied to any value. It prints the message and the value to the console and returns the value unchanged, so you can wrap any expression in it without changing what the transformation computes.
         }
 
         @Steps {
             @Step {
                 Add logging helpers for debugging.
 
-                @Code(name: "DebugExample.atl", file: atl-06-step-07-logging-helpers.atl)
+                @Code(name: "DebugExample.atl", file: atl-06-step-12-logging-helpers.atl)
 
-                Create helpers that output diagnostic information during transformation.
+                `debugInfo` builds a message that names the element and its type, and `tracedName` passes that message to `debug`. Each call of `tracedName` returns the name of the element and prints a line such as `Processing: Garden (type: Element): 'Garden'`.
             }
 
             @Step {
                 Debug collection operations.
 
-                @Code(name: "DebugExample.atl", file: atl-06-step-08-collection-debugging.atl)
+                @Code(name: "DebugExample.atl", file: atl-06-step-13-collection-debugging.atl)
 
-                Verify collection operations produce expected results.
+                Applied to an intermediate collection, `debug` shows what the earlier operations produced before the next one uses it. For the sample garden, it prints `children with a name: Sequence{Element 'Vegetable Bed', Element 'Herb Spiral'}`.
             }
 
             @Step {
                 Test transformations incrementally.
 
-                @Code(name: "DebugExample.atl", file: atl-06-step-09-incremental-testing.atl)
+                @Code(name: "DebugExample.atl", file: atl-06-step-14-incremental-testing.atl)
 
-                Build transformations gradually, testing each rule independently.
+                Build transformations gradually, testing each rule on its own before you add the next. The single rule wraps its binding in `debug`, so a run shows each value that it binds.
+            }
+
+            @Step {
+                Validate the target metamodel and run the single rule on the sample garden.
+
+                @Code(name: "Terminal", file: atl-06-step-15-run-incremental.sh)
+
+                swift-atl prints one trace line for each element that the rule transforms, in the order in which it transforms them, before it reports that the transformation completed.
             }
 
             @Step {
                 Build a robust transformation with error handling.
 
-                @Code(name: "DebugExample.atl", file: atl-06-step-10-robust-transformation.atl)
+                @Code(name: "DebugExample.atl", file: atl-06-step-16-robust-transformation.atl)
 
-                The complete transformation demonstrates defensive programming and error handling techniques.
+                Each Item takes the name of its own element through `displayName`, which supplies a placeholder for an element without a name. An element without a description gets one built from `parentLabel`, which checks the parent before it navigates through it, so neither binding can meet an undefined value.
             }
 
             @Step {
-                Create a sample garden with three elements to transform.
+                Run the robust transformation on the sample garden.
 
-                @Code(name: "source.xmi", file: atl-06-step-11-sample-source.xmi)
-
-                The Garden is the parent of the Vegetable Bed and the Herb Spiral and lists both as its items, and the container lists them as its children. A reference such as `//@elements.0` names an element by its position in `elements`. The Vegetable Bed has no description.
-            }
-
-            @Step {
-                Validate the new files and run the robust transformation on the sample garden.
-
-                @Code(name: "Terminal", file: atl-06-step-12-run-complete.sh)
+                @Code(name: "Terminal", file: atl-06-step-17-run-complete.sh)
 
                 `--source IN=source.xmi` binds the model IN of the `create` line to the sample garden, and `--target OUT=target.xmi` names the file that receives the model OUT. swift-atl finds `Source.ecore` and `Target.ecore` beside the transformation through its `-- @path` directives.
             }
@@ -126,9 +166,9 @@
             @Step {
                 Look at the target model that the transformation wrote.
 
-                @Code(name: "target.xmi", file: atl-06-step-13-target.xmi)
+                @Code(name: "target.xmi", file: atl-06-step-18-target.xmi)
 
-                `safeName` returns the name of the parent of an element, so both beds become Items named Garden, and the Garden itself, which has no parent, becomes an Item named Root Element instead of stopping the run. The Vegetable Bed has no description, so the conditional binding supplies the default text.
+                Each element becomes an Item with its own name. The Garden and the Herb Spiral keep their descriptions, and the Vegetable Bed, which has none, gets `Part of Garden, no description provided`. The Garden has no parent, yet the run completes, because no binding uses the parent without checking it.
             }
         }
     }
@@ -149,7 +189,7 @@
                 Null or undefined references in bindings
 
                 @Justification(reaction: "Correct!") {
-                    Most runtime failures occur when bindings try to access properties of null or undefined objects. Always check with `oclIsUndefined()` before navigating.
+                    Most runtime failures occur when a binding or helper uses a value that is undefined, such as the name of a parent that does not exist. Check an optional reference with `oclIsUndefined()` before you use what it leads to.
                 }
             }
 
@@ -177,7 +217,7 @@
                 Before navigating optional references
 
                 @Justification(reaction: "That's right!") {
-                    Always check if a reference is undefined before accessing its properties to prevent null pointer errors during transformation.
+                    Check whether an optional reference is undefined before you use the values reached through it, so that no operation of the transformation meets an undefined value.
                 }
             }
 
