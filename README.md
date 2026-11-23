@@ -134,6 +134,10 @@ swift-atl transform TaskNotes.atl --source models/tasks.xmi --target output/note
 swift-atl transform TaskNotes.atl --source models/tasks.xmi --target output/notes.xmi \
   --sub-rule-precedence extending-rule
 
+# Pass over an abstract rule none of whose sub-rules match, and ignore abstract rules that no rule extends
+swift-atl transform TaskNotes.atl --source models/tasks.xmi --target output/notes.xmi \
+  --abstract-rule-matching skip --abstract-leaf-rules ignore
+
 # Check a transformation against its metamodels without running it
 swift-atl transform Families2Persons.atl --validate-only \
   --source-metamodel Families.ecore --target-metamodel Persons.ecore

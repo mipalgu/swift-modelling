@@ -58,6 +58,10 @@ struct GenerateCommand: AsyncParsableCommand {
 
             \(SubRulePrecedenceOptions.discussion(reader: "the import transformation"))
 
+            \(AbstractRuleMatchingOptions.discussion(reader: "the import transformation"))
+
+            \(AbstractLeafRulesOptions.discussion(reader: "the import transformation"))
+
             \(SourceEncodingOptions.discussion(reader: "a transformation given with --transformations, the templates and the modules they import"))
 
             \(OutputEncodingOptions.discussion(writer: "the generator model and of the generated files whose template names no charset"))
@@ -169,6 +173,16 @@ struct GenerateCommand: AsyncParsableCommand {
     /// rule extending it both match.
     @OptionGroup(title: "Evaluation")
     var subRulePrecedenceOptions: SubRulePrecedenceOptions
+
+    /// What a source element gives that an abstract rule of the import transformation matches but
+    /// none of the rules extending it match.
+    @OptionGroup(title: "Evaluation")
+    var abstractRuleMatchingOptions: AbstractRuleMatchingOptions
+
+    /// What a source element gives that an abstract rule of the import transformation matches when
+    /// no rule extends it.
+    @OptionGroup(title: "Evaluation")
+    var abstractLeafRulesOptions: AbstractLeafRulesOptions
 
     /// The preset of the behaviours, standard or that of version 0.6.
     @OptionGroup(title: "Evaluation")
@@ -284,6 +298,8 @@ struct GenerateCommand: AsyncParsableCommand {
         var atlOptions = atlSemanticsOptions.atlOptions(settings: settings)
         siblingRuleConflictOptions.apply(to: &atlOptions, settings: settings)
         subRulePrecedenceOptions.apply(to: &atlOptions, settings: settings)
+        abstractRuleMatchingOptions.apply(to: &atlOptions, settings: settings)
+        abstractLeafRulesOptions.apply(to: &atlOptions, settings: settings)
         var options = GenModelImportOptions(atlOptions: atlOptions)
         GenModelDefaultsOptions.applyProjectSettings(
             basePackage: basePackage, prefixes: prefix, complianceLevel: jdkLevel, settings: settings, to: &options)
