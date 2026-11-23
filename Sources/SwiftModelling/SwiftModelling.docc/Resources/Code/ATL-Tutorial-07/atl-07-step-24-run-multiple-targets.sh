@@ -21,7 +21,7 @@ swift-ecore validate source.xmi --metamodel Source.ecore
 # Validation completed successfully
 
 # Transform the sample model, with one --target option for each target model
-swift-atl transform MultiModelExample.atl --source IN=source.xmi --target OUTA=targeta.xmi --target OUTB=targetb.xmi
+swift-atl transform MultiTargetExample.atl --source IN=source.xmi --target OUTA=targeta.xmi --target OUTB=targetb.xmi
 
 # Output (the time varies):
 # Transformation completed successfully in 2.242ms

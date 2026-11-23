@@ -6,6 +6,22 @@ create OUT: Target from IN: Source;
 
 -- Add timing helpers to measure performance
 helper def: timestamp(): String =
-    'Processing at time: ' + thisModule.getCurrentTime();
+    'Processing at time: ' + thisModule.getCurrentTime().toString();
 
 -- Measure transformation sections to identify bottlenecks
+rule ProfiledTransform {
+    from
+        s: Source!Container (s.elements->size() > 0)
+    using {
+        started: String = thisModule.timestamp();
+    }
+    to
+        t: Target!Item (
+            name <- s.name,
+            count <- s.elements->select(e | e.active)->size()
+        )
+    do {
+        started.debug('started');
+        thisModule.timestamp().debug('finished');
+    }
+}

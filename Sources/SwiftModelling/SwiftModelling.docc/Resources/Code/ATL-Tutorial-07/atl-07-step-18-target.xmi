@@ -6,9 +6,6 @@
     <mtg:Item name="Seeds" source="ModelB"/>
     <mtg:Item name="Paint" source="ModelB"/>
     <mtg:Combined nameA="Kitchen" nameB="Tiles" combined="Kitchen + Tiles"/>
-    <mtg:Combined nameA="Kitchen" nameB="Seeds" combined="Kitchen + Seeds"/>
     <mtg:Combined nameA="Kitchen" nameB="Paint" combined="Kitchen + Paint"/>
-    <mtg:Combined nameA="Garden" nameB="Tiles" combined="Garden + Tiles"/>
     <mtg:Combined nameA="Garden" nameB="Seeds" combined="Garden + Seeds"/>
-    <mtg:Combined nameA="Garden" nameB="Paint" combined="Garden + Paint"/>
 </xmi:XMI>

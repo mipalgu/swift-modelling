@@ -1,8 +1,8 @@
 -- @path ModelA=/ModelA/ModelA.ecore
--- @path ModelB=/ModelB/ModelB.ecore  
+-- @path ModelB=/ModelB/ModelB.ecore
 -- @path Target=/Target/Target.ecore
 
-module MultiModelExample;
+module MultiSourceExample;
 create OUT: Target from INA: ModelA, INB: ModelB;
 
 -- Access elements from both source models

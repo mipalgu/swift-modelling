@@ -131,6 +131,10 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
 
             \(SubRulePrecedenceOptions.discussion(reader: "the transformation"))
 
+            \(AbstractRuleMatchingOptions.discussion(reader: "the transformation"))
+
+            \(AbstractLeafRulesOptions.discussion(reader: "the transformation"))
+
             \(SourceEncodingOptions.discussion(reader: "the transformation"))
 
             \(OutputEncodingOptions.discussion(writer: "the target models"))
@@ -272,6 +276,15 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
     @OptionGroup(title: "Evaluation")
     var subRulePrecedenceOptions: SubRulePrecedenceOptions
 
+    /// What a source element gives that an abstract rule matches but none of the rules extending
+    /// it match.
+    @OptionGroup(title: "Evaluation")
+    var abstractRuleMatchingOptions: AbstractRuleMatchingOptions
+
+    /// What a source element gives that an abstract rule matches when no rule extends it.
+    @OptionGroup(title: "Evaluation")
+    var abstractLeafRulesOptions: AbstractLeafRulesOptions
+
     /// The preset of the behaviours, standard or that of version 0.6.
     @OptionGroup(title: "Evaluation")
     var semanticsOptions: SemanticsOptions
@@ -302,6 +315,8 @@ struct TransformCommand: AsyncParsableCommand, ATLSourceReading {
         var atlOptions = atlSemanticsOptions.atlOptions(settings: settings)
         siblingRuleConflictOptions.apply(to: &atlOptions, settings: settings)
         subRulePrecedenceOptions.apply(to: &atlOptions, settings: settings)
+        abstractRuleMatchingOptions.apply(to: &atlOptions, settings: settings)
+        abstractLeafRulesOptions.apply(to: &atlOptions, settings: settings)
         if verbose {
             print("Starting ATL transformation: \(transformation)")
             print("Source model files: \(source)")

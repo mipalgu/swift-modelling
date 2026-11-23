@@ -4,9 +4,9 @@
 module OptimisationExample;
 create OUT: Target from IN: Source;
 
--- OPTIMISED: Chain operations instead of intermediate variables
+-- OPTIMISED: one select with both conditions traverses the elements once,
+-- instead of a second select over an intermediate collection
 helper context Source!Container def: activeHighPriorityNames: Sequence(String) =
     self.elements
-        ->select(e | e.active)
-        ->select(e | e.priority > 5)
+        ->select(e | e.active and e.priority > 5)
         ->collect(e | e.name);

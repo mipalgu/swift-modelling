@@ -1,0 +1,36 @@
+-- @path Source=/Source/Source.ecore
+-- @path Target=/Target/Target.ecore
+
+module DebugExample;
+create OUT: Target from IN: Source;
+
+-- Defensive helper: the name of the element, or a placeholder if it has none
+helper context Source!Element def: displayName(): String =
+    if self.name.oclIsUndefined() then
+        'Unnamed element'
+    else
+        self.name
+    endif;
+
+-- Defensive helper: where the element sits, safe for an element without a parent
+helper context Source!Element def: parentLabel(): String =
+    if self.parent.oclIsUndefined() then
+        'Top level'
+    else
+        'Part of ' + self.parent.displayName()
+    endif;
+
+-- Robust rule: every binding has a value, whatever the element leaves undefined
+rule ElementTransform {
+    from
+        s: Source!Element
+    to
+        t: Target!Item (
+            name <- s.displayName(),
+            description <- if s.description.oclIsUndefined() then
+                s.parentLabel() + ', no description provided'
+            else
+                s.description
+            endif
+        )
+}

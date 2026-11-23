@@ -71,7 +71,8 @@ public struct ModellingConfiguration: Sendable, Equatable {
     /// ``UnsetFeatureOptions``, ``SourceEncodingOptions``, ``OutputEncodingOptions``,
     /// ``KM3Options``, ``GrammarImportOptions``, ``LevelCrossingOptions``,
     /// ``CompleteOCLOptions``, ``ReferenceStyleOptions``, ``DocumentURIOptions``,
-    /// ``SiblingRuleConflictOptions``, ``SubRulePrecedenceOptions``, ``CodeStyleOptions`` and ``GenModelDefaultsOptions``
+    /// ``SiblingRuleConflictOptions``, ``SubRulePrecedenceOptions``, ``AbstractRuleMatchingOptions``,
+    /// ``AbstractLeafRulesOptions``, ``CodeStyleOptions`` and ``GenModelDefaultsOptions``
     /// define, and the names of ``ValidationOptionName`` and ``MatchingOptionName``.
     public static let keys: [String] = [
         SemanticsOptions.OptionName.semantics,
@@ -92,6 +93,8 @@ public struct ModellingConfiguration: Sendable, Equatable {
         ATLSemanticsOptions.OptionName.bagRepresentation,
         SiblingRuleConflictOptions.optionName,
         SubRulePrecedenceOptions.optionName,
+        AbstractRuleMatchingOptions.optionName,
+        AbstractLeafRulesOptions.optionName,
         SemanticsOptions.OptionName.containerScope,
         LetTypeMismatchOptions.optionName,
         UnsetFeatureOptions.optionName,
@@ -182,6 +185,14 @@ public struct ModellingConfiguration: Sendable, Equatable {
     /// Which ATL rule transforms a source element that a rule and a rule extending it both match
     /// (`sub-rule-precedence`).
     public var subRulePrecedence: ATLSubRulePrecedence?
+
+    /// What a source element gives that an abstract ATL rule matches but none of the rules
+    /// extending it match (`abstract-rule-matching`).
+    public var abstractRuleMatching: ATLAbstractRuleMatching?
+
+    /// What a source element gives that an abstract ATL rule matches when no rule extends that
+    /// rule (`abstract-leaf-rules`).
+    public var abstractLeafRules: ATLAbstractLeafRules?
 
     /// The objects whose containers a model answers for (`container-scope`).
     public var containerLookupScope: ContainerLookupScope?
@@ -344,6 +355,8 @@ public struct ModellingConfiguration: Sendable, Equatable {
         bagRepresentation = try reader.value(of: ATLSemanticsOptions.OptionName.bagRepresentation)
         siblingRuleConflicts = try reader.value(of: SiblingRuleConflictOptions.optionName)
         subRulePrecedence = try reader.value(of: SubRulePrecedenceOptions.optionName)
+        abstractRuleMatching = try reader.value(of: AbstractRuleMatchingOptions.optionName)
+        abstractLeafRules = try reader.value(of: AbstractLeafRulesOptions.optionName)
         containerLookupScope = try reader.value(of: SemanticsOptions.OptionName.containerScope)
         letTypeMismatches = try reader.value(of: LetTypeMismatchOptions.optionName)
         unsetFeatures = try reader.value(of: UnsetFeatureOptions.optionName)
