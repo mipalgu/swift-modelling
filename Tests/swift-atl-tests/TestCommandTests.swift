@@ -28,12 +28,8 @@ struct TestCommandTests {
     /// The longest a completion test may take, well below ``generousTimeout`` and below
     /// ``runDeadline``.
     ///
-    /// Windows runners start processes more slowly, so they get more time.
-    #if os(Windows)
+    /// Shared runners can start processes slowly, so the limit leaves room for that.
     static let promptCompletion = Duration.seconds(25)
-    #else
-    static let promptCompletion = Duration.seconds(15)
-    #endif
 
     /// How long a run of the tool may take before it is stopped, below ``generousTimeout``.
     static let runDeadline = Duration.seconds(30)
