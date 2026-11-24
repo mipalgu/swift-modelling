@@ -303,7 +303,8 @@ A model that refers to elements of another document, such as a note that refers 
 beside it. The output then holds no absolute path and loads again as long as the documents keep
 their relative locations. `--document-uris absolute` writes the full URI of the other document
 instead, such as a `file:` URI. A URI that cannot be made relative, such as one on another drive,
-is written in full either way.
+is written in full either way. The converted document takes the location of the output, and is
+written exactly as a copy of the input in the new format would be.
 
 **Examples:**
 

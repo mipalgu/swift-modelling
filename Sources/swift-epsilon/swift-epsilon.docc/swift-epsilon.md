@@ -72,6 +72,18 @@ absolute` writes the full URI of the other model instead, such as a
 `file:` URI. A URI that cannot be made relative, such as one on another
 drive, is written in full either way.
 
+The models of a run are written together: each written model takes the
+location of its file before any is written, so that models that refer
+to each other refer to each other at the files written. Storing a
+project and a note that refers to it in another directory, as in
+`--store Tasks=output/tasks.xmi --store Notes=output/notes.xmi`, writes
+a note that refers to `tasks.xmi#//@tasks.1` beside it, in either order,
+and so does a target that refers to a model stored with it. A model
+written to a file of its own alone is written exactly as before. Two
+models given the same file, and a model given the file of another
+model that is read but not stored, are errors, and then no model is
+written. Models may trade files, each stored in the file of the other.
+
 Each model read with `--model` is typed by the metamodels whose
 namespace URIs its file uses, and each target by the metamodels that no
 model read with `--model` uses, or by all of them if every one is used,

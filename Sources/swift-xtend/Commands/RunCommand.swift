@@ -124,10 +124,11 @@ struct RunCommand: AsyncParsableCommand {
                 guard let resource else {
                     throw SwiftXtendError.argumentBinding(method, "there is no model to write to \(output)")
                 }
+                if !created { _ = await session.resourceSet.removeResource(target) }
                 if programOptions.verbose { XtendSession.report("Writing \(output)") }
                 let url = URL(fileURLWithPath: output)
-                try await OutputFile.save(
-                    resource, to: url, format: ModelFileFormat.instanceFormat(of: url),
+                try await OutputFile.saveAs(
+                    resource, to: output, format: ModelFileFormat.instanceFormat(of: url),
                     xmiOptions: documentURIOptions.serializationOptions(settings: session.settings),
                     encoding: session.outputEncoding)
             }

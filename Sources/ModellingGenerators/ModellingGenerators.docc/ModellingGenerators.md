@@ -94,3 +94,8 @@ print(result.files.count)
 - ``VerificationServices``
 - ``VerificationServiceName``
 - ``VerificationKindName``
+
+### Saving models together
+
+- ``DocumentRelocation``
+- ``DocumentRelocationError``

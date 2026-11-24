@@ -60,7 +60,9 @@ enum ModelFile {
 
     /// Writes a model to a file in the format that the extension of the file names.
     ///
-    /// What cannot be kept is reported on standard error.
+    /// The model takes the location of the file, as `OutputFile.saveAs` gives it, so that the
+    /// models of the resource set refer to it there. What cannot be kept is reported on
+    /// standard error.
     ///
     /// - Parameters:
     ///   - resource: The resource that holds the model.
@@ -68,15 +70,16 @@ enum ModelFile {
     ///   - xmiOptions: The options with which an XMI model is written, which choose how it refers
     ///     to other documents (default: relative to the file).
     ///   - encoding: The character encoding of the file (default: UTF-8).
-    /// - Throws: ``OutputFileError`` if the encoding cannot hold a character of the model, and
-    ///   the error of the serialiser or of the file system.
+    /// - Throws: ``OutputFileError`` if the encoding cannot hold a character of the model or the
+    ///   file is that of another model of the resource set, and the error of the serialiser or
+    ///   of the file system.
     static func save(
         _ resource: Resource, to path: String, xmiOptions: XMISerializationOptions = defaultXMIOptions,
         encoding: TextEncoding = .utf8
     ) async throws {
         let url = URL(fileURLWithPath: path)
-        let diagnostics = try await OutputFile.save(
-            resource, to: url, format: ModelFileFormat.instanceFormat(of: url), xmiOptions: xmiOptions,
+        let diagnostics = try await OutputFile.saveAs(
+            resource, to: path, format: ModelFileFormat.instanceFormat(of: url), xmiOptions: xmiOptions,
             encoding: encoding)
         ConversionWarningReport.write(diagnostics, metamodelGiven: true)
     }

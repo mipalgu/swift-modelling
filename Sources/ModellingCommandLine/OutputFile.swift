@@ -134,11 +134,31 @@ public enum OutputFileError: Error, Sendable, Hashable, CustomStringConvertible,
     ///   - error: The character, its line and column, and the encoding.
     case unrepresentable(path: String, TextEncodingError)
 
-    /// A message that names the file, the character, its line and column, and the encoding.
+    /// Two different models are to be written to the same file.
+    ///
+    /// - Parameters:
+    ///   - path: The path of the file as given for the later model.
+    ///   - other: The path of the file as given for the earlier model, which may be spelt
+    ///     differently.
+    case sameFile(path: String, other: String)
+
+    /// A model is to be written to the file of another model that the command has read and
+    /// does not write.
+    ///
+    /// - Parameter path: The path of the file, as given on the command line.
+    case fileInUse(path: String)
+
+    /// A message that names the file and what prevents it from being written.
     public var description: String {
         switch self {
         case .unrepresentable(let path, let error):
             return "Cannot write \(path): \(error.description)"
+        case .sameFile(let path, let other):
+            let names = path == other ? path : "\(other) and \(path)"
+            return "Cannot write two models to the same file: \(names)"
+        case .fileInUse(let path):
+            return "Cannot write \(path): it is the file of another model that is read but not written; "
+                + "write the model to another file or write the other model as well"
         }
     }
 
