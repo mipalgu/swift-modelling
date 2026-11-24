@@ -196,6 +196,10 @@ swift-epsilon evl validate rules.evl --model Bank=bank.xmi -m Bank.ecore
 swift-epsilon etl transform bank2ledger.etl --model Bank=bank.xmi \
   --target Ledger=ledger.xmi -m Bank.ecore -m Ledger.ecore
 
+# Store models that refer to each other in a new directory, where they refer to each other
+swift-epsilon eol run rename.eol --model Tasks=models/tasks.xmi --model Notes=models/notes.xmi \
+  -m Tasks.ecore -m Notes.ecore --store Tasks=output/tasks.xmi --store Notes=output/notes.xmi
+
 # Generate text from an EGL template
 swift-epsilon egl generate accounts.egl --model Bank=bank.xmi -m Bank.ecore -o accounts.txt
 ```

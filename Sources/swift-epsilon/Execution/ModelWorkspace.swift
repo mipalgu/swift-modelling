@@ -170,36 +170,42 @@ final class ModelWorkspace {
 
     /// Writes the target models and the models that `--store` names.
     ///
-    /// Each model is written in the format of the extension of its file, and the warnings of
-    /// writing it are reported on standard error.
+    /// Each model is written in the format of the extension of its file and takes the location
+    /// of its file before any is written, so that models that refer to each other refer to
+    /// each other at the files written. The warnings of writing them are reported on standard
+    /// error.
     ///
     /// - Returns: The paths of the files written, in order.
-    /// - Throws: ``OutputFileError`` if the encoding of the run cannot hold a character of a
-    ///   model, and the error of the serialiser or of the file system for the first model that
-    ///   cannot be written.
+    /// - Throws: ``OutputFileError`` if two models are given the same file, if a model is given
+    ///   the file of another model that is read and not stored, or if the encoding of the run
+    ///   cannot hold a character of a model, and the error of the serialiser or of the file
+    ///   system for the first model that cannot be written.
     @discardableResult
     func store() async throws -> [String] {
-        var written: [String] = []
         let plan = configuration.plan
         var requests = plan.targets.map { (name: $0.name, path: $0.path) }
         for store in plan.stores {
             guard let binding = plan.sources.first(where: { $0.names.contains(store.name) }) else { continue }
             requests.append((binding.name, store.path ?? binding.path))
         }
+        var outputs: [(name: String, model: OutputModel)] = []
         for request in requests {
             guard let model = model(named: request.name) else { continue }
             let url = URL(fileURLWithPath: request.path)
             try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-            let diagnostics = try await OutputFile.save(
-                model.resource, to: url, format: ModelFileFormat.instanceFormat(of: url),
-                xmiOptions: configuration.xmiOptions, encoding: configuration.outputEncoding)
-            ConversionWarningReport.write(diagnostics, metamodelGiven: true)
-            if log.isEnabled {
-                let count = await model.resource.count()
-                log("Stored model \(request.name) in \(request.path) (\(count) objects)")
-            }
-            written.append(request.path)
+            outputs.append(
+                (request.name, OutputModel(
+                    model.resource, path: request.path, format: ModelFileFormat.instanceFormat(of: url),
+                    xmiOptions: configuration.xmiOptions)))
         }
-        return written
+        let diagnostics = try await OutputFile.saveAs(outputs.map(\.model), encoding: configuration.outputEncoding)
+        ConversionWarningReport.write(diagnostics, metamodelGiven: true)
+        if log.isEnabled {
+            for output in outputs {
+                let count = await output.model.resource.count()
+                log("Stored model \(output.name) in \(output.model.path) (\(count) objects)")
+            }
+        }
+        return outputs.map(\.model.path)
     }
 }

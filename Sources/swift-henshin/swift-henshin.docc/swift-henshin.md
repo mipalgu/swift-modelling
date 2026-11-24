@@ -101,6 +101,10 @@ model then holds no absolute path. `--document-uris absolute` writes the full UR
 document instead, such as a `file:` URI. A URI that cannot be made relative, such as one on
 another drive, is written in full either way.
 
+The written model takes the location of the file written. `--output` cannot name the file of
+another document that the run has read, such as the module; the command reports an error and
+writes nothing instead.
+
 **Trace.** `--trace` writes one line per rule application, in order, such as
 `applied move(source=Bin(A), target=Bin(B), m=0, n=2): created 0, deleted 0`, with the matched
 objects in the order of the left-hand side followed by the parameter values.

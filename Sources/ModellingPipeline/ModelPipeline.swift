@@ -61,11 +61,22 @@ public struct ModelPipeline: Sendable {
         /// Every model of the pipeline is available to the templates under its name.
         case generate(GenerationStep, arguments: [String] = [])
 
-        /// Writes a named model to a file.
+        /// Writes a named model to a file and gives the model the location of that file.
         ///
         /// Without a format, the format is taken from the file extension. Without XMI options,
         /// an XMI document is written with ``ModelPipeline/defaultXMIOptions``, which refer to
         /// other documents relative to the file; options given to the step are used as they are.
+        ///
+        /// The model is saved as the file, as
+        /// [`ModelIO.saveAs`](https://mipalgu.github.io/swift-ecore/documentation/ecore/modelio/)
+        /// saves it: thereafter it has the URI of the file, and the other models of the pipeline
+        /// refer to it there when they are saved. Consecutive save steps save their models
+        /// together: each model takes the location of its file before any is written, so that
+        /// models that refer to each other refer to each other at the files written, whichever
+        /// step comes first. A model saved by two steps of such a run takes the file of the first
+        /// and is copied to the other. Two different models saved to the same file, or a model
+        /// saved to the file of another model of the pipeline that the run does not save, are a
+        /// `DocumentRelocationError`, and then no file of the run is written.
         case save(
             name: String, url: URL, format: ModelFormat? = nil,
             xmiOptions: XMISerializationOptions = ModelPipeline.defaultXMIOptions)
@@ -127,9 +138,17 @@ public struct ModelPipeline: Sendable {
         in resourceSet: ResourceSet = ResourceSet(), progress: @escaping GenerationProgressReporter = { _ in }
     ) async throws -> Result {
         var state = State()
+        var saves: [(name: String, url: URL, format: ModelFormat?, xmiOptions: XMISerializationOptions)] = []
         for step in steps {
+            if case .save(let name, let url, let format, let xmiOptions) = step {
+                saves.append((name, url, format, xmiOptions))
+                continue
+            }
+            try await save(saves, state: &state, progress: progress)
+            saves = []
             try await run(step, in: resourceSet, state: &state, progress: progress)
         }
+        try await save(saves, state: &state, progress: progress)
         return Result(
             resourceSet: resourceSet, models: state.models, diagnostics: state.diagnostics,
             generatedFiles: state.generations.flatMap(\.files), generations: state.generations)
@@ -185,12 +204,51 @@ public struct ModelPipeline: Sendable {
                 arguments: roots, models: state.models, resourceSet: resourceSet, progress: progress)
             state.generations.append(result)
         case .save(let name, let url, let format, let xmiOptions):
-            progress(GenerationProgressUpdate(message: "Saving \(url.lastPathComponent)"))
-            let model = try state.model(name)
-            try FileManager.default.createDirectory(
-                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try await ModelIO.save(
-                model, to: url, format: format, xmiOptions: xmiOptions, diagnostics: &state.diagnostics)
+            try await save([(name, url, format, xmiOptions)], state: &state, progress: progress)
+        }
+    }
+
+    /// Runs consecutive save steps together.
+    ///
+    /// Every model takes the location of its first file before any file is written, and keeps
+    /// its previous location if a file cannot be written.
+    ///
+    /// - Parameters:
+    ///   - saves: The names of the models, their files, formats and XMI options, in order.
+    ///   - state: The models and diagnostics of the run.
+    ///   - progress: The receiver of progress reports.
+    /// - Throws: ``ModelPipelineError/unknownModel(_:_:)`` if a model is unknown,
+    ///   `DocumentRelocationError` if the models cannot take their files, and the errors of
+    ///   writing a file.
+    @MainActor
+    private func save(
+        _ saves: [(name: String, url: URL, format: ModelFormat?, xmiOptions: XMISerializationOptions)],
+        state: inout State, progress: @escaping GenerationProgressReporter
+    ) async throws {
+        guard !saves.isEmpty else { return }
+        var models: [Resource] = []
+        for save in saves { models.append(try state.model(save.name)) }
+        let relocation = try await DocumentRelocation.relocate(zip(models, saves).map { ($0, $1.url) })
+        do {
+            for (model, save) in zip(models, saves) {
+                guard let placement = relocation.placements.first(where: { $0.resource === model && $0.url == save.url })
+                else { continue }
+                progress(GenerationProgressUpdate(message: "Saving \(save.url.lastPathComponent)"))
+                try FileManager.default.createDirectory(
+                    at: save.url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                if placement.isCopy {
+                    try await ModelIO.save(
+                        model, to: save.url, format: save.format, xmiOptions: save.xmiOptions,
+                        diagnostics: &state.diagnostics)
+                } else {
+                    try await ModelIO.saveAs(
+                        model, to: save.url, format: save.format, xmiOptions: save.xmiOptions,
+                        diagnostics: &state.diagnostics)
+                }
+            }
+        } catch {
+            await relocation.restore()
+            throw error
         }
     }
 }

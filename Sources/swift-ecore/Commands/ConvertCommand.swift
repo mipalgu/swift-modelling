@@ -273,8 +273,8 @@ struct ConvertCommand: AsyncParsableCommand {
         if verbose { print("Writing \(writeFormat.description)...") }
         let settings = try configurationOptions.settings()
         diagnostics.merge(
-            try await OutputFile.save(
-                resource, to: outputURL, format: writeFormat,
+            try await OutputFile.saveAs(
+                resource, to: outputPath, format: writeFormat,
                 xmiOptions: referenceStyleOptions.serializationOptions(settings: settings, documentURIs: documentURIOptions),
                 encoding: outputEncodingOptions.encoding(settings: settings)))
         withExtendedLifetime(resourceSet) {}

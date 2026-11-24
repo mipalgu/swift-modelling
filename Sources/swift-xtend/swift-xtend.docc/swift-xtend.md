@@ -87,7 +87,8 @@ a task of the model it was given, names that model relative to the written file:
 beside it. The file then holds no absolute path and loads again as long as the models keep their
 relative locations. `--document-uris absolute` writes the full URI of the other model instead,
 such as a `file:` URI. A URI that cannot be made relative, such as one on another drive, is
-written in full either way.
+written in full either way. The written model takes the location of the file written, which
+cannot be the file of another model that the run has read; that is reported as an error instead.
 
 A source that refers to the types of a metamodel needs `--metamodel`, so that its imports and
 parameter types are known.
